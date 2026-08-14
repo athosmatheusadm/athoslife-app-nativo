@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    background-color: theme('colors.surface.1');
+    color: theme('colors.content.hi');
+  }
+
+  body {
+    @apply font-sans antialiased;
+    /* App nativo: sem seleção acidental de texto nem bounce de scroll. */
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  /* Acessibilidade: foco sempre visível (o mockup não tinha nenhum). */
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-brand;
+  }
+
+  /* Respeita quem desativou animações no sistema Android. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Só transform/opacity: as duas propriedades que a GPU anima a 60fps. */
+  .animate-rise {
+    animation: rise 0.28s theme('transitionTimingFunction.athos') both;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 8px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+}
