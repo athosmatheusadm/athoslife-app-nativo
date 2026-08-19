@@ -4,6 +4,7 @@ import { MealCards } from './MealCards'
 import { EmotionalCheckin } from './EmotionalCheckin'
 import { WaterCard } from '@ui/screens/water/WaterCard'
 import { WeightCard } from '@ui/screens/weight/WeightCard'
+import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
 
 /**
@@ -28,10 +29,13 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
         <h1 className="text-2xl font-bold text-content-hi">
           ATHOS<span className="font-semibold text-brand">life</span>
         </h1>
-        <span className="flex items-center gap-1.5 rounded-pill border border-surface-4 bg-surface-2 px-3 py-1.5">
-          <span className="text-lg">🔥</span>
-          <span className="text-sm font-bold text-content-hi">{profile.streakAtual}</span>
-          <span className="text-micro text-content-low">dias</span>
+        <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 rounded-pill border border-surface-4 bg-surface-2 px-3 py-1.5">
+            <span className="text-lg">🔥</span>
+            <span className="text-sm font-bold text-content-hi">{profile.streakAtual}</span>
+            <span className="text-micro text-content-low">dias</span>
+          </span>
+          <ProfileAvatar />
         </span>
       </header>
 

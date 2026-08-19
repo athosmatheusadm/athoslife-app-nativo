@@ -51,6 +51,14 @@ export function ProfileScreen({ onNavigate }: { onNavigate: (rota: string) => vo
       </section>
 
       <nav>
+        <SettingsRow
+          icon={<IconConquistas />}
+          title="Conquistas"
+          subtitle="Veja tudo que você já desbloqueou"
+          trailing={<Chevron />}
+          onClick={() => onNavigate('/perfil/conquistas')}
+        />
+        <div className="mx-5 my-2 h-px bg-surface-4/50" />
         <SettingsRow icon={<IconConta />} title="Conta" subtitle="Nome, e-mail e foto de perfil" trailing={<Chevron />} onClick={() => onNavigate('/perfil/conta')} />
         <SettingsRow icon={<IconMetas />} title="Metas" subtitle="Calorias, macros, água e peso alvo" trailing={<Chevron />} onClick={() => onNavigate('/perfil/metas')} />
         <SettingsRow icon={<IconPlano />} title="Plano" subtitle="Sua assinatura e benefícios" trailing={<><span className="mr-2 text-micro font-semibold text-accent-gold">{premium ? 'Premium' : 'Grátis'}</span><Chevron /></>} onClick={() => onNavigate('/perfil/plano')} />
@@ -72,6 +80,7 @@ export function ProfileScreen({ onNavigate }: { onNavigate: (rota: string) => vo
 }
 
 const s = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+const IconConquistas = () => (<svg {...s}><path d="M8 21h8M12 17v4" /><path d="M7 4h10v5a5 5 0 0 1-10 0V4z" /><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" /></svg>)
 const IconConta = () => (<svg {...s}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>)
 const IconMetas = () => (<svg {...s}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.4" fill="currentColor" /></svg>)
 const IconPlano = () => (<svg {...s}><path d="M3 7l3 12h12l3-12-5 4-4-6-4 6-5-4z" /></svg>)

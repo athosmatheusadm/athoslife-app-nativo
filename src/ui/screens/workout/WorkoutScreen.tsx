@@ -12,6 +12,7 @@ import {
 } from '@domain/entities/treino'
 import { treinoRepository } from '@data/repositories/treinoRepository'
 import { ExerciseIcon, chaveIconePorNome } from '@ui/components/ExerciseIcon'
+import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { AddExerciseDrawer } from './AddExerciseDrawer'
 
 /**
@@ -103,6 +104,7 @@ export function WorkoutScreen() {
             Meu Treino
           </h1>
         </div>
+        <ProfileAvatar />
       </header>
 
       {/* Seletor de local */}

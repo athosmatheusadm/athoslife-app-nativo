@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { MealAccordion } from './MealAccordion'
 import type { ItemRefeicao, Refeicao } from '@domain/entities/meal'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
@@ -46,6 +47,7 @@ export function DietScreen(props: {
           <span className="text-2xl">🥗</span>
           <h1 className="text-xl font-bold text-content-hi">Meu Plano</h1>
         </div>
+        <ProfileAvatar />
       </header>
 
       {/* Cards de macro */}

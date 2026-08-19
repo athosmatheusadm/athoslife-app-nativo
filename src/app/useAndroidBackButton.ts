@@ -3,7 +3,7 @@ import { App } from '@capacitor/app'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 /** Telas onde "Voltar" deve sair do app, não navegar. */
-const RAIZES = new Set(['/home', '/login'])
+const RAIZES = new Set(['/home', '/login', '/dieta', '/treinos', '/habitos', '/scanner'])
 
 /**
  * Botão físico "Voltar" do Android.

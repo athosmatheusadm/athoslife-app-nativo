@@ -1,10 +1,7 @@
+import { useNavigate } from 'react-router-dom'
+import { HomeScreen } from './home/HomeScreen'
+
 export function Home() {
-  return (
-    <main className="animate-rise p-6 pt-safe-t">
-      <h1 className="text-2xl font-bold text-content-hi">Home</h1>
-      <p className="mt-2 text-sm text-content-low">
-        Estrutura da Fase 0. Implementação real na fase correspondente.
-      </p>
-    </main>
-  )
+  const navigate = useNavigate()
+  return <HomeScreen onNavigate={(rota) => navigate(rota)} />
 }

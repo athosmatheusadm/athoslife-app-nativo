@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { HabitCard } from './HabitCard'
 import { CravingAssistant } from './CravingAssistant'
 import type { CaminhoVontade, Habito } from '@domain/entities/habito'
@@ -27,17 +28,20 @@ export function HabitsScreen(props: {
   return (
     <main className="space-y-4 px-4 pb-24 pt-safe-t">
       {/* Header com streak geral */}
-      <header className="pt-3">
-        <div className="text-micro font-bold uppercase tracking-[3px] text-brand">Athos</div>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🌱</span>
-          <h1 className="text-2xl font-extrabold text-content-hi">Meus Hábitos</h1>
+      <header className="flex items-start justify-between pt-3">
+        <div>
+          <div className="text-micro font-bold uppercase tracking-[3px] text-brand">Athos</div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🌱</span>
+            <h1 className="text-2xl font-extrabold text-content-hi">Meus Hábitos</h1>
+          </div>
+          {maiorStreak > 0 && (
+            <p className="mt-1 text-sm text-content-low">
+              Você está firme há {maiorStreak} {maiorStreak === 1 ? 'dia' : 'dias'} 🔥
+            </p>
+          )}
         </div>
-        {maiorStreak > 0 && (
-          <p className="mt-1 text-sm text-content-low">
-            Você está firme há {maiorStreak} {maiorStreak === 1 ? 'dia' : 'dias'} 🔥
-          </p>
-        )}
+        <ProfileAvatar />
       </header>
 
       {/* Cards */}
