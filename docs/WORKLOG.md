@@ -354,3 +354,11 @@ quando fechar um bloco de trabalho, sobe tudo com um commit + push só.
     `npm run dev -- --host` rodando, confirmado em `localhost:5173` via
     `curl.exe` (HTTP 200). Se sobrar `node.exe` estranho no Task Manager
     numa próxima sessão, é provável resquício do mesmo padrão.
+- **Commit local feito** (`a6aa819`, mensagem cobrindo Dieta/Home/Login/
+  Cozinha acumulados desde 2026-08-18): branch `main` agora 2 commits à
+  frente do `origin/main`. **Push combinado para a próxima sessão**, a
+  pedido do usuário (ia desligar o PC agora). `tsconfig.tsbuildinfo` foi pro
+  `.gitignore` (artefato de build, não deveria ter sido commitado antes). A
+  imagem de referência (`WhatsApp Image 2026-08-27...jpeg`, usada só pra
+  desenhar os cards da Cozinha) ficou de propósito fora do commit — não é
+  asset do app.
