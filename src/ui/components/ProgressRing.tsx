@@ -13,9 +13,10 @@ export function ProgressRing(props: {
   unidade?: string
   label: string
   meta: string
+  ativo?: boolean
   onClick?: () => void
 }) {
-  const { pct, cor, valor, unidade, label, meta, onClick } = props
+  const { pct, cor, valor, unidade, label, meta, ativo = false, onClick } = props
   const clamp = Math.max(0, Math.min(100, pct))
   const circ = 2 * Math.PI * 30
   const offset = circ - (clamp / 100) * circ
@@ -24,7 +25,10 @@ export function ProgressRing(props: {
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-1 flex-col items-center gap-1"
+      aria-pressed={ativo}
+      className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border py-1.5 transition-colors ${
+        ativo ? 'border-surface-4 bg-surface-3' : 'border-transparent'
+      }`}
       aria-label={`${label}: ${valor}${unidade ?? ''}, meta ${meta}`}
     >
       <span className="relative h-[68px] w-[68px]">
@@ -44,7 +48,9 @@ export function ProgressRing(props: {
           />
         </svg>
         <span className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-bold text-content-hi">{valor}</span>
+          <span className="text-sm font-bold" style={{ color: ativo ? cor : '#fff' }}>
+            {valor}
+          </span>
           {unidade && <span className="text-[10px] text-content-dim">{unidade}</span>}
         </span>
       </span>

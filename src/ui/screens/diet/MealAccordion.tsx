@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
 import {
   macrosRefeicao,
   resumoRefeicao,
@@ -14,27 +16,44 @@ import { InlineFoodSearch } from './InlineFoodSearch'
  * Aberto: itens + macros + ações. Ao fechar, volta idêntico.
  *
  * O "+ Adicionar alimento" abre a busca DENTRO do card (mais uma camada
- * que desliza), coerente com a regra de nada de tela nova.
+ * que desliza), coerente com a regra de nada de tela nova. "Copiar de
+ * outra refeição" funciona igual: uma lista de tipos que desliza no lugar
+ * dos botões, sem sair do card.
  *
  * Animação: grid-template-rows 0fr -> 1fr (+ opacity). É o que dá o
  * "empurra suave" real a 60fps sem animar height (que engasga no Android).
  *
- * O card é BURRO: não guarda se está aberto. Quem manda é a tela-mãe
- * (via `aberto` + `onToggle`), pra regra "um aberto por vez" ser trivial.
+ * O card é BURRO: não guarda se está aberto, em edição, buscando ou
+ * clonando. Quem manda é a tela-mãe (via props + callbacks), pra regra
+ * "uma camada extra por vez" ser trivial.
  */
 export function MealAccordion(props: {
   refeicao: Refeicao
   aberto: boolean
   buscaAberta: boolean
+  editando: boolean
+  clonando: boolean
+  /** Outras refeições do dia que já têm algum item — candidatas a "copiar de". */
+  outrasRefeicoes: readonly { chave: string; nome: string }[]
   onToggle: () => void
   onAbrirBusca: () => void
   onFecharBusca: () => void
   onAdicionarItem: (item: ItemRefeicao) => void
+  onRemoverItem: (itemId: string) => void
   onEditar: () => void
   onExcluir: () => void
   onToggleConcluida: () => void
+  onAbrirClonar: () => void
+  onFecharClonar: () => void
+  onClonarDe: (origemChave: string) => void
+  /** Só definido para refeições extras, que não têm nome fixo. */
+  onRenomear?: (novoNome: string) => void
+  /** Mensagem de erro se a última tentativa de renomear falhou. */
+  erroRenomear?: string | null
+  /** Só definido pra refeições extras (as únicas arrastáveis) — liga o ícone de handle ao dnd-kit. */
+  dragHandleProps?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners } | null
 }) {
-  const { refeicao, aberto } = props
+  const { refeicao, aberto, editando } = props
   const macros = macrosRefeicao(refeicao.itens)
   const totalKcal = macros.calorias
 
@@ -47,6 +66,17 @@ export function MealAccordion(props: {
         aria-expanded={aberto}
         className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
       >
+        {props.dragHandleProps && (
+          <span
+            {...props.dragHandleProps.attributes}
+            {...props.dragHandleProps.listeners}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Arrastar ${refeicao.nome} pra reordenar`}
+            className="flex-none touch-none px-0.5 text-content-dim"
+          >
+            ⋮⋮
+          </span>
+        )}
         <span className="text-2xl" aria-hidden="true">{refeicao.emoji}</span>
 
         <span className="min-w-0 flex-1">
@@ -99,6 +129,15 @@ export function MealAccordion(props: {
       >
         <div className="overflow-hidden">
           <div className="px-4 pb-4">
+            {props.onRenomear && (
+              <NomeExtraInput
+                key={refeicao.nome}
+                valorInicial={refeicao.nome}
+                onSalvar={props.onRenomear}
+                erro={props.erroRenomear ?? null}
+              />
+            )}
+
             {/* Lista de alimentos */}
             <ul className="border-t border-surface-3 pt-2">
               {refeicao.itens.map((item) => (
@@ -108,6 +147,16 @@ export function MealAccordion(props: {
                   <span className="w-16 text-right font-medium text-content-mid">
                     {item.calorias} kcal
                   </span>
+                  {editando && (
+                    <button
+                      type="button"
+                      onClick={() => props.onRemoverItem(item.id)}
+                      aria-label={`Remover ${item.nome}`}
+                      className="flex-none text-accent-danger"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </li>
               ))}
               {refeicao.itens.length === 0 && (
@@ -127,12 +176,37 @@ export function MealAccordion(props: {
               </div>
             )}
 
-            {/* Ações — ou a busca inline, quando aberta */}
+            {/* Ações — ou a busca / o "copiar de" inline, quando abertos */}
             {props.buscaAberta ? (
               <InlineFoodSearch
                 onAdicionar={props.onAdicionarItem}
                 onFechar={props.onFecharBusca}
               />
+            ) : props.clonando ? (
+              <div className="mt-3 border-t border-surface-3 pt-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-content-hi">Copiar de qual refeição?</span>
+                  <button onClick={props.onFecharClonar} aria-label="Fechar" className="text-content-dim">✕</button>
+                </div>
+                {props.outrasRefeicoes.length === 0 ? (
+                  <p className="py-2 text-micro text-content-low">
+                    Nenhuma outra refeição com alimentos hoje ainda.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {props.outrasRefeicoes.map((r) => (
+                      <button
+                        key={r.chave}
+                        type="button"
+                        onClick={() => props.onClonarDe(r.chave)}
+                        className="rounded-pill border border-surface-4 bg-surface-3 px-3.5 py-2 text-sm font-semibold text-content-hi transition-transform active:scale-95"
+                      >
+                        {r.nome}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <button
@@ -142,13 +216,22 @@ export function MealAccordion(props: {
                 >
                   + Adicionar alimento
                 </button>
+                <button
+                  type="button"
+                  onClick={props.onAbrirClonar}
+                  className="mt-2 w-full rounded-xl border border-surface-4 py-2.5 text-micro font-semibold text-content-mid transition-colors active:bg-white/5"
+                >
+                  ⧉ Copiar de outra refeição
+                </button>
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
                     onClick={props.onEditar}
-                    className="flex-1 rounded-xl border border-surface-4 py-2.5 text-micro font-medium text-content-mid transition-colors active:bg-white/5"
+                    className={`flex-1 rounded-xl border py-2.5 text-micro font-medium transition-colors active:bg-white/5 ${
+                      editando ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
+                    }`}
                   >
-                    ✎ Editar refeição
+                    {editando ? '✓ Concluir edição' : '✎ Editar refeição'}
                   </button>
                   <button
                     type="button"
@@ -163,6 +246,36 @@ export function MealAccordion(props: {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Nome editável do slot "Extra" (o único sem nome fixo tipo Café/Almoço).
+ * Salva ao sair do campo (blur) — sem botão extra, sem modal.
+ */
+function NomeExtraInput(props: {
+  valorInicial: string
+  onSalvar: (nome: string) => void
+  erro: string | null
+}) {
+  const [valor, setValor] = useState(props.valorInicial)
+
+  return (
+    <div className="mb-2 border-b border-surface-3 pb-2">
+      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
+        Nome desta refeição
+      </label>
+      <input
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+        onBlur={() => {
+          if (valor.trim() && valor.trim() !== props.valorInicial) props.onSalvar(valor)
+        }}
+        placeholder="Ex.: Pós-treino, Ceia…"
+        className="w-full rounded-xl border border-surface-4 bg-surface-3 px-3 py-2 text-sm font-semibold text-content-hi placeholder:font-normal placeholder:text-content-dim focus:border-brand focus:outline-none"
+      />
+      {props.erro && <p className="mt-1 text-[11px] text-accent-danger">{props.erro}</p>}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import {
   type ItemRascunho,
   type RefeicaoRascunho,
 } from '@domain/entities/food'
+import { itensRefeicaoRepository } from './itensRefeicaoRepository'
 
 export type TipoRefeicao = 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'
 
@@ -14,12 +15,52 @@ export interface RefeicaoSalva {
   readonly calorias: number
 }
 
+export interface RefeicaoResumoDia {
+  readonly tipo: TipoRefeicao
+  readonly kcal: number
+}
+
 /**
  * `refeicoes` guarda UMA linha por refeição, com macros somados.
  * O detalhe item-a-item da IA vai para `scan_historico`, ligado por
  * refeicao_id. Este repositório mantém essa dupla escrita consistente.
  */
 export const refeicoesRepository = {
+  /**
+   * Soma as calorias por tipo de refeição já registradas hoje — tanto as
+   * vindas do scanner (`refeicoes`) quanto os itens adicionados manualmente
+   * na Dieta (`itens_refeicao`), pra o card da Home bater com o que a
+   * pessoa vê lá dentro.
+   * Alimenta os cards de refeição da Home (café, almoço, lanche, jantar).
+   */
+  async doDia(): Promise<RefeicaoResumoDia[]> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+
+    const hoje = new Date()
+    const hojeStr = hoje.toISOString().slice(0, 10)
+    const [{ data, error }, manuais] = await Promise.all([
+      supabase
+        .from('refeicoes')
+        .select('tipo, calorias')
+        .eq('user_id', userId)
+        .eq('data', hojeStr)
+        .returns<{ tipo: TipoRefeicao; calorias: number }[]>(),
+      itensRefeicaoRepository.macrosDoDia(hoje),
+    ])
+
+    if (error) throw error
+
+    const porTipo = new Map<TipoRefeicao, number>()
+    for (const row of data ?? []) {
+      porTipo.set(row.tipo, (porTipo.get(row.tipo) ?? 0) + row.calorias)
+    }
+    for (const m of manuais) {
+      porTipo.set(m.tipo, (porTipo.get(m.tipo) ?? 0) + m.calorias)
+    }
+    return Array.from(porTipo, ([tipo, kcal]) => ({ tipo, kcal }))
+  },
+
   /**
    * Salva uma refeição vinda do scanner (foto -> revisão -> confirmar).
    * Só entram os itens marcados com `incluir`. Registra o histórico do
@@ -42,6 +83,7 @@ export const refeicoesRepository = {
 
     const macros = somarMacros(incluidos)
     const nome = montarNome(incluidos, rascunho.descricao)
+    const hoje = new Date().toISOString().slice(0, 10)
 
     // 1) A refeição em si (macros somados).
     const { data: refeicao, error: erroRefeicao } = await supabase
@@ -56,6 +98,7 @@ export const refeicoesRepository = {
         gordura: macros.gordura,
         foto_url: fotoUrl,
         origem: 'scanner',
+        data: hoje,
       })
       .select('id, nome, tipo, calorias')
       .single<{ id: string; nome: string; tipo: TipoRefeicao; calorias: number }>()

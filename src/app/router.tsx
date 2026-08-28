@@ -12,6 +12,7 @@ import { Habitos } from '@ui/screens/Habitos'
 import { Scanner } from '@ui/screens/Scanner'
 import { Perfil } from '@ui/screens/Perfil'
 import { Conquistas } from '@ui/screens/Conquistas'
+import { Cozinha } from '@ui/screens/Cozinha'
 
 /** Casca do app: liga o botão Voltar dentro do contexto do roteador. */
 function Shell() {
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
           // Conquistas mora aqui — deixou de ser aba fixa.
           { path: '/perfil', element: <Perfil /> },
           { path: '/perfil/conquistas', element: <Conquistas /> },
+          { path: '/dieta/cozinha/:id', element: <Cozinha /> },
         ],
       },
     ],

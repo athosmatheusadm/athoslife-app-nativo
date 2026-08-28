@@ -29,8 +29,11 @@ Os primeiros passos foram os mais pensados; os próximos andam mais rápido.
 | Módulo | Decidido | Codado | Falta |
 |--------|:---:|:---:|------|
 | Scanner (captura por IA) | ✅ | ✅ domínio+dados | Tela de revisão (UI) |
-| Cozinha (25 receitas + Life-chef) | ✅ | ✅ código+SQL | Rodar SQL no Supabase; tela da Cozinha (UI) |
-| Água dedicada | ✅ | ✅ card+dados | Plugar na Home real |
+| Cozinha (25 receitas + Life-chef) | ✅ | ✅ embutida na tela da Dieta (não é mais aba separada), abaixo das refeições do dia, cards em fileira horizontal com selos de kcal/prot/carb + tempo (2026-08-28) | ⚠️ `db/athoslife_cozinha_tempo_preparo_migration.sql` (coluna `tempo_preparo_min`) ainda não rodou no Supabase — sem ela os cards funcionam normal, só sem o selo de tempo. "Life-chef" (IA) segue de propósito sem backend (`recipeAi.ts`), fora do escopo da tela |
+| Home (discos + painel único + streak + refeições + peso) | ✅ | ✅ | — (fiel ao mockup `athoslife-home-funcional.html`; revisada em 2026-08-24, sem dado falso em nenhum bloco) |
+| Água | ✅ | ✅ | Virou o próprio disco da Home (não é mais card separado) |
+| Dieta (acordeão por refeição) | ✅ | ✅ confirmado funcionando | Migrações `itens_refeicao`/`refeicoes_status` + `refeicoes_extra` rodaram com sucesso. "Extra" virou "refeições extras" livres (nome + posição), criadas pelo "+" da Home ou "+ Nova refeição" na Dieta, arrastáveis — testado ao vivo pelo usuário, confirmado funcionando |
+| Login (email/senha) | ✅ | ✅ | "Criar conta" adicionado em 2026-08-24. **Consentimento/Onboarding não têm nenhum redirecionamento automático** — se `consentimento_aceito`/`onboarding_completo` virarem `true` no banco enquanto o usuário já está na tela, ele fica preso lá até navegar manualmente pra `/home` (rota `/consentimento` fica fora do guard `RequireAuth`) |
 | Perfil + sub-páginas | ✅ | ✅ lista+tela | Conteúdo real das sub-páginas |
 | Notificações (regra fixa) | ✅ | ⬜ | Tela + push (FCM) |
 | Notificações inteligentes (Life) | ✅ (doc) | ⬜ | Pós-lançamento, de propósito |
@@ -40,9 +43,14 @@ Os primeiros passos foram os mais pensados; os próximos andam mais rápido.
 
 ## Ainda nem começamos (código)
 
-- Telas de tracking: Dieta, Treinos, Hábitos, Conquistas
-- Chat com a Life (tela)
-- Login + Onboarding + Consentimento reais (hoje são esqueleto)
+- Telas de tracking: Treinos, Hábitos, Conquistas (não auditadas em 2026-08-24 — Dieta saiu
+  desta lista porque já tem visual + navegação, mas ver linha própria acima: é fachada, não persiste dado)
+- Achievements/conquistas: `avaliar_conquistas()` só existe como decisão no
+  Postgres, nunca foi chamada pelo app (por isso o card de streak da Home
+  não mostra "próximo nível" — sem RPC ligada, o número seria inventado)
+- Chat com a Life (tela) — decisão de arquitetura: a construir junto com o
+  agregador de contexto (água/humor/refeições/peso/passos), não isolado
+- Onboarding + Consentimento reais (hoje são esqueleto — Login já é real)
 - Google Play Billing (venda de assinatura)
 - Push notifications (FCM) + botão físico já feito
 - Primeiro .aab assinado + Play Console
@@ -58,3 +66,7 @@ botão destacado no canto.
 1. Google Play Billing (regras da Google, chato).
 2. Modo resgate (push + WhatsApp, várias peças conversando).
 3. Primeiro .aab de pé (quando a teoria vira app instalável).
+4. ⚠️ **"Confirm email" está DESLIGADO no Supabase Auth** (Authentication →
+   Providers → Email) desde 2026-08-24, só pra destravar teste de login local.
+   **Tem que reativar antes de qualquer coisa ir pra produção/Play Store** —
+   hoje qualquer email, mesmo inventado, consegue criar conta e logar na hora.

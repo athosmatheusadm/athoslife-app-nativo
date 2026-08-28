@@ -56,7 +56,6 @@ export function EmotionalCheckin() {
     <div className="mx-4 mb-3 flex items-center gap-2.5 rounded-2xl border border-surface-4 border-l-[3px] border-l-accent-recaida bg-surface-2 px-3.5 py-2.5">
       {estado.fase === 'perguntar' ? (
         <>
-          <span className="text-base">🤔</span>
           <span className="flex-1 text-micro font-semibold text-content-mid">
             Como você está hoje?
           </span>

@@ -18,9 +18,14 @@ export interface ItemRefeicao extends Macros {
 }
 
 export interface Refeicao {
+  /** Identifica a linha de forma única: `tipo` sozinho pros 4 fixos, ou o id real da extra (várias compartilham tipo='extra'). */
+  readonly chave: string
+  /** null pros 4 tipos fixos; id real em `refeicoes_extra` quando é uma refeição extra. */
+  readonly id: string | null
   readonly tipo: TipoRefeicao
   readonly nome: string
   readonly emoji: string
+  readonly ordem: number
   readonly itens: readonly ItemRefeicao[]
   readonly concluida: boolean
 }

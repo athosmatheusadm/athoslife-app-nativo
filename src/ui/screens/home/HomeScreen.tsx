@@ -1,8 +1,8 @@
 import { useSession } from '@app/SessionProvider'
 import { TodayActivity } from './TodayActivity'
+import { StreakCard } from './StreakCard'
 import { MealCards } from './MealCards'
 import { EmotionalCheckin } from './EmotionalCheckin'
-import { WaterCard } from '@ui/screens/water/WaterCard'
 import { WeightCard } from '@ui/screens/weight/WeightCard'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
@@ -24,31 +24,24 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
 
   return (
     <main className="space-y-4 px-4 pb-24 pt-safe-t">
-      {/* Header: marca + streak */}
+      {/* Header: só a marca — o streak agora tem card próprio, mais abaixo. */}
       <header className="flex items-center justify-between pt-3">
         <h1 className="text-2xl font-bold text-content-hi">
           ATHOS<span className="font-semibold text-brand">life</span>
         </h1>
-        <span className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-pill border border-surface-4 bg-surface-2 px-3 py-1.5">
-            <span className="text-lg">🔥</span>
-            <span className="text-sm font-bold text-content-hi">{profile.streakAtual}</span>
-            <span className="text-micro text-content-low">dias</span>
-          </span>
-          <ProfileAvatar />
-        </span>
+        <ProfileAvatar />
       </header>
 
       <EmotionalCheckin />
 
       <TodayActivity metas={profile.metas} />
 
-      <MealCards
-        refeicoes={[]}
-        onAbrir={(tipo: TipoRefeicao) => onNavigate(`/dieta?refeicao=${tipo}`)}
-      />
+      <StreakCard streakAtual={profile.streakAtual} maiorStreak={profile.maiorStreak} />
 
-      <WaterCard metaMl={profile.metas.aguaMl} />
+      <MealCards
+        onAbrir={(tipo: TipoRefeicao) => onNavigate(`/dieta?refeicao=${tipo}`)}
+        onCriarNovaRefeicao={() => onNavigate('/dieta?novaExtra=1')}
+      />
 
       <WeightCard objetivoPerder={objetivoPerder} />
     </main>

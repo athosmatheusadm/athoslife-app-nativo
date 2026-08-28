@@ -84,4 +84,16 @@ export const profileRepository = {
       .eq('id', (await supabase.auth.getUser()).data.user?.id ?? '')
     if (error) throw error
   },
+
+  /** Atualiza a meta diária de água (litros escolhidos no painel do disco). */
+  async atualizarMetaAgua(metaMl: number): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ agua_meta_ml: metaMl })
+      .eq('id', userId)
+    if (error) throw error
+  },
 }

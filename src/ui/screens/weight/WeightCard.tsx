@@ -40,8 +40,9 @@ export function WeightCard({ objetivoPerder = true }: { objetivoPerder?: boolean
   }
 
   const temDados = resumo && resumo.registros.length > 0
-  const path = temDados ? gerarPathPeso(resumo!.registros) : null
+  const path = gerarPathPeso(resumo?.registros ?? [])
   const cor = resumo ? corVariacao(resumo.variacao, objetivoPerder) : 'neutral'
+  const corLinha = path.temPonto ? '#22c55e' : '#3f3f46'
 
   return (
     <section className="rounded-card border border-surface-4 bg-surface-2 p-5">
@@ -64,36 +65,41 @@ export function WeightCard({ objetivoPerder = true }: { objetivoPerder?: boolean
         )}
       </div>
 
-      {/* Gráfico — idêntico ao PWA, dados reais */}
-      {path ? (
-        <svg
-          className="my-4 h-12 w-full"
-          viewBox="0 0 320 48"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="pesoGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path d={path.area} fill="url(#pesoGrad)" />
-          <path
-            d={path.linha}
-            fill="none"
-            stroke="#22c55e"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <circle cx={path.fimX} cy={path.fimY} r="3" fill="#22c55e" />
-          <circle cx={path.fimX} cy={path.fimY} r="3" fill="#22c55e" opacity="0.3">
-            <animate attributeName="r" from="3" to="8" dur="1.5s" repeatCount="indefinite" />
-            <animate attributeName="opacity" from="0.3" to="0" dur="1.5s" repeatCount="indefinite" />
-          </circle>
-        </svg>
-      ) : (
-        <p className="my-6 text-center text-micro text-content-low">
+      {/* Gráfico — sempre presente (linha reta cinza como placeholder até
+          existir dado de verdade), idêntico ao PWA quando já tem histórico. */}
+      <svg
+        className="my-4 h-12 w-full"
+        viewBox="0 0 320 48"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="pesoGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={corLinha} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={corLinha} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={path.area} fill="url(#pesoGrad)" />
+        <path
+          d={path.linha}
+          fill="none"
+          stroke={corLinha}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={path.temPonto ? undefined : '4 4'}
+        />
+        {path.temPonto && (
+          <>
+            <circle cx={path.fimX} cy={path.fimY} r="3" fill={corLinha} />
+            <circle cx={path.fimX} cy={path.fimY} r="3" fill={corLinha} opacity="0.3">
+              <animate attributeName="r" from="3" to="8" dur="1.5s" repeatCount="indefinite" />
+              <animate attributeName="opacity" from="0.3" to="0" dur="1.5s" repeatCount="indefinite" />
+            </circle>
+          </>
+        )}
+      </svg>
+      {!temDados && (
+        <p className="mb-3 text-center text-micro text-content-low">
           Registre seu peso alguns dias e sua evolução aparece aqui. 📈
         </p>
       )}

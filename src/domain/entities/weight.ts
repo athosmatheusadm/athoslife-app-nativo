@@ -49,14 +49,25 @@ export function corVariacao(
  * (o mesmo do PWA). Normaliza os valores entre min e max com uma margem,
  * para a linha nunca colar no topo/base.
  *
+ * Sempre devolve um traçado — mesmo sem registro nenhum ou com só um —
+ * pra o card nunca aparecer "vazio" na primeira abertura do app. Com
+ * menos de 2 pontos não dá pra desenhar curva de verdade, então a linha
+ * fica reta (placeholder); `temPonto` diz se já existe algum dado real
+ * pra colorir a linha e mostrar o círculo pulsante da ponta.
+ *
  * Devolve também o último ponto, para o círculo pulsante da ponta.
  */
 export function gerarPathPeso(
   registros: readonly RegistroPeso[],
   largura = 320,
   altura = 48,
-): { linha: string; area: string; fimX: number; fimY: number } | null {
-  if (registros.length < 2) return null
+): { linha: string; area: string; fimX: number; fimY: number; temPonto: boolean } {
+  if (registros.length < 2) {
+    const y = altura / 2
+    const linha = `M0,${y} L${largura},${y}`
+    const area = `${linha} L${largura},${altura} L0,${altura}Z`
+    return { linha, area, fimX: largura, fimY: y, temPonto: registros.length === 1 }
+  }
 
   const pesos = registros.map((r) => r.pesoKg)
   const min = Math.min(...pesos)
@@ -88,5 +99,5 @@ export function gerarPathPeso(
 
   const fim = pontos[pontos.length - 1]!
   const area = `${linha} L${largura},${altura} L0,${altura}Z`
-  return { linha, area, fimX: fim.x, fimY: fim.y }
+  return { linha, area, fimX: fim.x, fimY: fim.y, temPonto: true }
 }

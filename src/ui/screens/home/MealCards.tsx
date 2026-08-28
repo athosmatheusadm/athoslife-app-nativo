@@ -1,4 +1,5 @@
-import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
+import { useEffect, useState } from 'react'
+import { refeicoesRepository, type TipoRefeicao } from '@data/repositories/refeicoesRepository'
 import cafeImg from '@/assets/refeicoes/refeicao-cafe.png'
 import almocoImg from '@/assets/refeicoes/refeicao-almoco.png'
 import lancheImg from '@/assets/refeicoes/refeicao-lanche.png'
@@ -10,13 +11,8 @@ import jantarImg from '@/assets/refeicoes/refeicao-jantar.png'
  * cada tipo tem sua imagem fixa, decisão de produto.
  */
 
-interface RefeicaoResumo {
-  readonly tipo: TipoRefeicao
-  readonly kcal: number | null
-}
-
 const VISUAL: Record<TipoRefeicao, { nome: string; img: string | null }> = {
-  cafe: { nome: 'Café da manhã', img: cafeImg },
+  cafe: { nome: 'Café', img: cafeImg },
   almoco: { nome: 'Almoço', img: almocoImg },
   lanche: { nome: 'Lanche', img: lancheImg },
   jantar: { nome: 'Jantar', img: jantarImg },
@@ -26,10 +22,25 @@ const VISUAL: Record<TipoRefeicao, { nome: string; img: string | null }> = {
 const ORDEM: TipoRefeicao[] = ['cafe', 'almoco', 'lanche', 'jantar']
 
 export function MealCards(props: {
-  refeicoes: readonly RefeicaoResumo[]
   onAbrir: (tipo: TipoRefeicao) => void
+  /** "+" — cria uma refeição extra nova (Colação, Ceia, Pós-treino...) e leva pra Dieta já nela. */
+  onCriarNovaRefeicao: () => void
 }) {
-  const kcalPorTipo = new Map(props.refeicoes.map((r) => [r.tipo, r.kcal]))
+  const [kcalPorTipo, setKcalPorTipo] = useState<Map<TipoRefeicao, number>>(new Map())
+
+  useEffect(() => {
+    let ativo = true
+    void refeicoesRepository
+      .doDia()
+      .then((resumo) => {
+        if (!ativo) return
+        setKcalPorTipo(new Map(resumo.map((r) => [r.tipo, r.kcal])))
+      })
+      .catch(() => {})
+    return () => {
+      ativo = false
+    }
+  }, [])
 
   return (
     <section className="rounded-card border border-surface-4 bg-surface-2 p-4">
@@ -63,9 +74,9 @@ export function MealCards(props: {
           )
         })}
 
-        {/* Card de adicionar (jantar vazio na arte vira este +) */}
+        {/* Cria uma refeição extra nova (nome livre) e já leva pra ela na Dieta. */}
         <button
-          onClick={() => props.onAbrir('extra')}
+          onClick={props.onCriarNovaRefeicao}
           className="flex w-[84px] flex-none flex-col items-center gap-1.5"
         >
           <span className="flex h-20 w-20 items-center justify-center rounded-2xl border border-dashed border-surface-4 text-2xl text-brand">

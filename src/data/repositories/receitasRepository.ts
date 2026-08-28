@@ -10,6 +10,7 @@ interface ReceitaRow {
   categoria: string
   macros: { proteina?: number; carboidrato?: number; gordura?: number } | null
   kcal: number | null
+  tempo_preparo_min: number | null
   cor_tema: string | null
   premium: boolean | null
   destaque: boolean | null
@@ -37,6 +38,7 @@ function paraDominio(row: ReceitaRow): Omit<Receita, 'bloqueada' | 'favoritada'>
     subtitulo: row.subtitulo,
     categoria: row.categoria as CategoriaReceita,
     macros: macrosDe(row),
+    tempoPreparoMin: row.tempo_preparo_min ?? null,
     corTema: row.cor_tema ?? '#22c55e',
     premium: row.premium ?? false,
     destaque: row.destaque ?? false,

@@ -60,7 +60,7 @@ export const aguaRepository = {
 
     const { data, error } = await supabase
       .from('registros_agua')
-      .insert({ user_id: userId, quantidade_ml: quantidadeMl })
+      .insert({ user_id: userId, quantidade_ml: quantidadeMl, data: hojeISO() })
       .select('id, quantidade_ml, created_at')
       .single<RegistroRow>()
 
