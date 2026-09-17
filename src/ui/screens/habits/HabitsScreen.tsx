@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { HabitCard } from './HabitCard'
 import { CravingAssistant } from './CravingAssistant'
-import type { CaminhoVontade, Habito } from '@domain/entities/habito'
+import { AddHabitSheet } from './AddHabitSheet'
+import type { CaminhoVontade, Habito, IntensidadeHabito } from '@domain/entities/habito'
 
 /**
  * Tela "Meus Hábitos".
@@ -19,11 +20,16 @@ export function HabitsScreen(props: {
   insightIA: string | null
   onRegistrarTropeco: (habitoId: string) => void
   onEscolherCaminho: (habitoId: string, caminho: CaminhoVontade) => void
-  onAdicionar: () => void
+  onCriarHabito: (params: {
+    nome: string
+    categoria: string | null
+    intensidade: IntensidadeHabito
+  }) => Promise<void>
   onAbrirChat: () => void
 }) {
   const { habitos, maiorStreak } = props
   const [vontadeDe, setVontadeDe] = useState<Habito | null>(null)
+  const [mostrarAdicionar, setMostrarAdicionar] = useState(false)
 
   return (
     <main className="space-y-4 px-4 pb-24 pt-safe-t">
@@ -73,7 +79,7 @@ export function HabitsScreen(props: {
 
       {/* Adicionar novo hábito */}
       <button
-        onClick={props.onAdicionar}
+        onClick={() => setMostrarAdicionar(true)}
         className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-brand/40 p-4 text-left"
       >
         <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-surface-3 text-2xl text-brand">+</span>
@@ -92,6 +98,17 @@ export function HabitsScreen(props: {
             setVontadeDe(null)
           }}
           onFechar={() => setVontadeDe(null)}
+        />
+      )}
+
+      {/* Novo hábito — mesmo padrão de painel do assistente da vontade */}
+      {mostrarAdicionar && (
+        <AddHabitSheet
+          onSalvar={async (params) => {
+            await props.onCriarHabito(params)
+            setMostrarAdicionar(false)
+          }}
+          onFechar={() => setMostrarAdicionar(false)}
         />
       )}
     </main>

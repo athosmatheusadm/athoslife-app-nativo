@@ -90,7 +90,13 @@ function PorcaoInline(props: {
   return (
     <div className="mt-3 border-t border-surface-3 pt-3">
       <div className="mb-2 flex items-center gap-2">
-        <button onClick={props.onVoltar} aria-label="Voltar" className="text-content-dim">‹</button>
+        <button
+          onClick={props.onVoltar}
+          aria-label="Voltar (desistir deste alimento)"
+          className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-surface-4 text-2xl leading-none text-content-hi"
+        >
+          ‹
+        </button>
         <span className="flex-1 truncate text-sm font-semibold text-content-hi">{alimento.nome}</span>
         <span className="text-sm font-bold text-brand">{m.calorias} kcal</span>
       </div>

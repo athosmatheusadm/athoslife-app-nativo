@@ -31,8 +31,9 @@ export function Habitos() {
         // "Esperar 10 min" / "Alternativa" / "Já passou" são só do momento —
         // nada para persistir ainda (sem tabela de eventos de vontade).
       }}
-      onAdicionar={() => {
-        // Fluxo "Acompanhar novo hábito": próxima tela da fila.
+      onCriarHabito={async (params) => {
+        await habitosRepository.criar(params)
+        recarregar()
       }}
       onAbrirChat={() => {
         // Chat com a Life: tela ainda não construída (docs/STATUS.md).

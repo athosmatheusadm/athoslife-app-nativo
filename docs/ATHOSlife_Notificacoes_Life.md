@@ -63,3 +63,74 @@ Alarme dispara por relógio ("são 15h"). Companheiro dispara por evento
 ("você acabou de fechar o terceiro treino da semana"). A Life já tem o
 contexto — streak, dieta, hábitos — pra reparar nisso. É a diferença entre
 um alarme e alguém que percebeu.
+
+---
+
+## Pacote externo recebido (2026-09-02) — "Life Intelligence v2"
+
+O usuário recebeu de outra IA (GPT) um pacote pronto pra essa mesma ideia:
+`ATHOSlife_Life_Intelligence_v2.zip` (migration + `ai-proxy/index.ts` novo +
+`README_DEPLOY.md`), mais dois arquivos soltos que vieram antes e **não têm
+código real** (`ATHOSlife_Life_Intelligence_Upgrade_v1.zip`/`.md` e
+`MAPA_DE_SUBSTITUICAO.md` — o zip v1 é só uma cópia do `ai-proxy` atual sem
+nenhuma mudança, apesar do texto dizer o contrário). Só o v2 é o pacote real.
+
+**Revisado linha a linha nesta sessão, não implementado — combinado explicitamente
+que não é pra rodar agora.** Arquitetura confirmada como correta pro que está
+descrito acima (`life_events`/`life_memories`/`life_patterns` cobrem "lembrar
+e perceber padrão"; o gatilho por evento, não relógio, é o mesmo princípio
+do `relogio-athos` citado acima). Mas o pacote tem 4 problemas concretos que
+**bloqueiam** um deploy direto:
+
+1. **Bug real**: `handleVision` para de devolver `next_reset` no erro
+   `limit_reached` — `src/data/ai/aiProxy.ts:69` e
+   `src/data/ai/recipeAi.ts:60` dependem desse campo pra mostrar "próximo
+   scan libera às Xh". Quebra silenciosamente.
+2. **Regressão de personalidade no chat**: o `handleChat` novo troca o
+   system prompt específico do Life (limite de parágrafo/emoji, exemplos de
+   como puxar assunto, cuidado com "vício"/"recaída") por um prompt genérico
+   compartilhado com `life_decision`, e o bloco de contexto do chat deixa de
+   incluir hábitos/vícios/conquistas/check-in/passos. Vai na direção
+   contrária do que essa doc pede ("companheiro, não alarme").
+3. **Acoplamento novo e arriscado**: `handleChat` passa a depender de
+   `getLifeContext`, que consulta as 5 tabelas novas — se a migration falhar
+   ou uma dessas tabelas tiver problema, o **chat atual quebra junto**, não só
+   o recurso novo. Precisa tolerar falha parcial (ex.: `Promise.allSettled`)
+   antes de ir pra produção.
+4. **`life_push_outbox` criada mas não usada**: a migration cria a fila, o
+   README descreve ela como o mecanismo de entrega, mas `handleLifeDecision`
+   nunca escreve nela — o "outbox" não está de fato implementado.
+
+**Recomendação registrada**: não reescrever do zero — a base do pacote segue
+o mesmo padrão de isolamento do `ai-proxy` atual (handlers separados por
+`type`, RLS por dono) e reescrever tudo geraria mais código novo pra testar
+sem necessidade. Patch cirúrgico nos 4 pontos acima, revisado de novo antes
+de qualquer deploy.
+
+**Ordem de implementação combinada, quando chegar a hora** (ver
+[[reference_session_logs]] / `STATUS.md` pro estado atual de cada
+pré-requisito):
+
+- **Fase 0 — bloqueadores fora do código do Life** (nenhum existe hoje):
+  telas de Treinos e Hábitos (sem elas não tem `workout_*`/`habit_*`), push
+  básico (FCM/VAPID) funcionando, e o `relogio-athos`/scheduler agendado —
+  sem ele o Life só reage quando o app chama, nunca percebe ausência sozinho.
+- **Fase 1** — migration das 6 tabelas `life_*` (já vem pronta e correta no
+  pacote v2, aditiva, RLS por dono, policies idempotentes — reaproveitar
+  como está).
+- **Fase 2** — corrigir os 4 problemas acima no `ai-proxy` antes de tocar
+  em produção.
+- **Fase 3** — `lifeEventService.ts` no frontend, instrumentando só o que já
+  existe hoje (água, refeição, streak, scanner, check-in, abrir o app);
+  `workout_*`/`habit_*` ficam pra depois das telas existirem.
+- **Fase 4** — motor de padrões (`upsertPatternSignal`, já vem pronto e é
+  reaproveitável direto).
+- **Fase 5** — push de verdade: primeiro FCM/VAPID básico, só depois um
+  dispatcher lendo `life_push_outbox`.
+- **Fase 6** — o `relogio-athos`: função agendada varrendo usuários
+  inativos e disparando `life_decision` com `event_type: 'app_absent'` —
+  é essa peça que falta pro "perceber sozinho" descrito no topo desta doc.
+
+Arquivos do pacote ficam guardados na raiz do projeto
+(`ATHOSlife_Life_Intelligence_v2.zip` e os dois arquivos v1 sem código real)
+até essa fase chegar.

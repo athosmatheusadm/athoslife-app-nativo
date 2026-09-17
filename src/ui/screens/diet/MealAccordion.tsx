@@ -31,7 +31,6 @@ export function MealAccordion(props: {
   refeicao: Refeicao
   aberto: boolean
   buscaAberta: boolean
-  editando: boolean
   clonando: boolean
   /** Outras refeições do dia que já têm algum item — candidatas a "copiar de". */
   outrasRefeicoes: readonly { chave: string; nome: string }[]
@@ -40,7 +39,6 @@ export function MealAccordion(props: {
   onFecharBusca: () => void
   onAdicionarItem: (item: ItemRefeicao) => void
   onRemoverItem: (itemId: string) => void
-  onEditar: () => void
   onExcluir: () => void
   onToggleConcluida: () => void
   onAbrirClonar: () => void
@@ -53,9 +51,13 @@ export function MealAccordion(props: {
   /** Só definido pra refeições extras (as únicas arrastáveis) — liga o ícone de handle ao dnd-kit. */
   dragHandleProps?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners } | null
 }) {
-  const { refeicao, aberto, editando } = props
+  const { refeicao, aberto } = props
   const macros = macrosRefeicao(refeicao.itens)
   const totalKcal = macros.calorias
+  // Toque 1 no item seleciona (mostra o 🗑), toque 2 (no 🗑) exclui — mesmo
+  // padrão de dois toques do ExerciseCard do Treino, sem precisar de um modo
+  // "editar refeição" à parte.
+  const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(null)
 
   return (
     <div className="overflow-hidden rounded-2xl border border-surface-4 bg-surface-2">
@@ -138,27 +140,42 @@ export function MealAccordion(props: {
               />
             )}
 
-            {/* Lista de alimentos */}
+            {/* Lista de alimentos — toca no item pra selecionar (mostra o
+                🗑), toca no 🗑 pra excluir só aquele alimento. */}
             <ul className="border-t border-surface-3 pt-2">
-              {refeicao.itens.map((item) => (
-                <li key={item.id} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="flex-1 text-content-hi">{item.nome}</span>
-                  <span className="text-content-low">{item.quantidade}</span>
-                  <span className="w-16 text-right font-medium text-content-mid">
-                    {item.calorias} kcal
-                  </span>
-                  {editando && (
+              {refeicao.itens.map((item) => {
+                const selecionado = itemSelecionadoId === item.id
+                return (
+                  <li key={item.id} className="flex items-center gap-2 py-2 text-sm">
                     <button
                       type="button"
-                      onClick={() => props.onRemoverItem(item.id)}
-                      aria-label={`Remover ${item.nome}`}
-                      className="flex-none text-accent-danger"
+                      onClick={() =>
+                        setItemSelecionadoId((atual) => (atual === item.id ? null : item.id))
+                      }
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
                     >
-                      ✕
+                      <span className="min-w-0 flex-1 truncate text-content-hi">{item.nome}</span>
+                      <span className="flex-none text-content-low">{item.quantidade}</span>
+                      <span className="w-16 flex-none text-right font-medium text-content-mid">
+                        {item.calorias} kcal
+                      </span>
                     </button>
-                  )}
-                </li>
-              ))}
+                    {selecionado && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          props.onRemoverItem(item.id)
+                          setItemSelecionadoId(null)
+                        }}
+                        aria-label={`Excluir ${item.nome}`}
+                        className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-accent-danger/40 text-lg text-accent-danger"
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </li>
+                )
+              })}
               {refeicao.itens.length === 0 && (
                 <li className="py-3 text-center text-micro text-content-low">
                   Nenhum alimento ainda. Que tal começar?
@@ -223,24 +240,13 @@ export function MealAccordion(props: {
                 >
                   ⧉ Copiar de outra refeição
                 </button>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={props.onEditar}
-                    className={`flex-1 rounded-xl border py-2.5 text-micro font-medium transition-colors active:bg-white/5 ${
-                      editando ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
-                    }`}
-                  >
-                    {editando ? '✓ Concluir edição' : '✎ Editar refeição'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={props.onExcluir}
-                    className="flex-1 rounded-xl border border-surface-4 py-2.5 text-micro font-medium text-accent-danger transition-colors active:bg-accent-danger/10"
-                  >
-                    🗑 Excluir refeição
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={props.onExcluir}
+                  className="mt-2 w-full rounded-xl border border-surface-4 py-2.5 text-micro font-medium text-accent-danger transition-colors active:bg-accent-danger/10"
+                >
+                  🗑 Excluir refeição inteira
+                </button>
               </>
             )}
           </div>

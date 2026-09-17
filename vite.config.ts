@@ -13,6 +13,6 @@ export default defineConfig({
       '@app': fileURLToPath(new URL('./src/app', import.meta.url)),
     },
   },
-  server: { host: true, port: 5173 },
+  server: { host: true, port: 5173, watch: { usePolling: true, interval: 300 } },
   build: { outDir: 'dist', sourcemap: false, target: 'es2022' },
 })

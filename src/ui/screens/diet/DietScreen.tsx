@@ -72,7 +72,6 @@ export function DietScreen(props: {
   const [abertaChave, setAbertaChave] = useState<string | null>(props.abrirRefeicao ?? 'cafe')
   const [buscaChave, setBuscaChave] = useState<string | null>(null)
   const [clonandoChave, setClonandoChave] = useState<string | null>(null)
-  const [editandoChave, setEditandoChave] = useState<string | null>(null)
 
   const tira = useMemo(() => gerarTiraDias(), [])
   const [diaSel, setDiaSel] = useState<Date>(() => new Date())
@@ -185,7 +184,6 @@ export function DietScreen(props: {
       if (!window.confirm('Excluir todos os alimentos desta refeição hoje?')) return
       await itensRefeicaoRepository.removerTodosDoTipo(r.tipo as TipoFixo, diaSel)
     }
-    setEditandoChave(null)
     await carregarDia(diaSel)
   }
 
@@ -314,7 +312,6 @@ export function DietScreen(props: {
                       refeicao={r}
                       aberto={abertaChave === r.chave}
                       buscaAberta={buscaChave === r.chave}
-                      editando={editandoChave === r.chave}
                       clonando={clonandoChave === r.chave}
                       outrasRefeicoes={outras.map((x) => ({ chave: x.chave, nome: x.nome }))}
                       dragHandleProps={handle}
@@ -322,7 +319,6 @@ export function DietScreen(props: {
                         setAbertaChave((atual) => (atual === r.chave ? null : r.chave))
                         setBuscaChave(null)
                         setClonandoChave(null)
-                        setEditandoChave(null)
                       }}
                       onAbrirBusca={() => {
                         setBuscaChave(r.chave)
@@ -331,7 +327,6 @@ export function DietScreen(props: {
                       onFecharBusca={() => setBuscaChave(null)}
                       onAdicionarItem={(item) => void adicionarItem(r, item)}
                       onRemoverItem={(itemId) => void removerItem(itemId)}
-                      onEditar={() => setEditandoChave((atual) => (atual === r.chave ? null : r.chave))}
                       onExcluir={() => void excluirRefeicao(r)}
                       onToggleConcluida={() => void alternarConcluida(r)}
                       onAbrirClonar={() => {

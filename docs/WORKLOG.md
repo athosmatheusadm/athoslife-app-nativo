@@ -362,3 +362,372 @@ quando fechar um bloco de trabalho, sobe tudo com um commit + push só.
   imagem de referência (`WhatsApp Image 2026-08-27...jpeg`, usada só pra
   desenhar os cards da Cozinha) ficou de propósito fora do commit — não é
   asset do app.
+
+## 2026-08-28
+
+- Sessão curta: recuperado contexto da sessão anterior (STATUS.md +
+  WORKLOG.md + `git status`) e subido o servidor Vite local (`npm run dev
+  -- --host`, porta 5173) só pra o usuário olhar o app rodando.
+- `git status` confirmado: branch `main` está **3 commits à frente** do
+  `origin/main` (inclui `a5c02ea`, que já registrava esse push pendente).
+  Nenhum push feito ainda nesta sessão.
+- **Usuário sinalizou 3 itens pra próxima sessão, nesta ordem:**
+  1. Fazer o **push pro GitHub** de tudo que já está commitado localmente
+     (os 3 commits pendentes).
+  2. Rodar um **SQL novo com ~1500 alimentos** que o usuário já preparou
+     por conta própria (expande a base `alimentos`, hoje rala — ver
+     WORKLOG 2026-08-25). Ainda não recebido/revisado nesta sessão.
+  3. Começar a **tela de Treinos** — usuário está preparando conteúdo
+     visual + mini-animações pra trazer como referência (mesmo padrão já
+     usado pra Home e Cozinha: manda referência, aí desenha o plano).
+     Treinos hoje está só listado em "Ainda nem começamos (código)" no
+     `STATUS.md` — nenhuma tela real existe.
+- Sessão encerrada a pedido do usuário (ia desligar o PC). Servidor Vite
+  local ficou rodando em segundo plano; precisa subir de novo na próxima
+  sessão (`npm run dev -- --host`).
+
+## 2026-09-02
+
+- **Supabase MCP conectado com sucesso** (leitura+escrita, projeto
+  `gsdwsxwbmxcvutpvpkyi`) — Claude passou a ter acesso direto ao banco via
+  ferramentas `mcp__supabase__*`, não só a chave anônima. Nota: `claude mcp
+  list` não lista esse servidor mesmo funcionando — checar pela presença
+  das ferramentas, não por esse comando.
+- Confirmado (fora de sessão, entre a última e esta) que os 3 commits
+  pendentes do WORKLOG de 2026-08-28 **já foram enviados pro GitHub** —
+  `main` está atualizado com `origin/main`.
+- **Corrigido problema de segurança real**: `public.fundador_vagas` estava
+  com RLS desligado (exposta a leitura/escrita por qualquer um com a chave
+  anônima). Tabela é só um contador singleton (`total_vagas`/`vagas_usadas`)
+  sem nenhum código no app usando ela ainda. Corrigido manualmente pelo
+  usuário no SQL Editor do Supabase (o MCP tentou `apply_migration` e
+  `execute_sql`, mas o classificador do modo Auto do Claude Code bloqueou
+  as duas chamadas de escrita — sem prompt de confirmação aparecendo nesse
+  modo): RLS ligado + policy de leitura pública pra `anon`/`authenticated`,
+  sem policy de escrita. Confirmado via `list_tables` depois: `rls_enabled:
+  true`.
+- **Revisão de 3 arquivos que o usuário recebeu de outra IA (GPT)**,
+  pensando em deixar o Life mais adaptativo/proativo — detalhe completo e
+  plano de fases salvos em `docs/ATHOSlife_Notificacoes_Life.md` (seção
+  "Pacote externo recebido"). Resumo: dois dos arquivos (v1) eram só o
+  documento de design, sem nenhum código novo de verdade (o zip continha
+  uma cópia idêntica do `ai-proxy` atual). Um terceiro zip, esquecido pelo
+  usuário e subido depois (`ATHOSlife_Life_Intelligence_v2.zip`), é o
+  pacote real — migration + `ai-proxy/index.ts` novo. Revisado linha por
+  linha, achados 4 problemas concretos (bug no `next_reset` do limite de
+  scan, regressão de personalidade no chat, chat acoplado às tabelas novas
+  sem tolerância a falha, fila `life_push_outbox` criada mas nunca usada).
+  **Nada disso foi implementado** — combinado explicitamente que é só
+  planejamento por enquanto, guardado pra quando Treinos/Hábitos/push
+  básico existirem.
+- Pendências que continuam de sessões anteriores, ainda não retomadas
+  nesta sessão: SQL de ~1500 alimentos (arquivo já está no projeto, tabela
+  `alimentos` confirmada com 0 linhas no Supabase), e a tela de Treinos
+  (usuário ainda preparando o pacote de artes/mini-animações de
+  referência — não chegou a subir nesta sessão).
+- Sessão encerrada a pedido do usuário (ia desligar o PC).
+
+## 2026-09-08
+
+- **Banco de ~1500 alimentos confirmado rodando** — sessão anterior não
+  documentada (usuário desligou o PC sem salvar contexto) já tinha rodado o
+  SQL. Confirmado agora direto no Supabase: `public.alimentos` com 1506
+  linhas reais (antes o WORKLOG dizia 0 — estava desatualizado, não o banco).
+- **Migração `tempo_preparo_min` da Cozinha rodada com sucesso** (usuário
+  colou o `.sql` manualmente no SQL Editor, já era pendência de 2026-08-27).
+  Confirmado direto no banco: as 25 receitas com tempo preenchido, nenhuma
+  nula. Selo de tempo de preparo já deve aparecer nos cards da Cozinha.
+- **Tela de Treino construída do zero** — usuário mandou mockup de
+  referência (6 telas) com um modelo diferente do código antigo: em vez de
+  "Local → Treino nomeado (Peito/Costas) → Exercícios", virou
+  **"Local → Dia da semana (Seg..Dom, com 'Hoje' destacado) → Exercícios do
+  dia"**. O código antigo (`treino.ts`/`treinoRepository.ts`/
+  `WorkoutScreen.tsx`, do commit inicial do projeto) nunca teve as tabelas
+  rodadas no Supabase (`db/athoslife_treinos_v2.sql` nunca foi aplicada) —
+  então trocar o modelo não teve nenhum dado real em risco.
+  - **36 exercícios de catálogo** vieram de 12 imagens de referência do
+    usuário (zip `WhatsApp Unknown 2026-09-08 at 12.10.05.zip`, 3 exercícios
+    por imagem: diagrama de músculo + foto INÍCIO + foto EXECUÇÃO). Cortadas
+    via script (`sharp`, detecção automática das frestas pretas entre as
+    caixas — corte por coordenada fixa não funcionava porque a altura de
+    cada caixa varia com o tamanho da legenda). As 36 imagens finais
+    (diagrama+início+execução juntos, como o usuário pediu, ~1MB no total)
+    foram salvas em `public/exercicios/<slug>.jpg` — asset estático do
+    app, não Supabase Storage (catálogo pequeno e curado, mesmo raciocínio
+    dos ícones SVG que já existiam; evita todo o problema de permissão de
+    upload que teríamos sem uma service role key).
+  - Nova migração `db/athoslife_treinos_catalogo_v3.sql`: tabela
+    `exercicios_catalogo` (conteúdo curado, RLS só leitura autenticada,
+    igual `receitas_cozinha`) + tabela `treino_plano` (atribuição pessoal
+    por local+dia_semana+exercício, RLS pessoal, igual `itens_refeicao`) +
+    seed dos 36 exercícios. **Ainda não rodada no Supabase** — o MCP tentou
+    `apply_migration` e foi bloqueado pelo classificador do modo Auto (sem
+    prompt de confirmação, mesma limitação já vista em 2026-09-02 e nesta
+    mesma sessão com a migração da Cozinha) — precisa ser colada manualmente
+    no SQL Editor. **Primeira coisa da próxima sessão: confirmar que rodou.**
+  - Código novo: `domain/entities/treino.ts` reescrito (catálogo +
+    atribuição pessoal, sem mais "Treino nomeado"),
+    `exercicioCatalogoRepository.ts` e `treinoPlanoRepository.ts` novos
+    (substituindo `treinoRepository.ts`, removido), `WorkoutScreen.tsx`
+    reescrito (toggle Casa/Academia + tira de dias da semana com data real
+    calculada no cliente + "Hoje" destacado), `ExerciseCard.tsx` novo
+    (fechado: miniatura+nome+séries×reps; expandido: foto grande com
+    diagrama já embutido na mesma imagem + "Como executar" + séries/reps
+    editáveis com steppers −/+ + excluir), `AddExercisePanel.tsx` novo
+    (busca + chips de grupo muscular calculados a partir do catálogo
+    carregado — nunca mostra filtro vazio —, mesma pegada visual do
+    `FoodSearchScreen.tsx` da Dieta). `AddExerciseDrawer.tsx` antigo
+    removido.
+  - Grupo muscular ganhou categorias novas além das 4 do mockup
+    (Peito/Costas/Pernas/Braços): `ombro`, `gluteos`, `panturrilha`,
+    `lombar` — os 36 exercícios reais cobrem essas áreas e não fazia
+    sentido forçar tudo em só 4 categorias. "Braços" fica sem exercício
+    nenhum por enquanto (nenhuma das 12 imagens tinha bíceps/tríceps
+    isolado) — filtro não quebra, só fica vazio até o usuário mandar mais.
+  - `ambientes` (quais exercícios aparecem em casa vs. academia) foi
+    decidido por mim com base no equipamento visível nas fotos (barra/
+    máquina = só academia; halteres sem banco = casa+academia; peso do
+    corpo = casa+academia) — é um chute razoável, não confirmado com o
+    usuário exercício por exercício. Editável depois.
+  - `npm run tsc --noEmit` e `npm run build` limpos. Não foi possível testar
+    visualmente neste ambiente (Playwright headless sem libs de sistema,
+    precisa de `sudo` interativo que não rodou) — mesma limitação de
+    sessões anteriores. **Usuário precisa confirmar rodando `npm run dev`
+    na própria máquina.**
+- Pendências pra próxima sessão: rodar `athoslife_treinos_catalogo_v3.sql`
+  manualmente no Supabase (bloqueante — sem isso a tela de Treino não
+  carrega nada), testar visualmente o fluxo completo (trocar local, trocar
+  dia, adicionar exercício, expandir card, editar séries/reps, excluir).
+  Push do trabalho desta sessão ainda não foi feito (usuário decide quando).
+- **Migração rodada, feedback do usuário depois de testar de verdade** (3
+  pontos): miniaturas ruins, botão "Concluir" de sair do painel de adicionar
+  nunca aparecia (ele usava o "×" sempre), e o check de concluído marcava
+  mas não desmarcava.
+  - **Miniaturas corrigidas**: antes eu espremia a imagem larga (diagrama+
+    início+execução, pensada pra tela expandida) num quadrado de 56px, ficava
+    ilegível. Novo script (`build_thumbs.mjs`, mesma técnica de detecção de
+    fresta preta) gera um recorte quadrado dedicado só na foto de execução,
+    36 arquivos `public/exercicios/<slug>-thumb.jpg` novos. Helper
+    `imagemMiniatura()` em `treino.ts` deriva o nome do arquivo. **Usuário
+    disse que vai cuidar da qualidade de imagem por conta própria daqui pra
+    frente** — não é mais pauta minha.
+  - **Bug de CSS real encontrado no botão "Concluir"**: `AddExercisePanel`
+    usava `h-full` (a mesma receita do `FoodSearchScreen` da Dieta), mas o
+    `AppShell` que envolve todas as abas usa `min-h-full` no wrapper, não
+    `h-full` — altura em porcentagem não se propaga por um ancestral sem
+    altura definida. Resultado: o painel nunca vira "tela cheia com rolagem
+    interna" de verdade, a lista de 36 exercícios só empurra a página pra
+    baixo, e o botão "Concluir" (e possivelmente o fim da lista) ficava
+    escondido bem lá embaixo, atrás da `BottomNav` (que é `fixed`).
+    Corrigido trocando pra `fixed inset-0` (tela cheia real, ignora a cadeia
+    de altura do pai, cobre a `BottomNav`). **`FoodSearchScreen.tsx` da
+    Dieta provavelmente tem o mesmo problema latente** (não notado lá
+    porque não tem botão fixo no rodapé) — não mexi nele, fora do escopo
+    pedido, mas fica registrado pra quando for notado por lá também.
+  - **Check de concluído (marca e não desmarca)**: revisado o código com
+    calma (repositório, estado otimista, RLS) e não achei nenhuma
+    assimetria — a lógica trata marcar/desmarcar exatamente igual. Minha
+    hipótese é que o usuário estava vendo a mesma versão travada pelo bug
+    do CSS acima (o app inteiro ficava com rolagem estranha). **Não
+    confirmado ainda — próxima sessão: confirmar se ainda acontece depois
+    do fix do CSS**, com o usuário testando via `npm run dev` direto no
+    Windows (não mais pela ponte WSL↔Windows, que já causou confusão de
+    "localhost não funciona" nesta sessão).
+  - `tsc --noEmit` limpo depois do fix. Não testado visualmente por mim
+    (Playwright headless trava sem erro neste ambiente, tentativa abandonada
+    depois de instalar as libs via `apt-get download` sem sudo — funcionou
+    baixar, mas o Chromium trava no lançamento mesmo assim).
+- **Usuário pediu pra rodar `npm run dev` direto no Windows (não mais pela
+  ponte WSL↔Windows) e reportou "não rodou, tá bugado ainda"** — sessão
+  encerrada por precisar desligar o PC antes de detalhar se foi o
+  `npm run dev` que falhou de cara ou se rodou e os bugs de UI persistiram.
+  **Suspeita forte, a investigar primeiro na próxima sessão**: nesta mesma
+  sessão eu rodei `npm install` **dentro do WSL** (Node via nvm,
+  `v24.20.0`) pra corrigir o erro `Cannot find module
+  @rollup/rollup-linux-x64-gnu` — isso reescreveu `node_modules` com
+  binários nativos (rollup/esbuild) **compilados pra Linux**. Se o usuário
+  rodou `npm run dev` com o Node/npm **do Windows** (não WSL) em cima
+  desse `node_modules` linux-only, o binário nativo do rollup não existe
+  pra Windows nele e o `vite build`/`dev` provavelmente falha na hora —
+  seria o oposto do problema original de 2026-08-27 (lá o `node_modules`
+  era Windows-only rodando por engano com Node do WSL; agora pode ter
+  virado Linux-only rodando por engano com Node do Windows). **Primeira
+  coisa a checar**: se for isso, rodar `npm install` de novo, mas dessa vez
+  com o Node/npm do Windows (`node -v`/`where node` no PowerShell pra
+  confirmar qual está sendo usado), ou manter todo mundo testando só pelo
+  lado WSL (`http://localhost:5173`/IP que eu deixo rodando) até decidir
+  um único ambiente fixo pra isso, em vez de alternar.
+- Sessão encerrada a pedido do usuário (precisou desligar o PC). Nenhum
+  commit/push feito nesta sessão — fica tudo como está no working tree pra
+  revisar na próxima (`git status` vai mostrar bastante coisa: migrações
+  novas em `db/`, código novo/reescrito de Treino, `public/exercicios/`
+  com 72 arquivos novos — 36 imagens + 36 miniaturas —, e os ajustes de
+  WORKLOG/STATUS).
+
+## 2026-09-13
+
+- **Sessão anterior caiu sozinha** no meio de uma conversa sobre "a Life e
+  seus estados" (o personagem/companheiro reativo — atleta no Treino, chef
+  na Dieta, hidratado/seco na Água, roxo preocupado quando falha um hábito,
+  some depois de 8s parado, pensa quando o usuário escreve). Nada disso
+  tinha virado arquivo ainda, então não tinha como recuperar o conteúdo
+  exato — retomado do zero nesta sessão.
+- **Decisão de arquitetura da Life (não implementada ainda, só decidida)**:
+  usuário temia que tantos estados/animações por tela pudessem forçar uma
+  migração de Capacitor pra React Native. Avaliado e descartado — Capacitor
+  é só uma WebView, o gargalo de performance seria layout thrashing/
+  re-render, não "ser web"; o projeto já tem `lottie-react` instalado como
+  dependência, sinal de que essa já era a ideia. Reescrever em React Native
+  agora jogaria fora Home/Dieta/Treino/Cozinha já codados só por um medo de
+  performance que a stack atual já foi montada pra suportar. Combinado:
+  manter Capacitor, construir a Life como um componente global único
+  (overlay fixo + estado central tipo `lifeStateStore` atualizado por cada
+  tela), animações via Lottie pros humores + timer de 8s pro sumiço por
+  inatividade. **Ainda não construído** — só a decisão ficou registrada
+  aqui pra quando chegar a vez.
+- **Bug real corrigido na Dieta**: não dava pra excluir um alimento errado
+  de uma refeição sem apagar a refeição inteira — o `✕` por item
+  (`MealAccordion.tsx`) já existia no código, mas ficava escondido atrás de
+  um modo "✎ Editar refeição" que precisava ser ativado antes, e o usuário
+  nunca tinha achado esse botão. Trocado pelo mesmo padrão de dois toques
+  do `ExerciseCard` do Treino: toca no alimento da lista → aparece um 🗑 só
+  dele → toca no 🗑 → exclui. Removido o modo "editar refeição" inteiro
+  (`editandoChave`/`onEditar` em `DietScreen.tsx`/`MealAccordion.tsx`), já
+  que não tinha mais nenhuma outra função além de mostrar esse `✕`.
+  - Feedback seguinte do usuário: o 🗑 novo e o "‹" (desistir do alimento
+    antes de adicionar, na tela de porção do `InlineFoodSearch.tsx`) eram
+    pequenos demais, passavam despercebidos. Os dois viraram botões de
+    36×36px com borda (`h-9 w-9 rounded-lg border`), bem mais fáceis de ver
+    e tocar.
+  - `tsc --noEmit` limpo depois de cada mudança.
+- **Hábitos — descoberta de que a tela já existia de verdade**, não
+  "ainda nem começamos" como o `STATUS.md` dizia (dado desatualizado — a
+  base veio do commit inicial do projeto, com print de referência próprio,
+  nunca auditada de novo até agora): `HabitsScreen`/`HabitCard`/
+  `CravingAssistant` já liam/gravavam dado real contra `vicios_user`/
+  `recaidas` no Supabase (RLS conferido, `auth.uid() = user_id`), com
+  streak, "Estou com vontade" (assistente que orienta esperar 10min) e
+  "Hoje eu cedi" (tropeço, zera streak, sem punir — texto e cor roxa
+  fazem parte do produto, não são bug) funcionando. O único ponto morto
+  era o "+ Acompanhar novo hábito" (`onAdicionar` era um no-op).
+  - Construído `AddHabitSheet.tsx`: mesmo padrão de bottom sheet do
+    `CravingAssistant` (aqui também vale interromper — é decisão pontual de
+    configuração, não registro do dia a dia como na Dieta). Nome livre,
+    categoria em chips (Doce, Fast food, Álcool, Cigarro, Refrigerante,
+    Outro — mesmas categorias que `habitosRepository` já mapeia pra
+    emoji), intensidade (Leve/Médio/Forte). `HabitsScreen.tsx` ganhou o
+    estado local `mostrarAdicionar` (mesmo padrão do `vontadeDe` que já
+    existia); `Habitos.tsx` liga `onCriarHabito` em
+    `habitosRepository.criar()` de verdade + recarrega a lista.
+  - Conferido no Supabase antes de codar: colunas de `vicios_user` batem
+    exatamente com o que o repositório já enviava (`nome`/`categoria`/
+    `intensidade`, resto com default) e a policy de INSERT já libera
+    `auth.uid() = user_id` — **fluxo funciona sem migração nova**.
+  - `tsc --noEmit` limpo. **Ainda não testado ao vivo pelo usuário** —
+    primeira coisa a confirmar na próxima vez que abrir Hábitos.
+  - O que continua de propósito fora (não é bug, é escopo): `insightIA`
+    sempre `null` (sem fonte real de IA ainda), `onAbrirChat` no-op (chat
+    com a Life não existe), os 3 caminhos da vontade (esperar/alternativa/
+    já passou) não gravam nada — só orientam no momento, mesma decisão de
+    quando essa tela foi feita.
+  - `STATUS.md` atualizado: Hábitos ganhou linha própria no quadro de
+    Módulos (saiu de "ainda nem começamos"); Treino documentado como
+    **pausado de propósito** — usuário está esperando um conjunto novo de
+    imagens sendo feito por um amigo designer, retoma quando chegarem.
+- Servidor Vite local (`npm run dev -- --host`) subiu e ficou rodando a
+  sessão inteira em `localhost:5173` — confirmado respondendo tanto de
+  dentro do WSL quanto do lado Windows (`curl.exe`, 200 nos dois), ao
+  contrário do problema de ponte WSL↔Windows de 2026-09-08. Um momento em
+  que o usuário viu "não subiu nada" na aba já aberta foi só a aba antiga
+  ficando presa numa conexão de hot-reload morta — resolvido reabrindo a
+  aba, não era o servidor.
+- **Nenhum commit feito** — segue tudo acumulado no working tree: o que já
+  vinha pendente de 2026-09-08/11/12 (ícones + reescrita do Treino) mais o
+  fix da Dieta e o `AddHabitSheet` de hoje. `git status` mostra a lista
+  completa. Push também segue pendente.
+
+## 2026-09-16/17
+
+- Sessão de "retomar de onde paramos": nada das sessões de 09-08 a 09-13
+  tinha sido commitado ainda (Treino reescrito, `AddHabitSheet`, fixes da
+  Dieta). Servidor Vite subido de novo (`npm run dev -- --host`,
+  `localhost:5173`) pra trabalhar ao vivo na tela de Treino.
+- **Bug real encontrado e corrigido: por isso a tela de Treino aparecia sem
+  nenhum exercício.** A migração `athoslife_treinos_icones_v2_correcao.sql`
+  (sessão 09-11/12, nunca rodada) era quem adicionava a coluna
+  `exercicios_catalogo.icone_url` — como nunca rodou, toda consulta de
+  Treino (`exercicios_catalogo`/`treino_plano`) pedia uma coluna inexistente,
+  o Postgrest devolvia erro, e o app engolia isso em silêncio como lista
+  vazia (`.catch(() => setItens([]))`). Não era falta de dado do dia, como
+  cheguei a supor no começo da sessão (achei que fosse só o local/dia
+  selecionado sem exercício atribuído — descartado depois de olhar o banco
+  de verdade).
+- **Pacote definitivo de ícones do designer chegou**
+  (`ATHOSlife_icones_FINAL_100.zip`, 100 exercícios, 1920×1920px cada,
+  ~290MB total). Recortados/comprimidos pra 300×300 JPEG (~18KB cada, 1.8MB
+  no total) via `npx sharp-cli` (sem instalar `sharp` no projeto), salvos em
+  `public/exercicios/icones/`.
+  - Migração `db/athoslife_treinos_catalogo_v4_expansao_100.sql`: corrige
+    `icone_url`/`imagem_url` dos 36 exercícios que já existiam (a v1 tinha
+    zoado o `imagem_url`, sobrescrevendo a foto grande de execução pelo
+    ícone antigo) e **expande o catálogo pra 100 exercícios** — os outros
+    64 entraram só com ícone, **sem foto de execução nem "como executar"
+    ainda, de propósito**: o usuário vai preparar isso depois, exercício
+    por exercício. `grupo_muscular`/`ambientes` desses 64 foi chute meu em
+    cima do nome/equipamento de cada um, não confirmado um por um.
+  - Categoria nova `abdominal` criada em `GrupoMuscular`
+    (`src/domain/entities/treino.ts`) pra cobrir ~10 exercícios de core que
+    não cabiam nas 8 categorias antigas — precisou atualizar o CHECK
+    constraint do banco também (só previa as categorias antigas).
+  - No caminho, a migração falhou 2x por engano meu (constraint de
+    `grupo_muscular` sem `abdominal`, depois sintaxe de agregação num
+    `UPDATE`) — cada erro rodava dentro de uma transação só, então nada
+    ficou pela metade no banco; corrigido e confirmado no final
+    (100 exercícios, 100 com ícone, 36 com foto de execução).
+- **Botão do card de exercício reestruturado**, a pedido do usuário, que
+  mandou uma referência (`ExerciseCard.jsx`, depois `exercise-card.html`
+  como artifact): ícone (miniatura) e card (nome/reps) viraram dois toggles
+  **independentes** — antes os dois abriam a mesma coisa junto. Tocar no
+  ícone só mostra/esconde a foto grande de execução; tocar no card só
+  abre/fecha o formulário de séries. `ExerciseCard.tsx` reescrito.
+- **Modelo de série mudou**: de um total agregado (`series` count +
+  `repeticoes` count) pra **série individual com reps + carga (kg)**, cada
+  uma sua própria linha editável (+ adicionar série, ✕ remover série) —
+  pra bater com o mockup do usuário. O ✓ de marcar concluído e o ✕ de
+  excluir exercício ficaram exatamente como estavam, não foi pedido mexer
+  neles. Migração `db/athoslife_treino_series_detalhe_migration.sql`:
+  coluna `treino_plano.series_detalhe` (jsonb), backfill dos 18 registros
+  que já existiam (mesma reps de antes, carga em branco — nunca tinha sido
+  registrada). Colunas antigas `series`/`repeticoes` ficaram no banco sem
+  uso, não removidas de propósito (não quebra nada deixar).
+- **Bug de ambiente descoberto**: o Vite roda dentro do WSL mas o projeto
+  mora em `/mnt/c/...` (disco do Windows) — nesse tipo de pasta o WSL não
+  recebe eventos de mudança de arquivo (inotify não funciona em DrvFs), só
+  detectava mudança no próprio `vite.config.ts` por um mecanismo à parte.
+  Por isso uma edição inteira (a primeira versão do botão independente)
+  nunca chegou ao navegador, e pareceu que tinha sido "ignorada". Corrigido
+  com `server.watch.usePolling: true` em `vite.config.ts` + restart
+  completo do servidor. Deixa registrado: qualquer sessão futura que edite
+  código com o Vite já rodando deve lembrar disso se o navegador não
+  refletir a mudança.
+- `tsc --noEmit` limpo depois de cada mudança.
+- **Primeiro commit real desta leva de trabalho** (tudo que vinha
+  acumulado desde 09-08 mais o desta sessão) feito nesta sessão, a pedido
+  do usuário antes de desligar o PC — ver `git log` pra mensagem exata.
+  Deixados de propósito fora do commit (mesma regra de sempre: não são
+  asset do app): `ATHOSlife_icones_FINAL_100.zip` (290MB — não dá nem pra
+  subir no GitHub sem problema), outros zips/imagens de referência soltos
+  na raiz (`ExerciseCard.jsx`, `exercise-card.html`,
+  `supino-*.jpg.jpeg`, `WhatsApp *`, `MAPA_DE_SUBSTITUICAO.md`,
+  `ATHOSlife_Life_Intelligence_*`, `ai-proxy.zip`,
+  `icones-exercicios-athoslife.zip`, `recortes_teste/`,
+  `athoslife_banco_alimentos_1500 (1).sql`).
+- **Pendências pra próxima sessão**:
+  1. Usuário vai preparar as fotos de execução + "como executar" dos 64
+     exercícios novos, exercício por exercício (nada bloqueado, só falta
+     conteúdo).
+  2. Testar ao vivo o formulário de séries novo (reps + carga por série)
+     de ponta a ponta — só testado visualmente até agora, não confirmado
+     pelo usuário salvando/recarregando.
+  3. Confirmar se decidiu algo sobre a pergunta do Flutter (09-15, ainda em
+     aberto na última vez que foi tocada).

@@ -40,11 +40,13 @@ Os primeiros passos foram os mais pensados; os próximos andam mais rápido.
 | Histórico de peso | 🔸 tem mecânica no app atual | ⬜ | Reaproveitar o gráfico existente |
 | Busca manual de alimentos | 🔸 ref. Macros | ⬜ | Codar (usa alimentos + IA já prontos) |
 | Histórico do chat | 🔸 ref. Gemini | ⬜ | Codar |
+| Treino (100 exercícios + Local/dia da semana) | ✅ mockup do usuário validado | ✅ catálogo com **100 exercícios** (36 completos com foto de execução, 64 novos só com ícone — sem foto de execução/"como executar" ainda, de propósito), plano pessoal com **série individual (reps + carga em kg cada)**, ícone do card independente do formulário de séries (2026-09-17) | Usuário vai preparar as fotos de execução dos 64 exercícios novos, um por um. Formulário de séries com carga ainda não confirmado ao vivo pelo usuário (só testado visualmente). `ambientes`/`grupo_muscular` dos 64 novos foi chute meu em cima do nome do exercício, não confirmado exercício por exercício |
+| Hábitos (vícios/streak/vontade) | ✅ (já vinha do commit inicial, com print de referência do usuário) | ✅ lista + streak + "Estou com vontade" (assistente) + "Hoje eu cedi" (tropeço, zera streak) reais, contra `vicios_user`/`recaidas` no Supabase (RLS ok) + **criar hábito novo** (`AddHabitSheet.tsx`, 2026-09-13, mesmo padrão de bottom sheet do assistente de vontade) | Insight da IA (`insightIA` hoje sempre `null`, sem fonte real ainda), "Chat com a Life" (`onAbrirChat` no-op), os 3 caminhos da vontade (esperar/alternativa/já passou) não persistem nada — decisão consciente, só orientam no momento |
 
 ## Ainda nem começamos (código)
 
-- Telas de tracking: Treinos, Hábitos, Conquistas (não auditadas em 2026-08-24 — Dieta saiu
-  desta lista porque já tem visual + navegação, mas ver linha própria acima: é fachada, não persiste dado)
+- Conquistas (não auditada — Hábitos saiu desta lista em 2026-09-13, ver linha
+  própria no Módulos acima; Dieta já tinha saído antes pelo mesmo motivo)
 - Achievements/conquistas: `avaliar_conquistas()` só existe como decisão no
   Postgres, nunca foi chamada pelo app (por isso o card de streak da Home
   não mostra "próximo nível" — sem RPC ligada, o número seria inventado)
