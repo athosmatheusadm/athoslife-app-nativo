@@ -1,12 +1,21 @@
 import { useState } from 'react'
-import type { IntensidadeHabito } from '@domain/entities/habito'
+import { tipoDaCategoria, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
 
-const CATEGORIAS: readonly { valor: string | null; emoji: string; rotulo: string }[] = [
+/**
+ * De propósito SEM álcool/cigarro: o app é um acompanhador de hábitos do
+ * dia a dia (reduzir doce, aumentar leitura), não uma ferramenta pra vícios
+ * que depreciam a vida humana — isso está fora do escopo do produto.
+ */
+const CATEGORIAS_EVITAR: readonly { valor: string | null; emoji: string; rotulo: string }[] = [
   { valor: 'doce', emoji: '🍫', rotulo: 'Doce/Açúcar' },
   { valor: 'fast_food', emoji: '🍟', rotulo: 'Fast food' },
-  { valor: 'alcool', emoji: '🍺', rotulo: 'Álcool' },
-  { valor: 'cigarro', emoji: '🚬', rotulo: 'Cigarro' },
   { valor: 'refrigerante', emoji: '🥤', rotulo: 'Refrigerante' },
+  { valor: null, emoji: '🎯', rotulo: 'Outro' },
+]
+
+/** Categorias aqui precisam bater com CATEGORIAS_CONSTRUIR em domain/entities/habito.ts. */
+const CATEGORIAS_CONSTRUIR: readonly { valor: string | null; emoji: string; rotulo: string }[] = [
+  { valor: 'leitura', emoji: '📚', rotulo: 'Leitura' },
   { valor: null, emoji: '🎯', rotulo: 'Outro' },
 ]
 
@@ -20,6 +29,13 @@ const INTENSIDADES: readonly { valor: IntensidadeHabito; rotulo: string }[] = [
  * Painel "Acompanhar novo hábito" — mesmo padrão de bottom sheet do
  * CravingAssistant (aqui também vale interromper: é uma decisão pontual de
  * configuração, não um registro do dia a dia como na Dieta).
+ *
+ * Dois tipos: "evitar" (reduzir algo, fluxo original com vontade/recaída) e
+ * "construir" (aumentar algo, ex. leitura). O tipo não vai pro banco — é
+ * inferido da categoria por `tipoDaCategoria` na leitura (ver
+ * habitosRepository). Por isso escolher "Outro" dentro de "Construir"
+ * ainda cai como tipo "evitar" ao recarregar — teste consciente, categoria
+ * livre por nome só funciona bem hoje pra "evitar".
  */
 export function AddHabitSheet(props: {
   onSalvar: (params: {
@@ -29,11 +45,19 @@ export function AddHabitSheet(props: {
   }) => Promise<void>
   onFechar: () => void
 }) {
+  const [tipo, setTipo] = useState<TipoHabito>('evitar')
   const [nome, setNome] = useState('')
   const [categoria, setCategoria] = useState<string | null>('doce')
   const [intensidade, setIntensidade] = useState<IntensidadeHabito>('medio')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  const categorias = tipo === 'construir' ? CATEGORIAS_CONSTRUIR : CATEGORIAS_EVITAR
+
+  function trocarTipo(t: TipoHabito) {
+    setTipo(t)
+    setCategoria(t === 'construir' ? 'leitura' : 'doce')
+  }
 
   async function salvar() {
     setSalvando(true)
@@ -66,7 +90,30 @@ export function AddHabitSheet(props: {
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-surface-4" aria-hidden="true" />
 
         <h2 className="text-xl font-bold text-content-hi">Acompanhar novo hábito</h2>
-        <p className="mt-1 text-sm text-content-low">O que você quer superar a partir de hoje?</p>
+        <p className="mt-1 text-sm text-content-low">
+          {tipo === 'construir' ? 'O que você quer aumentar a partir de hoje?' : 'O que você quer superar a partir de hoje?'}
+        </p>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => trocarTipo('evitar')}
+            className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
+              tipo === 'evitar' ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
+            }`}
+          >
+            Quero evitar algo
+          </button>
+          <button
+            type="button"
+            onClick={() => trocarTipo('construir')}
+            className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
+              tipo === 'construir' ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
+            }`}
+          >
+            Quero construir um hábito
+          </button>
+        </div>
 
         <label className="mt-4 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
           Nome
@@ -74,7 +121,7 @@ export function AddHabitSheet(props: {
         <input
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          placeholder="Ex.: Refrigerante, Cigarro…"
+          placeholder={tipo === 'construir' ? 'Ex.: Leitura, Meditação…' : 'Ex.: Refrigerante, Doce…'}
           autoFocus
           className="mt-1 w-full rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm font-semibold text-content-hi placeholder:font-normal placeholder:text-content-dim focus:border-brand focus:outline-none"
         />
@@ -83,7 +130,7 @@ export function AddHabitSheet(props: {
           Categoria
         </label>
         <div className="mt-1.5 flex flex-wrap gap-2">
-          {CATEGORIAS.map((c) => (
+          {categorias.map((c) => (
             <button
               key={c.rotulo}
               type="button"
@@ -98,6 +145,11 @@ export function AddHabitSheet(props: {
             </button>
           ))}
         </div>
+        {tipoDaCategoria(categoria) !== tipo && (
+          <p className="mt-1.5 text-[11px] text-accent-danger">
+            "Outro" ainda não guarda o tipo — esse hábito vai aparecer como "evitar" depois de salvo.
+          </p>
+        )}
 
         <label className="mt-4 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
           Intensidade

@@ -27,16 +27,9 @@ export function Habitos() {
           .then(recarregar)
           .catch(() => {})
       }}
-      onEscolherCaminho={() => {
-        // "Esperar 10 min" / "Alternativa" / "Já passou" são só do momento —
-        // nada para persistir ainda (sem tabela de eventos de vontade).
-      }}
       onCriarHabito={async (params) => {
         await habitosRepository.criar(params)
         recarregar()
-      }}
-      onAbrirChat={() => {
-        // Chat com a Life: tela ainda não construída (docs/STATUS.md).
       }}
     />
   )

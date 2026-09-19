@@ -731,3 +731,108 @@ quando fechar um bloco de trabalho, sobe tudo com um commit + push só.
      pelo usuário salvando/recarregando.
   3. Confirmar se decidiu algo sobre a pergunta do Flutter (09-15, ainda em
      aberto na última vez que foi tocada).
+
+## 2026-09-19
+
+- **Decisão sobre Flutter (pendência aberta desde 09-15): resolvida.**
+  Usuário decidiu manter Capacitor pra lançar o app agora. Só migra pra
+  Flutter depois, se o app ganhar tração (mais de 200 usuários pagantes) —
+  aí sim como uma atualização grande, aproveitando pra adicionar mais coisas
+  junto. Nada de reescrever agora; ATHOSlife atual segue sendo o produto real,
+  não um rascunho pra Flutter.
+- Fotos de execução dos 64 exercícios novos: em andamento (pendência 1 da
+  sessão anterior, sem bloqueio).
+- Estrutura do formulário de séries novo (reps + carga por série): usuário
+  confirmou que já foi testada e aprovada (resolve a pendência 2 da sessão
+  anterior).
+
+- **Tela de Hábitos redesenhada, a pedido do usuário** ("desenhar a página
+  de hábitos" — funcional + visual, testando ao vivo com `npm run dev --
+  host` de novo). A tela já existia (fiel a um print antigo do usuário,
+  fluxo real contra `vicios_user`/`recaidas`); o pedido era mexer em cima
+  disso, não recriar do zero:
+  - **Card virou botão colapsável**: fechado mostra só emoji + nome +
+    streak + bolinha de cor; abre pra ver gatilhos/progresso/ações.
+    `HabitCard.tsx` reescrito.
+  - **Paleta do card trocou de verde/laranja pra verde/roxo** — tirou
+    qualquer cor de alarme, hoje só verde (firme) e roxo (atenção/recaída,
+    mesma cor que a recaída já usava).
+  - **Álcool e cigarro tirados do app, de propósito** — decisão de escopo
+    do usuário: "não trabalhamos com vícios que levam a depreciação da vida
+    humana". `vicios_user.categoria` continua sem CHECK constraint no banco
+    (freeform), então não precisou de migração — só a UI parou de oferecer
+    essas opções.
+  - **Novo tipo de hábito "construir"** (aumentar algo, ex. Leitura) ao
+    lado do "evitar" original (reduzir algo, ex. Doce). Card de um hábito
+    "construir" mostra "Fiz hoje"/"Não consegui hoje" em vez de "Estou com
+    vontade"/"Hoje eu cedi" — sem abrir o assistente de vontade, que não
+    fazia sentido pra esse caso. O tipo é **inferido da categoria**
+    (`tipoDaCategoria` em `domain/entities/habito.ts`), sem coluna nova no
+    banco — teste consciente: categoria "Outro" sempre cai como "evitar"
+    hoje.
+    ⚠️ **"Fiz hoje" ainda não persiste** — não existe ação de check-in
+    positivo no `habitosRepository` (só `criar`/`registrarRecaida`). Hoje é
+    só um ✓ visual que some ao recarregar a página. Se for pra valer,
+    precisa de uma mudança pequena no banco — não fiz sem aprovação.
+  - **Assistente "Estou com vontade" ganhou conteúdo de verdade**
+    (`CravingAssistant.tsx` reescrito com views internas): "Quero uma
+    alternativa" mostra sugestões reais por categoria (regra fixa, sem IA,
+    `alternativasPara` em habito.ts); "Vou esperar 10 minutos" virou um
+    timer de verdade com animação de respiração (sem música ainda — não
+    existe áudio no projeto, deixei o player pronto e desligado, ver
+    `MUSICA_ACOLHEDORA_URL` no arquivo); "Conversar com o Life" fecha o
+    assistente e abre o chat.
+  - **Chat com o Life construído** (`LifeChatSheet.tsx`) e ligado no
+    `ai-proxy` (`enviarMensagemChat` em `aiProxy.ts`, `tipo: 'chat'` já
+    previsto no contrato do cliente). Usuário confirmou que o handler
+    'chat' já existe no proxy deployado (só nunca foi chamado/testado) —
+    **ainda não testado ao vivo**, fica pra próxima sessão.
+  - **O Life virou um "termômetro"**: `nivelBemEstar`/`corTermometro` em
+    habito.ts calculam uma cor verde↔roxo a partir da média dos streaks
+    (14 dias = tranquilo total) — sem inventar dado, só o streak que já
+    existe. Virou um **botão flutuante fixo no canto inferior esquerdo**
+    (acima do BottomNav), com a imagem do personagem (camaleão verde,
+    `public/life/avatar.png`, mandada pelo usuário) **de corpo inteiro**,
+    sem recorte em círculo — ele vai ganhar animações (o projeto já tem
+    `lottie-react` instalado, ainda não usado em lugar nenhum). Ressalva
+    técnica registrada no código: a imagem atual tem fundo preto sólido,
+    não é um PNG recortado/transparente — usei `mix-blend-mode: screen`
+    como gambiarra (funciona porque o app é todo escuro), até o usuário
+    mandar uma versão com fundo transparente de verdade (ele confirmou que
+    consegue gerar uma).
+  - **Lembrete local (notificação) pro hábito "construir"** — instalado
+    `@capacitor/local-notifications` (`npx cap sync android` rodado,
+    plugin registrado), `src/data/notifications/habitReminders.ts` novo.
+    Agenda/cancela/consulta pelo próprio SO do aparelho (sem coluna nova no
+    banco — o agendamento do SO é a fonte de verdade). **Só funciona no
+    app instalado**, não no navegador onde a sessão testou tudo — Capacitor
+    LocalNotifications não tem implementação real pra web.
+  - Isso é a **Camada 1** ("regra fixa, nunca falha") do modelo de duas
+    camadas já desenhado em `docs/ATHOSlife_Notificacoes_Life.md`. Usuário
+    decidiu que quer as **duas camadas agora**, não só depois do
+    lançamento como a doc recomendava — motivo dado: "é hora de deixar
+    tudo bem feito" antes de publicar, não depois. Registrado como decisão
+    consciente que reabre aquele "não é pra codar agora".
+
+- **Pendências pra próxima sessão**:
+  1. Testar a Camada 1 (lembrete local) num build Android real/emulador —
+     não dá pra confirmar via navegador.
+  2. Testar o chat do Life ao vivo (handler já existe no `ai-proxy`,
+     segundo o usuário, mas nunca foi chamado de fato).
+  3. Usuário vai mandar uma versão do personagem do Life com fundo
+     transparente — trocar `public/life/avatar.png` e tirar o
+     `mix-blend-mode: screen` quando chegar.
+  4. **Camada 2 da Life** (percebe que o usuário ignorou/esqueceu, reage
+     diferente) — pendências concretas, todas aguardando aprovação/dado do
+     usuário, não bloqueadas por falta de decisão:
+     - Aplicar a migração das tabelas `life_events`/`life_memories`/
+       `life_patterns` (já revisada, vem pronta do pacote v2) — falta só a
+       aprovação explícita pra rodar no Supabase.
+     - Corrigir os 4 bugs do `ai-proxy` documentados em
+       `ATHOSlife_Notificacoes_Life.md` antes de deploy.
+     - Push de verdade (FCM) — precisa de um projeto Firebase do usuário
+       (`google-services.json`), isso não dá pra criar sozinho.
+     - `relogio-athos` (função agendada varrendo usuários inativos).
+  5. Fotos de execução dos 64 exercícios novos (arrastando de sessões
+     anteriores, sem bloqueio).
+  6. Nada do que foi feito nesta sessão foi commitado ainda.

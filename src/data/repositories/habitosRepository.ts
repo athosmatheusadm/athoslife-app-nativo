@@ -1,5 +1,5 @@
 import { supabase } from '@data/supabase/client'
-import type { Habito, IntensidadeHabito } from '@domain/entities/habito'
+import { tipoDaCategoria, type Habito, type IntensidadeHabito } from '@domain/entities/habito'
 
 interface HabitoRow {
   id: string
@@ -26,6 +26,7 @@ function paraDominio(r: HabitoRow): Habito {
     nome: r.nome,
     emoji: emojiPorCategoria(r.categoria),
     categoria: r.categoria,
+    tipo: tipoDaCategoria(r.categoria),
     gatilhos: r.gatilhos ?? [],
     horarioRisco: r.horario_risco,
     streakAtual: streak,
@@ -43,12 +44,10 @@ function emojiPorCategoria(cat: string | null): string {
       return '🍫'
     case 'fast_food':
       return '🍟'
-    case 'alcool':
-      return '🍺'
-    case 'cigarro':
-      return '🚬'
     case 'refrigerante':
       return '🥤'
+    case 'leitura':
+      return '📚'
     default:
       return '🎯'
   }

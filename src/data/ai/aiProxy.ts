@@ -106,6 +106,35 @@ export async function analisarFoto(base64: string): Promise<ResultadoVisao> {
   }
 }
 
+export interface MensagemChat {
+  autor: 'usuario' | 'life'
+  texto: string
+}
+
+interface RespostaChatCrua {
+  resposta: string
+}
+
+/**
+ * Chat com o Life — cota diária própria (profiles.chat_msgs_hoje /
+ * chat_msgs_reset_date), separada da cota de fotos, contada pelo mesmo
+ * proxy. `tipo: 'chat'` já é um valor válido no contrato do proxy, mas o
+ * handler correspondente no Edge Function ainda não foi confirmado como
+ * implementado — se não estiver, isto falha com `proxy_error` (de
+ * propósito, mesmo padrão do `recipeAi.ts`: não finge que a feature está
+ * pronta enquanto o backend não responde).
+ */
+export async function enviarMensagemChat(params: {
+  mensagem: string
+  historico: readonly MensagemChat[]
+}): Promise<string> {
+  const cru = await chamar<RespostaChatCrua>('chat', {
+    mensagem: params.mensagem,
+    historico: params.historico.map((m) => ({ autor: m.autor, texto: m.texto })),
+  })
+  return cru.resposta
+}
+
 /**
  * Código de barras — NÃO IMPLEMENTADO na v1.
  *
