@@ -19,9 +19,8 @@ import { agendarLembrete, buscarLembrete, cancelarLembrete } from '@data/notific
  * Tipo "construir" (aumentar algo, ex. leitura): não faz sentido abrir o
  * assistente de vontade, então vira "Fiz hoje" / "Não consegui hoje" — o
  * segundo ainda cai em onTropeco (zera o streak, o mecanismo serve pros
- * dois sentidos), o primeiro é só reconhecimento local por enquanto, sem
- * escrever no banco (não existe ainda uma ação de "check-in positivo" no
- * repositório — ver comentário em `onFizHoje`).
+ * dois sentidos), o primeiro chama a RPC registrar_checkin_habito (ver
+ * habitosRepository.registrarCheckin) — persiste de verdade.
  *
  * Card burro: quem reage aos botões é a tela-mãe.
  */
@@ -29,11 +28,7 @@ export function HabitCard(props: {
   habito: Habito
   onEstouComVontade: () => void
   onTropeco: () => void
-  /**
-   * Reconhecimento local de "fiz hoje" pro tipo "construir" — não persiste
-   * (sem mutação de check-in no habitosRepository hoje). Um teste visual,
-   * não uma fonte de verdade: some ao recarregar a tela.
-   */
+  /** Check-in "Fiz hoje" do tipo "construir" — persiste via RPC. */
   onFizHoje: () => void
   feitoHoje: boolean
 }) {

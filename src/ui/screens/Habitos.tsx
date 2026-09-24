@@ -27,6 +27,9 @@ export function Habitos() {
           .then(recarregar)
           .catch(() => {})
       }}
+      onRegistrarCheckin={(habitoId) => {
+        void habitosRepository.registrarCheckin(habitoId).then(recarregar).catch(() => {})
+      }}
       onCriarHabito={async (params) => {
         await habitosRepository.criar(params)
         recarregar()

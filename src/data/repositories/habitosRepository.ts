@@ -1,5 +1,11 @@
 import { supabase } from '@data/supabase/client'
-import { tipoDaCategoria, type Habito, type IntensidadeHabito } from '@domain/entities/habito'
+import {
+  streakConstruir,
+  streakEvitar,
+  tipoDaCategoria,
+  type Habito,
+  type IntensidadeHabito,
+} from '@domain/entities/habito'
 
 interface HabitoRow {
   id: string
@@ -12,13 +18,27 @@ interface HabitoRow {
   melhor_streak: number | null
   total_recaidas: number | null
   ultima_recaida: string | null
+  ultimo_checkin: string | null
+  criado_em: string
   ativo: boolean | null
 }
 
+function hojeISO(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function paraDominio(r: HabitoRow): Habito {
+  const tipo = tipoDaCategoria(r.categoria)
+  const hoje = hojeISO()
+  const ultimaRecaida = r.ultima_recaida ? new Date(r.ultima_recaida) : null
+
+  const streak =
+    tipo === 'construir'
+      ? streakConstruir(r.streak_atual ?? 0, r.ultimo_checkin, hoje)
+      : streakEvitar(new Date(r.criado_em), ultimaRecaida, hoje)
+
   // proximaConquista: próximo marco de dias acima do streak atual.
   const marcos = [7, 14, 30, 60, 90, 180, 365]
-  const streak = r.streak_atual ?? 0
   const proxima = marcos.find((m) => m > streak) ?? streak + 30
 
   return {
@@ -26,14 +46,15 @@ function paraDominio(r: HabitoRow): Habito {
     nome: r.nome,
     emoji: emojiPorCategoria(r.categoria),
     categoria: r.categoria,
-    tipo: tipoDaCategoria(r.categoria),
+    tipo,
     gatilhos: r.gatilhos ?? [],
     horarioRisco: r.horario_risco,
     streakAtual: streak,
-    melhorStreak: r.melhor_streak ?? 0,
+    melhorStreak: Math.max(r.melhor_streak ?? 0, streak),
     totalRecaidas: r.total_recaidas ?? 0,
-    ultimaRecaida: r.ultima_recaida ? new Date(r.ultima_recaida) : null,
+    ultimaRecaida,
     proximaConquista: proxima,
+    feitoHoje: r.ultimo_checkin === hoje,
   }
 }
 
@@ -55,8 +76,10 @@ function emojiPorCategoria(cat: string | null): string {
 
 /**
  * Único ponto que conhece vicios_user/recaidas.
- * O streak é recalculado no servidor a partir da última recaída — o
- * client não "inventa" streak (mesma disciplina do streak principal).
+ * O streak é derivado de datas (criado_em/ultima_recaida/ultimo_checkin),
+ * não de um contador que precisa de job pra crescer — ver
+ * streakEvitar/streakConstruir em domain/entities/habito.ts e
+ * db/athoslife_habitos_streak_confiavel_migration.sql.
  */
 export const habitosRepository = {
   async listar(): Promise<Habito[]> {
@@ -97,6 +120,17 @@ export const habitosRepository = {
     if (error) throw error
     // O trigger/servidor cuida de zerar streak_atual e incrementar
     // total_recaidas — o client não mexe nesses números diretamente.
+  },
+
+  /**
+   * Check-in "Fiz hoje" do tipo "construir" — persiste de verdade (antes
+   * era só um Set em memória na tela, sumia ao recarregar). A RPC no
+   * servidor decide o novo streak (idempotente, quebra sozinha se pulou um
+   * dia) — o client não inventa o número, só dispara a ação.
+   */
+  async registrarCheckin(habitoId: string): Promise<void> {
+    const { error } = await supabase.rpc('registrar_checkin_habito', { p_habito_id: habitoId })
+    if (error) throw error
   },
 
   /** Marca mais um dia firme (quando aplicável ao fluxo do produto). */

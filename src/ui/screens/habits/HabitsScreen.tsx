@@ -27,6 +27,7 @@ export function HabitsScreen(props: {
   maiorStreak: number
   insightIA: string | null
   onRegistrarTropeco: (habitoId: string) => void
+  onRegistrarCheckin: (habitoId: string) => void
   onCriarHabito: (params: {
     nome: string
     categoria: string | null
@@ -38,8 +39,6 @@ export function HabitsScreen(props: {
   const [mostrarAdicionar, setMostrarAdicionar] = useState(false)
   const [chatAberto, setChatAberto] = useState(false)
   const [avatarFalhou, setAvatarFalhou] = useState(false)
-  // "Fiz hoje" dos hábitos tipo "construir" — só nesta sessão, não persiste.
-  const [feitosHoje, setFeitosHoje] = useState<ReadonlySet<string>>(new Set())
 
   const nivel = nivelBemEstar(habitos)
   const corLife = corTermometro(nivel)
@@ -71,8 +70,8 @@ export function HabitsScreen(props: {
             habito={h}
             onEstouComVontade={() => setVontadeDe(h)}
             onTropeco={() => props.onRegistrarTropeco(h.id)}
-            feitoHoje={feitosHoje.has(h.id)}
-            onFizHoje={() => setFeitosHoje((s) => new Set(s).add(h.id))}
+            feitoHoje={h.feitoHoje}
+            onFizHoje={() => props.onRegistrarCheckin(h.id)}
           />
         ))}
       </div>

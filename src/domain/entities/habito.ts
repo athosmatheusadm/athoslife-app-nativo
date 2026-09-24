@@ -39,6 +39,8 @@ export interface Habito {
   readonly totalRecaidas: number
   readonly ultimaRecaida: Date | null
   readonly proximaConquista: number
+  /** Só relevante pro tipo "construir": já fez o check-in de hoje. */
+  readonly feitoHoje: boolean
 }
 
 /** Categorias hoje classificadas como "hábito a construir" (aumentar). */
@@ -46,6 +48,37 @@ const CATEGORIAS_CONSTRUIR = new Set(['leitura'])
 
 export function tipoDaCategoria(categoria: string | null): TipoHabito {
   return categoria !== null && CATEGORIAS_CONSTRUIR.has(categoria) ? 'construir' : 'evitar'
+}
+
+/**
+ * Streak confiável, calculado a partir de datas — sem cron, sem contador
+ * que possa dessincronizar. Ver db/athoslife_habitos_streak_confiavel_migration.sql.
+ *
+ * "Evitar" (ex. Doce): sucesso é implícito (ausência de recaída), então o
+ * streak é sempre `hoje − a data mais recente entre criação e última
+ * recaída` — nunca precisa de escrita pra crescer.
+ */
+export function streakEvitar(criadoEm: Date, ultimaRecaida: Date | null, hojeISO: string): number {
+  const base = ultimaRecaida && ultimaRecaida > criadoEm ? ultimaRecaida : criadoEm
+  const baseISO = base.toISOString().slice(0, 10)
+  return Math.max(0, diasEntre(baseISO, hojeISO))
+}
+
+/**
+ * "Construir" (ex. Leitura): sucesso é explícito (check-in "Fiz hoje"), por
+ * isso precisa de um contador (streak_atual) — mas ele se autocorrige na
+ * leitura: se o último check-in não foi hoje nem ontem, o streak já quebrou
+ * sozinho (sem precisar de job noturno pra "descobrir" isso).
+ */
+export function streakConstruir(streakAtual: number, ultimoCheckin: string | null, hojeISO: string): number {
+  if (!ultimoCheckin) return 0
+  const gap = diasEntre(ultimoCheckin, hojeISO)
+  return gap <= 1 ? streakAtual : 0
+}
+
+function diasEntre(deISO: string, ateISO: string): number {
+  const MS_POR_DIA = 86_400_000
+  return Math.round((Date.parse(ateISO) - Date.parse(deISO)) / MS_POR_DIA)
 }
 
 /** "Atenção" é alerta sóbrio (streak recente, mais frágil), nunca punição. */
