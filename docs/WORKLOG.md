@@ -1266,3 +1266,18 @@ lotes menores, mesmo padrão de sessões anteriores.
   Não usa mais a tabela `refeicoes` (evita soma dupla). Grátis vê cadeado
   com "Ver planos"; pago vê "X de 5 scans hoje". Depende do ai-proxy novo
   publicado (visão também usa o Gemini).
+- **Live Activity nativa (Java, escrita)**: `android/.../liveactivity/`
+  (EstadoLive = cópia do estado + transições espelhadas + fila de toques;
+  LiveActivityNotificacao = notificação fixa com layout próprio, cores do
+  mockup, Chronometer regressivo, canal "Treino em andamento" silencioso e
+  público na tela de bloqueio; Receiver dos botões; Plugin
+  `AthosLiveActivity`). Layouts `athos_la_grande`/`athos_la_pequeno`.
+- **Widget de hidratação (Java, escrito)**: `android/.../widget/` —
+  cápsula com anel teal, Life (webp extraído do HTML do dono; cinza gerado
+  na hora com ColorMatrix pro humor "ressecado"/apagado), contador com total
+  em verde, 5 copos vetoriais em 5 níveis, câmera -> `athoslife://abrir/scanner`,
+  "..." virou botão que troca 250 ml/500 ml/1 L. Copo tocado soma na hora e
+  entra em fila; `app/IntegracoesNativas.tsx` grava no banco ao abrir/voltar
+  e manda o total real de volta; `useAgua` também atualiza o widget.
+  Plugin `AthosWidgetAgua`. Deep link `athoslife://abrir/<rota>` no manifest.
+- Botão voltar: `/scanner` saiu das telas raiz (voltava minimizando o app).

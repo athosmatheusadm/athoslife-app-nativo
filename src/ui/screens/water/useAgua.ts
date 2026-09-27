@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { aguaRepository } from '@data/repositories/aguaRepository'
+import { widgetAgua } from '@data/native/widgetAgua'
+import { dataLocalISO } from '@domain/rules/datas'
+import { EVENTO_AGUA_MUDOU } from '@app/IntegracoesNativas'
 import type { AguaDoDia } from '@domain/entities/water'
 
 interface UseAguaResult {
@@ -27,7 +30,10 @@ export function useAgua(metaMl: number): UseAguaResult {
   const recarregar = useCallback(async () => {
     try {
       setErro(null)
-      setEstado(await aguaRepository.aguaDoDia(metaMl))
+      const dia = await aguaRepository.aguaDoDia(metaMl)
+      setEstado(dia)
+      // Widget da tela inicial sempre com o mesmo número do app.
+      void widgetAgua.atualizar({ data: dataLocalISO(), totalMl: dia.totalMl, metaMl })
     } catch {
       setErro('Não consegui carregar sua hidratação agora.')
     } finally {
@@ -37,6 +43,10 @@ export function useAgua(metaMl: number): UseAguaResult {
 
   useEffect(() => {
     void recarregar()
+    // Copo tocado no widget e já gravado pelo IntegracoesNativas.
+    const aoMudar = () => void recarregar()
+    window.addEventListener(EVENTO_AGUA_MUDOU, aoMudar)
+    return () => window.removeEventListener(EVENTO_AGUA_MUDOU, aoMudar)
   }, [recarregar])
 
   const adicionar = useCallback(

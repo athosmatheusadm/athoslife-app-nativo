@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Live Activity do treino — card expandido (athoslife-live-activity-mockup.html).
+  Só views permitidas em RemoteViews (LinearLayout, TextView, ImageView,
+  Chronometer). Estados (série / cronômetro / descanso) trocam visibilidade
+  dos blocos em LiveActivityNotificacao.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/athos_la_card"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/la_ponto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="●"
+            android:textColor="@color/athos_la_lima"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/la_nome"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/athos_la_texto"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/la_serie"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/athos_la_pilula"
+            android:fontFamily="monospace"
+            android:paddingStart="9dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="9dp"
+            android:paddingBottom="3dp"
+            android:textColor="@color/athos_la_texto_baixo"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Série: dois steppers + botão principal -->
+    <LinearLayout
+        android:id="@+id/la_bloco_serie"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/athos_la_elevado"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/la_rotulo_a"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/athos_la_texto_baixo"
+                    android:textSize="11sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/la_a_menos"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:background="@drawable/athos_la_circulo"
+                        android:gravity="center"
+                        android:text="−"
+                        android:textColor="@color/athos_la_texto"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/la_valor_a"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:gravity="center"
+                        android:textColor="@color/athos_la_texto"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/la_a_mais"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:background="@drawable/athos_la_circulo"
+                        android:gravity="center"
+                        android:text="+"
+                        android:textColor="@color/athos_la_texto"
+                        android:textSize="16sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/athos_la_elevado"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/la_rotulo_b"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/athos_la_texto_baixo"
+                    android:textSize="11sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/la_b_menos"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:background="@drawable/athos_la_circulo"
+                        android:gravity="center"
+                        android:text="−"
+                        android:textColor="@color/athos_la_texto"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/la_valor_b"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:gravity="center"
+                        android:textColor="@color/athos_la_texto"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/la_b_mais"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:background="@drawable/athos_la_circulo"
+                        android:gravity="center"
+                        android:text="+"
+                        android:textColor="@color/athos_la_texto"
+                        android:textSize="16sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/la_principal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/athos_la_botao_lima"
+            android:gravity="center"
+            android:padding="11dp"
+            android:textColor="@color/athos_la_escuro"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Descanso / cronômetro: relógio grande + dois botões -->
+    <LinearLayout
+        android:id="@+id/la_bloco_tempo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <Chronometer
+            android:id="@+id/la_relogio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textColor="@color/athos_la_descanso"
+            android:textSize="38sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/la_rotulo_relogio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/athos_la_texto_baixo"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/la_btn_esq"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/athos_la_botao_neutro"
+                android:gravity="center"
+                android:padding="10dp"
+                android:textColor="@color/athos_la_texto"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/la_btn_dir"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/athos_la_botao_descanso"
+                android:gravity="center"
+                android:padding="10dp"
+                android:textColor="#FF2A1608"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

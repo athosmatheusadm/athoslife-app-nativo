@@ -1,6 +1,7 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom'
 import { RequireAnon, RequireAuth } from './Guards'
 import { useAndroidBackButton } from './useAndroidBackButton'
+import { IntegracoesNativas } from './IntegracoesNativas'
 import { AppShell } from './AppShell'
 import { Login } from '@ui/screens/Login'
 import { RecuperarSenha } from '@ui/screens/RecuperarSenha'
@@ -26,7 +27,12 @@ import { SessaoTreinoScreen } from '@ui/screens/workout/SessaoTreinoScreen'
 /** Casca do app: liga o botão Voltar dentro do contexto do roteador. */
 function Shell() {
   useAndroidBackButton()
-  return <Outlet />
+  return (
+    <>
+      <IntegracoesNativas />
+      <Outlet />
+    </>
+  )
 }
 
 export const router = createBrowserRouter([

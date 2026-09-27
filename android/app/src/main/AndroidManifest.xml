@@ -22,7 +22,33 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- athoslife://abrir/<rota> — widget (câmera/Life) abre o app numa tela. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="athoslife" android:host="abrir" />
+            </intent-filter>
+
         </activity>
+
+        <!-- Live Activity do treino: botões do card na tela de bloqueio. -->
+        <receiver
+            android:name=".liveactivity.LiveActivityReceiver"
+            android:exported="false" />
+
+        <!-- Widget de hidratação da tela inicial. -->
+        <receiver
+            android:name=".widget.WidgetAguaProvider"
+            android:exported="false"
+            android:label="Água do dia">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/athos_widget_agua_info" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

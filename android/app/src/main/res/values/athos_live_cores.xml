@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paleta do athoslife-live-activity-mockup.html -->
+<resources>
+    <color name="athos_la_fundo">#FF161D18</color>
+    <color name="athos_la_elevado">#FF1F2921</color>
+    <color name="athos_la_linha">#FF2A352C</color>
+    <color name="athos_la_texto">#FFEEF2ED</color>
+    <color name="athos_la_texto_baixo">#FF9AA69B</color>
+    <color name="athos_la_lima">#FFC6FF3D</color>
+    <color name="athos_la_descanso">#FFFF9159</color>
+    <color name="athos_la_escuro">#FF0B0F0D</color>
+</resources>
