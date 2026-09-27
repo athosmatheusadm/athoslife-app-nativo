@@ -836,3 +836,347 @@ quando fechar um bloco de trabalho, sobe tudo com um commit + push só.
   5. Fotos de execução dos 64 exercícios novos (arrastando de sessões
      anteriores, sem bloqueio).
   6. Nada do que foi feito nesta sessão foi commitado ainda.
+
+## 2026-09-24
+
+Sessão longa, vários blocos de trabalho. MCP do Supabase reconectado no
+começo (estava com permissão quebrada — token precisou ser regenerado sem
+`--read-only`); mesmo saudável, o classificador do modo Auto do Claude Code
+seguiu bloqueando `execute_sql` às vezes sem prompt — contornado rodando em
+lotes menores, mesmo padrão de sessões anteriores.
+
+- **Push do que ficou pendente de 09-19** (fix de streak/check-in de
+  Hábitos) feito no começo da sessão: `main` sincronizado com
+  `origin/main`. Token do GitHub precisou ser colado manualmente (sem
+  `GH_TOKEN` no ambiente).
+
+- **Dieta + Scanner — redesenho grande**, a partir de dois HTMLs que o
+  usuário mandou (`modificacao para a dieta + scaner 24.09.26.html`,
+  nunca commitados, ficam soltos na raiz):
+  - Tocar numa refeição não abre mais o acordeão antigo — sobe direto um
+    **sheet único** (`MealSheet.tsx`): itens já registrados (toca → ⧉
+    copiar / 🗑 excluir) + macros + concluída + menu de ações (Escanear/
+    Pesquisar/Suplemento/Alimentos salvos/Colar). Decisão consciente do
+    usuário de revogar a "regra sagrada" antiga de "nada sai do card"
+    (documentada em `MealAccordion.tsx`, que virou só a linha colapsada).
+  - **Clipboard de copiar/colar entre refeições** substituiu o antigo
+    "copiar de outra refeição" (lista de origem). Copia um item, cola em
+    qualquer outra refeição depois — fica guardado até copiar outra coisa.
+  - **⭐ Favoritar alimento** — tabela nova `alimentos_favoritos` (mesmo
+    padrão de `receitas_favoritas`), estrela em `PorcaoInline` (busca
+    normal) e componente `FavoritoStar` extraído pra reaproveitar.
+    "Alimentos salvos" no menu lista os favoritados.
+  - **Registrar suplemento**: carrossel por TIPO (Whey/Creatina/BCAA/
+    Pré-treino/...) em vez de listar cada marca solta — grupo com 1 opção
+    só pula direto pro ajuste de dose, grupo com várias abre busca interna.
+    Tela final de dose é PRÓPRIA do suplemento (não reaproveita o
+    `PorcaoInline` da comida — tentativa inicial de reaproveitar foi
+    revertida a pedido do usuário, que não gostou do texto genérico
+    "Adicionar à refeição" aparecendo pro suplemento).
+  - **Base de suplementos expandida de ~30 pra 169** produtos reais
+    (Growth, Max Titanium, Integralmedica, Dux, Black Skull, Probiótica,
+    Atlhetica, Under Labz, Nitech, New Millen, Vitafor, Nutrata, Dark Lab,
+    Puravida), + categorias novas (Glutamina, Pré-treino, Multivitamínico,
+    Ômega 3, Colágeno, ZMA, Cafeína). Bug meu encontrado e corrigido:
+    3 "Cafeína" com porção 0,3g viraram **0** porque a coluna do banco é
+    inteira — corrigido pra 1g nominal. Itens com macro zerado (creatina/
+    glutamina/beta-alanina/cafeína) ganharam valores pequenos mas reais
+    em vez de zero puro, a pedido do usuário.
+  - **Auditoria automática da base de alimentos** (~1700 itens): calorias
+    vs proteína×4+carbo×4+gordura×9, densidade por 100g implausível,
+    porção inválida, negativo, duplicata — só achou o bug da cafeína
+    acima, resto limpo.
+  - **Scanner saiu da bottom nav** — agora só se chega por ele via
+    "Escanear comida" no menu da refeição (ainda leva pro esqueleto de
+    sempre, tela de captura real segue pendente).
+  - Bug de exibição corrigido: resumo da refeição fechada usava "Pão +
+    Ovo" (símbolo "+"), virou "Pão, Ovo" (vírgula), a pedido do usuário.
+
+- **Hábitos — streak confiável** (antes de tudo acima): auditoria achou
+  que `streak_atual` nunca teve mecanismo de crescimento nenhum (nem
+  cron, nem trigger) e a recaída reduzia 30% em vez de zerar, ao contrário
+  do que a cópia do produto dizia. Corrigido: recaída zera de verdade,
+  streak "evitar" é 100% derivado de datas (sem contador, sem cron —
+  auto-cura sozinho), "construir" ganhou RPC
+  `registrar_checkin_habito` idempotente — **"Fiz hoje" persiste de
+  verdade agora** (antes era só ✓ visual que sumia ao recarregar).
+  Migração `db/athoslife_habitos_streak_confiavel_migration.sql`, já
+  commitada e no ar.
+
+- **Treino — 100 "pranchas" ilustradas processadas** (zip de 455MB → 11MB,
+  `sharp-cli`), cada uma com o mascote ATHOS fazendo o exercício, início+
+  execução+instrução numa imagem só (`prancha_url`, coluna nova). Tela
+  expandida do exercício mostra a prancha inteira, rolável. **Usuário não
+  gostou do resultado das imagens e está fazendo auditoria própria pra
+  corrigir** — achei sozinho que 25 das 100 vieram com fundo claro por
+  engano (deveria ser escuro, só 75 vieram certas), reportado antes dele
+  comentar. Fica pendente ele reentregar as corrigidas.
+  - **Tentativa de trocar o avatar do Life** pela imagem
+    `personagem_athos_referencia.png` (fundo transparente de verdade, veio
+    junto no mesmo zip) — usuário disse que não era a imagem certa,
+    **revertida** (`git checkout` no PNG + `mixBlendMode: screen` de volta
+    no código). Segue aguardando a versão certa.
+
+- **Conquistas ligada de verdade**: catálogo de 26 conquistas já existia
+  pronto no Supabase (bronze→lendário), mas `avaliar_conquistas()` nunca
+  existiu de verdade no Postgres apesar do que a documentação antiga do
+  domínio dizia — conferido ao vivo. Construída a avaliação client-side
+  (TypeScript, mesmo padrão do resto do app) contra dado real: streak
+  (`maior_streak`), treino (`treino_plano.concluido_em` — `treinos_historico`
+  está morta, ninguém grava nela), refeições/dieta completa/proteína/macros
+  perfeitos (±10% de tolerância), água, peso (reaproveitando o
+  `pesoRepository` que já existia). Bug corrigido: domínio usava categoria
+  `'agua'`, banco usa `'hidratacao'`. Cards da galeria agora expandem no
+  toque (descrição, nível, data de desbloqueio ou % de progresso) — pedido
+  do usuário, só visualização.
+
+- **Conversa sobre Health Connect / sono**: explicado que Health Connect
+  não tem dado de "última vez que o telefone foi desbloqueado" (isso é
+  Bem-estar Digital / `UsageStatsManager`, permissão diferente e mais
+  sensível) — o usuário tinha essa ideia errada. Decisão: sem
+  wearable/Health Connect real, a Life pergunta direto em vez de tentar
+  adivinhar (mantém o padrão que o usuário já gostou). Ideia nova
+  registrada (não implementada): check-in em 3 momentos do dia (manhã=
+  sono, meio-dia=refeição citando o que a pessoa já registrou, noite=
+  treino/dia) — usuário rejeitou a ideia de bolinha/brilho de notificação
+  ("parece anúncio"), combinado reaproveitar o EmotionalCheckin que já
+  existe na Home em vez de criar aviso novo. Depende da Life virar
+  componente global (decisão de 2026-09-13, nunca implementada) e da
+  decisão de Capacitor 6→8 pra sono/batimento funcionarem de verdade.
+  Ajudei também com localhost pro celular (WSL2 não expõe porta pra
+  outros aparelhos na mesma Wi-Fi sem mexer em `.wslconfig` — caminho
+  recomendado foi USB + `adb reverse`, mais simples).
+
+- **Perfil — as 8 sub-páginas construídas** (usuário pediu pra seguir a
+  ordem da lista, inspiração Fitfolio/Duolingo/WhatsApp, "depois eu venho
+  corrigindo ao meu gosto"):
+  - **Conta**: nome/foto (câmera ou galeria via `@capacitor/camera`,
+    bucket novo `avatars` público)/e-mail (só leitura, vem da sessão de
+    auth)/sexo/altura/idade/peso — tudo salvando sozinho ao sair do campo.
+    Colunas novas: `avatar_url`, `sexo` (`altura_cm`/`idade`/`peso_atual`
+    já existiam, nunca usadas por nenhum código até agora).
+  - **Metas**: calorias/macros/água/passos editáveis, mesmas que já
+    alimentam Home/Dieta.
+  - **Plano**: status real (trial/premium), sem botão de assinar fake —
+    Google Play Billing não existe, não fingi que existe.
+  - **Privacidade e dados**: exportar todos os dados reais em `.json`
+    (funciona de verdade, várias tabelas) + solicitar exclusão de conta
+    (registra o pedido em `eventos_seguranca` e desconecta — apagamento
+    definitivo é manual, client não tem permissão de apagar `auth.users`).
+  - **Notificações**: lista central dos lembretes de hábito (que já
+    existiam espalhados em Hábitos) — "modo resgate"/WhatsApp marcados
+    como "em breve" (nada disso existe).
+  - **Acessibilidade**: tamanho de texto/reduzir animações/alto
+    contraste — as três funcionam de verdade, aplicadas na hora, salvas
+    no `localStorage` do aparelho (preferência de exibição, não dado do
+    usuário, por isso não vai pro banco).
+  - **Sobre**: versão do app; Termos/Política/Suporte "em breve" — não
+    existe nenhum documento legal escrito no projeto, não fui inventar.
+  - De brinde: corrigidos 2 links mortos que já existiam (rota nunca
+    registrada) — "Ver planos" da receita bloqueada, e "Sair da conta".
+
+- `tsc --noEmit` limpo depois de cada mudança, o dia inteiro. Servidor
+  Vite local ficou rodando quase a sessão inteira (`localhost:5173`).
+
+- **Nada commitado desde o push do início da sessão** — usuário avisou
+  que vai mexer em algumas coisas antes de commitar, sessão encerrada
+  pra desligar o PC. `git status` mostra ~23 arquivos modificados + ~40
+  novos (incluindo zips/imagens de referência soltos na raiz, de
+  propósito fora de qualquer commit, mesmo padrão de sempre).
+
+- **Pendências pra próxima sessão**:
+  1. Usuário vai reentregar as 100 pranchas do Treino corrigidas (auditoria
+     própria em andamento) — reprocessar quando chegarem.
+  2. Avatar do Life com fundo transparente — aguardando a imagem certa.
+  3. Scanner: tela de captura/revisão real — usuário ainda não mandou o
+     HTML da nova abordagem (só apareceu o botão de entrada no menu da
+     Dieta até agora).
+  4. Perfil: usuário vai revisar/ajustar as 8 sub-páginas ao gosto dele.
+  5. Decisão Capacitor 6→8 (trava Health Connect de sono/batimento e,
+     por tabela, o check-in de 3 momentos do Life).
+  6. Camada 2 da Life (life_* tables, ai-proxy fixes, FCM, relogio-athos)
+     — segue exatamente como estava, nada mudou aqui.
+  7. Testar chat do Life ao vivo (ainda pendente desde 09-19).
+  8. Commit/push de tudo desta sessão — usuário decide quando, disse que
+     vai mexer em mais coisas antes.
+
+## 2026-09-26
+
+- **Capacitor**: pendência "6→8" estava errada — projeto já roda Capacitor
+  8.5.0. Só falta o plugin de saúde quando o Health Connect entrar.
+- **Auditoria de segurança do banco (grave, corrigida)**: qualquer usuário
+  logado podia editar `plano`/`is_admin`/cotas do próprio perfil (e, virando
+  admin, listar e-mail/telefone de todos via `admin_list_users`); funções de
+  cota/vagas aceitavam qualquer `p_user_id`/data (zerar cota, devolver scan,
+  esgotar vagas de fundador); usuário apagava o próprio rastro de auditoria;
+  bucket `avatars` sem limite. Corrigido em
+  `db/athoslife_seguranca_perfil_funcoes_migration.sql` — **rodado pelo
+  usuário no SQL Editor e conferido ao vivo**. Primeira tentativa rodou mas
+  foi desfeita (rollback) por causa do `begin/commit` explícito — removido
+  do arquivo; o SQL Editor já roda o script como bloco único.
+  As duas contas do dono (matheusbarretonunes / matheusecomerc) viraram
+  admin + VIP. Teste grátis de conta nova: **30 → 7 dias**.
+  ⚠️ Pendente: receitas pagas ainda legíveis pela API por usuário grátis
+  (a tela mostra cadeado, mas o banco entrega a receita) — corrigir com uma
+  "vitrine" (nome/foto/kcal) pro grátis.
+- **Planos (decisão do dono)**: Grátis = chat 4 msgs/dia, busca/salvar/copiar
+  alimentos, treino casa + academia, 1 hábito. Pago = planos de treino e
+  dieta, mais modalidades, scanner 5/dia, Cozinha + receitas com o Life,
+  hábitos completos, resgate 7 dias via WhatsApp, Camada 2 do Life, análise
+  do Life com Health Connect. Pra todos: widget, timer na tela de bloqueio
+  (Live Updates Android), passos. Sem anúncios em nenhum plano.
+- **Regra do Life**: pode falar de trocas de alimento, macros/micros e
+  explicar suplementos (informação pública); nunca diz qual suplemento/remédio
+  tomar nem quanto, nunca monta dieta, nunca recomenda treino/carga/séries.
+- **ai-proxy v2 escrito** (`supabase/functions/ai-proxy/index.ts`, primeira
+  vez versionado no repo — antes só existia `ai-proxy.zip` solto). O zip
+  antigo tinha 4 bugs que impediam o chat de funcionar (envelope diferente
+  do app, campo de resposta diferente, RPC de limite sem parâmetros, modelo
+  `gemini-1.5-flash` desligado pelo Google). Novo: Gemini 2.5 Flash sem
+  thinking (economia), cota por plano atômica no banco, 6 chamadas/min por
+  usuário, teto global de tokens/dia, histórico do chat no servidor (8
+  últimas), palavras de risco → resposta fixa com CVV sem passar pela IA,
+  filtro de saída contra prescrição (testado), chave do Gemini no cabeçalho.
+  Handlers: chat, vision (só pago), recipe (só pago). Barcode removido
+  (app não usa). Migração nova: `db/athoslife_ia_cotas_chat_migration.sql`.
+  App atualizado: `aiProxy.ts`, `recipeAi.ts`, `LifeChatSheet.tsx` (carrega
+  histórico, mostra mensagens restantes), exportação LGPD inclui o chat.
+- Dev: `VITE_DEV_PREMIUM=true` em `.env.local` mostra a interface paga só no
+  `npm run dev` (nunca em build).
+- Prompt do Life: voltaram os exemplos de "puxar assunto" (um comentário
+  por vez, segue o assunto da pessoa). Sugestão da Cozinha ATHOS só pra quem
+  é pago (proxy consulta `is_premium_like` a cada mensagem); pro grátis o
+  prompt proíbe mencionar Cozinha/receitas.
+- **Migração de cotas rodada pelo usuário e conferida** (tabelas, RLS,
+  grants, limites 4/40 chat e 0/5 scan). **ai-proxy v2 publicado pelo
+  usuário via painel** e confirmado no ar (CORS novo responde). Código no
+  ar era o mesmo do `ai-proxy.zip` (765 linhas) — confirmado pelo usuário.
+  `GEMINI_API_KEY` já estava nos Secrets (mesma chave da época do 1.5 —
+  chave é da conta, vale pro 2.5).
+- Nada commitado nesta sessão (segue o padrão: usuário decide quando).
+
+- **Pendências pra próxima sessão**:
+  1. **Primeiro teste real do chat** (Hábitos → Life, `npm run dev --host`)
+     — até o fim da sessão: 0 chamadas no `ai_audit_logs`. Conferir cota
+     contando, histórico salvando, tokens/custo por mensagem. Testar limite
+     do grátis (4) precisa de uma conta de teste comum (as duas do dono são VIP).
+  2. Tela "Esqueci a senha" — dono esqueceu a senha da conta principal;
+     testadores do beta também vão precisar.
+  3. Receitas pagas legíveis pela API por usuário grátis — criar "vitrine"
+     (nome/foto/kcal) e travar conteúdo por `is_premium_like` no RLS.
+  4. Travar no servidor os limites do grátis que ainda são só de tela:
+     1 hábito, Cozinha, e o que mais o plano pago tiver.
+  5. **Camada 2 do Life** (quer pronta pro beta): memória em 3 camadas
+     (dados do app / fatos fixos que nunca são sobrescritos / padrões com
+     peso), extração diária com modelo leve, avisos que mudam de abordagem
+     quando ignorados (nunca abaixo de 1 aviso de água/dia), `relogio-athos`
+     (precisa `pg_cron` + `pg_net`), push FCM (precisa projeto Firebase do
+     dono — ainda não decidido se o beta sai com ou sem push).
+  6. Timer de descanso como notificação fixa com cronômetro (Live Updates
+     Android 16 / ilha do HyperOS — visual de ilha depende da Xiaomi).
+  7. Dono vai mandar: HTML do widget, ideia/HTML da atualização da Dieta,
+     modalidade extra de treino (construir escondida atrás de flag).
+  8. Seguem de antes: pranchas do Treino corrigidas e animações (dono teve
+     problema, vai demorar), avatar do Life com fundo transparente, HTML do
+     Scanner, revisão do Perfil, `altercao do checkin emacional24.09.26.html`
+     solto na raiz sem registro de uso.
+  9. Commit/push de tudo de 24/09 + 26/09.
+
+## 2026-09-27
+
+- **Correções do registro anterior (ditas pelo dono)**:
+  - Item 6 de 26/09 estava errado: o dono **não** pediu "timer de descanso".
+    O pedido é uma **Live Activity** (notificação viva na tela de bloqueio /
+    ilha — Live Updates no Android). Conteúdo ainda a definir com o dono.
+  - Scanner: o dono **nunca preparou HTML** pra tela. O registro de 24/09
+    ("usuário ainda não mandou o HTML") estava errado — a tela de
+    captura/revisão é pra **Claude desenhar e construir**.
+  - Pranchas do Treino + avatar do Life: dono está cuidando das imagens,
+    vai demorar — não bloqueia nada agora.
+- **Live Activity de treino — especificação do dono** (mockup de referência:
+  `athoslife-live-activity-mockup.html`, na raiz do `athoslife/`):
+  card na tela de bloqueio lendo a mesma sessão central do treino
+  (`WorkoutSession`: exercício, miniatura, série X de Y, peso, reps, status
+  idle|running|resting|paused|completed, descanso restante, deeplink).
+  Estados: **série ativa** (steppers peso ±2,5 kg e reps ±1 + "Confirmar
+  série ✓") e **descanso** (contagem regressiva laranja, "+15s", "Pular").
+  **Acréscimo do dono**: terceiro estado, **cronômetro de exercício por
+  tempo** (prancha, abdominal isométrico) — além do descanso.
+  Técnica: no Android é notificação contínua com layout próprio + botões
+  (Live Updates / Android 16) via plugin nativo Kotlin do Capacitor; a ilha
+  do HyperOS é visual da Xiaomi. Substitui o item 6 de 26/09.
+- **Ordem aprovada pelo dono**: Esqueci a senha → vitrine das receitas +
+  limites do grátis no servidor (migração só com aprovação) → Scanner →
+  teste do chat quando o dono puder rodar o app.
+- **Esqueci a senha (feito, falta configurar e testar)**: tela nova
+  `src/ui/screens/RecuperarSenha.tsx` em `/recuperar-senha` (link "Esqueci a
+  senha" no Login, modo Entrar). Fluxo por **código no e-mail**, não por link
+  (app nativo não tem deep link): `resetPasswordForEmail` → `verifyOtp`
+  type recovery → `updateUser`. Rota fica fora do `RequireAnon` porque
+  validar o código já abre sessão e o guard redirecionaria antes de gravar
+  a senha. Mensagem igual exista ou não a conta. `tsc` 0 erros.
+  ⚠️ **Dono precisa**: Supabase → Authentication → Email Templates → Reset
+  Password → colocar `{{ .Token }}` no corpo (o padrão só tem o link).
+  ⚠️ SMTP padrão do Supabase só entrega pra e-mails da equipe da org e com
+  limite baixo por hora — pro beta com testadores precisa SMTP próprio
+  (Resend/Brevo etc.).
+- **Limites do grátis no servidor (RODADO por Claude via MCP com aprovação do dono, 2026-09-27)**:
+  `db/athoslife_limites_gratis_servidor_migration.sql`.
+  1. Receitas: as 25 são `premium=true` e a RLS só pedia "estar logado" —
+     `select *` entregava tudo. Agora `conteudo` perde o GRANT de SELECT
+     (vitrine continua) e só sai pela RPC `receitas_conteudo_liberado()`,
+     que filtra por `is_premium_like`. Tirado também o SELECT do `anon`.
+     App: `receitasRepository.listar()` pede colunas da vitrine + RPC.
+  2. Hábitos: trigger `limitar_habitos_gratis` em `vicios_user` (insert ou
+     reativação) — grátis = 1 ativo. Nem a tela tinha esse limite antes.
+     App traduz o erro em `habitosRepository.criar()`.
+  3. `is_premium_like`: trial com `trial_expira` NULL era pago pra sempre
+     (o app já tratava como sem acesso). Nenhum perfil nesse caso hoje.
+  ⚠️ App e migração dependem um do outro: sem a migração, a Cozinha do
+  código novo quebra (RPC não existe); com a migração e código antigo,
+  `select *` falha. Rodar a migração antes de testar.
+  Visto e não mexido: política de UPDATE de `vicios_user` deixa o próprio
+  usuário editar `streak_atual`/`melhor_streak` pela API (só engana a si
+  mesmo e as conquistas dele) — avaliar depois.
+  Resto do plano pago: scanner/vision/recipe já travados no ai-proxy;
+  "planos de treino e dieta" e "mais modalidades" ainda não existem no app.
+  Conferido no catálogo após rodar: `authenticated` sem SELECT em
+  `conteudo` e com SELECT em `titulo`; `anon` sem SELECT na tabela; RPC
+  executável só por `authenticated`; trigger ativo; `is_premium_like` =
+  false pro free, true pro trial válido e pros 2 VIP. Teste simulando
+  inserts (com rollback) foi barrado pela permissão do Claude Code — o
+  teste de verdade fica pro app: conta free tentando criar o 2º hábito e
+  abrindo receita. `apply_migration` sem permissão no token
+  (`database_migrations_write`) — rodado via `execute_sql`, então não
+  aparece no histórico de migrações do Supabase.
+- **Live Activity — decisão do dono**: card completo igual ao mockup (com
+  steppers peso/reps, confirmar, descanso +15s/pular, cronômetro de
+  exercício por tempo), **abrindo mão da ilha/Live Update** do Android 16
+  (esse formato só aceita layout padrão + 3 botões). Uso da ilha: pensar
+  depois. Dono aprovou construir antes o **modo "treino em andamento"**
+  dentro do app (não existe hoje — Treinos só monta o plano), que é a fonte
+  de estado da Live Activity.
+- **Widget de hidratação — referência do dono**:
+  `athoslife-widget-hidratacao.html` (raiz do `athoslife/`, 76 KB com o
+  Life embutido em base64). Cápsula 655×137 escura com anel teal, Life
+  estourando 30px pra cima (toque abre o app, humor
+  hidratado/ressecado/vazio abaixo de 40% da meta), contador "1.500 /
+  2.500 ml", 5 copos que enchem proporcional à meta (toque soma o volume
+  do copo), botão câmera (abre captura de refeição), "..." com 250 ml /
+  500 ml / 1 L. Contrato `HydrationWidgetState` + `Bridge`
+  (openApp/openCamera/saveWater/removeWater/saveCupVolume/resetDay).
+  Limites do widget nativo Android já previstos: sem animação contínua
+  (bob do Life), sem menu flutuante (o "..." vira seletor dentro do
+  widget ou tela pequena), nada pode vazar da área do widget (a cápsula
+  desce 30px dentro de um widget mais alto), brilhos/degradês viram
+  imagens pré-renderizadas. Gravar água precisa do token do Supabase no
+  lado nativo ou fila local sincronizada ao abrir o app.
+- **APK de teste pelo GitHub (novo)**: `.github/workflows/android-apk-teste.yml`
+  — rodar em Actions → "APK de teste" → Run workflow. Gera `.apk` de debug
+  (sem keystore) pra instalar direto no celular. Campo `servidor_dev`
+  (padrão `http://192.168.18.92:5173`) liga a atualização ao vivo: o app
+  abre as telas do `npm run dev -- --host` do PC (`capacitor.config.ts` lê
+  `CAP_SERVER_URL`; a automação libera http no manifest só nesse APK).
+  Vazio = APK independente. Mudança nativa exige gerar e instalar de novo.
+  Celular precisa alcançar o PC: portproxy + firewall no PowerShell admin
+  (WSL2 tem rede interna própria; o IP do WSL muda a cada boot).

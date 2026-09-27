@@ -1,0 +1,82 @@
+name: APK de teste (instalar no celular)
+
+# Por que este arquivo existe:
+# O .aab do outro workflow só serve pra Play Console — não instala direto no
+# celular. Este gera um .apk de debug (sem keystore) pra instalar na mão e
+# testar o que só funciona no app de verdade (notificações, botão voltar,
+# câmera, Live Activity, widget).
+#
+# Atualização ao vivo: com "servidor_dev" preenchido, o app abre as telas
+# direto do `npm run dev -- --host` do PC. Instala uma vez e cada mudança nas
+# telas aparece no celular sem reinstalar. Só funciona com o PC ligado, o dev
+# server rodando e o celular no mesmo Wi-Fi. Deixe vazio pra um APK que leva
+# as telas dentro dele e funciona sozinho.
+#
+# Mudança em código NATIVO (plugin Kotlin, manifest, widget) exige rodar de
+# novo e reinstalar — a atualização ao vivo só cobre as telas.
+#
+# Secrets necessários: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+on:
+  workflow_dispatch:
+    inputs:
+      servidor_dev:
+        description: 'Endereço do npm run dev no PC (vazio = APK independente)'
+        required: false
+        default: 'http://192.168.18.92:5173'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar tipos (strict)
+        run: npm run typecheck
+
+      - name: Build web
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Sincronizar Capacitor
+        env:
+          CAP_SERVER_URL: ${{ inputs.servidor_dev }}
+        run: npx cap sync android
+
+      # O dev server é http:// — o Android bloqueia por padrão. Liberado só
+      # neste APK de teste (a mudança não volta pro repositório).
+      - name: Liberar http do PC (só com servidor_dev)
+        if: ${{ inputs.servidor_dev != '' }}
+        run: |
+          sed -i 's#<application#<application android:usesCleartextTraffic="true"#' android/app/src/main/AndroidManifest.xml
+          grep -n usesCleartextTraffic android/app/src/main/AndroidManifest.xml
+
+      - name: Gerar APK de debug
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Publicar o .apk como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: athoslife-teste-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14

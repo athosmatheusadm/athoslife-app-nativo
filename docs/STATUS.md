@@ -28,40 +28,41 @@ Os primeiros passos foram os mais pensados; os próximos andam mais rápido.
 
 | Módulo | Decidido | Codado | Falta |
 |--------|:---:|:---:|------|
-| Scanner (captura por IA) | ✅ | ✅ domínio+dados | Tela de revisão (UI) |
-| Cozinha (25 receitas + Life-chef) | ✅ | ✅ embutida na tela da Dieta (não é mais aba separada), abaixo das refeições do dia, cards em fileira horizontal com selos de kcal/prot/carb + tempo (2026-08-28) | ⚠️ `db/athoslife_cozinha_tempo_preparo_migration.sql` (coluna `tempo_preparo_min`) ainda não rodou no Supabase — sem ela os cards funcionam normal, só sem o selo de tempo. "Life-chef" (IA) segue de propósito sem backend (`recipeAi.ts`), fora do escopo da tela |
-| Home (discos + painel único + streak + refeições + peso) | ✅ | ✅ | — (fiel ao mockup `athoslife-home-funcional.html`; revisada em 2026-08-24, sem dado falso em nenhum bloco) |
+| Scanner (captura por IA) | ✅ | ✅ domínio+dados, **entrada pelo menu de cada refeição na Dieta** (2026-09-24, saiu da bottom nav) | Tela de captura/revisão de verdade — o botão "Escanear comida" hoje só navega pra `/scanner`, que continua sendo só o esqueleto de sempre. Claude desenha e constrói a tela (o dono não tem HTML pronto — corrigido 2026-09-27) |
+| Cozinha (25 receitas + Life-chef) | ✅ | ✅ embutida na tela da Dieta, abaixo das refeições do dia, cards em fileira horizontal com selos de kcal/prot/carb + tempo | ⚠️ `db/athoslife_cozinha_tempo_preparo_migration.sql` já rodou (confirmado 2026-09-08). "Life-chef" (IA) segue de propósito sem backend, fora do escopo da tela |
+| Home (discos + painel único + streak + refeições + peso) | ✅ | ✅ | — (sem dado falso em nenhum bloco) |
 | Água | ✅ | ✅ | Virou o próprio disco da Home (não é mais card separado) |
-| Dieta (acordeão por refeição) | ✅ | ✅ confirmado funcionando | Migrações `itens_refeicao`/`refeicoes_status` + `refeicoes_extra` rodaram com sucesso. "Extra" virou "refeições extras" livres (nome + posição), criadas pelo "+" da Home ou "+ Nova refeição" na Dieta, arrastáveis — testado ao vivo pelo usuário, confirmado funcionando |
+| Dieta (menu por refeição) | ✅ redesenhada 2026-09-24: tocar na refeição abre direto um sheet único (itens + menu de ações), substituiu o acordeão antigo | ✅ **MealSheet** (itens já registrados com ⧉ copiar/🗑 excluir, macros, concluída) + menu "Escanear/Pesquisar/Suplemento/Alimentos salvos/Colar" + **⭐ favoritar alimento** (`alimentos_favoritos`, tabela nova) + **clipboard de copiar/colar entre refeições** (substituiu "copiar de outra refeição") + **Registrar suplemento** com carrossel por tipo (Whey/Creatina/BCAA/Pré-treino/...), 169 produtos reais cadastrados | "Refeições salvas" aparece no menu mas desabilitado ("Em breve") — não existe esse conceito no banco. Auditoria de macros do banco de alimentos feita uma vez (2026-09-24), sem erro estrutural encontrado |
 | Login (email/senha) | ✅ | ✅ | "Criar conta" adicionado em 2026-08-24. **Consentimento/Onboarding não têm nenhum redirecionamento automático** — se `consentimento_aceito`/`onboarding_completo` virarem `true` no banco enquanto o usuário já está na tela, ele fica preso lá até navegar manualmente pra `/home` (rota `/consentimento` fica fora do guard `RequireAuth`) |
-| Perfil + sub-páginas | ✅ | ✅ lista+tela | Conteúdo real das sub-páginas |
-| Notificações (regra fixa) | ✅ | 🔸 lembrete local só do hábito "construir" (2026-09-19, `@capacitor/local-notifications`), não testado em build real ainda | Regra fixa pros outros módulos (água/treino), tela de configuração, push de verdade (FCM) |
-| Notificações inteligentes (Life) | ✅ (doc) | ⬜ | Pós-lançamento, de propósito |
+| Perfil + sub-páginas | ✅ | ✅ **todas as 8 sub-páginas reais** (2026-09-24): Conquistas, Conta (nome/foto/e-mail/sexo/altura/idade/peso), Metas, Plano (status real, sem venda — Billing não existe), Privacidade (exportar dados real em `.json`, solicitar exclusão), Notificações (lembretes de hábito centralizados), Acessibilidade (tamanho de texto/reduzir animações/alto contraste — funcionam de verdade, salvos no aparelho), Sobre | Usuário vai revisar/ajustar cada uma ao gosto dele — construídas rápido, sem refinamento visual ainda |
+| Notificações (regra fixa) | ✅ | 🔸 lembrete local só do hábito "construir" (`@capacitor/local-notifications`), agora com tela central em Perfil > Notificações, não testado em build real ainda | Regra fixa pros outros módulos (água/treino), push de verdade (FCM), modo resgate/WhatsApp (nenhum dos dois existe) |
+| Notificações inteligentes (Life) | ✅ (doc) + **novo conceito 2026-09-24**: check-in em 3 momentos do dia (manhã=sono, meio-dia=refeição, noite=treino/dia), grounded em dado real, sem gatilho tipo "notificação de anúncio" — reaproveitar o EmotionalCheckin já existente na Home em vez de criar aviso novo | ⬜ | Pós-lançamento, de propósito. Depende da Life virar componente global (decisão de 2026-09-13, nunca implementada) |
 | Histórico de peso | 🔸 tem mecânica no app atual | ⬜ | Reaproveitar o gráfico existente |
 | Busca manual de alimentos | 🔸 ref. Macros | ⬜ | Codar (usa alimentos + IA já prontos) |
 | Histórico do chat | 🔸 ref. Gemini | ⬜ | Codar |
-| Treino (100 exercícios + Local/dia da semana) | ✅ mockup do usuário validado | ✅ catálogo com **100 exercícios** (36 completos com foto de execução, 64 novos só com ícone — sem foto de execução/"como executar" ainda, de propósito), plano pessoal com **série individual (reps + carga em kg cada)**, ícone do card independente do formulário de séries (2026-09-17) | Usuário vai preparar as fotos de execução dos 64 exercícios novos, um por um. Formulário de séries com carga ainda não confirmado ao vivo pelo usuário (só testado visualmente). `ambientes`/`grupo_muscular` dos 64 novos foi chute meu em cima do nome do exercício, não confirmado exercício por exercício |
-| Hábitos (evitar/construir, streak, vontade, Life) | ✅ redesenhada 2026-09-19: card colapsável, dois tipos (evitar/construir), Life como termômetro+chat | ✅ lista + streak + "Estou com vontade" (assistente com alternativa/timer/conversar reais) + "Hoje eu cedi"/"Fiz hoje"/"Não consegui hoje", contra `vicios_user`/`recaidas` (RLS ok) + criar hábito + **chat com o Life** (`LifeChatSheet.tsx`, ligado no `ai-proxy` tipo 'chat', ainda não testado ao vivo) + **lembrete local** (`@capacitor/local-notifications`, só funciona em build Android real) | "Fiz hoje" do tipo construir não persiste (sem ação de check-in no repositório, só ✓ visual); música do timer de espera (sem áudio no projeto); imagem do Life com fundo preto sólido (gambiarra `mix-blend-mode`, aguardando versão transparente); Camada 2 da Life (life_* tables, ai-proxy fixes, FCM, relogio-athos) — ver WORKLOG 2026-09-19 |
+| Treino (100 exercícios + Local/dia da semana) | ✅ mockup do usuário validado | ✅ catálogo com 100 exercícios, plano pessoal com série individual (reps + carga em kg) + **100 "pranchas" ilustradas** (mascote ATHOS, início/execução/instrução numa imagem só, 2026-09-24, `prancha_url`) | ⚠️ **Usuário não gostou da qualidade das pranchas geradas — fazendo auditoria própria, vai reentregar corrigidas.** 25 das 100 vieram com fundo claro por engano (deveria ser escuro). `ambientes`/`grupo_muscular` dos 64 exercícios mais novos foi chute meu, não confirmado um por um |
+| Conquistas (26 conquistas, bronze→lendário) | ✅ catálogo já existia pronto no banco | ✅ **avaliação real contra dado do usuário** (2026-09-24, client-side TS — `avaliar_conquistas()` da doc antiga nunca existiu de verdade no Postgres, corrigido). Card expande no toque (descrição, nível, data/progresso) | Banco de teste está quase vazio (0 treino/água/peso registrados) — galeria aparece quase toda bloqueada, é o esperado, não é bug. Sem gatilho em tempo real (só avalia quando abre a tela) |
+| Hábitos (evitar/construir, streak, vontade, Life) | ✅ redesenhada 2026-09-19: card colapsável, dois tipos (evitar/construir), Life como termômetro+chat | ✅ lista + **streak confiável derivado de datas** (2026-09-24: sem cron, recaída zera de verdade — antes reduzia 30% e não tinha mecanismo de crescimento nenhum) + "Estou com vontade" + **"Fiz hoje" agora persiste de verdade** (RPC `registrar_checkin_habito`, antes era só ✓ visual) + criar hábito + chat com o Life (ainda não testado ao vivo) + lembrete local (só funciona em build Android real) | Música do timer de espera (sem áudio no projeto); **imagem do Life continua com fundo preto sólido** (gambiarra `mix-blend-mode` restaurada — uma tentativa de troca em 2026-09-24 usou a imagem errada, revertida; aguardando a versão certa do usuário); Camada 2 da Life (life_* tables, ai-proxy fixes, FCM, relogio-athos) |
 
 ## Ainda nem começamos (código)
 
-- Conquistas (não auditada — Hábitos saiu desta lista em 2026-09-13, ver linha
-  própria no Módulos acima; Dieta já tinha saído antes pelo mesmo motivo)
-- Achievements/conquistas: `avaliar_conquistas()` só existe como decisão no
-  Postgres, nunca foi chamada pelo app (por isso o card de streak da Home
-  não mostra "próximo nível" — sem RPC ligada, o número seria inventado)
-- Chat com a Life (tela) — decisão de arquitetura: a construir junto com o
-  agregador de contexto (água/humor/refeições/peso/passos), não isolado
+- Chat com a Life (tela dedicada, fora de Hábitos) — decisão de arquitetura: a
+  construir junto com o agregador de contexto (água/humor/refeições/peso/passos),
+  não isolado. Depende da Life virar componente global (2026-09-13, nunca feito)
 - Onboarding + Consentimento reais (hoje são esqueleto — Login já é real)
 - Google Play Billing (venda de assinatura)
 - Push notifications (FCM) + botão físico já feito
 - Primeiro .aab assinado + Play Console
+- Termos de uso / Política de privacidade / canal de suporte — nenhum documento
+  legal existe ainda em lugar nenhum do projeto (Sobre mostra "em breve" de propósito)
 
 ## Navegação real (fonte de verdade)
 
 Vinda do app rodando (não do blueprint antigo):
-**Home · Dieta · Treinos · Hábitos · Conquistas**, com o **Scanner** como
-botão destacado no canto.
+**Home · Dieta · Treinos · Hábitos**, com **Perfil** (Conquistas mora lá dentro)
+acessível pelo avatar do cabeçalho. **Scanner saiu da bottom nav em 2026-09-24**
+— agora só se chega por ela via "Escanear comida" no menu de uma refeição na
+Dieta, ou digitando `/scanner` direto.
 
 ## Riscos que podem morder prazo
 
@@ -72,3 +73,7 @@ botão destacado no canto.
    Providers → Email) desde 2026-08-24, só pra destravar teste de login local.
    **Tem que reativar antes de qualquer coisa ir pra produção/Play Store** —
    hoje qualquer email, mesmo inventado, consegue criar conta e logar na hora.
+5. ~~Capacitor 6→8~~ — **já está no 8** (8.5.0 instalado, conferido 2026-09-26;
+   a pendência estava desatualizada). Falta só instalar `@capgo/capacitor-health`,
+   apagar `types/capgo-health.d.ts` e `npx cap sync android` quando for mexer
+   com Health Connect (que exige aprovação da Google + Política de Privacidade).
