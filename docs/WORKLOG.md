@@ -1320,3 +1320,35 @@ lotes menores, mesmo padrão de sessões anteriores.
   entra no `scan_historico`.
   ⚠️ No teste manual da API o e-mail do dono foi enviado 1× no User-Agent
   pro Open Food Facts (erro meu); o código do app não envia.
+- **Correção do dono sobre o código de barras**: NÃO é grátis ilimitado.
+  Grátis = **2 leituras de código de barras por dia**; pago = mais (definir).
+  E usar **IA pra ampliar a busca** quando o Open Food Facts não achar o
+  produto. Ficou pra próxima sessão (abaixo).
+
+- **Pendências pra próxima sessão**:
+  1. **Código de barras**: cota de 2/dia no grátis (travar no servidor, não
+     só na tela — ex.: tipo `barcode` na `consumir_cota_ia`/`ia_uso_diario`
+     ou RPC própria) + definir o limite do pago; e busca com IA quando o
+     produto não está no Open Food Facts (ex.: foto do rótulo/tabela
+     nutricional -> handler novo no ai-proxy).
+  2. **Publicar o ai-proxy** (dono, pelo painel): colar
+     `supabase/functions/ai-proxy/index.ts` em Edge Functions -> ai-proxy ->
+     Code -> Deploy. Sem isso chat e Scanner por foto dão erro (Gemini 2.5
+     desativado pro projeto).
+  3. **Onboarding + Consentimento reais** (próximo grande bloco sugerido) —
+     conta nova não informa objetivo/peso/altura/metas nem aceita termos;
+     bug de ficar preso na tela de consentimento.
+  4. Termos de uso + Política de privacidade (exigidos por Play e Health
+     Connect).
+  5. Google Play Billing.
+  6. Life como componente global (PNG que abre o chat — dono vai mandar a
+     imagem) + Camada 2 do Life (memória, avisos, FCM).
+  7. Esqueci a senha: dono colocar `{{ .Token }}` no template "Reset
+     Password" do Supabase; SMTP próprio antes do beta.
+  8. Excluir hábito não existe no app (só criar) — perguntar ao dono.
+  9. Testar no celular (dono vai usar o console Android): Live Activity,
+     widget de água, leitor de código de barras, cronômetro/descanso.
+  10. Seguem de antes: pranchas do Treino corrigidas, avatar do Life
+      transparente, revisão do Perfil, "Confirm email" do Supabase religar
+      antes da produção, trocar o token do GitHub (ficou na conversa).
+  Nada pendente de commit: tudo enviado pro GitHub.
