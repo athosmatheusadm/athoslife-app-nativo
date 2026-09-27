@@ -1352,3 +1352,4 @@ lotes menores, mesmo padrão de sessões anteriores.
       transparente, revisão do Perfil, "Confirm email" do Supabase religar
       antes da produção, trocar o token do GitHub (ficou na conversa).
   Nada pendente de commit: tudo enviado pro GitHub.
+- Build de conferência com o plugin de código de barras **compilou** (run 36348717842).
