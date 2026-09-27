@@ -23,7 +23,9 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 const env = (k: string, padrao = '') => Deno.env.get(k) ?? padrao
 
 const GEMINI_KEY = env('GEMINI_API_KEY')
-const MODELO = env('GEMINI_MODEL', 'gemini-2.5-flash')
+// 2.5 ficou restrito a quem já usava (erro 404 em 2026-09-27). Troca sem
+// republicar: Secret GEMINI_MODEL no painel do Supabase.
+const MODELO = env('GEMINI_MODEL', 'gemini-3.5-flash-lite')
 const SUPABASE_URL = env('SUPABASE_URL')
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY')
 const TETO_GLOBAL_TOKENS = Number(env('IA_TETO_TOKENS_DIA', '2000000'))
@@ -36,6 +38,8 @@ const JANELA_HISTORICO = 8
 const PRECOS: Record<string, [number, number]> = {
   'gemini-2.5-flash': [0.3, 2.5],
   'gemini-2.5-flash-lite': [0.1, 0.4],
+  'gemini-3.5-flash-lite': [0.3, 2.5],
+  'gemini-3.8-flash': [0.75, 3.75],
 }
 
 // ================================================================
@@ -172,8 +176,26 @@ interface ResultadoGemini {
   bloqueado: boolean
 }
 
+/**
+ * Desliga o "raciocínio" só se o modelo aceitar: a doc não deixa claro se a
+ * família 3.x aceita thinkingBudget 0. Se o Google recusar a config (400),
+ * tenta de novo sem ela — com folga no teto de saída, porque o raciocínio
+ * conta dentro de maxOutputTokens e poderia deixar a resposta vazia.
+ */
 async function chamarGemini(corpo: Record<string, unknown>, timeoutMs = 25_000): Promise<ResultadoGemini> {
-  const falha: ResultadoGemini = { ok: false, texto: '', tokens: 0, custo: 0, bloqueado: false }
+  const r = await chamarGeminiUmaVez(corpo, timeoutMs)
+  if (r.ok || r.status !== 400 || !/thinking/i.test(r.erro)) return r
+  const cfg = { ...(corpo.generationConfig as Record<string, unknown>) }
+  delete cfg.thinkingConfig
+  cfg.maxOutputTokens = Number(cfg.maxOutputTokens ?? 0) + 1024
+  return chamarGeminiUmaVez({ ...corpo, generationConfig: cfg }, timeoutMs)
+}
+
+async function chamarGeminiUmaVez(
+  corpo: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<ResultadoGemini & { status: number; erro: string }> {
+  const falha = { ok: false, texto: '', tokens: 0, custo: 0, bloqueado: false, status: 0, erro: '' }
   if (!GEMINI_KEY) return falha
 
   const ctrl = new AbortController()
@@ -190,8 +212,9 @@ async function chamarGemini(corpo: Record<string, unknown>, timeoutMs = 25_000):
       },
     )
     if (!res.ok) {
-      console.error('[gemini] http', res.status, (await res.text().catch(() => '')).slice(0, 300))
-      return falha
+      const erro = (await res.text().catch(() => '')).slice(0, 300)
+      console.error('[gemini] http', res.status, MODELO, erro)
+      return { ...falha, status: res.status, erro }
     }
     const data = await res.json()
     const uso = data?.usageMetadata ?? {}
@@ -209,6 +232,8 @@ async function chamarGemini(corpo: Record<string, unknown>, timeoutMs = 25_000):
       tokens: Number(uso.totalTokenCount ?? entrada + saida),
       custo: (entrada * pe + saida * ps) / 1_000_000,
       bloqueado,
+      status: res.status,
+      erro: '',
     }
   } catch (e) {
     console.error('[gemini] erro de rede/timeout', String(e))
@@ -495,6 +520,9 @@ async function montarContexto(sb: Sb, userId: string): Promise<string> {
       .eq('user_id', userId).eq('ativo', true).limit(5),
     sb.from('registros_peso')
       .select('peso_kg, data').eq('user_id', userId).order('data', { ascending: false }).limit(1),
+    // Sessões do modo "treino em andamento" (2026-09-27).
+    sb.from('treinos_historico')
+      .select('duracao_min, completo, series_feitas').eq('user_id', userId).eq('data', hoje),
   ])
   // deno-lint-ignore no-explicit-any
   const val = (i: number): any => (r[i].status === 'fulfilled' ? (r[i] as PromiseFulfilledResult<any>).value : null)
@@ -524,8 +552,15 @@ async function montarContexto(sb: Sb, userId: string): Promise<string> {
   if (humor) dia.push(`humor ${humor}/5`)
   const passos = val(4)?.data?.[0]?.passos
   if (passos) dia.push(`${passos} passos`)
+  const sessoes = (val(8)?.data ?? []) as { duracao_min: number | null; completo: boolean; series_feitas: { series?: unknown[] }[] }[]
   const treinos = val(5)?.count ?? 0
-  dia.push(treinos ? `treinou (${treinos} exercícios)` : 'sem treino registrado')
+  if (sessoes.length) {
+    const min = sessoes.reduce((s, x) => s + (x.duracao_min ?? 0), 0)
+    const series = sessoes.reduce((s, x) => s + (x.series_feitas ?? []).reduce((n, e) => n + (e.series?.length ?? 0), 0), 0)
+    dia.push(`treinou ${min} min, ${series} séries${sessoes.some((x) => x.completo) ? ' (treino completo)' : ''}`)
+  } else {
+    dia.push(treinos ? `treinou (${treinos} exercícios)` : 'sem treino registrado')
+  }
   linhas.push(`Hoje: ${dia.join(' · ')}`)
 
   const habitos = (val(6)?.data ?? []) as {
