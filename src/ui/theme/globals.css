@@ -37,6 +37,27 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* Mesmo efeito acima, mas por escolha dentro do app (Perfil > Acessibilidade)
+     — independe do sistema, ver ui/theme/preferenciasAcessibilidade.ts. */
+  .reduzir-animacoes *,
+  .reduzir-animacoes *::before,
+  .reduzir-animacoes *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Alto contraste: clareia os dois tokens de texto mais apagados
+     (content-low/content-dim) — não redesenha o app inteiro (as cores são
+     fixas no tailwind.config, não variáveis de runtime), mas resolve o
+     caso real de "texto cinza claro demais pra ler". */
+  .alto-contraste .text-content-low {
+    color: #d1d5db !important; /* content.mid */
+  }
+  .alto-contraste .text-content-dim {
+    color: #9ca3af !important; /* content.low */
+  }
 }
 
 @layer components {

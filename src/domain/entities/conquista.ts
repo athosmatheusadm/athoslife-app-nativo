@@ -12,18 +12,26 @@
  * TypeScript puro, reusável por Android e iOS.
  */
 
+/**
+ * 'hidratacao', não 'agua' — precisa bater com o CHECK de
+ * conquistas_catalogo.categoria no Supabase. Já foi bug real: o domínio
+ * dizia 'agua' e a categoria de hidratação nunca aparecia (2026-09-24).
+ */
 export type CategoriaConquista =
   | 'streak'
   | 'treino'
   | 'dieta'
-  | 'agua'
+  | 'hidratacao'
   | 'peso'
+
+export type NivelConquista = 'bronze' | 'prata' | 'ouro' | 'diamante' | 'lendario'
 
 export interface Conquista {
   readonly id: string
   readonly titulo: string
   readonly descricao: string
   readonly categoria: CategoriaConquista
+  readonly nivel: NivelConquista
   readonly icone: string
   /** Desbloqueada? E quando. */
   readonly desbloqueada: boolean
@@ -41,10 +49,26 @@ export function corCategoria(cat: CategoriaConquista): string {
       return '#22c55e' // brand
     case 'dieta':
       return '#22c55e'
-    case 'agua':
+    case 'hidratacao':
       return '#3b82f6' // água
     case 'peso':
       return '#fbbf24' // ouro
+  }
+}
+
+/** Cor do selo de nível — bronze→lendário, mesma escala visual do mundo dos jogos. */
+export function corNivel(nivel: NivelConquista): string {
+  switch (nivel) {
+    case 'bronze':
+      return '#cd7f32'
+    case 'prata':
+      return '#c0c0c0'
+    case 'ouro':
+      return '#ffd700'
+    case 'diamante':
+      return '#5ee7ff'
+    case 'lendario':
+      return '#ff5ec4'
   }
 }
 

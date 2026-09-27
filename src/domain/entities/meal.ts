@@ -34,8 +34,8 @@ export interface Refeicao {
 export function resumoRefeicao(itens: readonly ItemRefeicao[]): string {
   if (itens.length === 0) return 'Nada registrado ainda'
   const nomes = itens.map((i) => primeiraPalavra(i.nome))
-  if (nomes.length <= 3) return nomes.join(' + ')
-  return `${nomes.slice(0, 3).join(' + ')} +${nomes.length - 3}`
+  if (nomes.length <= 3) return nomes.join(', ')
+  return `${nomes.slice(0, 3).join(', ')} +${nomes.length - 3}`
 }
 
 function primeiraPalavra(nome: string): string {

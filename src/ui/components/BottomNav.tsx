@@ -6,13 +6,17 @@ import { NavLink } from 'react-router-dom'
  * "Conquistas" saiu daqui de propósito: não é mais aba fixa, virou linha
  * dentro do Perfil (avatar no canto superior direito de cada tela). Ver
  * `ProfileAvatar` e `domain/entities/conquista.ts`.
+ *
+ * "Scanner" saiu daqui em 2026-09-24: virou uma opção dentro do menu de
+ * cada refeição na Dieta (MealSheet → "Escanear comida"), não precisa mais
+ * de aba própria. A rota `/scanner` continua existindo, só não tem mais
+ * atalho fixo aqui.
  */
 const ITENS = [
   { to: '/home', icone: '🏠', rotulo: 'Home' },
   { to: '/dieta', icone: '🥗', rotulo: 'Dieta' },
   { to: '/treinos', icone: '🏋️', rotulo: 'Treinos' },
   { to: '/habitos', icone: '🌱', rotulo: 'Hábitos' },
-  { to: '/scanner', icone: '📷', rotulo: 'Scanner' },
 ] as const
 
 export function BottomNav() {

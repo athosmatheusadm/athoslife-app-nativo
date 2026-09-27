@@ -9,12 +9,13 @@ export function Dieta() {
   const { profile } = useSession()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Vindo do Home ("toquei em Almoço"), abre direto nesse acordeão em vez
-  // de sempre café.
+  // Vindo do Home ("toquei em Almoço"), abre direto o MealSheet dessa
+  // refeição. Sem o parâmetro (entrada normal pela aba Dieta), não abre
+  // nada sozinho — o sheet só sobe quando o usuário toca numa refeição.
   const refeicaoNaUrl = searchParams.get('refeicao')
   const abrirRefeicao = TIPOS_VALIDOS.includes(refeicaoNaUrl as TipoFixo)
     ? (refeicaoNaUrl as TipoFixo)
-    : 'cafe'
+    : null
 
   // Vindo do "+" da Home: cria uma refeição extra nova assim que abre.
   const criarNovaAoAbrir = searchParams.get('novaExtra') === '1'

@@ -1,10 +1,15 @@
 import { supabase } from '@data/supabase/client'
-import type { MascoteModo, Plano, Profile } from '@domain/entities/profile'
+import type { MascoteModo, Plano, Profile, Sexo } from '@domain/entities/profile'
 
 /** Linha crua da tabela profiles. snake_case morre nesta fronteira. */
 interface ProfileRow {
   id: string
   nome: string | null
+  avatar_url: string | null
+  sexo: string | null
+  altura_cm: number | null
+  idade: number | null
+  peso_atual: number | null
   plano: string
   trial_expira: string | null
   assinatura_ativa: boolean | null
@@ -28,6 +33,11 @@ function paraDominio(row: ProfileRow): Profile {
   return {
     id: row.id,
     nome: row.nome,
+    avatarUrl: row.avatar_url,
+    sexo: (row.sexo as Sexo | null) ?? null,
+    alturaCm: row.altura_cm,
+    idade: row.idade,
+    pesoAtual: row.peso_atual,
     plano: row.plano as Plano,
     trialExpira: row.trial_expira ? new Date(row.trial_expira) : null,
     assinaturaAtiva: row.assinatura_ativa ?? false,
@@ -95,5 +105,69 @@ export const profileRepository = {
       .update({ agua_meta_ml: metaMl })
       .eq('id', userId)
     if (error) throw error
+  },
+
+  /** Metas diárias — tela de Metas do Perfil (kcal/proteína/carbo/gordura/passos; água usa atualizarMetaAgua). */
+  async atualizarMeta(
+    campo: 'kcal_meta' | 'prot_meta' | 'carbo_meta' | 'gord_meta' | 'passos_meta',
+    valor: number,
+  ): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+
+    const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', userId)
+    if (error) throw error
+  },
+
+  /** Email vem da sessão de autenticação, não da tabela profiles (fonte única, sem risco de desincronizar). */
+  async emailAtual(): Promise<string | null> {
+    return (await supabase.auth.getUser()).data.user?.email ?? null
+  },
+
+  async atualizarNome(nome: string): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+
+    const { error } = await supabase.from('profiles').update({ nome }).eq('id', userId)
+    if (error) throw error
+  },
+
+  /** Altura/idade/peso/sexo — tela de Conta, campos independentes (cada um salva no próprio blur). */
+  async atualizarDadosPessoais(
+    campo: 'altura_cm' | 'idade' | 'peso_atual' | 'sexo',
+    valor: number | string | null,
+  ): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+
+    const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', userId)
+    if (error) throw error
+  },
+
+  /**
+   * Sobe a foto pro bucket público `avatars` (caminho `<user_id>/avatar.jpg`,
+   * upsert — sempre sobrescreve a mesma foto) e grava a URL pública no perfil.
+   */
+  async atualizarAvatar(arquivo: Blob): Promise<string> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+
+    const caminho = `${userId}/avatar.jpg`
+    const { error: erroUpload } = await supabase.storage
+      .from('avatars')
+      .upload(caminho, arquivo, { upsert: true, contentType: 'image/jpeg' })
+    if (erroUpload) throw erroUpload
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(caminho)
+    // Cache-bust: mesmo nome de arquivo sempre, sem isso a imagem antiga fica presa no cache do navegador/app.
+    const url = `${data.publicUrl}?v=${Date.now()}`
+
+    const { error: erroPerfil } = await supabase
+      .from('profiles')
+      .update({ avatar_url: url })
+      .eq('id', userId)
+    if (erroPerfil) throw erroPerfil
+
+    return url
   },
 }

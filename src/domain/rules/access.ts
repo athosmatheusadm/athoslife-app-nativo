@@ -33,13 +33,17 @@ export function trialAtivo(
 
 /**
  * Espelha is_premium_like(): plano pago OU trial não expirado.
- * O trial de 30 dias dá acesso completo — e não é uma venda,
+ * O trial de 7 dias dá acesso completo — e não é uma venda,
  * portanto não passa pelo Google Play Billing.
  */
 export function temAcessoPremium(
   profile: Pick<Profile, 'plano' | 'trialExpira'>,
   agora: Date = new Date(),
 ): boolean {
+  // Pré-visualização local da interface paga. `import.meta.env.DEV` é false
+  // em qualquer build (inclusive o .aab), então isto não existe em produção
+  // — e o servidor continua sendo quem libera conteúdo de verdade.
+  if (import.meta.env.DEV && import.meta.env.VITE_DEV_PREMIUM === 'true') return true
   if (PLANOS_PAGOS.has(profile.plano)) return true
   return trialAtivo(profile, agora)
 }

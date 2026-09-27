@@ -131,7 +131,10 @@ export function HabitsScreen(props: {
           faz preto puro somar zero contra o fundo escuro do app, então o
           quadrado do fundo praticamente some. Funciona bem aqui porque o
           app é todo escuro — mas o certo, quando der, é pedir uma versão
-          com fundo transparente de verdade. */}
+          com fundo transparente de verdade. Tentativa de troca em
+          2026-09-24 (personagem_athos_referencia.png do lote de pranchas)
+          foi revertida — não era a imagem certa do Life; aguardando a
+          versão correta do usuário. */}
       <button
         type="button"
         onClick={() => setChatAberto(true)}

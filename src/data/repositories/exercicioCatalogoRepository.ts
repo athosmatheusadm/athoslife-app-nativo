@@ -9,6 +9,7 @@ interface Row {
   ambientes: LocalTreino[]
   icone_url: string | null
   imagem_url: string | null
+  prancha_url: string | null
   como_executar: string[]
   series_padrao: number
   repeticoes_padrao: number
@@ -24,6 +25,7 @@ function paraDominio(r: Row): ExercicioCatalogo {
     ambientes: r.ambientes,
     iconeUrl: r.icone_url,
     imagemUrl: r.imagem_url,
+    pranchaUrl: r.prancha_url,
     comoExecutar: r.como_executar,
     seriesPadrao: r.series_padrao,
     repeticoesPadrao: r.repeticoes_padrao,
@@ -42,7 +44,7 @@ export const exercicioCatalogoRepository = {
     let query = supabase
       .from('exercicios_catalogo')
       .select(
-        'id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, como_executar, series_padrao, repeticoes_padrao, dica',
+        'id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, dica',
       )
       .order('ordem', { ascending: true })
 

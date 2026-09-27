@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { authRepository } from '@data/repositories/authRepository'
 
 /**
@@ -97,6 +98,12 @@ export function Login() {
           placeholder={modo === 'entrar' ? 'Senha' : 'Senha (mín. 6 caracteres)'}
           className="w-full rounded-card border border-surface-4 bg-surface-2 px-4 py-3.5 text-content-hi placeholder:text-content-dim focus:border-brand focus:outline-none"
         />
+
+        {modo === 'entrar' && (
+          <Link to="/recuperar-senha" className="block text-right text-sm font-medium text-content-mid">
+            Esqueci a senha
+          </Link>
+        )}
 
         {erro && <p className="text-sm font-medium text-accent-danger">{erro}</p>}
         {aviso && <p className="text-sm font-medium text-brand">{aviso}</p>}

@@ -16,6 +16,7 @@ interface CatalogoRow {
   ambientes: LocalTreino[]
   icone_url: string | null
   imagem_url: string | null
+  prancha_url: string | null
   como_executar: string[]
   series_padrao: number
   repeticoes_padrao: number
@@ -54,6 +55,7 @@ function paraDominio(r: PlanoRow): ExercicioPlano {
       ambientes: c.ambientes,
       iconeUrl: c.icone_url,
       imagemUrl: c.imagem_url,
+      pranchaUrl: c.prancha_url,
       comoExecutar: c.como_executar,
       seriesPadrao: c.series_padrao,
       repeticoesPadrao: c.repeticoes_padrao,
@@ -67,7 +69,7 @@ function paraLinha(series: readonly SerieDetalhe[]): SerieRow[] {
 }
 
 const SELECT_COM_CATALOGO =
-  'id, local, dia_semana, series_detalhe, ordem, concluido_em, exercicios_catalogo(id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, como_executar, series_padrao, repeticoes_padrao, dica)'
+  'id, local, dia_semana, series_detalhe, ordem, concluido_em, exercicios_catalogo(id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, dica)'
 
 /** Único ponto que conhece treino_plano — atribuição pessoal por (local, dia). */
 export const treinoPlanoRepository = {

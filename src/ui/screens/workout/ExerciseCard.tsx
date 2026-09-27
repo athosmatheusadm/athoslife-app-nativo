@@ -10,8 +10,11 @@ import {
 /**
  * Card de um exercício do dia — dois toggles INDEPENDENTES:
  *
- * 1) Tocar no ÍCONE (miniatura) -> mostra/esconde a imagem grande de
- *    execução (`imagemUrl` + "Como executar"), sem mexer no formulário.
+ * 1) Tocar no ÍCONE (miniatura) -> mostra/esconde a prancha (título+
+ *    músculo/início/execução, com o mascote ATHOS, `pranchaUrl` — rolável
+ *    de lado, já vem com o texto de execução desenhado dentro dela).
+ *    Exercícios sem prancha caem no fallback antigo (`imagemUrl` +
+ *    "Como executar" em texto). Sem mexer no formulário de séries.
  * 2) Tocar no CARD (nome/reps) -> abre/fecha o formulário de séries/reps
  *    (accordion controlado pelo pai, só um exercício expandido por vez).
  *
@@ -118,7 +121,13 @@ export function ExerciseCard(props: {
         </button>
       </div>
 
-      {mostrarExecucao && exercicio.imagemUrl && (
+      {mostrarExecucao && exercicio.pranchaUrl && (
+        <div className="mt-3 -mx-1 overflow-x-auto rounded-xl border border-surface-4 px-1">
+          <img src={exercicio.pranchaUrl} alt="" className="h-auto max-w-none" style={{ height: 220 }} />
+        </div>
+      )}
+
+      {mostrarExecucao && !exercicio.pranchaUrl && exercicio.imagemUrl && (
         <div className="mt-3 overflow-hidden rounded-xl border border-surface-4">
           <img src={exercicio.imagemUrl} alt="" className="w-full object-cover" />
         </div>
@@ -130,7 +139,7 @@ export function ExerciseCard(props: {
       >
         <div className="overflow-hidden">
           <div className="mt-3">
-            {exercicio.comoExecutar.length > 0 && (
+            {!exercicio.pranchaUrl && exercicio.comoExecutar.length > 0 && (
               <div className="mt-3">
                 <div className="text-sm font-bold text-content-hi">Como executar</div>
                 <ol className="mt-1.5 space-y-1">

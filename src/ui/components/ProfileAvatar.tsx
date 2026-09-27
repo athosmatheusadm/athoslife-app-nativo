@@ -18,9 +18,13 @@ export function ProfileAvatar() {
       type="button"
       onClick={() => navigate('/perfil')}
       aria-label="Abrir perfil"
-      className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-[#04120a] ring-1 ring-white/10 transition-transform active:scale-95"
+      className="flex h-9 w-9 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-[#04120a] ring-1 ring-white/10 transition-transform active:scale-95"
     >
-      {inicial}
+      {profile?.avatarUrl ? (
+        <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        inicial
+      )}
     </button>
   )
 }

@@ -50,9 +50,7 @@ export function Cozinha() {
       carregando={carregando}
       onVoltar={() => navigate(-1)}
       onToggleFavorito={() => void alternarFavorito()}
-      // `/perfil/plano` ainda não tem rota registrada (mesmo link pendente
-      // que o ProfileScreen já usa) — leva pro Perfil, que existe de verdade.
-      onIrParaPlano={() => navigate('/perfil')}
+      onIrParaPlano={() => navigate('/perfil/plano')}
     />
   )
 }

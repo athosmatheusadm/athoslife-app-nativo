@@ -33,6 +33,8 @@ export type MascoteModo = (typeof MASCOTE_MODOS)[number]
 
 export type Objetivo = 'emagrecer' | 'massa' | 'manter'
 
+export type Sexo = 'masculino' | 'feminino' | 'outro' | 'prefiro_nao_dizer'
+
 /** Metas diárias. Calculadas no onboarding, editáveis, personalizáveis por IA. */
 export interface Metas {
   readonly kcal: number
@@ -46,6 +48,11 @@ export interface Metas {
 export interface Profile {
   readonly id: string
   readonly nome: string | null
+  readonly avatarUrl: string | null
+  readonly sexo: Sexo | null
+  readonly alturaCm: number | null
+  readonly idade: number | null
+  readonly pesoAtual: number | null
   readonly plano: Plano
   readonly trialExpira: Date | null
   readonly assinaturaAtiva: boolean

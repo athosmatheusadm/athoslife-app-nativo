@@ -58,8 +58,10 @@ export interface ExercicioCatalogo {
   readonly ambientes: readonly LocalTreino[]
   /** Ícone único do card (fechado/lista de busca). */
   readonly iconeUrl: string | null
-  /** Imagem grande (diagrama + início + execução) — só na tela expandida. */
+  /** Imagem grande (diagrama + início + execução) — só na tela expandida. Fica pros 36 que só têm foto solta, sem prancha ainda. */
   readonly imagemUrl: string | null
+  /** Prancha panorâmica (título+músculo/início/execução, mascote ATHOS) — 2026-09-24, cobre os 100. Prioridade sobre imagemUrl quando existe. */
+  readonly pranchaUrl: string | null
   readonly comoExecutar: readonly string[]
   readonly seriesPadrao: number
   readonly repeticoesPadrao: number

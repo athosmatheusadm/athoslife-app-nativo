@@ -60,4 +60,20 @@ export const alimentosRepository = {
     if (error) throw error
     return (data ?? []).map(paraDominio)
   },
+
+  /**
+   * Filtra a base por categoria — usada pelo carrossel de "Registrar
+   * suplemento" (categoria='suplemento'), reaproveitando os ~1500
+   * alimentos já cadastrados em vez de uma tabela nova só pra isso.
+   */
+  async porCategoria(categoria: CategoriaAlimento): Promise<AlimentoBase[]> {
+    const { data, error } = await supabase
+      .from('alimentos')
+      .select('*')
+      .eq('categoria', categoria)
+      .order('nome')
+      .returns<AlimentoRow[]>()
+    if (error) throw error
+    return (data ?? []).map(paraDominio)
+  },
 }

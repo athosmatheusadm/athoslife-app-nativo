@@ -148,6 +148,10 @@ export const habitosRepository = {
       categoria: params.categoria,
       intensidade: params.intensidade,
     })
+    // Trigger limitar_habitos_gratis: no grátis, só 1 hábito ativo.
+    if (error?.message.includes('limite_habitos_gratis')) {
+      throw new Error('No plano grátis dá pra acompanhar 1 hábito por vez. Com o plano pago, são quantos você quiser.')
+    }
     if (error) throw error
   },
 }

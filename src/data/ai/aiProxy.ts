@@ -5,14 +5,21 @@ import type { ResultadoVisao } from '@domain/entities/food'
  * Cliente do Edge Function `ai-proxy`.
  *
  * A chave do Gemini NUNCA vem para o cliente — ela vive só no servidor.
- * Aqui a gente só chama o proxy, que aplica cota (foto_scans_hoje),
- * audita custo (ai_audit_logs) e fala com o Gemini.
+ * Aqui a gente só chama o proxy (`supabase/functions/ai-proxy`), que aplica
+ * a cota do plano (consumir_cota_ia), audita custo (ai_audit_logs) e fala
+ * com o Gemini. Contrato: JSON plano `{ tipo, ...campos }`.
  */
 
 /** Erros que o proxy pode devolver, tipados para a UI tratar sem adivinhar. */
 export type AiProxyErro =
   | { tipo: 'not_authenticated' }
   | { tipo: 'limit_reached'; proximoReset: string }
+  /** Recurso só do plano pago (scanner, receitas com o Life). */
+  | { tipo: 'premium_required' }
+  /** Muitas chamadas em menos de 1 minuto. */
+  | { tipo: 'rate_limited' }
+  /** Teto global de gasto do dia atingido — IA pausada pra todos até amanhã. */
+  | { tipo: 'indisponivel' }
   | { tipo: 'image_too_dark' }
   | { tipo: 'image_too_large' }
   | { tipo: 'proxy_error'; detalhe: string }
@@ -46,8 +53,8 @@ interface RespostaVisaoCrua {
   }
 }
 
-async function chamar<T>(
-  tipo: 'vision' | 'chat' | 'barcode',
+export async function chamar<T>(
+  tipo: 'vision' | 'chat' | 'recipe',
   payload: Record<string, unknown>,
 ): Promise<T> {
   const { data: sessao } = await supabase.auth.getSession()
@@ -64,23 +71,20 @@ async function chamar<T>(
     body: JSON.stringify({ tipo, ...payload }),
   })
 
-  if (res.status === 401) throw new AiProxyError({ tipo: 'not_authenticated' })
-  if (res.status === 403) {
-    const body = (await res.json().catch(() => ({}))) as { next_reset?: string }
-    throw new AiProxyError({
-      tipo: 'limit_reached',
-      proximoReset: body.next_reset ?? '',
-    })
-  }
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string }
-    const detalhe = body.error ?? 'proxy_error'
-    if (detalhe === 'image_too_dark') throw new AiProxyError({ tipo: 'image_too_dark' })
-    if (detalhe === 'image_too_large') throw new AiProxyError({ tipo: 'image_too_large' })
-    throw new AiProxyError({ tipo: 'proxy_error', detalhe })
-  }
+  if (res.ok) return res.json() as Promise<T>
 
-  return res.json() as Promise<T>
+  const body = (await res.json().catch(() => ({}))) as { error?: string; next_reset?: string }
+  const erro = body.error ?? 'proxy_error'
+  if (res.status === 401) throw new AiProxyError({ tipo: 'not_authenticated' })
+  if (erro === 'premium_required') throw new AiProxyError({ tipo: 'premium_required' })
+  if (erro === 'limit_reached') {
+    throw new AiProxyError({ tipo: 'limit_reached', proximoReset: body.next_reset ?? '' })
+  }
+  if (erro === 'rate_limited') throw new AiProxyError({ tipo: 'rate_limited' })
+  if (erro === 'indisponivel') throw new AiProxyError({ tipo: 'indisponivel' })
+  if (erro === 'image_too_dark') throw new AiProxyError({ tipo: 'image_too_dark' })
+  if (erro === 'image_too_large') throw new AiProxyError({ tipo: 'image_too_large' })
+  throw new AiProxyError({ tipo: 'proxy_error', detalhe: erro })
 }
 
 /**
@@ -111,28 +115,44 @@ export interface MensagemChat {
   texto: string
 }
 
-interface RespostaChatCrua {
+export interface RespostaChat {
   resposta: string
+  /** Mensagens que ainda restam hoje; null quando a resposta não gastou cota. */
+  restantes: number | null
 }
 
 /**
- * Chat com o Life — cota diária própria (profiles.chat_msgs_hoje /
- * chat_msgs_reset_date), separada da cota de fotos, contada pelo mesmo
- * proxy. `tipo: 'chat'` já é um valor válido no contrato do proxy, mas o
- * handler correspondente no Edge Function ainda não foi confirmado como
- * implementado — se não estiver, isto falha com `proxy_error` (de
- * propósito, mesmo padrão do `recipeAi.ts`: não finge que a feature está
- * pronta enquanto o backend não responde).
+ * Chat com o Life. Só a mensagem nova vai pro proxy — o histórico mora no
+ * servidor (life_chat_mensagens) e é lido de lá, então o cliente não consegue
+ * forjar falas do Life. Cota diária por plano (grátis 4, pago 40).
  */
-export async function enviarMensagemChat(params: {
-  mensagem: string
-  historico: readonly MensagemChat[]
-}): Promise<string> {
-  const cru = await chamar<RespostaChatCrua>('chat', {
-    mensagem: params.mensagem,
-    historico: params.historico.map((m) => ({ autor: m.autor, texto: m.texto })),
-  })
-  return cru.resposta
+export async function enviarMensagemChat(mensagem: string): Promise<RespostaChat> {
+  const cru = await chamar<{ resposta: string; restantes: number | null }>('chat', { mensagem })
+  return { resposta: cru.resposta, restantes: cru.restantes }
+}
+
+/** Últimas mensagens da conversa (RLS: só as do próprio usuário). */
+export async function carregarHistoricoChat(limite = 30): Promise<MensagemChat[]> {
+  const { data: sessao } = await supabase.auth.getSession()
+  const userId = sessao.session?.user.id
+  if (!userId) return []
+  const { data, error } = await supabase
+    .from('life_chat_mensagens')
+    .select('autor, texto')
+    .eq('user_id', userId)
+    .order('criado_em', { ascending: false })
+    .limit(limite)
+    .returns<MensagemChat[]>()
+  if (error) throw error
+  return (data ?? []).reverse()
+}
+
+/** Quanto do chat ainda dá pra usar hoje, pra mostrar antes de enviar. */
+export async function cotaChatHoje(): Promise<{ usados: number; limite: number } | null> {
+  const { data, error } = await supabase.rpc('cota_ia_status', { p_tipo: 'chat' })
+  const linha = (data as { usados_hoje: number; limite_hoje: number }[] | null)?.[0]
+  if (error || !linha) return null
+  return { usados: linha.usados_hoje, limite: linha.limite_hoje }
 }
 
 /**

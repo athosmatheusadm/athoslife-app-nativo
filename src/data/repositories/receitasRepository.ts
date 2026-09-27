@@ -47,19 +47,36 @@ function paraDominio(row: ReceitaRow): Omit<Receita, 'bloqueada' | 'favoritada'>
   }
 }
 
+/** Tudo menos `conteudo` — a coluna não tem GRANT de SELECT direto. */
+const COLUNAS_VITRINE =
+  'id, titulo, subtitulo, categoria, macros, kcal, tempo_preparo_min, cor_tema, premium, destaque, ordem'
+
 export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada'>
 
 /** Único ponto que conhece receitas_cozinha e receitas_favoritas. */
 export const receitasRepository = {
-  /** Lista todas as receitas, na ordem definida. */
+  /**
+   * Lista todas as receitas, na ordem definida. A vitrine (nome, kcal,
+   * macros…) vem pra todos; `conteudo` não pode ser lido direto da tabela —
+   * só chega pela RPC, que entrega apenas o que o plano da pessoa libera
+   * (db/athoslife_limites_gratis_servidor_migration.sql).
+   */
   async listar(): Promise<ReceitaCrua[]> {
-    const { data, error } = await supabase
-      .from('receitas_cozinha')
-      .select('*')
-      .order('ordem')
-      .returns<ReceitaRow[]>()
-    if (error) throw error
-    return (data ?? []).map(paraDominio)
+    const [vitrine, liberadas] = await Promise.all([
+      supabase
+        .from('receitas_cozinha')
+        .select(COLUNAS_VITRINE)
+        .order('ordem')
+        .returns<Omit<ReceitaRow, 'conteudo'>[]>(),
+      supabase.rpc('receitas_conteudo_liberado'),
+    ])
+    if (vitrine.error) throw vitrine.error
+    if (liberadas.error) throw liberadas.error
+    const linhas = (liberadas.data ?? []) as Array<{ id: string; conteudo: string | null }>
+    const conteudoPorId = new Map(linhas.map((r) => [r.id, r.conteudo]))
+    return (vitrine.data ?? []).map((row) =>
+      paraDominio({ ...row, conteudo: conteudoPorId.get(row.id) ?? null }),
+    )
   },
 
   /** IDs das receitas favoritadas pelo usuário atual. */

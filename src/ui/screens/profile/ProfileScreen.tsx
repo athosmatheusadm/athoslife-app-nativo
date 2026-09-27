@@ -8,7 +8,13 @@ import { diasRestantesTrial, temAcessoPremium } from '@domain/rules/access'
  * A navegação para sub-páginas é feita pelo router (slide-in por transform),
  * então aqui a tela só declara as linhas e para onde cada uma leva.
  */
-export function ProfileScreen({ onNavigate }: { onNavigate: (rota: string) => void }) {
+export function ProfileScreen({
+  onNavigate,
+  onSair,
+}: {
+  onNavigate: (rota: string) => void
+  onSair: () => void
+}) {
   const { profile } = useSession()
   if (!profile) return null
 
@@ -30,8 +36,12 @@ export function ProfileScreen({ onNavigate }: { onNavigate: (rota: string) => vo
       </header>
 
       <section className="flex items-center gap-3.5 px-5 pb-5 pt-2">
-        <span className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-dark text-2xl font-bold text-[#04120a] ring-2 ring-brand/35">
-          {inicial}
+        <span className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-2xl font-bold text-[#04120a] ring-2 ring-brand/35">
+          {profile.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            inicial
+          )}
         </span>
         <span className="min-w-0">
           <span className="block text-lg font-bold text-content-hi">
@@ -69,7 +79,7 @@ export function ProfileScreen({ onNavigate }: { onNavigate: (rota: string) => vo
 
         <div className="mx-5 my-2 h-px bg-surface-4/50" />
 
-        <SettingsRow icon={<IconSair />} title="Sair da conta" danger onClick={() => onNavigate('/perfil/sair')} />
+        <SettingsRow icon={<IconSair />} title="Sair da conta" danger onClick={onSair} />
       </nav>
 
       <p className="px-5 py-5 text-center text-micro text-content-dim opacity-70">

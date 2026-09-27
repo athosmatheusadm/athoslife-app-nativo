@@ -1,40 +1,71 @@
-import { useState } from 'react'
-import { AiProxyError, enviarMensagemChat, type MensagemChat } from '@data/ai/aiProxy'
+import { useEffect, useState } from 'react'
+import {
+  AiProxyError,
+  carregarHistoricoChat,
+  cotaChatHoje,
+  enviarMensagemChat,
+  type MensagemChat,
+} from '@data/ai/aiProxy'
+
+/** Texto de erro por tipo — nunca finge que a conversa funcionou. */
+function mensagemDeErro(e: unknown): string {
+  if (!(e instanceof AiProxyError)) return 'O Life não conseguiu responder agora. Tenta de novo daqui a pouco.'
+  switch (e.info.tipo) {
+    case 'limit_reached':
+      return `Acabaram as mensagens de hoje. Renova em ${e.info.proximoReset || 'algumas horas'} — o Life te espera.`
+    case 'rate_limited':
+      return 'Calma, muitas mensagens seguidas. Espera um minutinho e manda de novo.'
+    case 'indisponivel':
+      return 'O Life está descansando por hoje. Volta amanhã que ele te responde.'
+    case 'not_authenticated':
+      return 'Sua sessão expirou. Entra de novo pra continuar a conversa.'
+    default:
+      return 'O Life não conseguiu responder agora. Tenta de novo daqui a pouco.'
+  }
+}
 
 /**
- * Chat com o Life. Histórico só existe em memória enquanto o painel está
- * aberto — não persiste no banco ainda (nenhuma tabela de mensagens existe
- * hoje; adicionar uma é uma decisão à parte, não tomada aqui).
- *
- * Backend (`ai-proxy`, tipo 'chat') pode ainda não estar implementado —
- * ver comentário em `enviarMensagemChat`. Se não estiver, a mensagem de
- * erro abaixo explica isso sem fingir que a conversa funcionou.
+ * Chat com o Life. O histórico mora no servidor (life_chat_mensagens) e é
+ * carregado ao abrir; cada envio manda só a mensagem nova. Cota diária por
+ * plano (grátis 4, pago 40) — o contador aparece acima do campo de texto.
  */
 export function LifeChatSheet(props: { onFechar: () => void }) {
   const [historico, setHistorico] = useState<MensagemChat[]>([])
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [restantes, setRestantes] = useState<number | null>(null)
+
+  useEffect(() => {
+    let vivo = true
+    void carregarHistoricoChat()
+      .then((h) => vivo && setHistorico(h))
+      .catch(() => {})
+    void cotaChatHoje().then((c) => vivo && c && setRestantes(Math.max(c.limite - c.usados, 0)))
+    return () => {
+      vivo = false
+    }
+  }, [])
 
   async function enviar() {
     const mensagem = texto.trim()
     if (!mensagem || enviando) return
 
-    const proximoHistorico = [...historico, { autor: 'usuario', texto: mensagem } as const]
-    setHistorico(proximoHistorico)
+    setHistorico((h) => [...h, { autor: 'usuario', texto: mensagem }])
     setTexto('')
     setEnviando(true)
     setErro(null)
 
     try {
-      const resposta = await enviarMensagemChat({ mensagem, historico })
-      setHistorico((h) => [...h, { autor: 'life', texto: resposta }])
+      const r = await enviarMensagemChat(mensagem)
+      setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
+      if (r.restantes !== null) setRestantes(r.restantes)
     } catch (e) {
-      if (e instanceof AiProxyError && e.info.tipo === 'limit_reached') {
-        setErro('Você usou suas mensagens grátis de hoje. Volta amanhã que o Life te espera.')
-      } else {
-        setErro('O Life não conseguiu responder agora. Tenta de novo daqui a pouco.')
-      }
+      // A mensagem não foi aceita: tira do histórico e devolve pro campo.
+      setHistorico((h) => h.slice(0, -1))
+      setTexto(mensagem)
+      setErro(mensagemDeErro(e))
+      if (e instanceof AiProxyError && e.info.tipo === 'limit_reached') setRestantes(0)
     } finally {
       setEnviando(false)
     }
@@ -91,6 +122,13 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
         </div>
 
         {erro && <p className="flex-none px-6 pt-2 text-[11px] text-accent-danger">{erro}</p>}
+        {!erro && restantes !== null && (
+          <p className="flex-none px-6 pt-2 text-[11px] text-content-low">
+            {restantes === 0
+              ? 'Sem mensagens hoje — renova à meia-noite.'
+              : `${restantes} ${restantes === 1 ? 'mensagem restante' : 'mensagens restantes'} hoje`}
+          </p>
+        )}
 
         <div className="flex flex-none items-center gap-2 px-6 py-4">
           <input
@@ -100,6 +138,7 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
               if (e.key === 'Enter') void enviar()
             }}
             placeholder="Escreve pro Life…"
+            maxLength={800}
             disabled={enviando}
             className="flex-1 rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm text-content-hi placeholder:text-content-dim focus:border-brand focus:outline-none disabled:opacity-60"
           />

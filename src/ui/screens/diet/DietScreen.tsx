@@ -14,6 +14,8 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { MealAccordion } from './MealAccordion'
+import { MealSheet } from './MealSheet'
+import { SupplementSheet } from './SupplementSheet'
 import type { ItemRefeicao, Refeicao } from '@domain/entities/meal'
 import { itensRefeicaoRepository, type RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
 import { macrosRepository } from '@data/repositories/macrosRepository'
@@ -50,11 +52,13 @@ function paraAlvo(r: Refeicao): RefeicaoAlvo {
  * arrastadas pra qualquer posição da lista (só elas são arrastáveis; as 4
  * fixas não se movem).
  *
- * A tela-mãe guarda: qual refeição está aberta (uma por vez, por CHAVE
- * única — não por tipo, já que várias extras compartilham tipo='extra'), se
- * a busca (ou o "copiar de"/edição) está aberta, e qual dia está
- * selecionado — e é ela quem busca os dados de verdade toda vez que o dia
- * muda.
+ * A tela-mãe guarda: qual refeição tem o MealSheet aberto (uma por vez, por
+ * CHAVE única — não por tipo, já que várias extras compartilham
+ * tipo='extra'), o clipboard de copiar/colar (um item, entre refeições —
+ * decisão do usuário de 2026-09-24, substituiu o antigo "copiar de outra
+ * refeição" que clonava a refeição inteira via lista de origem), e qual dia
+ * está selecionado — e é ela quem busca os dados de verdade toda vez que o
+ * dia muda.
  */
 export function DietScreen(props: {
   profile: Pick<Profile, 'metas' | 'plano' | 'trialExpira'>
@@ -69,9 +73,14 @@ export function DietScreen(props: {
   const metas: Metas = profile.metas
   const navigate = useNavigate()
 
-  const [abertaChave, setAbertaChave] = useState<string | null>(props.abrirRefeicao ?? 'cafe')
-  const [buscaChave, setBuscaChave] = useState<string | null>(null)
-  const [clonandoChave, setClonandoChave] = useState<string | null>(null)
+  /**
+   * Só abre sozinho quando veio de navegação explícita (ex.: Home tocando
+   * em "Almoço") — sem isso, o sheet não deve pular na cara do usuário ao
+   * simplesmente entrar na tela.
+   */
+  const [sheetChave, setSheetChave] = useState<string | null>(props.abrirRefeicao ?? null)
+  const [suplementoChave, setSuplementoChave] = useState<string | null>(null)
+  const [clipboard, setClipboard] = useState<ItemRefeicao | null>(null)
 
   const tira = useMemo(() => gerarTiraDias(), [])
   const [diaSel, setDiaSel] = useState<Date>(() => new Date())
@@ -142,7 +151,7 @@ export function DietScreen(props: {
         const nova = await itensRefeicaoRepository.criarExtra(diaSel)
         if (!ativo) return
         await carregarDia(diaSel)
-        setAbertaChave(nova.id)
+        setSheetChave(nova.id)
       } catch (e) {
         console.error('criarExtra (via Home) falhou:', e)
       } finally {
@@ -159,7 +168,7 @@ export function DietScreen(props: {
     try {
       const nova = await itensRefeicaoRepository.criarExtra(diaSel)
       await carregarDia(diaSel)
-      setAbertaChave(nova.id)
+      setSheetChave(nova.id)
     } catch (e) {
       console.error('criarExtra falhou:', e)
     }
@@ -193,12 +202,6 @@ export function DietScreen(props: {
     } else {
       await itensRefeicaoRepository.definirConcluida(r.tipo as TipoFixo, diaSel, !r.concluida)
     }
-    await carregarDia(diaSel)
-  }
-
-  async function clonarDe(origem: Refeicao, destino: Refeicao) {
-    await itensRefeicaoRepository.clonar(paraAlvo(origem), paraAlvo(destino), diaSel)
-    setClonandoChave(null)
     await carregarDia(diaSel)
   }
 
@@ -298,54 +301,23 @@ export function DietScreen(props: {
         </div>
       </div>
 
-      {/* Refeições em acordeão — as 4 fixas + as extras do usuário, arrastáveis */}
+      {/* Refeições — as 4 fixas + as extras do usuário, arrastáveis. Tocar
+          abre direto o MealSheet (sem acordeão intermediário). */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={refeicoes.map((r) => r.chave)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
-            {refeicoes.map((r) => {
-              const outras = refeicoes.filter((x) => x.chave !== r.chave && x.itens.length > 0)
-
-              return (
-                <SortableMealRow key={r.chave} chave={r.chave} draggable={r.tipo === 'extra'}>
-                  {(handle) => (
-                    <MealAccordion
-                      refeicao={r}
-                      aberto={abertaChave === r.chave}
-                      buscaAberta={buscaChave === r.chave}
-                      clonando={clonandoChave === r.chave}
-                      outrasRefeicoes={outras.map((x) => ({ chave: x.chave, nome: x.nome }))}
-                      dragHandleProps={handle}
-                      onToggle={() => {
-                        setAbertaChave((atual) => (atual === r.chave ? null : r.chave))
-                        setBuscaChave(null)
-                        setClonandoChave(null)
-                      }}
-                      onAbrirBusca={() => {
-                        setBuscaChave(r.chave)
-                        setClonandoChave(null)
-                      }}
-                      onFecharBusca={() => setBuscaChave(null)}
-                      onAdicionarItem={(item) => void adicionarItem(r, item)}
-                      onRemoverItem={(itemId) => void removerItem(itemId)}
-                      onExcluir={() => void excluirRefeicao(r)}
-                      onToggleConcluida={() => void alternarConcluida(r)}
-                      onAbrirClonar={() => {
-                        setClonandoChave(r.chave)
-                        setBuscaChave(null)
-                      }}
-                      onFecharClonar={() => setClonandoChave(null)}
-                      onClonarDe={(origemChave) => {
-                        const origem = refeicoes.find((x) => x.chave === origemChave)
-                        if (origem) void clonarDe(origem, r)
-                      }}
-                      {...(r.tipo === 'extra'
-                        ? { onRenomear: (nome: string) => void renomearExtra(r, nome), erroRenomear: erroExtra }
-                        : {})}
-                    />
-                  )}
-                </SortableMealRow>
-              )
-            })}
+            {refeicoes.map((r) => (
+              <SortableMealRow key={r.chave} chave={r.chave} draggable={r.tipo === 'extra'}>
+                {(handle) => (
+                  <MealAccordion
+                    refeicao={r}
+                    dragHandleProps={handle}
+                    onAbrir={() => setSheetChave(r.chave)}
+                    onToggleConcluida={() => void alternarConcluida(r)}
+                  />
+                )}
+              </SortableMealRow>
+            ))}
           </div>
         </SortableContext>
       </DndContext>
@@ -365,6 +337,40 @@ export function DietScreen(props: {
         </h2>
         <CozinhaTab profile={profile} onAbrirReceita={(id) => navigate(`/dieta/cozinha/${id}`)} />
       </div>
+
+      {sheetChave && (() => {
+        const r = refeicoes.find((x) => x.chave === sheetChave)
+        if (!r) return null
+        return (
+          <MealSheet
+            refeicao={r}
+            clipboard={clipboard}
+            onFechar={() => setSheetChave(null)}
+            onAdicionarItem={(item) => void adicionarItem(r, item)}
+            onRemoverItem={(itemId) => void removerItem(itemId)}
+            onCopiarItem={(item) => setClipboard(item)}
+            onColar={() => clipboard && void adicionarItem(r, clipboard)}
+            onExcluir={() => void excluirRefeicao(r)}
+            onToggleConcluida={() => void alternarConcluida(r)}
+            onEscanear={() => navigate('/scanner')}
+            onAbrirSuplemento={() => setSuplementoChave(r.chave)}
+            {...(r.tipo === 'extra'
+              ? { onRenomear: (nome: string) => void renomearExtra(r, nome), erroRenomear: erroExtra }
+              : {})}
+          />
+        )
+      })()}
+
+      {suplementoChave && (
+        <SupplementSheet
+          onAdicionar={(item) => {
+            const r = refeicoes.find((x) => x.chave === suplementoChave)
+            setSuplementoChave(null)
+            if (r) void adicionarItem(r, item)
+          }}
+          onFechar={() => setSuplementoChave(null)}
+        />
+      )}
     </main>
   )
 }

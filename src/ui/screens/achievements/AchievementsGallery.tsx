@@ -1,15 +1,25 @@
+import { useState } from 'react'
 import {
   corCategoria,
+  corNivel,
   resumoAcervo,
   type CategoriaConquista,
   type Conquista,
 } from '@domain/entities/conquista'
 
+const NOME_NIVEL: Record<Conquista['nivel'], string> = {
+  bronze: 'Bronze',
+  prata: 'Prata',
+  ouro: 'Ouro',
+  diamante: 'Diamante',
+  lendario: 'Lendário',
+}
+
 const NOME_CATEGORIA: Record<CategoriaConquista, string> = {
   streak: 'Sequência',
   treino: 'Treino',
   dieta: 'Dieta',
-  agua: 'Hidratação',
+  hidratacao: 'Hidratação',
   peso: 'Peso',
 }
 
@@ -78,14 +88,33 @@ export function AchievementsGallery({
   )
 }
 
+/**
+ * Toca pra expandir — só visualização (descrição completa, nível por
+ * extenso, e data de desbloqueio ou % de progresso), nada clicável dentro.
+ * A célula cresce dentro da própria grade (grid-auto-rows acomoda),
+ * sem sair pra um sheet — pedido do usuário, mais simples de bater o olho.
+ */
 function ConquistaCell({ conquista: c }: { conquista: Conquista }) {
   const cor = corCategoria(c.categoria)
+  const [aberto, setAberto] = useState(false)
+
   return (
-    <div
-      className={`flex flex-col items-center rounded-2xl border p-3 text-center ${
+    <button
+      type="button"
+      onClick={() => setAberto((v) => !v)}
+      aria-expanded={aberto}
+      className={`relative flex flex-col items-center rounded-2xl border p-3 text-center transition-colors ${
         c.desbloqueada ? 'border-surface-4 bg-surface-2' : 'border-surface-4/50 bg-surface-1'
-      }`}
+      } ${aberto ? 'col-span-3' : ''}`}
     >
+      {c.desbloqueada && (
+        <span
+          className="absolute right-2 top-2 h-2 w-2 rounded-full"
+          style={{ backgroundColor: corNivel(c.nivel) }}
+          aria-label={`Nível ${c.nivel}`}
+          title={c.nivel}
+        />
+      )}
       <span
         className={`flex h-12 w-12 items-center justify-center rounded-full text-2xl ${
           c.desbloqueada ? '' : 'grayscale'
@@ -101,11 +130,33 @@ function ConquistaCell({ conquista: c }: { conquista: Conquista }) {
       >
         {c.titulo}
       </span>
-      {!c.desbloqueada && c.progresso > 0 && (
+      {!c.desbloqueada && !aberto && c.progresso > 0 && (
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-surface-4">
           <div className="h-full rounded-full" style={{ width: `${c.progresso}%`, backgroundColor: cor }} />
         </div>
       )}
-    </div>
+
+      {aberto && (
+        <div className="mt-2 w-full border-t border-surface-4/50 pt-2 text-left">
+          <p className="text-micro leading-snug text-content-mid">{c.descricao}</p>
+          <p className="mt-1.5 text-micro font-semibold" style={{ color: corNivel(c.nivel) }}>
+            Nível {NOME_NIVEL[c.nivel]}
+          </p>
+          {c.desbloqueada && c.desbloqueadaEm ? (
+            <p className="mt-1 text-micro text-content-dim">
+              Desbloqueada em{' '}
+              {c.desbloqueadaEm.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+            </p>
+          ) : (
+            <>
+              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
+                <div className="h-full rounded-full" style={{ width: `${c.progresso}%`, backgroundColor: cor }} />
+              </div>
+              <p className="mt-1 text-micro text-content-dim">{c.progresso}% completo</p>
+            </>
+          )}
+        </div>
+      )}
+    </button>
   )
 }

@@ -21,6 +21,29 @@ export const authRepository = {
     return { sessaoAtiva: data.session !== null }
   },
 
+  /**
+   * Manda o e-mail de recuperação com um código numérico. Por código e não
+   * por link: o app nativo não tem deep link de volta (detectSessionInUrl
+   * desligado). O template "Reset Password" do Supabase precisa exibir
+   * {{ .Token }} pra esse código aparecer no e-mail.
+   */
+  async pedirCodigoRecuperacao(email: string): Promise<void> {
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    if (error) throw error
+  },
+
+  /** Valida o código (isso já abre sessão) e grava a senha nova. */
+  async redefinirSenha(email: string, codigo: string, novaSenha: string): Promise<void> {
+    const { error: erroCodigo } = await supabase.auth.verifyOtp({
+      email,
+      token: codigo,
+      type: 'recovery',
+    })
+    if (erroCodigo) throw erroCodigo
+    const { error } = await supabase.auth.updateUser({ password: novaSenha })
+    if (error) throw error
+  },
+
   async sair(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
