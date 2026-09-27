@@ -4,6 +4,8 @@ import { useSession } from '@app/SessionProvider'
 import { AiProxyError, cotaIaHoje } from '@data/ai/aiProxy'
 import { capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
 import type { RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
+import { produtoCodigoBarrasRepository } from '@data/repositories/produtoCodigoBarrasRepository'
+import { leitorDisponivel, lerCodigoBarras } from '@data/native/codigoBarras'
 import { foodCaptureService } from '@domain/services/foodCaptureService'
 import { reescalarItem } from '@domain/rules/foodReconciliation'
 import { temAcessoPremium } from '@domain/rules/access'
@@ -18,8 +20,9 @@ import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
  * a refeição e o dia em `location.state`. Chegando direto por /scanner, a
  * pessoa escolhe a refeição aqui (dia = hoje).
  *
- * Plano: scanner é recurso pago (5/dia). O servidor é quem barra de verdade;
- * aqui só evitamos a pessoa tirar foto à toa.
+ * Plano: foto com IA é recurso pago (5/dia) — o servidor é quem barra de
+ * verdade; aqui só evitamos a pessoa tirar foto à toa. Código de barras é
+ * pra todos: não usa IA, só o rótulo do produto (Open Food Facts).
  */
 
 interface EstadoEntrada {
@@ -73,6 +76,10 @@ export function Scanner() {
   const [rascunho, setRascunho] = useState<RefeicaoRascunho | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [restantes, setRestantes] = useState<number | null>(null)
+  const [origem, setOrigem] = useState<'foto' | 'codigo'>('foto')
+  const [imagemProduto, setImagemProduto] = useState<string | null>(null)
+  const [digitando, setDigitando] = useState(false)
+  const [codigoDigitado, setCodigoDigitado] = useState('')
 
   const pago = profile ? temAcessoPremium(profile) : false
 
@@ -81,8 +88,53 @@ export function Scanner() {
     void cotaIaHoje('vision').then((c) => c && setRestantes(Math.max(c.limite - c.usados, 0)))
   }, [pago])
 
+  async function lerCodigo() {
+    setErro(null)
+    if (!leitorDisponivel) {
+      // Navegador: sem leitor de câmera, digita o número de baixo do código.
+      setDigitando(true)
+      return
+    }
+    try {
+      const codigo = await lerCodigoBarras()
+      if (codigo) await buscarProduto(codigo)
+    } catch (e) {
+      setErro(
+        String(e).includes('modulo_baixando')
+          ? 'Baixando o leitor do Google pela primeira vez… tenta de novo em alguns segundos.'
+          : 'Não consegui abrir o leitor. Tenta de novo ou digita o número do código.',
+      )
+      setDigitando(true)
+    }
+  }
+
+  async function buscarProduto(codigo: string) {
+    setErro(null)
+    setOrigem('codigo')
+    setFoto(null)
+    setEtapa('analisando')
+    try {
+      const produto = await produtoCodigoBarrasRepository.buscar(codigo)
+      if (!produto) {
+        setErro('Não achei esse produto na base pública. Tenta pela foto ou adiciona pela busca na refeição.')
+        setEtapa('captura')
+        return
+      }
+      setImagemProduto(produto.imagemUrl)
+      setRascunho(foodCaptureService.rascunhoDeProduto(produto))
+      setDigitando(false)
+      setCodigoDigitado('')
+      setEtapa('revisao')
+    } catch {
+      setErro('Não consegui buscar o produto agora. Confere a internet e tenta de novo.')
+      setEtapa('captura')
+    }
+  }
+
   async function fotografar(origem: OrigemFoto) {
     setErro(null)
+    setOrigem('foto')
+    setImagemProduto(null)
     const f = await capturarFoto(origem)
     if (!f) return
     setFoto(f)
@@ -112,13 +164,51 @@ export function Scanner() {
     setEtapa('salvando')
     setErro(null)
     try {
-      await foodCaptureService.confirmar({ rascunho, alvo, data })
+      await foodCaptureService.confirmar({ rascunho, alvo, data, origem })
       navigate('/dieta', { replace: true })
     } catch {
       setErro('Não deu pra salvar. Confere a internet e tenta de novo.')
       setEtapa('revisao')
     }
   }
+
+  const blocoCodigo = (
+    <div className="mt-2 space-y-2">
+      <button
+        onClick={() => void lerCodigo()}
+        className="w-full rounded-pill border border-brand/40 py-3 text-sm font-semibold text-brand"
+      >
+        ▮▯▮ Ler código de barras
+      </button>
+      {digitando && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void buscarProduto(codigoDigitado)
+          }}
+          className="flex gap-2"
+        >
+          <input
+            type="text"
+            inputMode="numeric"
+            autoFocus
+            value={codigoDigitado}
+            onChange={(e) => setCodigoDigitado(e.target.value.replace(/\D/g, '').slice(0, 14))}
+            placeholder="Número embaixo do código"
+            aria-label="Número do código de barras"
+            className="min-w-0 flex-1 rounded-card border border-surface-4 bg-surface-2 px-3 py-2.5 font-mono text-content-hi placeholder:font-sans placeholder:text-content-dim focus:border-brand focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={codigoDigitado.length < 8}
+            className="rounded-pill bg-brand px-4 text-sm font-bold text-surface-1 disabled:opacity-50"
+          >
+            Buscar
+          </button>
+        </form>
+      )}
+    </div>
+  )
 
   const total = rascunho ? foodCaptureService.totalAtual(rascunho) : null
   const incluidos = rascunho?.itens.filter((i) => i.incluir).length ?? 0
@@ -175,6 +265,13 @@ export function Scanner() {
           </button>
         </section>
       )}
+      {alvo && !pago && etapa === 'captura' && (
+        <section className="mt-4">
+          <p className="text-center text-sm text-content-low">Produto embalado? Lê o código de barras — é grátis.</p>
+          {erro && <p className="mt-2 text-center text-sm font-medium text-accent-danger">{erro}</p>}
+          {blocoCodigo}
+        </section>
+      )}
 
       {alvo && pago && etapa === 'captura' && (
         <section className="flex flex-1 flex-col">
@@ -201,6 +298,7 @@ export function Scanner() {
             >
               Escolher da galeria
             </button>
+            {blocoCodigo}
             {restantes !== null && (
               <p className="text-center text-micro text-content-low">
                 {restantes === 0 ? 'Sem scans hoje — renova à meia-noite.' : `${restantes} de 5 scans restantes hoje`}
@@ -216,7 +314,9 @@ export function Scanner() {
             <img src={foto.dataUrl} alt="" className="mb-5 h-48 w-48 rounded-3xl object-cover opacity-80" />
           )}
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-surface-4 border-t-brand" />
-          <p className="mt-4 font-semibold text-content-hi">O Life está olhando seu prato…</p>
+          <p className="mt-4 font-semibold text-content-hi">
+            {origem === 'codigo' ? 'Buscando o produto…' : 'O Life está olhando seu prato…'}
+          </p>
           <p className="mt-1 text-sm text-content-low">Leva uns segundinhos.</p>
         </section>
       )}
@@ -224,18 +324,30 @@ export function Scanner() {
       {(etapa === 'revisao' || etapa === 'salvando') && rascunho && total && (
         <section>
           <div className="flex gap-3 rounded-card border border-surface-4 bg-surface-2 p-3">
-            {foto && <img src={foto.dataUrl} alt="" className="h-20 w-20 flex-none rounded-xl object-cover" />}
+            {(foto?.dataUrl ?? imagemProduto) && (
+              <img
+                src={foto?.dataUrl ?? imagemProduto ?? undefined}
+                alt=""
+                className="h-20 w-20 flex-none rounded-xl bg-white object-contain"
+              />
+            )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-content-hi">{rascunho.descricao || 'Seu prato'}</p>
-              <p className="mt-0.5 text-micro text-content-low">
-                Confiança da IA: <span className="font-semibold text-content-mid">{Math.round(rascunho.confianca)}%</span>
-              </p>
+              {origem === 'foto' ? (
+                <p className="mt-0.5 text-micro text-content-low">
+                  Confiança da IA: <span className="font-semibold text-content-mid">{Math.round(rascunho.confianca)}%</span>
+                </p>
+              ) : (
+                <p className="mt-0.5 text-micro text-content-low">Números do rótulo do produto</p>
+              )}
               {rascunho.observacao && <p className="mt-1 text-micro text-content-low">{rascunho.observacao}</p>}
             </div>
           </div>
 
           <p className="mb-2 mt-4 text-micro text-content-low">
-            Confira cada item. Desmarque o que a IA errou e ajuste as gramas.
+            {origem === 'codigo'
+              ? 'Ajuste a quantidade que você comeu (g ou ml).'
+              : 'Confira cada item. Desmarque o que a IA errou e ajuste as gramas.'}
           </p>
           <ul className="space-y-2">
             {rascunho.itens.map((item) => (
@@ -261,10 +373,10 @@ export function Scanner() {
                   />
                   <span
                     className={`flex-none rounded-pill px-2 py-0.5 text-[10px] font-semibold ${
-                      item.fonte === 'base' ? 'bg-brand/15 text-brand' : 'bg-surface-3 text-content-low'
+                      item.fonte === 'ia' ? 'bg-surface-3 text-content-low' : 'bg-brand/15 text-brand'
                     }`}
                   >
-                    {item.fonte === 'base' ? 'conferido na base' : 'estimativa da IA'}
+                    {item.fonte === 'base' ? 'conferido na base' : item.fonte === 'rotulo' ? 'rótulo do produto' : 'estimativa da IA'}
                   </span>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
@@ -331,7 +443,7 @@ export function Scanner() {
               disabled={etapa === 'salvando'}
               className="w-full py-2.5 text-sm font-semibold text-content-mid"
             >
-              Tirar outra foto
+              {origem === 'codigo' ? 'Ler outro código' : 'Tirar outra foto'}
             </button>
           </div>
         </section>

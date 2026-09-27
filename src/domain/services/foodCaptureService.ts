@@ -5,6 +5,7 @@ import { refeicoesRepository } from '@data/repositories/refeicoesRepository'
 import { montarRascunho } from '@domain/rules/foodReconciliation'
 import { dataLocalISO } from '@domain/rules/datas'
 import { somarMacros, type Macros, type RefeicaoRascunho } from '@domain/entities/food'
+import type { ProdutoRotulo } from '@data/repositories/produtoCodigoBarrasRepository'
 
 /**
  * Serviço de captura de comida — a fachada do "scanner".
@@ -33,6 +34,35 @@ export const foodCaptureService = {
     return { descricao, confianca, observacao, itens }
   },
 
+  /**
+   * Código de barras: vira um rascunho de 1 item com os números do rótulo,
+   * na porção do rótulo (ou 100 g/ml). A mesma revisão da foto ajusta a
+   * quantidade antes de salvar. Não usa IA nem cota.
+   */
+  rascunhoDeProduto(p: ProdutoRotulo): RefeicaoRascunho {
+    const g = p.porcaoG ?? 100
+    const f = g / 100
+    return {
+      descricao: p.marca ? `${p.nome} · ${p.marca}` : p.nome,
+      confianca: 100,
+      observacao: p.porcaoG ? null : 'Porção do rótulo não informada — ajuste a quantidade.',
+      itens: [
+        {
+          id: `rotulo-${p.codigo}`,
+          nome: p.marca && !p.nome.toLowerCase().includes(p.marca.toLowerCase()) ? `${p.nome} (${p.marca})` : p.nome,
+          quantidadeG: g,
+          alimentoBaseId: null,
+          fonte: 'rotulo',
+          incluir: true,
+          calorias: Math.round(p.por100.calorias * f),
+          proteina: Math.round(p.por100.proteina * f * 10) / 10,
+          carboidrato: Math.round(p.por100.carboidrato * f * 10) / 10,
+          gordura: Math.round(p.por100.gordura * f * 10) / 10,
+        },
+      ],
+    }
+  },
+
   /** Total ao vivo enquanto o usuário edita o rascunho na tela de revisão. */
   totalAtual(rascunho: RefeicaoRascunho): Macros {
     return somarMacros(rascunho.itens)
@@ -43,7 +73,13 @@ export const foodCaptureService = {
    * (a mesma lista da Dieta — dá pra excluir/copiar depois) e registra o
    * histórico do scan.
    */
-  async confirmar(params: { rascunho: RefeicaoRascunho; alvo: RefeicaoAlvo; data: Date }): Promise<number> {
+  async confirmar(params: {
+    rascunho: RefeicaoRascunho
+    alvo: RefeicaoAlvo
+    data: Date
+    /** Código de barras não entra no histórico de scans da IA. */
+    origem?: 'foto' | 'codigo'
+  }): Promise<number> {
     const incluidos = params.rascunho.itens.filter((i) => i.incluir && i.nome.trim() !== '')
     if (incluidos.length === 0) throw new Error('nenhum_item_selecionado')
     for (const item of incluidos) {
@@ -56,7 +92,9 @@ export const foodCaptureService = {
         gordura: item.gordura,
       })
     }
-    await refeicoesRepository.registrarScan({ rascunho: params.rascunho, data: dataLocalISO(params.data) })
+    if (params.origem !== 'codigo') {
+      await refeicoesRepository.registrarScan({ rascunho: params.rascunho, data: dataLocalISO(params.data) })
+    }
     return incluidos.length
   },
 }

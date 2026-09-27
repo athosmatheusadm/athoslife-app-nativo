@@ -61,7 +61,8 @@ export interface ResultadoVisao {
  * É isto que a UI mostra como selo de transparência:
  * "conferido na base" pesa mais que "estimativa da IA".
  */
-export type FonteMacro = 'base' | 'ia'
+/** 'rotulo' = tabela nutricional do produto, lida pelo código de barras. */
+export type FonteMacro = 'base' | 'ia' | 'rotulo'
 
 /**
  * Item já reconciliado e PRONTO PARA EDIÇÃO.

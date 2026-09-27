@@ -32,6 +32,11 @@
 
         </activity>
 
+        <!-- Leitor de código de barras (ML Kit): baixa o módulo do Google na instalação. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
+
         <!-- Live Activity do treino: botões do card na tela de bloqueio. -->
         <receiver
             android:name=".liveactivity.LiveActivityReceiver"
@@ -64,4 +69,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Exigida pelo plugin de código de barras (o leitor do Google não pede na tela). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

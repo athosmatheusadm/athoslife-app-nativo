@@ -1309,3 +1309,14 @@ lotes menores, mesmo padrão de sessões anteriores.
   "Parar" (confirmação em vermelho: sai da tela de bloqueio, nada salvo).
   Antes o "Encerrar" marcava concluído na hora, sem volta.
   Obs.: não existe excluir hábito no app hoje (só criar) — levantar com o dono.
+- **Scanner — código de barras (pedido do dono)**: botão "Ler código de
+  barras" no Scanner. Android: ML Kit (`@capacitor-mlkit/barcode-scanning`
+  8.2.1, tela pronta do Google, EAN-13/8, UPC-A/E; manifest com
+  `barcode_ui` + CAMERA). Navegador: digitar o número. Produto via Open
+  Food Facts (público, CORS ok; testado: Coca 2L, Leite Moça, código
+  inexistente). Vira 1 item "rótulo do produto" na porção do rótulo (ou
+  100 g), ajustável ±10 g, salvo na refeição igual à foto. **Grátis pra
+  todos** (não usa IA/cota) — decisão minha, confirmar com o dono. Não
+  entra no `scan_historico`.
+  ⚠️ No teste manual da API o e-mail do dono foi enviado 1× no User-Agent
+  pro Open Food Facts (erro meu); o código do app não envia.
