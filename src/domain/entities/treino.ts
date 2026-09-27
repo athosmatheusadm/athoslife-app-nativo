@@ -1,3 +1,5 @@
+import { dataLocalISO } from '@domain/rules/datas'
+
 /**
  * Domínio de treino v3 — Local → Dia da semana → Exercícios do dia.
  *
@@ -102,7 +104,7 @@ export function diaSemanaHoje(): DiaSemana {
 
 /** Data de hoje em ISO (YYYY-MM-DD), pra comparar com `concluido_em`. */
 export function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10)
+  return dataLocalISO()
 }
 
 /**

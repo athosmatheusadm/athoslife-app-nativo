@@ -1,3 +1,4 @@
+import { dataLocalISO } from '@domain/rules/datas'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
@@ -33,7 +34,7 @@ export function Privacidade() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `athoslife-meus-dados-${new Date().toISOString().slice(0, 10)}.json`
+      a.download = `athoslife-meus-dados-${dataLocalISO()}.json`
       a.click()
       URL.revokeObjectURL(url)
     } catch {

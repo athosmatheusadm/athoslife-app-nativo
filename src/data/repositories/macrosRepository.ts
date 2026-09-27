@@ -1,5 +1,6 @@
 import { supabase } from '@data/supabase/client'
 import { itensRefeicaoRepository } from './itensRefeicaoRepository'
+import { dataLocalISO } from '@domain/rules/datas'
 
 /** Total de macros consumidos hoje, vindo da view macros_diarios. */
 export interface MacrosDoDia {
@@ -31,7 +32,7 @@ export const macrosRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const dataStr = data.toISOString().slice(0, 10)
+    const dataStr = dataLocalISO(data)
     const [{ data: row, error }, manuais] = await Promise.all([
       supabase
         .from('macros_diarios')

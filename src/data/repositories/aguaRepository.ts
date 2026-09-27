@@ -1,5 +1,6 @@
 import { supabase } from '@data/supabase/client'
 import type { AguaDoDia, RegistroAgua } from '@domain/entities/water'
+import { dataLocalISO } from '@domain/rules/datas'
 
 interface RegistroRow {
   id: string
@@ -16,7 +17,7 @@ function paraDominio(row: RegistroRow): RegistroAgua {
 }
 
 function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10)
+  return dataLocalISO()
 }
 
 /**

@@ -1,5 +1,6 @@
 import { supabase } from '@data/supabase/client'
 import type { CheckinHumor, NivelHumor } from '@domain/entities/humor'
+import { dataLocalISO } from '@domain/rules/datas'
 
 interface HumorRow {
   humor: number
@@ -16,7 +17,7 @@ export const humorRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const hoje = new Date().toISOString().slice(0, 10)
+    const hoje = dataLocalISO()
 
     // Um check-in por dia: apaga o de hoje (se houver) e insere o novo.
     await supabase
@@ -36,7 +37,7 @@ export const humorRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const hoje = new Date().toISOString().slice(0, 10)
+    const hoje = dataLocalISO()
     const { data, error } = await supabase
       .from('checkins_emocionais')
       .select('humor, data')
@@ -61,7 +62,7 @@ export const humorRepository = {
       .from('checkins_emocionais')
       .select('humor, data')
       .eq('user_id', userId)
-      .gte('data', desde.toISOString().slice(0, 10))
+      .gte('data', dataLocalISO(desde))
       .order('data', { ascending: true })
       .returns<HumorRow[]>()
 

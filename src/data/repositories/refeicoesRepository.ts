@@ -5,6 +5,7 @@ import {
   type RefeicaoRascunho,
 } from '@domain/entities/food'
 import { itensRefeicaoRepository } from './itensRefeicaoRepository'
+import { dataLocalISO } from '@domain/rules/datas'
 
 export type TipoRefeicao = 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'
 
@@ -31,7 +32,7 @@ export const refeicoesRepository = {
     if (!userId) throw new Error('not_authenticated')
 
     const hoje = new Date()
-    const hojeStr = hoje.toISOString().slice(0, 10)
+    const hojeStr = dataLocalISO(hoje)
     const [{ data, error }, manuais] = await Promise.all([
       supabase
         .from('refeicoes')

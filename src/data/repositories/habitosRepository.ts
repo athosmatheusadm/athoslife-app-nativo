@@ -6,6 +6,7 @@ import {
   type Habito,
   type IntensidadeHabito,
 } from '@domain/entities/habito'
+import { dataLocalISO } from '@domain/rules/datas'
 
 interface HabitoRow {
   id: string
@@ -24,7 +25,7 @@ interface HabitoRow {
 }
 
 function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10)
+  return dataLocalISO()
 }
 
 function paraDominio(r: HabitoRow): Habito {

@@ -1281,3 +1281,9 @@ lotes menores, mesmo padrão de sessões anteriores.
   e manda o total real de volta; `useAgua` também atualiza o widget.
   Plugin `AthosWidgetAgua`. Deep link `athoslife://abrir/<rota>` no manifest.
 - Botão voltar: `/scanner` saiu das telas raiz (voltava minimizando o app).
+- **Bug das 21h corrigido no app**: os 16 usos de data UTC trocados por
+  `dataLocalISO()` (água, refeições, macros, humor, passos, hábitos,
+  conquistas, treino, exportação). Cotas de IA no banco já usavam
+  America/Sao_Paulo. ⚠️ Faltam 2 funções do banco com `current_date` (UTC):
+  `registrar_checkin_habito` e `handle_recaida` — aguardando OK do dono
+  (fora do escopo da autorização ampla).

@@ -1,6 +1,7 @@
 import { supabase } from '@data/supabase/client'
 import type { TipoRefeicao } from './refeicoesRepository'
 import type { ItemRefeicao } from '@domain/entities/meal'
+import { dataLocalISO } from '@domain/rules/datas'
 
 interface ItemRow {
   id: string
@@ -67,7 +68,7 @@ function paraDominio(row: ItemRow): ItemRefeicao {
 }
 
 function paraDataStr(data: Date): string {
-  return data.toISOString().slice(0, 10)
+  return dataLocalISO(data)
 }
 
 /**

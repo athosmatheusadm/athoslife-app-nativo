@@ -1,3 +1,5 @@
+import { dataLocalISO } from '@domain/rules/datas'
+
 /**
  * Domínio de hábitos.
  *
@@ -60,7 +62,7 @@ export function tipoDaCategoria(categoria: string | null): TipoHabito {
  */
 export function streakEvitar(criadoEm: Date, ultimaRecaida: Date | null, hojeISO: string): number {
   const base = ultimaRecaida && ultimaRecaida > criadoEm ? ultimaRecaida : criadoEm
-  const baseISO = base.toISOString().slice(0, 10)
+  const baseISO = dataLocalISO(base)
   return Math.max(0, diasEntre(baseISO, hojeISO))
 }
 

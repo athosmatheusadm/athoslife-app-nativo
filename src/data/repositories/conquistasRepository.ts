@@ -6,6 +6,7 @@ import type {
   NivelConquista,
 } from '@domain/entities/conquista'
 import type { Metas, Objetivo } from '@domain/entities/profile'
+import { dataLocalISO } from '@domain/rules/datas'
 
 interface CatalogoRow {
   id: string
@@ -24,7 +25,7 @@ interface DesbloqueioRow {
 }
 
 function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10)
+  return dataLocalISO()
 }
 
 /** Maior sequência de dias consecutivos dentro do conjunto de datas dado (ISO yyyy-mm-dd). */

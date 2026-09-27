@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { dataLocalISO } from '@domain/rules/datas'
 
 export interface PassosDoDia {
   readonly passos: number
@@ -20,7 +21,7 @@ export const passosRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const hoje = new Date().toISOString().slice(0, 10)
+    const hoje = dataLocalISO()
     const { data, error } = await supabase
       .from('passos_diarios')
       .select('passos, meta')
@@ -40,7 +41,7 @@ export const passosRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const hoje = new Date().toISOString().slice(0, 10)
+    const hoje = dataLocalISO()
     const { error } = await supabase
       .from('passos_diarios')
       .upsert(
