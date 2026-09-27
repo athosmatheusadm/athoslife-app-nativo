@@ -65,13 +65,21 @@ export interface ExercicioCatalogo {
   readonly comoExecutar: readonly string[]
   readonly seriesPadrao: number
   readonly repeticoesPadrao: number
+  /** 'tempo' = série contada em segundos (prancha etc.), não em repetições. */
+  readonly medida: MedidaSerie
+  /** Tempo sugerido por série quando `medida` é 'tempo'. */
+  readonly segundosPadrao: number | null
   readonly dica: string | null
 }
+
+export type MedidaSerie = 'reps' | 'tempo'
 
 /** Uma série individual, com sua própria carga — editável no card expandido. */
 export interface SerieDetalhe {
   readonly reps: number | null
   readonly cargaKg: number | null
+  /** Só em exercício por tempo. Opcional: séries antigas não têm. */
+  readonly segundos?: number | null
 }
 
 /** Exercício do catálogo que o usuário colocou num (local, dia da semana). */

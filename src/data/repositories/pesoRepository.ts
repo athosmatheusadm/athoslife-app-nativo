@@ -1,5 +1,6 @@
 import { supabase } from '@data/supabase/client'
-import type { RegistroPeso, ResumoPeso } from '@domain/entities/weight'
+import { resumirPesos, type RegistroPeso, type ResumoPeso } from '@domain/entities/weight'
+import { dataDeISO, dataLocalISO } from '@domain/rules/datas'
 
 interface PesoRow {
   peso_kg: number
@@ -7,7 +8,7 @@ interface PesoRow {
 }
 
 function paraDominio(row: PesoRow): RegistroPeso {
-  return { pesoKg: row.peso_kg, data: new Date(row.data) }
+  return { pesoKg: Number(row.peso_kg), data: dataDeISO(row.data) }
 }
 
 /**
@@ -34,18 +35,7 @@ export const pesoRepository = {
 
   /** Monta o resumo do card (inicial, atual, variação) a partir do histórico. */
   async resumo(): Promise<ResumoPeso> {
-    const registros = await this.historico()
-    if (registros.length === 0) {
-      return { inicial: 0, atual: 0, variacao: 0, registros: [] }
-    }
-    const inicial = registros[0]!.pesoKg
-    const atual = registros[registros.length - 1]!.pesoKg
-    return {
-      inicial,
-      atual,
-      variacao: Math.round((atual - inicial) * 10) / 10,
-      registros,
-    }
+    return resumirPesos(await this.historico())
   },
 
   /** Registra o peso de hoje (upsert: 1 por dia). */
@@ -54,13 +44,20 @@ export const pesoRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const hoje = new Date().toISOString().slice(0, 10)
+    // Data do aparelho, não UTC: pesar às 22h conta pra hoje.
+    const hoje = dataLocalISO()
     const { error } = await supabase
       .from('registros_peso')
       .upsert(
         { user_id: userId, peso_kg: pesoKg, data: hoje },
         { onConflict: 'user_id,data' },
       )
+    if (error) throw error
+  },
+
+  /** Apaga o registro de um dia (pesou errado). */
+  async excluir(data: Date): Promise<void> {
+    const { error } = await supabase.from('registros_peso').delete().eq('data', dataLocalISO(data))
     if (error) throw error
   },
 }

@@ -1180,3 +1180,89 @@ lotes menores, mesmo padrão de sessões anteriores.
   Vazio = APK independente. Mudança nativa exige gerar e instalar de novo.
   Celular precisa alcançar o PC: portproxy + firewall no PowerShell admin
   (WSL2 tem rede interna própria; o IP do WSL muda a cada boot).
+- **Commit + push feitos** (pendência 9 de 26/09 resolvida): 4 commits
+  `ae21384` banco · `4979c43` pranchas · `8ac760c` app · `8d26555` APK de
+  teste + diário, push `3e98a22..8d26555` com token dado pelo dono na
+  conversa (não gravado em arquivo). Zips/imagens/HTMLs de referência da
+  raiz fora do commit, como sempre.
+- **GitHub Secrets**: repositório **não tinha nenhum** (`VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY` ausentes) — o `.aab` da Play nunca teria
+  conectado no Supabase. Cadastro pela API bloqueado pelo Claude Code:
+  **dono cadastra à mão**. Não trava o APK ao vivo (telas vêm do dev
+  server do PC, que tem o `.env`).
+- APK de teste disparado via API (run 36339078363, servidor_dev
+  `http://192.168.18.92:5173`).
+- **1º APK de teste falhou → Capacitor 8 no nativo completado**: erro
+  `Failed to create Jar file ... bcprov` = Gradle 8.2.1 rodando em Java 21.
+  A "migração pro Capacitor 8" antiga (`docs/MIGRACAO_CAPACITOR_8.md`) só
+  atualizou o npm; `android/` seguia no molde do 6. Alinhado com o molde
+  oficial do `@capacitor/cli` 8.5: Gradle 8.14.3, AGP 8.13.0,
+  google-services 4.4.4, minSdk 24, compile/targetSdk 36, androidx novos,
+  `configChanges` + navigation|density. Commit `f64ea40`, APK disparado de
+  novo. Obs.: o `.aab` da Play também nunca teria compilado antes disso.
+  targetSdk 36 = Android 16 força tela de ponta a ponta — conferir se
+  cabeçalho/bottom nav respeitam a barra de status no aparelho.
+- **Modo treino — rascunho da migração** (NÃO rodado):
+  `db/athoslife_treino_sessao_migration.sql` — `medida` reps|tempo +
+  `segundos_padrao` no catálogo (hoje "Prancha Frontal 3×12" está errado),
+  e `treinos_historico` ganha local/dia/início/fim/`series_feitas` jsonb.
+  Lista de exercícios por tempo a confirmar com o dono.
+- **APK de teste gerado com sucesso** (run 36339285502) — artefato `athoslife-teste-apk`, modo ao vivo apontando pra `192.168.18.92:5173`.
+- **Acesso pelo celular (portproxy/APK ao vivo)**: dono tentou e **não
+  conseguiu abrir** — deixado pra depois a pedido dele. Causa não
+  investigada (suspeitas: portproxy/firewall/perfil de rede Público).
+- **Chat do Life — causa do erro achada**: dono testou 4× às 13h37;
+  `ai_audit_logs` = 4 × error, 0 tokens, 0 mensagens salvas. Log da função:
+  Google 404 "gemini-2.5-flash is no longer available to new users". Doc
+  oficial confirma (2.5 só pra quem já usava). ai-proxy corrigido (NÃO
+  publicado ainda): padrão `gemini-3.5-flash-lite` (mesmo preço do 2.5
+  Flash, $0,30/$2,50 por 1M), preços do 3.5-lite e 3.8-flash na tabela,
+  e se o Google recusar `thinkingConfig` (400 com "thinking") repete sem
+  ele e com +1024 no teto de saída. Doc não confirma se 3.x aceita
+  `thinkingBudget: 0`. Modelo trocável pelo Secret `GEMINI_MODEL`.
+- **Gráfico do peso (Home)**: nunca teve dado porque **nenhuma tela
+  registrava peso** (`pesoRepository.registrar` sem uso; 0 linhas em
+  `registros_peso`). Card agora tem "+ Registrar peso de hoje" (upsert do
+  dia + atualiza `profiles.peso_atual`). Cor da variação agora segue
+  `profiles.objetivo` (emagrecer/massa/manter; null = neutro) — antes era
+  `kcal_meta > 0`, ou seja, sempre "emagrecer". Ponto pulsante saiu do SVG
+  (virava oval com preserveAspectRatio none). Discos de atividade: ok.
+- ⚠️ **Bug de data em todo o app (não corrigido)**: 18 lugares usam
+  `new Date().toISOString().slice(0, 10)` = data UTC, e o Postgres roda em
+  UTC (`current_date`). No Brasil, das 21h à meia-noite tudo (água,
+  refeições, peso, humor, check-in de hábito, cota de IA) cai no dia
+  seguinte. Precisa correção única cliente + funções do banco.
+- **Dono deu autorização ampla** (2026-09-27): mexer/criar o que for preciso
+  pra Live Activity, widget, Scanner e IA do Life (inclui migração e deploy).
+- **Migração do treino RODADA**: `medida`/`segundos_padrao` no catálogo
+  (Prancha Frontal/Lateral e Mountain Climber 30s, Farmer's Walk 40s) +
+  colunas de sessão em `treinos_historico`.
+- **Modo "treino em andamento" (app, feito)**: `domain/entities/sessaoTreino.ts`
+  (lógica pura, tempos como horário de término; simulado no Node: descanso,
+  +15s, troca de exercício, cronômetro terminando sozinho, resumo),
+  `app/SessaoTreinoProvider.tsx` (salva no aparelho, relógio, vibração,
+  aviso local no fim do descanso, ponte com a Live Activity, fila de toques),
+  tela `/treinos/sessao` (steppers peso/reps, cronômetro pra exercício por
+  tempo, descanso laranja +15s/pular, resumo final), botão "Iniciar treino
+  de hoje"/"Continuar" em Treinos, `treinoHistoricoRepository` (grava sessão,
+  marca concluídos, carga usada vira carga da ficha). Card da ficha mostra
+  "segundos" em exercício por tempo. Ponte TS da Live Activity:
+  `data/native/liveActivity.ts` (plugin nativo `AthosLiveActivity` — Java a
+  escrever).
+- **Gráfico do peso v2**: eixo X por data real, período 30d/90d/tudo (com
+  âncora anterior), objetivo + peso-meta (linha dourada, "faltam X kg",
+  cor por objetivo), histórico com apagar. Datas locais
+  (`domain/rules/datas.ts`) no peso.
+- **Chat do Life**: rola sozinho pra última fala; botão "💬 Life" no topo da
+  Home; ai-proxy passa a contar sessões de `treinos_historico` no contexto.
+  ⚠️ ai-proxy ainda precisa ser publicado pelo dono (MCP sem permissão de
+  Edge Functions; copiar 700 linhas à mão pro deploy foi descartado).
+- **Scanner (feito, app)**: tela `/scanner` real — escolhe refeição (ou vem
+  da Dieta com refeição+dia no `state`), foto (câmera/galeria, 1024px),
+  "Life olhando seu prato", revisão item a item (incluir/desmarcar, nome
+  editável, ±10 g reescalando macros, selo "conferido na base"/"estimativa
+  da IA", confiança, total), salva **cada item em `itens_refeicao`** da
+  refeição escolhida (aparece na Dieta com excluir/copiar) + `scan_historico`.
+  Não usa mais a tabela `refeicoes` (evita soma dupla). Grátis vê cadeado
+  com "Ver planos"; pago vê "X de 5 scans hoje". Depende do ai-proxy novo
+  publicado (visão também usa o Gemini).

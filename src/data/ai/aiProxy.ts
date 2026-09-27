@@ -92,8 +92,8 @@ export async function chamar<T>(
  * Devolve os itens já identificados COM macros estimados.
  * Converte snake_case do backend para o domínio na fronteira.
  */
-export async function analisarFoto(base64: string): Promise<ResultadoVisao> {
-  const cru = await chamar<RespostaVisaoCrua>('vision', { image: base64 })
+export async function analisarFoto(base64: string, mime = 'image/jpeg'): Promise<ResultadoVisao> {
+  const cru = await chamar<RespostaVisaoCrua>('vision', { image: base64, mime_type: mime })
   return {
     descricao: cru.descricao,
     confianca: cru.confianca,
@@ -149,7 +149,12 @@ export async function carregarHistoricoChat(limite = 30): Promise<MensagemChat[]
 
 /** Quanto do chat ainda dá pra usar hoje, pra mostrar antes de enviar. */
 export async function cotaChatHoje(): Promise<{ usados: number; limite: number } | null> {
-  const { data, error } = await supabase.rpc('cota_ia_status', { p_tipo: 'chat' })
+  return cotaIaHoje('chat')
+}
+
+/** Uso de hoje de um recurso de IA (chat, vision = scanner). */
+export async function cotaIaHoje(tipo: 'chat' | 'vision'): Promise<{ usados: number; limite: number } | null> {
+  const { data, error } = await supabase.rpc('cota_ia_status', { p_tipo: tipo })
   const linha = (data as { usados_hoje: number; limite_hoje: number }[] | null)?.[0]
   if (error || !linha) return null
   return { usados: linha.usados_hoje, limite: linha.limite_hoje }

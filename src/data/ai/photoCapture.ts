@@ -11,12 +11,20 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 
 export type OrigemFoto = 'camera' | 'galeria'
 
+export interface FotoCapturada {
+  /** Sem o prefixo `data:` — é o que o ai-proxy espera. */
+  readonly base64: string
+  readonly mime: 'image/jpeg' | 'image/png' | 'image/webp'
+  /** Pra pré-visualizar na tela. */
+  readonly dataUrl: string
+}
+
 /**
- * Abre a câmera ou a galeria e devolve a imagem em base64,
- * SEM o prefixo `data:` (é o que o ai-proxy espera).
- * Retorna null se o usuário cancelar.
+ * Abre a câmera ou a galeria e devolve a imagem pronta pro scanner.
+ * Retorna null se o usuário cancelar. No navegador (npm run dev) o plugin
+ * cai sozinho num seletor de arquivo.
  */
-export async function capturarFoto(origem: OrigemFoto): Promise<string | null> {
+export async function capturarFoto(origem: OrigemFoto): Promise<FotoCapturada | null> {
   try {
     const foto = await Camera.getPhoto({
       quality: 70,
@@ -28,7 +36,9 @@ export async function capturarFoto(origem: OrigemFoto): Promise<string | null> {
       width: 1024,
       correctOrientation: true,
     })
-    return foto.base64String ?? null
+    if (!foto.base64String) return null
+    const mime = foto.format === 'png' ? 'image/png' : foto.format === 'webp' ? 'image/webp' : 'image/jpeg'
+    return { base64: foto.base64String, mime, dataUrl: `data:${mime};base64,${foto.base64String}` }
   } catch {
     // Cancelamento do usuário cai aqui — não é erro de verdade.
     return null

@@ -140,3 +140,21 @@ export function montarRascunho(
     itens: visao.itens.map((item, i) => reconciliarItem(item, base, i)),
   }
 }
+
+/**
+ * Muda a quantidade de um item do rascunho mantendo a proporção dos macros
+ * (vale pra item da base e pra estimativa da IA — ambos são "X por Y g").
+ */
+export function reescalarItem(item: ItemRascunho, novaQuantidadeG: number): ItemRascunho {
+  const nova = Math.max(0, Math.round(novaQuantidadeG))
+  if (item.quantidadeG <= 0) return { ...item, quantidadeG: nova }
+  const f = nova / item.quantidadeG
+  return {
+    ...item,
+    quantidadeG: nova,
+    calorias: Math.round(item.calorias * f),
+    proteina: Math.round(item.proteina * f * 10) / 10,
+    carboidrato: Math.round(item.carboidrato * f * 10) / 10,
+    gordura: Math.round(item.gordura * f * 10) / 10,
+  }
+}

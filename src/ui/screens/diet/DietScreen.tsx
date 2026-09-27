@@ -352,7 +352,11 @@ export function DietScreen(props: {
             onColar={() => clipboard && void adicionarItem(r, clipboard)}
             onExcluir={() => void excluirRefeicao(r)}
             onToggleConcluida={() => void alternarConcluida(r)}
-            onEscanear={() => navigate('/scanner')}
+            onEscanear={() =>
+              navigate('/scanner', {
+                state: { alvo: paraAlvo(r), nomeRefeicao: r.nome, dataISO: diaSel.toISOString() },
+              })
+            }
             onAbrirSuplemento={() => setSuplementoChave(r.chave)}
             {...(r.tipo === 'extra'
               ? { onRenomear: (nome: string) => void renomearExtra(r, nome), erroRenomear: erroExtra }

@@ -8,22 +8,15 @@ import { itensRefeicaoRepository } from './itensRefeicaoRepository'
 
 export type TipoRefeicao = 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'
 
-export interface RefeicaoSalva {
-  readonly id: string
-  readonly nome: string
-  readonly tipo: TipoRefeicao
-  readonly calorias: number
-}
-
 export interface RefeicaoResumoDia {
   readonly tipo: TipoRefeicao
   readonly kcal: number
 }
 
 /**
- * `refeicoes` guarda UMA linha por refeição, com macros somados.
- * O detalhe item-a-item da IA vai para `scan_historico`, ligado por
- * refeicao_id. Este repositório mantém essa dupla escrita consistente.
+ * `refeicoes` é a tabela antiga do scanner (uma linha por refeição, macros
+ * somados) — só lida aqui pra somar o que já existe. Desde 2026-09-27 o
+ * scanner grava item a item em `itens_refeicao`, igual à Dieta.
  */
 export const refeicoesRepository = {
   /**
@@ -62,73 +55,23 @@ export const refeicoesRepository = {
   },
 
   /**
-   * Salva uma refeição vinda do scanner (foto -> revisão -> confirmar).
-   * Só entram os itens marcados com `incluir`. Registra o histórico do
-   * scan para auditoria e para futura melhoria da base de alimentos.
+   * Histórico do scan (auditoria + futura melhoria da base de alimentos).
+   * Os alimentos em si vão pra `itens_refeicao` (ver foodCaptureService) —
+   * mesma lista que a Dieta mostra, com excluir/copiar. Falha aqui não
+   * desfaz nada do que a pessoa salvou.
    */
-  async salvarDoScanner(params: {
-    rascunho: RefeicaoRascunho
-    tipo: TipoRefeicao
-    fotoUrl: string | null
-  }): Promise<RefeicaoSalva> {
-    const { rascunho, tipo, fotoUrl } = params
-
-    const incluidos = rascunho.itens.filter((i) => i.incluir)
-    if (incluidos.length === 0) {
-      throw new Error('nenhum_item_selecionado')
-    }
-
+  async registrarScan(params: { rascunho: RefeicaoRascunho; data: string }): Promise<void> {
     const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const macros = somarMacros(incluidos)
-    const nome = montarNome(incluidos, rascunho.descricao)
-    const hoje = new Date().toISOString().slice(0, 10)
-
-    // 1) A refeição em si (macros somados).
-    const { data: refeicao, error: erroRefeicao } = await supabase
-      .from('refeicoes')
-      .insert({
-        user_id: userId,
-        nome,
-        tipo,
-        calorias: macros.calorias,
-        proteina: macros.proteina,
-        carboidrato: macros.carboidrato,
-        gordura: macros.gordura,
-        foto_url: fotoUrl,
-        origem: 'scanner',
-        data: hoje,
-      })
-      .select('id, nome, tipo, calorias')
-      .single<{ id: string; nome: string; tipo: TipoRefeicao; calorias: number }>()
-
-    if (erroRefeicao) throw erroRefeicao
-
-    // 2) O histórico do scan, ligado à refeição criada.
-    const { error: erroHist } = await supabase.from('scan_historico').insert({
+    if (!userId) return
+    const incluidos = params.rascunho.itens.filter((i) => i.incluir)
+    const { error } = await supabase.from('scan_historico').insert({
       user_id: userId,
-      descricao_ia: rascunho.descricao,
-      resultado_final: {
-        itens: incluidos,
-        observacao: rascunho.observacao,
-      },
-      confianca: rascunho.confianca,
-      refeicao_id: refeicao.id,
+      descricao_ia: params.rascunho.descricao || montarNome(incluidos, ''),
+      resultado_final: { itens: incluidos, totais: somarMacros(incluidos), observacao: params.rascunho.observacao },
+      confianca: params.rascunho.confianca,
+      data: params.data,
     })
-
-    // Falha no histórico não desfaz a refeição — o dado do usuário fica.
-    // Apenas registra para observabilidade; não relança.
-    if (erroHist) {
-      console.warn('scan_historico falhou (refeição preservada):', erroHist.message)
-    }
-
-    return {
-      id: refeicao.id,
-      nome: refeicao.nome,
-      tipo: refeicao.tipo,
-      calorias: refeicao.calorias,
-    }
+    if (error) console.warn('scan_historico falhou (itens preservados):', error.message)
   },
 }
 

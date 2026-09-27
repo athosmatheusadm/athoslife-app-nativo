@@ -38,6 +38,7 @@ export function ExerciseCard(props: {
   const { exercicio } = item
   const concluido = item.concluidoHoje
   const [mostrarExecucao, setMostrarExecucao] = useState(false)
+  const porTempo = exercicio.medida === 'tempo'
 
   function alternarExecucao(e: MouseEvent) {
     e.stopPropagation()
@@ -157,20 +158,36 @@ export function ExerciseCard(props: {
               {item.series.map((serie, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <span className="w-14 flex-none text-micro text-content-dim">Série {index + 1}</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="Reps"
-                    value={serie.reps ?? ''}
-                    onChange={(e) =>
-                      atualizarSerie(index, { reps: e.target.value === '' ? null : Number(e.target.value) })
-                    }
-                    className="w-16 rounded-lg border border-surface-4 bg-surface-2 px-2 py-1.5 text-sm text-content-hi"
-                  />
+                  {porTempo ? (
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="Seg"
+                      aria-label={`Segundos da série ${index + 1}`}
+                      value={serie.segundos ?? exercicio.segundosPadrao ?? ''}
+                      onChange={(e) =>
+                        atualizarSerie(index, { segundos: e.target.value === '' ? null : Number(e.target.value) })
+                      }
+                      className="w-16 rounded-lg border border-surface-4 bg-surface-2 px-2 py-1.5 text-sm text-content-hi"
+                    />
+                  ) : (
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="Reps"
+                      value={serie.reps ?? ''}
+                      onChange={(e) =>
+                        atualizarSerie(index, { reps: e.target.value === '' ? null : Number(e.target.value) })
+                      }
+                      className="w-16 rounded-lg border border-surface-4 bg-surface-2 px-2 py-1.5 text-sm text-content-hi"
+                    />
+                  )}
+                  {porTempo && <span className="-ml-1 text-micro text-content-dim">s</span>}
                   <input
                     type="number"
                     inputMode="decimal"
-                    placeholder="Carga (kg)"
+                    placeholder={porTempo ? 'Carga (opcional)' : 'Carga (kg)'}
+                    aria-label={`Carga da série ${index + 1} em kg`}
                     value={serie.cargaKg ?? ''}
                     onChange={(e) =>
                       atualizarSerie(index, { cargaKg: e.target.value === '' ? null : Number(e.target.value) })

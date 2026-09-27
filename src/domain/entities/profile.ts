@@ -53,6 +53,9 @@ export interface Profile {
   readonly alturaCm: number | null
   readonly idade: number | null
   readonly pesoAtual: number | null
+  /** null enquanto o onboarding real não pergunta (hoje é esqueleto). */
+  readonly objetivo: Objetivo | null
+  readonly pesoMeta: number | null
   readonly plano: Plano
   readonly trialExpira: Date | null
   readonly assinaturaAtiva: boolean

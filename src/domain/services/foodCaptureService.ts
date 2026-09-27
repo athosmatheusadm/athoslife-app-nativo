@@ -1,27 +1,20 @@
 import { analisarFoto } from '@data/ai/aiProxy'
 import { alimentosRepository } from '@data/repositories/alimentosRepository'
-import {
-  refeicoesRepository,
-  type RefeicaoSalva,
-  type TipoRefeicao,
-} from '@data/repositories/refeicoesRepository'
+import { itensRefeicaoRepository, type RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
+import { refeicoesRepository } from '@data/repositories/refeicoesRepository'
 import { montarRascunho } from '@domain/rules/foodReconciliation'
-import {
-  somarMacros,
-  type Macros,
-  type RefeicaoRascunho,
-} from '@domain/entities/food'
+import { dataLocalISO } from '@domain/rules/datas'
+import { somarMacros, type Macros, type RefeicaoRascunho } from '@domain/entities/food'
 
 /**
  * Serviço de captura de comida — a fachada do "scanner".
  *
  * A UI conversa só com este serviço. Ela não sabe que existe Gemini,
- * tabela `alimentos` ou dupla escrita. Isso mantém a tela burra (só
- * apresentação) e a lógica reutilizável por Android e iOS.
+ * tabela `alimentos` ou onde os itens moram.
  *
  * Fluxo em duas etapas, de propósito:
  *   1) capturar(foto)  -> devolve um rascunho editável (NÃO salva nada)
- *   2) confirmar(rascunho) -> só aqui vira refeição no banco
+ *   2) confirmar(rascunho, refeição) -> só aqui vira alimento no diário
  *
  * O passo do meio (usuário revisa) é o que tira a "casca vazia":
  * a IA propõe, a pessoa confirma. Nada de estimativa indo direto pro diário.
@@ -30,16 +23,12 @@ export const foodCaptureService = {
   /**
    * Etapa 1: manda a foto pro Gemini, reconcilia com a base e devolve
    * um rascunho pronto para a tela de revisão. Não persiste nada.
-   *
-   * @param base64 imagem sem o prefixo `data:image/...;base64,`
    */
-  async capturar(base64: string): Promise<RefeicaoRascunho> {
-    // A base é pequena e de leitura pública: carrega junto para reconciliar.
+  async capturar(base64: string, mime?: string): Promise<RefeicaoRascunho> {
     const [visao, base] = await Promise.all([
-      analisarFoto(base64),
+      analisarFoto(base64, mime),
       alimentosRepository.carregarTodos(),
     ])
-
     const { descricao, confianca, observacao, itens } = montarRascunho(visao, base)
     return { descricao, confianca, observacao, itens }
   },
@@ -50,18 +39,24 @@ export const foodCaptureService = {
   },
 
   /**
-   * Etapa 2: confirma o rascunho (já revisado) e salva como refeição.
-   * Só o que estiver marcado com `incluir` entra.
+   * Etapa 2: grava cada item marcado como alimento da refeição escolhida
+   * (a mesma lista da Dieta — dá pra excluir/copiar depois) e registra o
+   * histórico do scan.
    */
-  async confirmar(params: {
-    rascunho: RefeicaoRascunho
-    tipo: TipoRefeicao
-    fotoUrl?: string | null
-  }): Promise<RefeicaoSalva> {
-    return refeicoesRepository.salvarDoScanner({
-      rascunho: params.rascunho,
-      tipo: params.tipo,
-      fotoUrl: params.fotoUrl ?? null,
-    })
+  async confirmar(params: { rascunho: RefeicaoRascunho; alvo: RefeicaoAlvo; data: Date }): Promise<number> {
+    const incluidos = params.rascunho.itens.filter((i) => i.incluir && i.nome.trim() !== '')
+    if (incluidos.length === 0) throw new Error('nenhum_item_selecionado')
+    for (const item of incluidos) {
+      await itensRefeicaoRepository.adicionar(params.alvo, params.data, {
+        nome: item.nome.trim(),
+        quantidade: `${item.quantidadeG} g`,
+        calorias: item.calorias,
+        proteina: item.proteina,
+        carboidrato: item.carboidrato,
+        gordura: item.gordura,
+      })
+    }
+    await refeicoesRepository.registrarScan({ rascunho: params.rascunho, data: dataLocalISO(params.data) })
+    return incluidos.length
   },
 }

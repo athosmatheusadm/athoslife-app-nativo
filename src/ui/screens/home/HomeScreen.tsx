@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useSession } from '@app/SessionProvider'
+import { LifeChatSheet } from '@ui/screens/habits/LifeChatSheet'
 import { TodayActivity } from './TodayActivity'
 import { StreakCard } from './StreakCard'
 import { MealCards } from './MealCards'
@@ -18,9 +20,8 @@ import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
  */
 export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void }) {
   const { profile } = useSession()
+  const [chatAberto, setChatAberto] = useState(false)
   if (!profile) return null
-
-  const objetivoPerder = profile.metas.kcal > 0 // ajuste fino vem do objetivo real
 
   return (
     <main className="space-y-4 px-4 pb-24 pt-safe-t">
@@ -29,7 +30,17 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
         <h1 className="text-2xl font-bold text-content-hi">
           ATHOS<span className="font-semibold text-brand">life</span>
         </h1>
-        <ProfileAvatar />
+        <div className="flex items-center gap-2">
+          {/* Life acessível de qualquer dia, não só de dentro de Hábitos. */}
+          <button
+            onClick={() => setChatAberto(true)}
+            aria-label="Conversar com o Life"
+            className="flex h-10 items-center gap-1.5 rounded-pill border border-brand/40 px-3 text-sm font-semibold text-brand"
+          >
+            💬 Life
+          </button>
+          <ProfileAvatar />
+        </div>
       </header>
 
       <EmotionalCheckin />
@@ -43,7 +54,9 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
         onCriarNovaRefeicao={() => onNavigate('/dieta?novaExtra=1')}
       />
 
-      <WeightCard objetivoPerder={objetivoPerder} />
+      <WeightCard />
+
+      {chatAberto && <LifeChatSheet onFechar={() => setChatAberto(false)} />}
     </main>
   )
 }

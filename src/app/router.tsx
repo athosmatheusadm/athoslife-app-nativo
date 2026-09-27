@@ -21,6 +21,7 @@ import { Notificacoes } from '@ui/screens/Notificacoes'
 import { Acessibilidade } from '@ui/screens/Acessibilidade'
 import { Sobre } from '@ui/screens/Sobre'
 import { Cozinha } from '@ui/screens/Cozinha'
+import { SessaoTreinoScreen } from '@ui/screens/workout/SessaoTreinoScreen'
 
 /** Casca do app: liga o botão Voltar dentro do contexto do roteador. */
 function Shell() {
@@ -64,6 +65,8 @@ export const router = createBrowserRouter([
           { path: '/perfil/acessibilidade', element: <Acessibilidade /> },
           { path: '/perfil/sobre', element: <Sobre /> },
           { path: '/dieta/cozinha/:id', element: <Cozinha /> },
+          // Treino em andamento: tela cheia, sem bottom nav.
+          { path: '/treinos/sessao', element: <SessaoTreinoScreen /> },
         ],
       },
     ],

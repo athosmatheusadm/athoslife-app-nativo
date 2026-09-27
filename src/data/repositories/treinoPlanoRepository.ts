@@ -5,6 +5,7 @@ import {
   type ExercicioCatalogo,
   type ExercicioPlano,
   type LocalTreino,
+  type MedidaSerie,
   type SerieDetalhe,
 } from '@domain/entities/treino'
 
@@ -20,12 +21,15 @@ interface CatalogoRow {
   como_executar: string[]
   series_padrao: number
   repeticoes_padrao: number
+  medida: MedidaSerie | null
+  segundos_padrao: number | null
   dica: string | null
 }
 
 interface SerieRow {
   reps: number | null
   carga_kg: number | null
+  segundos?: number | null
 }
 
 interface PlanoRow {
@@ -44,7 +48,7 @@ function paraDominio(r: PlanoRow): ExercicioPlano {
     id: r.id,
     local: r.local,
     diaSemana: r.dia_semana,
-    series: r.series_detalhe.map((s) => ({ reps: s.reps, cargaKg: s.carga_kg })),
+    series: r.series_detalhe.map((s) => ({ reps: s.reps, cargaKg: s.carga_kg, segundos: s.segundos ?? null })),
     ordem: r.ordem,
     concluidoHoje: r.concluido_em === hojeISO(),
     exercicio: {
@@ -59,17 +63,19 @@ function paraDominio(r: PlanoRow): ExercicioPlano {
       comoExecutar: c.como_executar,
       seriesPadrao: c.series_padrao,
       repeticoesPadrao: c.repeticoes_padrao,
+      medida: c.medida ?? 'reps',
+      segundosPadrao: c.segundos_padrao,
       dica: c.dica,
     },
   }
 }
 
 function paraLinha(series: readonly SerieDetalhe[]): SerieRow[] {
-  return series.map((s) => ({ reps: s.reps, carga_kg: s.cargaKg }))
+  return series.map((s) => ({ reps: s.reps, carga_kg: s.cargaKg, segundos: s.segundos ?? null }))
 }
 
 const SELECT_COM_CATALOGO =
-  'id, local, dia_semana, series_detalhe, ordem, concluido_em, exercicios_catalogo(id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, dica)'
+  'id, local, dia_semana, series_detalhe, ordem, concluido_em, exercicios_catalogo(id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, medida, segundos_padrao, dica)'
 
 /** Único ponto que conhece treino_plano — atribuição pessoal por (local, dia). */
 export const treinoPlanoRepository = {

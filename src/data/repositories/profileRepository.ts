@@ -1,5 +1,5 @@
 import { supabase } from '@data/supabase/client'
-import type { MascoteModo, Plano, Profile, Sexo } from '@domain/entities/profile'
+import type { MascoteModo, Objetivo, Plano, Profile, Sexo } from '@domain/entities/profile'
 
 /** Linha crua da tabela profiles. snake_case morre nesta fronteira. */
 interface ProfileRow {
@@ -10,6 +10,8 @@ interface ProfileRow {
   altura_cm: number | null
   idade: number | null
   peso_atual: number | null
+  objetivo: string | null
+  peso_meta: number | null
   plano: string
   trial_expira: string | null
   assinatura_ativa: boolean | null
@@ -38,6 +40,8 @@ function paraDominio(row: ProfileRow): Profile {
     alturaCm: row.altura_cm,
     idade: row.idade,
     pesoAtual: row.peso_atual,
+    objetivo: (row.objetivo as Objetivo | null) ?? null,
+    pesoMeta: row.peso_meta === null ? null : Number(row.peso_meta),
     plano: row.plano as Plano,
     trialExpira: row.trial_expira ? new Date(row.trial_expira) : null,
     assinaturaAtiva: row.assinatura_ativa ?? false,
@@ -129,6 +133,17 @@ export const profileRepository = {
     if (!userId) throw new Error('not_authenticated')
 
     const { error } = await supabase.from('profiles').update({ nome }).eq('id', userId)
+    if (error) throw error
+  },
+
+  /** Objetivo + peso-meta — definidos no card de peso da Home. */
+  async atualizarObjetivoPeso(objetivo: Objetivo | null, pesoMeta: number | null): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { error } = await supabase
+      .from('profiles')
+      .update({ objetivo, peso_meta: pesoMeta })
+      .eq('id', userId)
     if (error) throw error
   },
 

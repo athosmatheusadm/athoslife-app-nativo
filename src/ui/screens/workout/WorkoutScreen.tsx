@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
   DIAS_SEMANA,
   LOCAIS,
@@ -27,6 +29,8 @@ export function WorkoutScreen() {
   const [carregando, setCarregando] = useState(true)
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
   const [painelAberto, setPainelAberto] = useState(false)
+  const { sessao, iniciar } = useSessaoTreino()
+  const navigate = useNavigate()
 
   useEffect(() => {
     let ativo = true
@@ -45,9 +49,11 @@ export function WorkoutScreen() {
 
   async function adicionar(exercicio: ExercicioCatalogo) {
     try {
+      const porTempo = exercicio.medida === 'tempo'
       const seriesIniciais: SerieDetalhe[] = Array.from({ length: exercicio.seriesPadrao }, () => ({
-        reps: exercicio.repeticoesPadrao,
+        reps: porTempo ? null : exercicio.repeticoesPadrao,
         cargaKg: null,
+        segundos: porTempo ? exercicio.segundosPadrao ?? 30 : null,
       }))
       const novo = await treinoPlanoRepository.adicionar({
         local,
@@ -165,6 +171,33 @@ export function WorkoutScreen() {
           )
         })}
       </div>
+
+      {sessao ? (
+        <button
+          onClick={() => navigate('/treinos/sessao')}
+          className="mx-4 mb-4 flex w-[calc(100%-2rem)] items-center justify-between rounded-2xl border border-brand/50 bg-brand/10 p-4 text-left"
+        >
+          <span>
+            <span className="block text-micro font-bold uppercase tracking-[2px] text-brand">Treino em andamento</span>
+            <span className="block text-sm text-content-mid">Toque pra continuar de onde parou</span>
+          </span>
+          <span className="text-2xl text-brand">▶</span>
+        </button>
+      ) : (
+        dia === diaSemanaHoje() &&
+        !carregando &&
+        itens.length > 0 && (
+          <button
+            onClick={() => {
+              iniciar({ itens, local, diaSemana: dia })
+              navigate('/treinos/sessao')
+            }}
+            className="mx-4 mb-4 w-[calc(100%-2rem)] rounded-2xl bg-brand py-4 text-base font-extrabold text-[#04120a] shadow-[0_0_24px_rgba(34,197,94,0.35)] active:scale-[0.98]"
+          >
+            ▶ Iniciar treino de hoje
+          </button>
+        )
+      )}
 
       <div className="mx-4 mb-2 flex items-center justify-between">
         <h2 className="text-base font-extrabold text-content-hi">Exercícios do dia</h2>

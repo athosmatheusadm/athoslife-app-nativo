@@ -73,7 +73,8 @@ Dieta, ou digitando `/scanner` direto.
    Providers → Email) desde 2026-08-24, só pra destravar teste de login local.
    **Tem que reativar antes de qualquer coisa ir pra produção/Play Store** —
    hoje qualquer email, mesmo inventado, consegue criar conta e logar na hora.
-5. ~~Capacitor 6→8~~ — **já está no 8** (8.5.0 instalado, conferido 2026-09-26;
-   a pendência estava desatualizada). Falta só instalar `@capgo/capacitor-health`,
+5. ~~Capacitor 6→8~~ — **concluído de verdade em 2026-09-27**: o npm já
+   estava no 8.5 (conferido 26/09), mas a pasta `android/` seguia no molde do 6
+   (Gradle 8.2.1) e o build nativo quebrava; alinhada ao molde oficial do 8.5. Falta só instalar `@capgo/capacitor-health`,
    apagar `types/capgo-health.d.ts` e `npx cap sync android` quando for mexer
    com Health Connect (que exige aprovação da Google + Política de Privacidade).

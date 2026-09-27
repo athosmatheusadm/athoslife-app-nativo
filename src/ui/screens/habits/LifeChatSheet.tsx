@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AiProxyError,
   carregarHistoricoChat,
@@ -35,6 +35,12 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [restantes, setRestantes] = useState<number | null>(null)
+  const fimRef = useRef<HTMLDivElement>(null)
+
+  // Sempre mostra a última fala (ao abrir, ao enviar e quando o Life responde).
+  useEffect(() => {
+    fimRef.current?.scrollIntoView({ block: 'end', behavior: historico.length > 0 ? 'smooth' : 'auto' })
+  }, [historico, enviando])
 
   useEffect(() => {
     let vivo = true
@@ -119,6 +125,7 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
               Life está digitando…
             </div>
           )}
+          <div ref={fimRef} />
         </div>
 
         {erro && <p className="flex-none px-6 pt-2 text-[11px] text-accent-danger">{erro}</p>}
