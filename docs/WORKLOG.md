@@ -1304,3 +1304,8 @@ lotes menores, mesmo padrão de sessões anteriores.
 - **Secrets do GitHub cadastrados** (VITE_SUPABASE_URL/ANON_KEY, valores do
   `.env`, autorizado pelo dono) — o `.aab` e o APK independente agora
   conectam no Supabase.
+- **Treino — parar pelo app (pedido do dono)**: faixa agora tem "Encerrar"
+  (abre resumo SEM encerrar: salvar / continuar treinando / descartar) e
+  "Parar" (confirmação em vermelho: sai da tela de bloqueio, nada salvo).
+  Antes o "Encerrar" marcava concluído na hora, sem volta.
+  Obs.: não existe excluir hábito no app hoje (só criar) — levantar com o dono.

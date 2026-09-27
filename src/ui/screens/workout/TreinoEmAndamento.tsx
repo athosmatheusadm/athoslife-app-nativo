@@ -19,9 +19,9 @@ const LARANJA = '#FF9159'
  * só o status (tempo, série/descanso) e o "Encerrar", que abre o resumo.
  */
 export function TreinoEmAndamento() {
-  const { sessao, agora, aplicar, finalizar, descartar } = useSessaoTreino()
+  const { sessao, agora, finalizar, descartar } = useSessaoTreino()
   const [relogio, setRelogio] = useState(() => Date.now())
-  const [resumoAberto, setResumoAberto] = useState(false)
+  const [painel, setPainel] = useState<null | 'resumo' | 'parar'>(null)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -52,7 +52,7 @@ export function TreinoEmAndamento() {
     setErro(null)
     try {
       await finalizar()
-      setResumoAberto(false)
+      setPainel(null)
     } catch {
       setErro('Não deu pra salvar o treino. Confere a internet e tenta de novo.')
     } finally {
@@ -77,20 +77,48 @@ export function TreinoEmAndamento() {
           <div className="truncate text-sm text-content-mid">{status}</div>
           <div className="text-[11px] text-content-dim">Controle pela tela de bloqueio 🔒</div>
         </div>
-        <button
-          onClick={() => {
-            if (sessao.status !== 'concluida') {
-              aplicar((s) => ({ ...s, status: 'concluida', descansoFimEm: null, cronometroFimEm: null }))
-            }
-            setResumoAberto(true)
-          }}
-          className="flex-none rounded-pill border border-surface-4 bg-surface-2 px-3 py-2 text-micro font-bold text-content-hi"
-        >
-          Encerrar
-        </button>
+        <div className="flex flex-none flex-col gap-1.5">
+          <button
+            onClick={() => setPainel('resumo')}
+            className="rounded-pill bg-brand px-3 py-1.5 text-micro font-bold text-[#04120a]"
+          >
+            Encerrar
+          </button>
+          <button
+            onClick={() => setPainel('parar')}
+            aria-label="Parar treino sem salvar"
+            className="rounded-pill border border-accent-danger/50 px-3 py-1.5 text-micro font-bold text-accent-danger"
+          >
+            Parar
+          </button>
+        </div>
       </div>
 
-      {(resumoAberto || sessao.status === 'concluida') && (
+      {painel === 'parar' && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Parar treino">
+          <button aria-label="Fechar" onClick={() => setPainel(null)} className="absolute inset-0 bg-black/70" />
+          <div className="relative w-full max-w-md rounded-t-3xl border-t border-surface-4 bg-surface-2 p-5 pb-safe-b animate-rise">
+            <h2 className="text-center text-lg font-extrabold text-content-hi">Parar o treino?</h2>
+            <p className="mt-1 text-center text-sm text-content-low">
+              Ele sai da tela de bloqueio e nada do que foi feito agora é salvo. Sua ficha continua igual.
+            </p>
+            <button
+              onClick={() => {
+                descartar()
+                setPainel(null)
+              }}
+              className="mt-5 w-full rounded-pill bg-accent-danger py-3.5 text-sm font-bold text-white"
+            >
+              Parar treino
+            </button>
+            <button onClick={() => setPainel(null)} className="mt-1 w-full py-3 text-sm font-semibold text-content-mid">
+              Continuar treinando
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(painel === 'resumo' || sessao.status === 'concluida') && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Resumo do treino">
           <div className="absolute inset-0 bg-black/70" />
           <div className="relative w-full max-w-md rounded-t-3xl border-t border-surface-4 bg-surface-2 p-5 pb-safe-b animate-rise">
@@ -126,14 +154,23 @@ export function TreinoEmAndamento() {
             >
               {salvando ? 'Salvando…' : nada ? 'Fechar' : 'Salvar treino'}
             </button>
+            {sessao.status !== 'concluida' && (
+              <button
+                onClick={() => setPainel(null)}
+                disabled={salvando}
+                className="mt-1 w-full py-3 text-sm font-semibold text-content-mid"
+              >
+                Continuar treinando
+              </button>
+            )}
             {!nada && (
               <button
                 onClick={() => {
                   descartar()
-                  setResumoAberto(false)
+                  setPainel(null)
                 }}
                 disabled={salvando}
-                className="mt-1 w-full py-3 text-sm font-semibold text-accent-danger"
+                className="w-full py-2 text-sm font-semibold text-accent-danger"
               >
                 Descartar treino
               </button>
