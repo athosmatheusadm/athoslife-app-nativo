@@ -1287,3 +1287,20 @@ lotes menores, mesmo padrão de sessões anteriores.
   America/Sao_Paulo. ⚠️ Faltam 2 funções do banco com `current_date` (UTC):
   `registrar_checkin_habito` e `handle_recaida` — aguardando OK do dono
   (fora do escopo da autorização ampla).
+- APK com Live Activity + widget **compilou no GitHub** (run 36344863724).
+- **Funções do banco com data de Brasília (RODADO, dono autorizou)**:
+  `registrar_checkin_habito` e `handle_recaida` usam
+  `(now() at time zone 'America/Sao_Paulo')::date` — arquivo
+  `db/athoslife_datas_brasilia_habitos_migration.sql`. Conferido: nenhuma
+  das duas usa mais `current_date`.
+- **Treino — correção do dono**: a tela de treino em tela cheia foi errada;
+  a tela de Treino continua a MESMA, "Começar treino" só liga a sessão da
+  Live Activity (card com peso/reps/descanso fica só na tela de bloqueio).
+  No app: faixa "Treino em andamento · tempo · status · Encerrar" +
+  resumo em painel (`workout/TreinoEmAndamento.tsx`). `SessaoTreinoScreen`
+  e a rota `/treinos/sessao` removidas.
+- **Chat — correção do dono**: botão "💬 Life" da Home removido. O chat abre
+  tocando no Life (PNG, quando o dono mandar a versão certa), como em Hábitos.
+- **Secrets do GitHub cadastrados** (VITE_SUPABASE_URL/ANON_KEY, valores do
+  `.env`, autorizado pelo dono) — o `.aab` e o APK independente agora
+  conectam no Supabase.

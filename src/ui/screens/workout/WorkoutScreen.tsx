@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
   DIAS_SEMANA,
@@ -17,6 +16,7 @@ import { ExerciseIcon } from '@ui/components/ExerciseIcon'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { ExerciseCard } from './ExerciseCard'
 import { AddExercisePanel } from './AddExercisePanel'
+import { TreinoEmAndamento } from './TreinoEmAndamento'
 
 /**
  * Tela "Treino" — Local (casa/academia) → dia da semana → exercícios do dia.
@@ -30,7 +30,6 @@ export function WorkoutScreen() {
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
   const [painelAberto, setPainelAberto] = useState(false)
   const { sessao, iniciar } = useSessaoTreino()
-  const navigate = useNavigate()
 
   useEffect(() => {
     let ativo = true
@@ -173,28 +172,20 @@ export function WorkoutScreen() {
       </div>
 
       {sessao ? (
-        <button
-          onClick={() => navigate('/treinos/sessao')}
-          className="mx-4 mb-4 flex w-[calc(100%-2rem)] items-center justify-between rounded-2xl border border-brand/50 bg-brand/10 p-4 text-left"
-        >
-          <span>
-            <span className="block text-micro font-bold uppercase tracking-[2px] text-brand">Treino em andamento</span>
-            <span className="block text-sm text-content-mid">Toque pra continuar de onde parou</span>
-          </span>
-          <span className="text-2xl text-brand">▶</span>
-        </button>
+        <TreinoEmAndamento />
       ) : (
         dia === diaSemanaHoje() &&
         !carregando &&
         itens.length > 0 && (
+          // Liga a sessão da Live Activity; a tela continua esta mesma.
           <button
-            onClick={() => {
-              iniciar({ itens, local, diaSemana: dia })
-              navigate('/treinos/sessao')
-            }}
-            className="mx-4 mb-4 w-[calc(100%-2rem)] rounded-2xl bg-brand py-4 text-base font-extrabold text-[#04120a] shadow-[0_0_24px_rgba(34,197,94,0.35)] active:scale-[0.98]"
+            onClick={() => iniciar({ itens, local, diaSemana: dia })}
+            className="mx-4 mb-4 w-[calc(100%-2rem)] rounded-2xl border border-brand/50 bg-brand/10 py-3.5 text-sm font-extrabold text-brand active:scale-[0.98]"
           >
-            ▶ Iniciar treino de hoje
+            ▶ Começar treino
+            <span className="block text-micro font-normal text-content-low">
+              Série, carga e descanso aparecem na tela de bloqueio
+            </span>
           </button>
         )
       )}
