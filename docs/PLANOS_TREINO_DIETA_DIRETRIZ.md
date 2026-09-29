@@ -26,38 +26,46 @@ referência** a partir de:
   (`planos_gerados.revisao_profissional`). Enquanto não houver, a tela diz
   "modelo baseado em diretrizes públicas, sem revisão individual".
 
-## 2. Triagem obrigatória (antes de qualquer plano)
+## 2. Check de saúde (v2, 2026-09-29) — orienta, não trava
 
-Vale **90 dias**. Refeita quando vence. Guardada para sempre, sem update nem
-delete pelo usuário (`triagens_saude`, append-only). **A aptidão é calculada
-no servidor** (trigger `avaliar_triagem`), nunca aceita do app.
+**Decisão do dono (29/09):** o check é a nossa "apólice de seguro", não uma
+catraca. "Paguei o app e não recebo meu plano?" não pode acontecer.
 
-Perguntas (adaptadas do PAR-Q+ geral, domínio público):
+- **5 perguntas, uma vez só**, feitas pelo Life **dentro do chat** (roteiro
+  do app, sem IA, não gasta cota) + data de nascimento + declaração de
+  veracidade. Vale pra sempre (a última respondida).
+- Guardado para sempre, sem update nem delete (`triagens_saude`,
+  append-only). Aptidão e motivos calculados **no servidor** (trigger
+  `avaliar_triagem`), nunca aceitos do app.
+- Teve "Sim": o Life aconselha procurar um médico e mostra os pontos de
+  atenção. Se a pessoa quiser o plano mesmo assim, marca a **declaração de
+  ciente** (`ciente_orientacao` + `ciente_versao`, linha nova, append-only)
+  e recebe. Se escolheu "vou ao médico" e voltar depois, declara o ciente
+  sem refazer as perguntas (linha nova copiando as respostas).
 
-| # | Pergunta | "Sim" bloqueia |
-|---|----------|----------------|
-| q1 | Médico já disse que você tem problema cardíaco ou pressão alta? | treino |
-| q2 | Sente dor no peito em repouso, no dia a dia ou fazendo atividade física? | treino |
-| q3 | Perdeu o equilíbrio por tontura ou desmaiou nos últimos 12 meses? | treino |
-| q4 | Tem outra doença crônica diagnosticada? | treino e dieta |
-| q5 | Toma remédio de uso contínuo para doença crônica? | treino e dieta |
-| q6 | Tem problema em osso, articulação ou músculo que piora com exercício? | treino |
-| q7 | Médico disse que só deve se exercitar com supervisão? | treino |
-| q8 | Está grávida, pode estar ou amamentando? | treino e dieta |
-| q9 | Tem diabetes, doença renal ou do fígado, ou precisa de dieta especial? | dieta |
-| q10 | Tem ou já teve transtorno alimentar (anorexia, bulimia, compulsão)? | dieta |
-| q11 | Fez cirurgia nos últimos 6 meses (incluindo bariátrica)? | treino e dieta |
+| # | Pergunta | "Sim" = ressalva em |
+|---|----------|--------------------|
+| t1 | Coração/pressão alta, dor no peito, tontura ou desmaio? | treino |
+| t2 | Doença crônica, remédio contínuo ou exercício só com supervisão? | treino e dieta |
+| t3 | Lesão em osso/articulação/músculo ou cirurgia nos últimos 6 meses? | treino |
+| t4 | Grávida, pode estar ou amamentando? | treino e dieta |
+| t5 | Transtorno alimentar, bariátrica ou dieta especial por orientação médica? | dieta |
 
-Outros bloqueios calculados no servidor:
+O que a ressalva muda no **conteúdo** (servidor, RPCs dos planos):
 
-- **Menor de 18 anos** (pela data de nascimento) → sem plano automático
-  (o app aceita 16+, o plano não).
+- Treino com ressalva → só nível **iniciante**.
+- Dieta com ressalva alimentar (t5), gravidez (t4), IMC < 18,5 ou cirurgia
+  (v1) → só **"manter"** (sem déficit nem superávit). Os pisos de sempre
+  (basal, 1.200 kcal, 130 g de carbo, volume...) valem pra todos.
+
+**Travas duras** (não se resolvem com ciente):
+
+- **Menor de 18 anos** pela data de nascimento (aceite de menor não vale).
 - **Data de nascimento que não bate com a idade do perfil** (diferença > 1
-  ano) → bloqueia até corrigir. Pega quem "arredonda" a idade pra passar.
-- **IMC < 18,5** → dieta bloqueada (risco de transtorno alimentar).
+  ano) → bloqueia até corrigir. Pega quem mente a idade.
 
-Bloqueado não fica sem nada: continua montando a ficha manualmente e recebe
-a orientação de procurar médico / educador físico / nutricionista.
+As 11 perguntas da v1 (28/09) continuam aceitas pro histórico.
+Migração: `db/athoslife_triagem_v2_ciente_migration.sql`.
 
 ## 3. Declaração de veracidade
 
@@ -105,7 +113,7 @@ Travas (no app **e** no RPC `aplicar_plano_treino`):
 Divisão por dias: 2–3 = corpo inteiro A/B; 4 = superior/inferior A/B;
 5 = superior, inferior, empurrar, puxar, pernas; 6 = empurrar/puxar/pernas ×2.
 
-## 5. Plano de dieta — etapa 2 (ainda não construído)
+## 5. Plano de dieta — etapa 2 (construído 2026-09-29)
 
 - Meta de referência por fórmula (Mifflin-St Jeor × atividade), pisos:
   nunca abaixo do basal; perda máx. ~0,5–1% do peso/semana; sem dieta
@@ -113,12 +121,18 @@ Divisão por dias: 2–3 = corpo inteiro A/B; 4 = superior/inferior A/B;
 - Cardápio sugerido com alimentos da base e receitas da Cozinha, respeitando
   gostos, alergias e país; tudo trocável.
 - Sem dose de suplemento, nunca.
-- Só com `apto_dieta` na triagem vigente.
+- Com `apto_dieta` ou com a declaração de ciente (ver seção 2).
 
 ## 6. O Life
 
-Pode: explicar o plano de referência da pessoa, motivar, lembrar, sugerir
-trocas equivalentes DENTRO do plano. Não pode: criar plano, mudar séries /
+Um Life por tela (29/09): Home junta tudo; Dieta (chef), Treino e Hábitos
+sabem de tudo mas puxam pro assunto da tela (`foco` no ai-proxy). No chat
+ficam o check de saúde (uma vez) e os botões Montar treino / Montar dieta /
+Trocar algo no plano.
+
+Pode: explicar o plano de referência da pessoa, motivar, lembrar, informar
+trocas equivalentes DENTRO do plano (kcal/macros de cada opção, sem
+recomendar). Não pode: criar plano, mudar séries /
 reps / carga / calorias, dar dose. Encaminha para profissional quando o
 assunto é saúde. (Regras no prompt do ai-proxy + filtro de saída.)
 

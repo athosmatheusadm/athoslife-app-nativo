@@ -22,7 +22,6 @@ import { Notificacoes } from '@ui/screens/Notificacoes'
 import { Acessibilidade } from '@ui/screens/Acessibilidade'
 import { Sobre } from '@ui/screens/Sobre'
 import { IdiomaRegiao } from '@ui/screens/IdiomaRegiao'
-import { PlanoTreino } from '@ui/screens/PlanoTreino'
 import { Cozinha } from '@ui/screens/Cozinha'
 import { DocumentoLegal } from '@ui/screens/legal/DocumentoLegal'
 
@@ -76,7 +75,6 @@ export const router = createBrowserRouter([
           { path: '/perfil/acessibilidade', element: <Acessibilidade /> },
           { path: '/perfil/sobre', element: <Sobre /> },
           { path: '/perfil/idioma', element: <IdiomaRegiao /> },
-          { path: '/treinos/plano', element: <PlanoTreino /> },
           { path: '/dieta/cozinha/:id', element: <Cozinha /> },
         ],
       },

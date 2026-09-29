@@ -3,13 +3,12 @@ import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { HabitCard } from './HabitCard'
 import { CravingAssistant } from './CravingAssistant'
 import { AddHabitSheet } from './AddHabitSheet'
-import { LifeChatSheet } from './LifeChatSheet'
-import { LifeMascote } from '@ui/components/LifeMascote'
+import { LifeChatSheet } from '@ui/components/life/LifeChatSheet'
+import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { useI18n } from '@/i18n/I18nProvider'
 import {
   corTermometro,
   nivelBemEstar,
-  statusHabito,
   type Habito,
   type IntensidadeHabito,
 } from '@domain/entities/habito'
@@ -118,7 +117,7 @@ export function HabitsScreen(props: {
         />
       )}
 
-      {chatAberto && <LifeChatSheet onFechar={() => setChatAberto(false)} />}
+      {chatAberto && <LifeChatSheet foco="habitos" onFechar={() => setChatAberto(false)} />}
 
       {/* Balão de insight real da IA (hoje sempre null — ver docs/STATUS.md).
           Só aparece quando existir de verdade; nada de frase inventada aqui. */}
@@ -128,24 +127,10 @@ export function HabitsScreen(props: {
         </div>
       )}
 
-      {/* O Life flutua no canto inferior esquerdo, acima do BottomNav
-          (z-10), de corpo inteiro. O brilho atrás muda de cor com o
-          termômetro, e o humor da imagem acompanha: feliz quando está tudo
-          firme, calmo (roxo) quando algum hábito pede atenção. Imagens
-          transparentes de 2026-09-28 — o mix-blend-mode do fundo preto saiu. */}
-      <button
-        type="button"
-        onClick={() => setChatAberto(true)}
-        aria-label="Conversar com o Life"
-        className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] left-2 z-20 transition-transform active:scale-95"
-      >
-        <span
-          className="absolute inset-x-0 bottom-0 mx-auto h-20 w-20 rounded-full blur-2xl"
-          style={{ backgroundColor: corLife, opacity: 0.35 }}
-          aria-hidden="true"
-        />
-        <LifeMascote humor={habitos.some((h) => statusHabito(h) !== 'firme') ? 'calmo' : 'feliz'} className="relative h-28" />
-      </button>
+      {/* O Life de Hábitos: o padrão, no tamanho da Home (decisão do dono,
+          29/09 — o de língua de fora saiu daqui). O brilho atrás segue o
+          termômetro. */}
+      <LifeFlutuante humor="normal" foco="habitos" corBrilho={corLife} />
     </main>
   )
 }

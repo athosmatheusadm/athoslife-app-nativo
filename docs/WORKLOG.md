@@ -1542,3 +1542,174 @@ lotes menores, mesmo padrão de sessões anteriores.
   9. Life resgate sem texto na caneca (pra outros idiomas); vídeos do dono.
   10. Seguem de antes: pranchas do Treino, revisão do Perfil, `{{ .Token }}`
       no template de senha + SMTP, "Confirm email", trocar token do GitHub.
+
+## 2026-09-29
+
+Sessão da manhã (08h40–09h01) foi interrompida por queda de luz antes de
+registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
+
+- **Plano de referência de DIETA (etapa 2 da diretriz, feito)**:
+  - App: `domain/rules/geradorDieta.ts` (Mifflin-St Jeor × atividade,
+    déficit ≤ 0,75%/sem e ≤ 25% do gasto, pisos 1.200 kcal/basal e 130 g
+    carbo, proteína 1,2–2,2 g/kg com peso ajustado se IMC ≥ 30, gordura
+    ≥ 20%; dia-modelo de 3 ou 4 refeições com 54 alimentos fixos da base,
+    troca por equivalente, cardápio a ±15% da meta), tela
+    `ui/screens/PlanoDieta.tsx` (intro -> triagem -> inapto/parâmetros ->
+    prévia -> aplicar; mostra o plano salvo), componentes comuns com o
+    treino em `ui/screens/plano/componentesPlano.tsx` (PlanoTreino ficou
+    menor), rota `/dieta/plano`, botão na Dieta, textos pt/en/es.
+    Pré-preenche restrições e "não gosto" do onboarding.
+  - Banco (`db/athoslife_plano_dieta_migration.sql`, RODADO): RPC
+    `aplicar_plano_dieta` — exige pago + triagem vigente com `apto_dieta`,
+    recalcula basal/gasto pelo PERFIL, revalida metas, recusa suplemento,
+    5–600 g por item, recalcula kcal do cardápio pela base; grava metas no
+    perfil (+ água 35 ml/kg) e o plano em `planos_gerados`.
+  - Testado no servidor (transação desfeita): sem triagem, triagem inapta,
+    1.100 kcal, proteína 200 g, déficit agressivo, 2.000 g, suplemento e
+    cardápio fora da meta -> recusados; válido -> metas no perfil + plano.
+    Os 54 alimentos do gerador existem na base.
+  - ai-proxy v3.1: Life explica/motiva sobre o plano de dieta (sem mudar
+    números) e recebe o resumo no contexto.
+- **CORREÇÃO URGENTE da triagem (RODADO)**:
+  `db/athoslife_triagem_fix_motivos_migration.sql` — a versão no servidor
+  usava `v_motivos || 'texto'` (erro "malformed array literal"): qualquer
+  "Sim" na triagem dava erro genérico. Agora `array_append`. Testado:
+  grávida -> inapta {gestacao_amamentacao}; 14 anos + 2 sim -> inapta
+  {dor_no_peito, transtorno_alimentar, menor_de_idade, idade_divergente}.
+- **Hábitos proibidos v2 (RODADO)**: `db/athoslife_habitos_proibidos_v2_migration.sql`
+  — dono confirmou bloqueio de conteúdo sexual "e qualquer coisa próxima";
+  + drinks/happy hour, fumante, THC/CBD, remédio controlado, pôquer/roleta/
+  loteria, apps de encontro, Viagra. Espelho em `domain/entities/habito.ts`.
+  Testado: bloqueia OnlyFans, Happy hour, Pôquer, Rivotril, Tinder, Pod de
+  nicotina; passa Chocolate, Beber água, Podcast, Sair da balada cedo.
+  Nenhum hábito ativo atual ficou proibido. ai-proxy v3.1: Life recusa
+  falar de sexo/pornografia (indica médico/psicólogo).
+- **Auditoria da base de alimentos (RODADO)**:
+  `db/athoslife_alimentos_auditoria_migration.sql` — ~500 itens estavam em
+  "moldes" por categoria (muçarela 121 kcal/100 g, óleo 582, pratos todos
+  ~220 kcal/250 g). Corrigidos 92 pratos + 410 itens (TACO/USDA, porção
+  realista) + pasta de amendoim proteica. Conferido: muçarela 330, óleo
+  880, aveia 390, burrito 200, pizza 270 kcal/100 g. Registros antigos de
+  refeição não mudam.
+- **Por que o chat com o Life não funcionava (ACHADO nos logs)**: última
+  chamada (28/09 23:44 UTC, deploy v9) -> Gemini `400 INVALID_ARGUMENT` com
+  `gemini-3.5-flash-lite`. Causa: Gemini 3.x não aceita
+  `thinkingConfig.thinkingBudget: 0` (usa `thinkingLevel`), e o plano B só
+  disparava se o erro citasse "thinking" — o Google responde genérico.
+  **ai-proxy v3.2**: `configRaciocinio()` manda `thinkingBudget: 0` só pra
+  Gemini 2.x e `thinkingLevel: 'minimal'` pro resto; qualquer 400 tenta de
+  novo sem thinkingConfig. Conferido com shim do Deno: 0 erros. Token do
+  MCP não tem permissão de Edge Functions e o CLI do Supabase não roda no
+  WSL -> **dono publica** (911 linhas, 1ª linha "v3.2").
+- Obs.: o token do MCP não tem `apply_migration`; migrações rodadas via
+  `execute_sql` (como antes).
+- `tsc` 0 erros; `vite build` ok.
+
+- **Life por tela + planos dentro do Life + check de saúde que NÃO trava
+  (decisões do dono, tarde de 29/09 — combinadas de manhã fora do Claude Code)**:
+  - **Um Life por tela** (`ui/components/life/LifeFlutuante.tsx`): canto
+    inferior esquerdo, tamanho da Home (h-24); some ao rolar pra baixo e
+    volta ao rolar pra cima. Home = padrão e junta tudo; Dieta = chef;
+    Treino = treino (saiu o Life do cabeçalho); Hábitos = padrão (saiu o
+    de língua de fora, `feliz`). Home: Life grande no topo só no 1º acesso
+    do dia (`primeiroAcessoDoDiaNaHome` em `app/ausencia.ts`), depois no
+    canto.
+  - Chat virou global (`ui/components/life/LifeChatSheet.tsx`) com `foco`
+    (home/dieta/treino/habitos) e título por tela; ai-proxy **v3.3** recebe
+    `foco` e puxa o assunto da tela; pedidos de "monta um treino/dieta" são
+    levados pros botões do chat.
+  - **Planos dentro do Life** (`ui/components/life/PlanosNoLife.tsx`):
+    check de saúde UMA vez, 5 perguntas em balões (Sim/Não), nascimento +
+    declaração; depois ficam os botões Montar treino · Montar dieta ·
+    Trocar algo no plano. Roteiro do app, sem IA, não gasta cota. Telas
+    `/treinos/plano` e `/dieta/plano` mandam pro Life quando falta o check.
+  - **Check não trava**: "Sim" -> Life aconselha médico; quer mesmo assim ->
+    declaração de ciente (append-only) -> recebe o plano. Conteúdo mais
+    conservador: treino só iniciante; dieta só "manter" com ressalva
+    alimentar/gravidez/IMC baixo. Trava dura só pra menor de 18 e idade
+    divergente. Triagem vale pra sempre.
+  - Banco (`db/athoslife_triagem_v2_ciente_migration.sql`, RODADO com ok do
+    dono): colunas `ciente_orientacao`/`ciente_versao`, `avaliar_triagem`
+    v1+v2, `triagem_vigente` sem prazo, bloco da triagem trocado nas duas
+    RPCs. Testado (desfeito): coração sem ciente -> treino pede ciente,
+    dieta sai; coração+ciente -> intermediário recusado, iniciante passa;
+    alimentar+ciente -> emagrecer recusado, manter aplicado; gravidez sem
+    ciente -> dieta pede ciente; menor+ciente -> bloqueado; ciente sem
+    versão e check incompleto -> recusados.
+  - Termos v2.2 (seção 5-A reescrita pt/en) e diretriz seção 2 atualizados.
+  - `tsc` 0 erros (app e ai-proxy); `vite build` ok.
+
+- **Plano montado DENTRO do chat (pedido do dono, fim da tarde 29/09)**:
+  "aplicar plano fica no plano de referência e não no chat" -> as telas
+  `/treinos/plano` e `/dieta/plano` SAÍRAM (cópia no scratchpad da sessão).
+  `ui/components/life/MontarPlanoNoLife.tsx`: o Life pergunta as escolhas
+  em balões (treino: foco, nível, dias, local, minutos; dieta: sexo se
+  faltar, objetivo, ritmo, atividade, refeições, restrições), mostra a
+  prévia no chat (dieta com ⇄ trocar) e aplica. Aplicou -> chat fecha e
+  leva pra tela: Treino abre no local do plano com a ficha preenchida
+  (`app/eventosLife.ts`); Dieta mostra em cada card fixo vazio "✨ Do seu
+  plano: ..." + botão "Comi o do plano" (registra os itens; não registra
+  sozinho, o diário é o que a pessoa comeu). Botões "Montar plano" da
+  Dieta/Treino agora abrem o chat do Life.
+  - **Sexo**: o check não perguntava; a dieta pergunta (e salva no perfil)
+    quando falta — muda a conta do basal.
+  - **Life maior**: canto e topo da Home de h-24 -> h-32.
+  - `tsc` 0 erros; `vite build` ok.
+
+- **Dieta — "comi do plano" mais limpo + bug do contador (29/09, noite)**:
+  - Bug: `macrosRepository.doDia` somava decimais sem arredondar
+    (138.39999999999998g no topo da Dieta e nos discos da Home). Agora kcal
+    inteira e gramas com 1 casa.
+  - Dono não gostou do bloco "Comi o do plano" no card. Agora: card vazio
+    mostra o plano apagado ("✨ Pão integral · Ovo · Banana", "~513 kcal") e
+    o ✓ do próprio card registra o do plano e conclui. Dentro da refeição,
+    os itens do plano aparecem apagados com "+" cada (adiciona só o que
+    comeu) e "Adicionar tudo".
+
+- **Ajustes pedidos pelo dono (29/09, noite)**:
+  - Botões "Montar plano" da Dieta e do Treino SAÍRAM: plano só no chat.
+  - Life decorativo ao lado de "Cozinha Athos" saiu (o do canto fica).
+  - Check de saúde pergunta o **sexo** quando o perfil não tem (onboarding
+    é opcional/"prefiro não dizer") e salva no perfil; **gravidez/
+    amamentação só aparece pra mulher** (homem manda t4 = não).
+  - Montador de dieta ganhou "não como / não gosto / alergia", já vindo do
+    onboarding (restricoes + alimentos_nao_gosta); o que ficou digitado sem
+    tocar em Adicionar também vale. Achado: o plano das 15h54 foi pela tela
+    antiga, com `evitar: []`.
+  - Gerador entende "frutas"/"verduras" (pt/en/es) e fruta deixou de ser
+    obrigatória. Testado com esbuild: sem frutas -> nenhuma fruta; +verduras
+    -> sem brócolis; dentro da meta nos 3 casos.
+
+- **BUG: onboarding não salvava ("confere a internet") — CORRIGIDO**:
+  logs da API: `PATCH profiles` -> **403**. `profiles` libera UPDATE só em
+  colunas listadas pro papel authenticated; a migração da globalização
+  (28/09) criou idioma/pais/fuso/unidades/onboarding_respostas sem GRANT.
+  Também quebrava Perfil > Idioma e região. GRANT rodado
+  (`db/athoslife_globalizacao_grant_fix_migration.sql`, sob a autorização
+  da globalização) e testado como authenticated (update completo do
+  onboarding, desfeito). Tela agora separa "sem conexão" de "servidor
+  recusou" e loga o erro real no console. **Regra: coluna nova em profiles
+  que o app grava -> GRANT UPDATE junto.**
+
+- **Chat com o Life FUNCIONANDO**: `ai_audit_logs` com 2 chamadas `ok`
+  (29/09 15h48 e 15h49, ~1.600 tokens cada) depois da correção do thinking.
+  Dono publicou o ai-proxy v3.3.
+
+- **Pendências pra próxima sessão**:
+  1. **Aba Notificações do Perfil (PRÓXIMO — dono vai definir)**. Hoje só
+     tem lembrete de hábito "construir" + "em breve" de resgate/WhatsApp.
+     Proposta que ficou na mesa (tudo LOCAL, `@capacitor/local-notifications`,
+     sem servidor): água a cada X h entre acordar e dormir, refeições
+     (café/almoço/lanche/jantar), treino só nos dias da ficha, pesagem
+     semanal; chave geral, horário de silêncio (profiles.horario_acordar/
+     horario_dormir já existem, lembrete_agua/lembrete_treino também), voz do
+     Life nos textos, teto por dia. Dono quis esclarecer antes de escolher.
+  2. Dono terminar o onboarding (conta 42b8f944…) -> Claude confere se
+     sexo e "não gosto" salvaram.
+  3. Testar no navegador: montar treino/dieta no chat, check de saúde (com
+     e sem "Sim", homem/mulher), cards da Dieta com o plano, contador.
+  4. Push pro GitHub (token) + build do APK (Java do widget).
+  5. Seguem da lista de 28/09: traduzir telas antigas e nomes dos
+     exercícios; revisão jurídica + e-mail do app + Gemini pago; Billing
+     e paywall; Life resgate sem texto; pranchas; Perfil; `{{ .Token }}` +
+     SMTP; "Confirm email"; trocar token do GitHub.

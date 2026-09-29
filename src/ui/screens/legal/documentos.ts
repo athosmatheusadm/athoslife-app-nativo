@@ -11,7 +11,7 @@ import type { Idioma } from '@domain/rules/localidade'
  *
  * Espanhol ainda usa o texto em inglês (tradução jurídica pendente).
  */
-export const VERSAO_DOCUMENTOS = 'v2.1-2026-09-28'
+export const VERSAO_DOCUMENTOS = 'v2.2-2026-09-29'
 
 export interface Secao {
   readonly titulo: string
@@ -72,8 +72,8 @@ const termosPt: Documento = {
     {
       titulo: '5-A. Planos de referência e declaração de veracidade',
       paragrafos: [
-        'O plano pago pode montar um plano de referência de treino (e, futuramente, de alimentação) a partir das suas escolhas e de diretrizes gerais e públicas. É uma sugestão editável, não prescrição individual, e não substitui profissional de Educação Física, nutricionista ou médico.',
-        'Antes de gerar um plano você responde uma triagem de saúde e declara que as informações são verdadeiras e completas. Essa declaração fica registrada com data e hora e não pode ser alterada. Menores de 18 anos, gestantes e pessoas com as condições indicadas na triagem não recebem plano automático.',
+        'O plano pago pode montar planos de referência de treino e de alimentação a partir das suas escolhas e de diretrizes gerais e públicas. É uma sugestão editável, não prescrição individual, e não substitui profissional de Educação Física, nutricionista ou médico.',
+        'Antes do primeiro plano você responde um check de saúde e declara que as informações são verdadeiras e completas. Se alguma resposta indicar ponto de atenção (por exemplo, problema cardíaco, gravidez ou transtorno alimentar), o app recomenda que você procure um médico antes de começar. Se, mesmo orientado(a), você decidir receber o plano, declara estar ciente dessa orientação; o plano então é montado de forma mais conservadora (treino em nível iniciante; alimentação apenas para manutenção do peso, conforme o caso). As declarações ficam registradas com data e hora e não podem ser alteradas. Menores de 18 anos não recebem plano automático.',
         'Se você omitir ou informar dados falsos (como idade, gravidez ou doença) para obter um plano, os riscos e danos decorrentes são de sua exclusiva responsabilidade (Código de Defesa do Consumidor, art. 14, §3º, II). Podemos suspender o recurso ou a conta quando houver indício de informação falsa.',
         'A carga (peso) dos exercícios é sempre definida por você. Interrompa o exercício e procure atendimento se sentir dor, tontura, falta de ar fora do normal ou mal-estar.',
       ],
@@ -245,8 +245,8 @@ const termsEn: Documento = {
     {
       titulo: '5-A. Reference plans and truthfulness declaration',
       paragrafos: [
-        'The paid plan can build a reference workout plan (and, later, a reference meal plan) from your choices and general public guidelines. It is an editable suggestion, not an individual prescription, and does not replace a fitness professional, dietitian or doctor.',
-        'Before a plan is generated you answer a health screening and declare that your information is true and complete. This declaration is recorded with date and time and cannot be changed. People under 18, pregnant people and people with the conditions listed in the screening do not receive an automatic plan.',
+        'The paid plan can build reference workout and meal plans from your choices and general public guidelines. It is an editable suggestion, not an individual prescription, and does not replace a fitness professional, dietitian or doctor.',
+        'Before your first plan you answer a health check and declare that your information is true and complete. If an answer points to a health concern (for example, a heart condition, pregnancy or an eating disorder), the app recommends that you see a doctor before starting. If, after that advice, you still choose to receive the plan, you declare that you are aware of it; the plan is then built more conservatively (beginner-level workouts; weight-maintenance meal plans only, as applicable). These declarations are recorded with date and time and cannot be changed. People under 18 do not receive an automatic plan.',
         'If you omit or give false information (such as age, pregnancy or illness) to obtain a plan, the resulting risks and damages are your sole responsibility, to the extent permitted by the law of your country. We may suspend the feature or the account when there are signs of false information.',
         'You always choose the load (weight) of each exercise. Stop exercising and seek care if you feel pain, dizziness, unusual shortness of breath or feel unwell.',
       ],

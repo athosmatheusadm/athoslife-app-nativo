@@ -13,6 +13,7 @@ import {
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
+import { useI18n } from '@/i18n/I18nProvider'
 import { MealAccordion } from './MealAccordion'
 import { MealSheet } from './MealSheet'
 import { SupplementSheet } from './SupplementSheet'
@@ -24,7 +25,10 @@ import { calcularProgresso, type Metas, type Profile } from '@domain/entities/pr
 import { gerarTiraDias, tituloDia } from '@domain/entities/diaDieta'
 import { cozinhaService } from '@domain/services/cozinhaService'
 import { CATEGORIAS_RECEITA, CATEGORIA_META, type CategoriaReceita, type Receita } from '@domain/entities/receita'
-import { LifeMascote } from '@ui/components/LifeMascote'
+import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
+import { aoAplicarPlano } from '@app/eventosLife'
+import { planosRepository, type PlanoDietaSalvo } from '@data/repositories/planosRepository'
+import { quantidade } from '@ui/components/life/MontarPlanoNoLife'
 
 type TipoFixo = 'cafe' | 'almoco' | 'lanche' | 'jantar'
 
@@ -73,6 +77,7 @@ export function DietScreen(props: {
   const { profile } = props
   const metas: Metas = profile.metas
   const navigate = useNavigate()
+  const { m } = useI18n()
 
   /**
    * Só abre sozinho quando veio de navegação explícita (ex.: Home tocando
@@ -142,6 +147,41 @@ export function DietScreen(props: {
     void carregarDia(diaSel)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diaSel])
+
+  // Plano de referência de dieta (montado no chat do Life): cada card fixo
+  // mostra o que o plano sugere, com "Comi o do plano" pra registrar de uma
+  // vez. Não registra sozinho — o diário é o que a pessoa comeu de verdade.
+  const [planoDieta, setPlanoDieta] = useState<PlanoDietaSalvo | null>(null)
+  useEffect(() => {
+    const carregar = () => void planosRepository.ultimoPlanoDieta().then(setPlanoDieta).catch(() => setPlanoDieta(null))
+    carregar()
+    return aoAplicarPlano((p) => p.tipo === 'dieta' && carregar())
+  }, [])
+
+  /** Itens do plano pra esta refeição que ainda não foram registrados (só os 4 fixos). */
+  function itensDoPlano(r: Refeicao): ItemRefeicao[] {
+    const doPlano = r.tipo === 'extra' ? undefined : planoDieta?.refeicoes.find((x) => x.tipo === r.tipo)
+    if (!doPlano) return []
+    const jaTem = new Set(r.itens.map((i) => i.nome))
+    return doPlano.itens
+      .filter((i) => !jaTem.has(i.nome))
+      .map((i, idx) => ({
+        id: `plano-${idx}`,
+        nome: i.nome,
+        quantidade: quantidade(m, i.gramas, i.porcaoG),
+        calorias: i.calorias,
+        proteina: i.proteina,
+        carboidrato: i.carboidrato,
+        gordura: i.gordura,
+      }))
+  }
+
+  async function registrarDoPlano(r: Refeicao, itens: readonly ItemRefeicao[]) {
+    for (const { id: _temporario, ...item } of itens) {
+      await itensRefeicaoRepository.adicionar(paraAlvo(r), diaSel, item)
+    }
+    await carregarDia(diaSel)
+  }
 
   // Veio do "+" da Home: cria a extra, abre ela, e avisa o pai pra limpar a URL.
   useEffect(() => {
@@ -312,9 +352,19 @@ export function DietScreen(props: {
                 {(handle) => (
                   <MealAccordion
                     refeicao={r}
+                    sugestaoPlano={(() => {
+                      const doPlano = r.itens.length === 0 ? itensDoPlano(r) : []
+                      return doPlano.length
+                        ? { resumo: doPlano.map((i) => i.nome).join(' · '), kcal: doPlano.reduce((s, i) => s + i.calorias, 0) }
+                        : null
+                    })()}
                     dragHandleProps={handle}
                     onAbrir={() => setSheetChave(r.chave)}
-                    onToggleConcluida={() => void alternarConcluida(r)}
+                    onToggleConcluida={() => {
+                      // Refeição vazia com plano: o ✓ é "comi o do plano" — registra e conclui.
+                      const doPlano = r.itens.length === 0 && !r.concluida ? itensDoPlano(r) : []
+                      void (doPlano.length ? registrarDoPlano(r, doPlano) : Promise.resolve()).then(() => alternarConcluida(r))
+                    }}
                   />
                 )}
               </SortableMealRow>
@@ -333,10 +383,7 @@ export function DietScreen(props: {
 
       {/* Cozinha ATHOS — embutida na tela do dia, não uma aba separada. */}
       <div>
-        <h2 className="mb-2 flex items-end gap-2 px-1 text-base font-bold text-content-hi">
-          <LifeMascote humor="chef" className="h-16" />
-          <span className="pb-1">Cozinha Athos</span>
-        </h2>
+        <h2 className="mb-2 px-1 text-base font-bold text-content-hi">Cozinha Athos</h2>
         <CozinhaTab profile={profile} onAbrirReceita={(id) => navigate(`/dieta/cozinha/${id}`)} />
       </div>
 
@@ -349,6 +396,8 @@ export function DietScreen(props: {
             clipboard={clipboard}
             onFechar={() => setSheetChave(null)}
             onAdicionarItem={(item) => void adicionarItem(r, item)}
+            sugestoesPlano={itensDoPlano(r)}
+            onAdicionarPlano={(itens) => void registrarDoPlano(r, itens)}
             onRemoverItem={(itemId) => void removerItem(itemId)}
             onCopiarItem={(item) => setClipboard(item)}
             onColar={() => clipboard && void adicionarItem(r, clipboard)}
@@ -377,6 +426,9 @@ export function DietScreen(props: {
           onFechar={() => setSuplementoChave(null)}
         />
       )}
+
+      {/* O Life da Dieta (chef): sabe de tudo, mas puxa pra comida. */}
+      <LifeFlutuante humor="chef" foco="dieta" />
     </main>
   )
 }

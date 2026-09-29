@@ -185,6 +185,29 @@ export const profileRepository = {
     if (error) throw error
   },
 
+  /** O que o onboarding guardou sobre comida (pra pré-preencher o plano de dieta). */
+  async preferenciasAlimentares(): Promise<{
+    evitar: string[]
+    refeicoesPorDia: string | null
+    frequenciaTreino: string | null
+  }> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('restricoes, onboarding_respostas')
+      .eq('id', userId)
+      .single<{ restricoes: string[] | null; onboarding_respostas: Record<string, unknown> | null }>()
+    if (error) throw error
+    const r = data.onboarding_respostas ?? {}
+    const naoGosta = Array.isArray(r.alimentos_nao_gosta) ? (r.alimentos_nao_gosta as unknown[]).map(String) : []
+    return {
+      evitar: [...new Set([...(data.restricoes ?? []), ...naoGosta])],
+      refeicoesPorDia: typeof r.refeicoes_por_dia === 'string' ? r.refeicoes_por_dia : null,
+      frequenciaTreino: typeof r.frequencia_treino === 'string' ? r.frequencia_treino : null,
+    }
+  },
+
   /** Idioma/unidades trocados depois (Perfil > Idioma e região). */
   async atualizarLocalidade(campos: Partial<Localidade>): Promise<void> {
     const userId = (await supabase.auth.getUser()).data.user?.id

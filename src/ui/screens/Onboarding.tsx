@@ -63,7 +63,8 @@ export function Onboarding() {
   )
   const [erro, setErro] = useState<ErroEtapa>(null)
   const [salvando, setSalvando] = useState(false)
-  const [erroSalvar, setErroSalvar] = useState(false)
+  // 'internet' só quando é falta de conexão de verdade; o resto é recusa do servidor.
+  const [erroSalvar, setErroSalvar] = useState<'internet' | 'servidor' | null>(null)
 
   useEffect(() => {
     if (userId) salvarProgresso(userId, e)
@@ -107,7 +108,7 @@ export function Onboarding() {
       return
     }
     setSalvando(true)
-    setErroSalvar(false)
+    setErroSalvar(null)
     try {
       await profileRepository.concluirOnboarding(dados)
       // Primeiro ponto do gráfico de peso da Home.
@@ -115,8 +116,10 @@ export function Onboarding() {
       limparProgresso(userId)
       await refresh()
       navigate('/home', { replace: true })
-    } catch {
-      setErroSalvar(true)
+    } catch (err) {
+      console.error('onboarding: falhou ao salvar', err)
+      const semRede = !navigator.onLine || (err instanceof TypeError) || /failed to fetch|network/i.test(String((err as { message?: string })?.message ?? ''))
+      setErroSalvar(semRede ? 'internet' : 'servidor')
       setSalvando(false)
     }
   }
@@ -614,7 +617,11 @@ export function Onboarding() {
               </div>
             ))}
           </div>
-          {erroSalvar && <p className="mt-4 text-center text-sm text-accent-danger">{o.confirmar.erroSalvar}</p>}
+          {erroSalvar && (
+            <p className="mt-4 text-center text-sm text-accent-danger">
+              {erroSalvar === 'internet' ? o.confirmar.erroSalvar : o.confirmar.erroServidor}
+            </p>
+          )}
           {rodape(o.confirmar.botao, () => void concluir())}
         </>
       )

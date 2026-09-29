@@ -126,8 +126,11 @@ export interface RespostaChat {
  * servidor (life_chat_mensagens) e é lido de lá, então o cliente não consegue
  * forjar falas do Life. Cota diária por plano (grátis 4, pago 40).
  */
-export async function enviarMensagemChat(mensagem: string): Promise<RespostaChat> {
-  const cru = await chamar<{ resposta: string; restantes: number | null }>('chat', { mensagem })
+/** De qual tela o chat foi aberto — cada Life puxa pro assunto da sua tela. */
+export type FocoLife = 'home' | 'dieta' | 'treino' | 'habitos'
+
+export async function enviarMensagemChat(mensagem: string, foco: FocoLife = 'home'): Promise<RespostaChat> {
+  const cru = await chamar<{ resposta: string; restantes: number | null }>('chat', { mensagem, foco })
   return { resposta: cru.resposta, restantes: cru.restantes }
 }
 

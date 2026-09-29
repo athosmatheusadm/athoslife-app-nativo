@@ -1,6 +1,7 @@
 import { supabase } from '@data/supabase/client'
 import type { AlimentoBase, CategoriaAlimento } from '@domain/entities/food'
 import { localidadeAtual } from '@data/localidadeAtual'
+import type { AlimentoPlano } from '@domain/rules/geradorDieta'
 
 /** Linha crua da tabela `alimentos`. snake_case morre aqui. */
 interface AlimentoRow {
@@ -100,5 +101,21 @@ export const alimentosRepository = {
       .returns<AlimentoRow[]>()
     if (error) throw error
     return (data ?? []).filter(valeNoPais).map(paraDominio)
+  },
+
+  /**
+   * Alimentos do cardápio de referência (lista fixa em geradorDieta), no
+   * idioma da pessoa e sem item de outro país. Nome repetido na base: fica
+   * a maior porção.
+   */
+  async paraPlanoDieta(nomes: readonly string[]): Promise<AlimentoPlano[]> {
+    const { data, error } = await supabase
+      .from('alimentos')
+      .select('*')
+      .in('nome', [...nomes])
+      .order('porcao_g', { ascending: false })
+      .returns<AlimentoRow[]>()
+    if (error) throw error
+    return (data ?? []).filter(valeNoPais).map((row) => ({ ...paraDominio(row), nomeBase: row.nome }))
   },
 }

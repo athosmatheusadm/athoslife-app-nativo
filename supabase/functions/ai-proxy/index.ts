@@ -1,9 +1,10 @@
-// ATHOSlife — ai-proxy (v3, 2026-09-28: idioma, país e fuso de cada usuário)
+// ATHOSlife — ai-proxy (v3.3, 2026-09-29: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
 //
 // Único lugar que fala com o Gemini. A chave nunca sai daqui.
 //
 // Contrato (o app manda JSON plano, com o JWT do usuário no Authorization):
-//   { tipo: 'chat',   mensagem: string }                  -> { resposta, restantes }
+//   { tipo: 'chat',   mensagem: string, foco? }           -> { resposta, restantes }
+//                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
 //   { tipo: 'vision', image: base64, mime_type? }         -> ResultadoVisao cru
 //   { tipo: 'recipe', contexto: {...} }                   -> ReceitaGerada crua
 //
@@ -297,14 +298,16 @@ interface ResultadoGemini {
 }
 
 /**
- * Desliga o "raciocínio" só se o modelo aceitar: a doc não deixa claro se a
- * família 3.x aceita thinkingBudget 0. Se o Google recusar a config (400),
- * tenta de novo sem ela — com folga no teto de saída, porque o raciocínio
- * conta dentro de maxOutputTokens e poderia deixar a resposta vazia.
+ * Se o Google recusar a requisição (400 — o erro vem genérico, "invalid
+ * argument", sem dizer o campo), tenta de novo SEM thinkingConfig, com folga
+ * no teto de saída, porque o raciocínio conta dentro de maxOutputTokens e
+ * poderia deixar a resposta vazia. (28/09: família 3.x recusou
+ * thinkingBudget 0 e o chat inteiro caiu com 502.)
  */
 async function chamarGemini(corpo: Record<string, unknown>, timeoutMs = 25_000): Promise<ResultadoGemini> {
   const r = await chamarGeminiUmaVez(corpo, timeoutMs)
-  if (r.ok || r.status !== 400 || !/thinking/i.test(r.erro)) return r
+  const cfgAtual = corpo.generationConfig as Record<string, unknown> | undefined
+  if (r.ok || r.status !== 400 || !cfgAtual?.thinkingConfig) return r
   const cfg = { ...(corpo.generationConfig as Record<string, unknown>) }
   delete cfg.thinkingConfig
   cfg.maxOutputTokens = Number(cfg.maxOutputTokens ?? 0) + 1024
@@ -363,12 +366,20 @@ async function chamarGeminiUmaVez(
   }
 }
 
+/**
+ * Raciocínio no mínimo. Gemini 2.x: thinkingBudget 0 (desliga). Gemini 3.x
+ * não aceita thinkingBudget 0 (dá 400) — usa thinkingLevel "minimal".
+ */
+function configRaciocinio(): Record<string, unknown> {
+  return /^gemini-2\./.test(MODELO) ? { thinkingBudget: 0 } : { thinkingLevel: 'minimal' }
+}
+
 /** Config base: sem "raciocínio" (thinking gasta token escondido), saída curta. */
 function configGeracao(maxTokens: number, temperatura: number, json = false) {
   return {
     temperature: temperatura,
     maxOutputTokens: maxTokens,
-    thinkingConfig: { thinkingBudget: 0 },
+    thinkingConfig: configRaciocinio(),
     ...(json ? { responseMimeType: 'application/json' } : {}),
   }
 }
@@ -508,7 +519,9 @@ PODE:
 - Comparar alimentos e sugerir TROCAS equivalentes (ex.: morango x geleia de morango: o que muda de açúcar/fibra e se vale a pena).
 - Explicar o que é um suplemento, pra que serve em geral, composição e diferenças entre tipos/marcas — como informação pública.
 - Lembrar de leve registros do app (água, refeições, hábitos) usando o contexto abaixo.
-- Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude séries, repetições, carga ou dias do plano — se a pessoa quiser mudar, diga que ela ajusta na ficha ou monta de novo em Treino > Montar plano de referência.
+- Quando a pessoa pedir pra MONTAR um treino ou uma dieta: não monte você. Diga que é só tocar em "Montar treino" ou "Montar dieta" aqui embaixo, no chat (na primeira vez tem um check de saúde rápido, 5 perguntas). Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
+- Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude séries, repetições, carga ou dias do plano — se a pessoa quiser mudar, diga que ela ajusta na ficha ou monta de novo no botão "Montar treino" aqui embaixo, no chat.
+- Explicar e motivar sobre o PLANO DE REFERÊNCIA de dieta que o app montou (se estiver no contexto): de onde vem a meta (fórmula de gasto + objetivo), por que proteína/carboidrato/gordura, como usar o dia-modelo e trocar alimentos equivalentes DENTRO dele. Nunca mude calorias, macros ou quantidades — se a pessoa quiser mudar, diga que ela monta de novo no botão "Montar dieta" aqui embaixo, no chat. Fale "a meta de referência do seu plano é X kcal", nunca "você deve comer X kcal".
 
 NUNCA:
 - Montar dieta ou cardápio, definir calorias/macros-alvo para a pessoa.
@@ -517,6 +530,7 @@ NUNCA:
 - Diagnosticar nada físico ou emocional, nem fazer terapia.
 - Falar de peso/corpo de forma negativa ou comparativa; sugerir jejum ou restrição agressiva.
 - Acompanhar, dar dicas ou planos pra parar/reduzir álcool, cigarro/vape, drogas ou apostas. O ATHOSlife não trata dependência: se a pessoa trouxer isso, acolha sem julgar, diga com carinho que isso merece um serviço de saúde especializado (no Brasil, o CAPS AD, gratuito pelo SUS; em outros países, o serviço de saúde local) e siga com o que você pode fazer no app.
+- Falar de sexo, masturbação, pornografia, nudes, apps de encontro ou desempenho sexual (inclui remédio pra isso). Não é tema do ATHOSlife: responda com respeito, sem julgar, que isso é com um médico ou psicólogo, e volte pro que você pode ajudar.
 Se pedirem algo do NUNCA: diga com carinho que isso é com nutricionista, educador físico ou médico, e ofereça o que você pode fazer (comparar, explicar, trocar).
 
 PUXAR ASSUNTO (sutil, como amigo que reparou — nunca cobrando):
@@ -557,6 +571,18 @@ CULTURA: ${pais ? `a pessoa mora em ${pais}` : 'o país da pessoa não é conhec
 
 LINHA DE APOIO DO PAÍS:
 ${linhaApoio(loc)}`
+}
+
+/**
+ * Um Life por tela (decisão do dono, 29/09): cada um sabe de tudo, mas puxa
+ * pro assunto da tela de onde o chat foi aberto. O da Home junta tudo.
+ * Valor desconhecido cai no da Home.
+ */
+const FOCOS_LIFE: Record<string, string> = {
+  home: 'ONDE VOCÊ ESTÁ: na Home. Você é o Life que junta tudo — comida, treino, água, peso, humor e hábitos. Ligue os pontos entre as áreas quando fizer sentido.',
+  dieta: 'ONDE VOCÊ ESTÁ: na tela de Dieta (você está de chef). Você sabe de tudo, mas puxe pra comida: refeições do dia, trocas equivalentes (informando kcal/macros, sem recomendar), porções, rótulos e o plano de referência de dieta.',
+  treino: 'ONDE VOCÊ ESTÁ: na tela de Treino. Você sabe de tudo, mas puxe pro treino: exercícios, execução em linhas gerais, ordem, séries anotadas, descanso e o plano de referência de treino. Carga é sempre a pessoa quem define.',
+  habitos: 'ONDE VOCÊ ESTÁ: na tela de Hábitos. Você sabe de tudo, mas puxe pros hábitos: acolher a vontade, celebrar os dias firmes, ajudar a atravessar o momento difícil — sem julgar.',
 }
 
 async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>) {
@@ -613,8 +639,9 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const cozinha = pago
     ? '\n\nCOZINHA ATHOS: esta pessoa tem acesso. Quando fizer sentido (ex.: faltou proteína no dia, pediu ideia de refeição), pode sugerir dar uma olhada nas receitas da Cozinha ATHOS ou montar uma receita com você lá.'
     : '\n\nNão mencione a Cozinha ATHOS nem receitas do app — esta pessoa não tem acesso.'
+  const foco = FOCOS_LIFE[String(corpo.foco)] ?? FOCOS_LIFE.home
   const sistema =
-    `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
+    `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Acolha com calma, pergunte como a pessoa está e lembre da linha de apoio do país e de um profissional, sem alarmar.'
       : '')
@@ -754,6 +781,16 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
     const pr = planoRef.parametros as Record<string, unknown>
     const dias = Array.isArray(pr.dias) ? pr.dias.join(', ') : ''
     linhas.push(`Plano de referência de treino: foco ${texto(pr.objetivo, 20)}, nível ${texto(pr.nivel, 20)}, ${texto(pr.local, 10)}, dias ${dias}, ${num(pr.minutos)} min`)
+  }
+
+  // Plano de referência de dieta mais recente (meta + objetivo — sem o cardápio inteiro).
+  const { data: dietaRef } = await sb.from('planos_gerados')
+    .select('parametros, criado_em').eq('user_id', userId).eq('tipo', 'dieta')
+    .order('criado_em', { ascending: false }).limit(1).maybeSingle()
+  if (dietaRef?.parametros) {
+    const pd = dietaRef.parametros as Record<string, unknown>
+    const mt = (pd.metas ?? {}) as Record<string, unknown>
+    linhas.push(`Plano de referência de dieta: objetivo ${texto(pd.objetivo, 20)} (ritmo ${texto(pd.ritmo, 10)}), atividade ${texto(pd.atividade, 12)}, ${num(pd.refeicoes)} refeições; meta ${num(mt.kcal)} kcal, P ${num(mt.proteina)} g, C ${num(mt.carboidrato)} g, G ${num(mt.gordura)} g (gasto estimado ${num(pd.gasto)} kcal)`)
   }
 
   return linhas.join('\n')

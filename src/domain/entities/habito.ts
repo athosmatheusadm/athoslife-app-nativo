@@ -196,8 +196,9 @@ export function mensagemTropeco(melhorStreak: number): string {
 /**
  * O ATHOSlife NÃO acompanha álcool, cigarro/nicotina, drogas, apostas nem
  * conteúdo sexual (decisão do dono, 2026-09-28): é dado sensível de
- * dependência e fora do escopo do produto. Espelho da função do banco
- * `habito_nome_proibido` (db/athoslife_habitos_proibidos_consentimento_migration.sql)
+ * dependência / vida sexual e fora do escopo do produto (lista ampliada em
+ * 2026-09-29). Espelho da função do banco
+ * `habito_nome_proibido` (db/athoslife_habitos_proibidos_v2_migration.sql)
  * — quem manda é o servidor; aqui é só pra avisar antes de enviar.
  */
 const TERMOS_PROIBIDOS = [
@@ -207,20 +208,34 @@ const TERMOS_PROIBIDOS = [
   'cachaca', 'pinga', 'caipirinha', 'caipiroska', 'tequila', 'gin', 'rum', 'licor', 'espumante', 'champagne',
   'champanhe', 'sake', 'conhaque', 'absinto', 'cerveza', 'cervezas', 'vino', 'vinos', 'borrachera', 'beer',
   'beers', 'alcohol', 'alcoholic', 'wine', 'liquor', 'booze', 'drunk', 'bebado', 'bebada', 'embriagar',
-  'ressaca', 'hangover',
+  'ressaca', 'hangover', 'drinks', 'bebedeira', 'happy hour', 'cocktail', 'coquetel', 'open bar',
   // tabaco / nicotina
-  'cigarro', 'cigarros', 'cigarrinho', 'fumar', 'fumo', 'tabaco', 'nicotina', 'vape', 'vapes', 'vaper',
-  'cigarro eletronico', 'narguile', 'charuto', 'charutos', 'palheiro', 'cigarrillo', 'cigarrillos', 'cigarette',
-  'cigarettes', 'smoking', 'smoke', 'tobacco', 'cigar', 'cigars', 'hookah', 'shisha', 'juul', 'snus',
-  // drogas
-  'maconha', 'cannabis', 'marijuana', 'marihuana', 'weed', 'cocaina', 'cocaine', 'crack', 'droga', 'drogas',
-  'drug', 'drugs', 'heroina', 'heroin', 'metanfetamina', 'meth', 'ecstasy', 'mdma', 'lsd', 'cetamina',
-  'ketamine', 'lanca perfume', 'lolo', 'opioide', 'opioides', 'opioid', 'opioids', 'porro', 'porros',
-  // apostas
-  'aposta', 'apostas', 'apostar', 'bet', 'bets', 'cassino', 'casino', 'gambling', 'jogo do bicho', 'tigrinho',
-  'apuestas',
-  // conteúdo sexual
-  'pornografia', 'porno', 'porn', 'masturbacao', 'masturbation',
+  'cigarro', 'cigarros', 'cigarrinho', 'fumar', 'fumo', 'fumando', 'fumante', 'tabagismo', 'tabaco',
+  'nicotina', 'vape', 'vapes', 'vaper', 'cigarro eletronico', 'pod de nicotina', 'narguile', 'charuto',
+  'charutos', 'palheiro', 'cigarrillo', 'cigarrillos', 'cigarette', 'cigarettes', 'smoking', 'smoke',
+  'tobacco', 'cigar', 'cigars', 'hookah', 'shisha', 'juul', 'snus',
+  // drogas e remédio controlado
+  'maconha', 'cannabis', 'marijuana', 'marihuana', 'weed', 'thc', 'cbd', 'haxixe', 'hashish', 'skunk',
+  'cocaina', 'cocaine', 'crack', 'droga', 'drogas', 'drug', 'drugs', 'entorpecente', 'entorpecentes',
+  'estupefaciente', 'heroina', 'heroin', 'metanfetamina', 'meth', 'ecstasy', 'mdma', 'bala de festa', 'lsd',
+  'cetamina', 'ketamine', 'lanca perfume', 'lolo', 'poppers', 'ayahuasca', 'psilocibina', 'cogumelo magico',
+  'magic mushrooms', 'kratom', 'opioide', 'opioides', 'opioid', 'opioids', 'codeina', 'codeine', 'oxicodona',
+  'oxycodone', 'fentanil', 'fentanyl', 'tramadol', 'anfetamina', 'anfetaminas', 'amphetamine', 'ritalina',
+  'venvanse', 'adderall', 'rivotril', 'clonazepam', 'zolpidem', 'benzo', 'benzodiazepina', 'benzodiazepinico',
+  'porro', 'porros',
+  // apostas e jogos de azar
+  'aposta', 'apostas', 'apostar', 'apostador', 'apuestas', 'bet', 'bets', 'betano', 'bet365', 'sportingbet',
+  'sports betting', 'cassino', 'casino', 'gambling', 'jogo de azar', 'jogos de azar', 'juegos de azar',
+  'jogo do bicho', 'tigrinho', 'fortune tiger', 'aviator', 'blaze', 'roleta', 'poker', 'poquer', 'slot',
+  'slots', 'caca niquel', 'caca niqueis', 'loteria', 'loterias', 'mega sena', 'raspadinha', 'raspadinhas',
+  'bingo',
+  // conteúdo e vida sexual
+  'pornografia', 'porno', 'porn', 'pornhub', 'xvideos', 'xxx', 'nsfw', 'hentai', 'onlyfans', 'putaria',
+  'masturbacao', 'masturbar', 'masturbarse', 'masturbation', 'masturbate', 'punheta', 'siririca', 'nofap',
+  'no fap', 'fap', 'sexo', 'sex', 'sexual', 'sexuais', 'sexting', 'nudes', 'nude', 'nudez', 'desnudo',
+  'desnuda', 'erotico', 'erotica', 'fetiche', 'fetish', 'tesao', 'ejacular', 'ejaculacao', 'ejaculation',
+  'retencao de semen', 'semen', 'prostituicao', 'prostituta', 'prostitution', 'garota de programa', 'camgirl',
+  'orgia', 'tinder', 'grindr', 'viagra', 'sildenafila', 'tadalafila',
 ]
 
 function normalizarNome(t: string): string {

@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   AiProxyError,
   carregarHistoricoChat,
   cotaChatHoje,
   enviarMensagemChat,
+  type FocoLife,
   type MensagemChat,
 } from '@data/ai/aiProxy'
+import { useI18n } from '@/i18n/I18nProvider'
+import { LifeMascote, type HumorLife } from '@ui/components/LifeMascote'
+import { PlanosNoLife } from './PlanosNoLife'
 
 /** Texto de erro por tipo — nunca finge que a conversa funcionou. */
 function mensagemDeErro(e: unknown): string {
@@ -28,8 +33,16 @@ function mensagemDeErro(e: unknown): string {
  * Chat com o Life. O histórico mora no servidor (life_chat_mensagens) e é
  * carregado ao abrir; cada envio manda só a mensagem nova. Cota diária por
  * plano (grátis 4, pago 40) — o contador aparece acima do campo de texto.
+ *
+ * Um Life por tela (decisão do dono, 29/09): o `foco` diz de onde a conversa
+ * foi aberta — o Life sabe de tudo, mas puxa pro assunto da tela (Home
+ * junta tudo). No fim da conversa ficam os planos (PlanosNoLife).
  */
-export function LifeChatSheet(props: { onFechar: () => void }) {
+export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; humor?: HumorLife }) {
+  const foco = props.foco ?? 'home'
+  const navigate = useNavigate()
+  const { m } = useI18n()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [historico, setHistorico] = useState<MensagemChat[]>([])
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -63,7 +76,7 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
     setErro(null)
 
     try {
-      const r = await enviarMensagemChat(mensagem)
+      const r = await enviarMensagemChat(mensagem, foco)
       setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
       if (r.restantes !== null) setRestantes(r.restantes)
     } catch (e) {
@@ -82,7 +95,7 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
       className="fixed inset-0 z-50 flex items-end justify-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Conversa com o Life"
+      aria-label={m.lifeChat.titulo[foco]}
     >
       <button
         aria-label="Fechar"
@@ -93,9 +106,12 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
       <div className="relative flex h-[85vh] w-full max-w-md flex-col rounded-t-3xl border-t border-surface-4 bg-surface-1 pb-safe-b motion-safe:animate-[slideUp_0.3s_cubic-bezier(0.22,1,0.36,1)]">
         <div className="mx-auto mt-3 h-1 w-10 flex-none rounded-full bg-surface-4" aria-hidden="true" />
 
-        <div className="flex-none px-6 pb-3 pt-3">
-          <h2 className="text-xl font-bold text-content-hi">Conversa com o Life</h2>
-          <p className="mt-1 text-sm text-content-low">Ele está aqui pra te ouvir.</p>
+        <div className="flex flex-none items-center gap-3 px-6 pb-3 pt-3">
+          <LifeMascote humor={props.humor ?? 'normal'} alt="" className="h-14 flex-none" />
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold text-content-hi">{m.lifeChat.titulo[foco]}</h2>
+            <p className="mt-0.5 text-sm text-content-low">{m.lifeChat.sub[foco]}</p>
+          </div>
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-6">
@@ -120,6 +136,18 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
             </div>
           ))}
 
+          <PlanosNoLife
+            onMudou={() => fimRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })}
+            onPreencher={(t) => {
+              setTexto(t)
+              inputRef.current?.focus()
+            }}
+            onIr={(rota) => {
+              props.onFechar()
+              navigate(rota)
+            }}
+          />
+
           {enviando && (
             <div className="rounded-2xl border border-surface-4 bg-surface-2 p-3.5 text-sm text-content-low">
               Life está digitando…
@@ -139,6 +167,7 @@ export function LifeChatSheet(props: { onFechar: () => void }) {
 
         <div className="flex flex-none items-center gap-2 px-6 py-4">
           <input
+            ref={inputRef}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             onKeyDown={(e) => {

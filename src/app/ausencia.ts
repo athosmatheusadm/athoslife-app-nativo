@@ -25,3 +25,20 @@ export function diasSemAbrir(): number {
 
 /** A partir de quantos dias fora o Life aparece no modo resgate. */
 export const DIAS_PARA_RESGATE = 3
+
+/**
+ * Life da Home: grande lá em cima só no PRIMEIRO acesso do dia à Home; nos
+ * outros ele fica no canto inferior esquerdo (decisão do dono, 29/09).
+ * Chamar uma vez por montagem da Home (useState inicial).
+ */
+const CHAVE_TOPO = 'athoslife:life-topo-dia'
+
+export function primeiroAcessoDoDiaNaHome(hojeISO: string): boolean {
+  try {
+    if (localStorage.getItem(CHAVE_TOPO) === hojeISO) return false
+    localStorage.setItem(CHAVE_TOPO, hojeISO)
+    return true
+  } catch {
+    return true
+  }
+}

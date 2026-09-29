@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import { useSession } from '@app/SessionProvider'
+import { primeiroAcessoDoDiaNaHome } from '@app/ausencia'
+import { dataLocalISO } from '@domain/rules/datas'
+import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { TodayActivity } from './TodayActivity'
 import { StreakCard } from './StreakCard'
 import { MealCards } from './MealCards'
@@ -19,6 +23,8 @@ import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
  */
 export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void }) {
   const { profile } = useSession()
+  // Lido uma vez por montagem: no 1º acesso do dia o Life fica no topo.
+  const [lifeNoTopo] = useState(() => primeiroAcessoDoDiaNaHome(dataLocalISO()))
   if (!profile) return null
 
   return (
@@ -31,7 +37,7 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
         <ProfileAvatar />
       </header>
 
-      <LifeSaudacao />
+      {lifeNoTopo && <LifeSaudacao />}
 
       <EmotionalCheckin />
 
@@ -45,6 +51,9 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
       />
 
       <WeightCard />
+
+      {/* O Life da Home junta tudo; fora do 1º acesso do dia, fica no canto. */}
+      {!lifeNoTopo && <LifeFlutuante humor="normal" foco="home" />}
     </main>
   )
 }

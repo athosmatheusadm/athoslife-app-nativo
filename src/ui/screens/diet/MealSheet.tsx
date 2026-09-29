@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { macrosRefeicao, type ItemRefeicao, type Refeicao } from '@domain/entities/meal'
+import { useI18n } from '@/i18n/I18nProvider'
 import { InlineFoodSearch } from './InlineFoodSearch'
 import { SavedFoodsList } from './SavedFoodsList'
 
@@ -21,6 +22,9 @@ export function MealSheet(props: {
   clipboard: ItemRefeicao | null
   onFechar: () => void
   onAdicionarItem: (item: ItemRefeicao) => void
+  /** Itens do plano de referência ainda não registrados nesta refeição. */
+  sugestoesPlano?: readonly ItemRefeicao[]
+  onAdicionarPlano?: (itens: readonly ItemRefeicao[]) => void
   onRemoverItem: (itemId: string) => void
   onCopiarItem: (item: ItemRefeicao) => void
   onColar: () => void
@@ -36,6 +40,8 @@ export function MealSheet(props: {
   const [modo, setModo] = useState<Modo>('menu')
   const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(null)
   const macros = macrosRefeicao(refeicao.itens)
+  const { m } = useI18n()
+  const sugestoes = props.sugestoesPlano ?? []
 
   return (
     <div
@@ -128,12 +134,46 @@ export function MealSheet(props: {
                 </li>
               )
             })}
-            {refeicao.itens.length === 0 && (
+            {refeicao.itens.length === 0 && sugestoes.length === 0 && (
               <li className="py-3 text-center text-micro text-content-low">
                 Nenhum alimento ainda. Que tal começar?
               </li>
             )}
           </ul>
+
+          {/* Plano de referência: apagado até a pessoa dizer que comeu (+). */}
+          {sugestoes.length > 0 && props.onAdicionarPlano && (
+            <div className="mt-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-micro font-semibold text-brand">✨ {m.planoDieta.card.doPlano}</span>
+                {sugestoes.length > 1 && (
+                  <button type="button" onClick={() => props.onAdicionarPlano!(sugestoes)} className="text-micro font-semibold text-brand">
+                    {m.planoDieta.card.adicionarTudo}
+                  </button>
+                )}
+              </div>
+              <ul>
+                {sugestoes.map((item) => (
+                  <li key={item.id} className="flex items-center gap-3 py-2 text-sm">
+                    <span className="flex min-w-0 flex-1 items-center gap-3 opacity-60">
+                      <span className="min-w-0 flex-1 truncate text-content-hi">{item.nome}</span>
+                      <span className="flex-none text-content-low">{item.quantidade}</span>
+                      <span className="w-14 flex-none text-right text-content-mid">{item.calorias} kcal</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => props.onAdicionarPlano!([item])}
+                      aria-label={`${m.comum.adicionar} ${item.nome}`}
+                      className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-brand/60 text-base font-bold text-brand"
+                    >
+                      +
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-micro text-content-dim">{m.planoDieta.card.dica}</p>
+            </div>
+          )}
 
           {refeicao.itens.length > 0 && (
             <div className="mt-2 flex border-y border-surface-3 py-3 text-center">

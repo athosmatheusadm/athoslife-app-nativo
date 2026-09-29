@@ -54,14 +54,22 @@ export const macrosRepository = {
         }
       : ZERO
 
-    return manuais.reduce<MacrosDoDia>(
+    const soma = manuais.reduce<MacrosDoDia>(
       (acc, m) => ({
-        kcal: acc.kcal + m.calorias,
-        proteina: acc.proteina + m.proteina,
-        carboidrato: acc.carboidrato + m.carboidrato,
-        gordura: acc.gordura + m.gordura,
+        kcal: acc.kcal + Number(m.calorias),
+        proteina: acc.proteina + Number(m.proteina),
+        carboidrato: acc.carboidrato + Number(m.carboidrato),
+        gordura: acc.gordura + Number(m.gordura),
       }),
       base,
     )
+    // Soma de decimais em ponto flutuante vira 138.39999999999998 — a tela
+    // mostra kcal inteira e gramas com 1 casa.
+    return {
+      kcal: Math.round(soma.kcal),
+      proteina: Math.round(soma.proteina * 10) / 10,
+      carboidrato: Math.round(soma.carboidrato * 10) / 10,
+      gordura: Math.round(soma.gordura * 10) / 10,
+    }
   },
 }

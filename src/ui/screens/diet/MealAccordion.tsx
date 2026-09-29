@@ -15,6 +15,11 @@ import { macrosRefeicao, resumoRefeicao, type Refeicao } from '@domain/entities/
  */
 export function MealAccordion(props: {
   refeicao: Refeicao
+  /**
+   * Plano de referência de dieta com a refeição ainda vazia: o resumo e as
+   * kcal aparecem apagados, e o ✓ do card registra o do plano e conclui.
+   */
+  sugestaoPlano?: { resumo: string; kcal: number } | null
   onAbrir: () => void
   onToggleConcluida: () => void
   /** Só pra refeições extras (as únicas arrastáveis) — liga o ícone de handle ao dnd-kit. */
@@ -45,12 +50,18 @@ export function MealAccordion(props: {
 
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-content-hi">{refeicao.nome}</span>
-          <span className="block truncate text-micro text-content-low">
-            {resumoRefeicao(refeicao.itens)}
-          </span>
+          {props.sugestaoPlano ? (
+            <span className="block truncate text-micro italic text-content-dim">✨ {props.sugestaoPlano.resumo}</span>
+          ) : (
+            <span className="block truncate text-micro text-content-low">{resumoRefeicao(refeicao.itens)}</span>
+          )}
         </span>
 
-        <span className="text-sm font-bold text-content-mid">{totalKcal} kcal</span>
+        {props.sugestaoPlano ? (
+          <span className="text-sm font-semibold text-content-dim">~{props.sugestaoPlano.kcal} kcal</span>
+        ) : (
+          <span className="text-sm font-bold text-content-mid">{totalKcal} kcal</span>
+        )}
 
         <span
           role="checkbox"
@@ -79,6 +90,7 @@ export function MealAccordion(props: {
           <path d="M9 6l6 6-6 6" />
         </svg>
       </button>
+
     </div>
   )
 }
