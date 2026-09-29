@@ -7,6 +7,7 @@ import {
   type Habito,
 } from '@domain/entities/habito'
 import { agendarLembrete, buscarLembrete, cancelarLembrete } from '@data/notifications/habitReminders'
+import { useI18n } from '@/i18n/I18nProvider'
 
 /**
  * Card de hábito — fiel ao print do usuário, com a voz recalibrada.
@@ -30,9 +31,12 @@ export function HabitCard(props: {
   onTropeco: () => void
   /** Check-in "Fiz hoje" do tipo "construir" — persiste via RPC. */
   onFizHoje: () => void
+  /** Desativa o hábito (some da lista; histórico fica no banco). */
+  onExcluir: () => Promise<void>
   feitoHoje: boolean
 }) {
   const { habito } = props
+  const { m } = useI18n()
   const [aberto, setAberto] = useState(false)
   const status = statusHabito(habito)
   const firme = status === 'firme'
@@ -45,6 +49,23 @@ export function HabitCard(props: {
   const [lembrete, setLembrete] = useState<string | null>(null)
   const [lembreteErro, setLembreteErro] = useState<string | null>(null)
   const [horaEscolhida, setHoraEscolhida] = useState('19:00')
+
+  // Excluir pede confirmação no próprio card (mesmo padrão do "Parar" do
+  // treino): 1º toque mostra o aviso, 2º confirma.
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
+  const [exclusaoErro, setExclusaoErro] = useState<string | null>(null)
+
+  async function excluir() {
+    setExcluindo(true)
+    setExclusaoErro(null)
+    try {
+      await props.onExcluir()
+    } catch {
+      setExclusaoErro(m.habitos.excluirErro)
+      setExcluindo(false)
+    }
+  }
 
   useEffect(() => {
     if (!aberto || habito.tipo !== 'construir') return
@@ -208,6 +229,44 @@ export function HabitCard(props: {
               </button>
             </div>
           )}
+
+          <div className="mt-4 border-t border-surface-4 pt-3">
+            {confirmarExclusao ? (
+              <div className="rounded-xl border border-accent-danger/40 bg-accent-danger/10 p-3">
+                <p className="text-sm font-semibold text-content-hi">{m.habitos.excluirTitulo(habito.nome)}</p>
+                <p className="mt-1 text-micro text-content-low">
+                  {m.habitos.excluirLead}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    disabled={excluindo}
+                    onClick={() => setConfirmarExclusao(false)}
+                    className="flex-1 rounded-lg border border-surface-4 py-2 text-sm font-semibold text-content-mid"
+                  >
+                    {m.comum.cancelar}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={excluindo}
+                    onClick={() => void excluir()}
+                    className="flex-1 rounded-lg bg-accent-danger py-2 text-sm font-bold text-white disabled:opacity-60"
+                  >
+                    {excluindo ? m.habitos.excluindo : m.habitos.excluir}
+                  </button>
+                </div>
+                {exclusaoErro && <p className="mt-1.5 text-[11px] text-accent-danger">{exclusaoErro}</p>}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmarExclusao(true)}
+                className="w-full py-1 text-center text-micro font-semibold text-content-low"
+              >
+                {m.habitos.excluir}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

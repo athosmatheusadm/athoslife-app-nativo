@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { Conquista } from '@domain/entities/conquista'
+import { LifeMascote } from '@ui/components/LifeMascote'
 
 /**
  * Celebração de conquista — o Life DOURADO (modo champion).
@@ -35,7 +36,7 @@ export function AchievementToast(props: {
         {/* Life dourado — brilho de champion */}
         <span className="relative flex h-14 w-14 flex-none items-center justify-center">
           <span className="absolute inset-0 rounded-full bg-accent-gold/25 blur-lg motion-safe:animate-pulse" />
-          <span className="relative text-4xl" aria-hidden="true">🦎</span>
+          <LifeMascote humor="conquista" alt="" className="relative h-14" />
           <span className="absolute -right-0.5 -top-0.5 text-sm">✨</span>
         </span>
 

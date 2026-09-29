@@ -24,6 +24,7 @@ import { calcularProgresso, type Metas, type Profile } from '@domain/entities/pr
 import { gerarTiraDias, tituloDia } from '@domain/entities/diaDieta'
 import { cozinhaService } from '@domain/services/cozinhaService'
 import { CATEGORIAS_RECEITA, CATEGORIA_META, type CategoriaReceita, type Receita } from '@domain/entities/receita'
+import { LifeMascote } from '@ui/components/LifeMascote'
 
 type TipoFixo = 'cafe' | 'almoco' | 'lanche' | 'jantar'
 
@@ -332,8 +333,9 @@ export function DietScreen(props: {
 
       {/* Cozinha ATHOS — embutida na tela do dia, não uma aba separada. */}
       <div>
-        <h2 className="mb-2 flex items-center gap-1.5 px-1 text-base font-bold text-content-hi">
-          🍳 Cozinha Athos
+        <h2 className="mb-2 flex items-end gap-2 px-1 text-base font-bold text-content-hi">
+          <LifeMascote humor="chef" className="h-16" />
+          <span className="pb-1">Cozinha Athos</span>
         </h2>
         <CozinhaTab profile={profile} onAbrirReceita={(id) => navigate(`/dieta/cozinha/${id}`)} />
       </div>

@@ -17,6 +17,9 @@ const TABELAS_EXPORTAVEIS = [
   'alimentos_favoritos',
   'life_chat_mensagens',
   'ia_uso_diario',
+  'treinos_historico',
+  'triagens_saude',
+  'planos_gerados',
 ] as const
 
 /**

@@ -1,5 +1,6 @@
 import { supabase } from '@data/supabase/client'
-import type { MascoteModo, Objetivo, Plano, Profile, Sexo } from '@domain/entities/profile'
+import type { MascoteModo, Metas, Objetivo, Plano, Profile, Sexo } from '@domain/entities/profile'
+import { normalizarIdioma, type Localidade, type Unidades } from '@domain/rules/localidade'
 
 /** Linha crua da tabela profiles. snake_case morre nesta fronteira. */
 interface ProfileRow {
@@ -29,6 +30,27 @@ interface ProfileRow {
   gord_meta: number | null
   agua_meta_ml: number | null
   passos_meta: number | null
+  idioma: string | null
+  pais: string | null
+  fuso: string | null
+  unidades: string | null
+}
+
+/** Tudo que o onboarding grava de uma vez no fim (ver ui/screens/onboarding). */
+export interface DadosOnboarding {
+  readonly nome: string
+  readonly idade: number
+  readonly sexo: Sexo | null
+  readonly alturaCm: number
+  readonly pesoKg: number
+  readonly objetivo: Objetivo
+  readonly localTreino: 'casa' | 'academia' | 'ambos' | null
+  readonly diasTreino: number | null
+  readonly restricoes: readonly string[]
+  readonly metas: Metas
+  readonly localidade: Localidade
+  /** Respostas sem coluna própria (rotina, sono, gostos, obstáculos...). */
+  readonly respostas: Record<string, unknown>
 }
 
 function paraDominio(row: ProfileRow): Profile {
@@ -60,6 +82,12 @@ function paraDominio(row: ProfileRow): Profile {
       gordura: row.gord_meta ?? 0,
       aguaMl: row.agua_meta_ml ?? 0,
       passos: row.passos_meta ?? 0,
+    },
+    localidade: {
+      idioma: normalizarIdioma(row.idioma),
+      pais: row.pais,
+      fuso: row.fuso || 'America/Sao_Paulo',
+      unidades: (row.unidades === 'imperial' ? 'imperial' : 'metrico') as Unidades,
     },
   }
 }
@@ -96,6 +124,72 @@ export const profileRepository = {
       .from('profiles')
       .update({ last_app_open: new Date().toISOString() })
       .eq('id', (await supabase.auth.getUser()).data.user?.id ?? '')
+    if (error) throw error
+  },
+
+  /** Aceite da tela de Consentimento (LGPD art. 11 / GDPR art. 9: dado de saúde). */
+  async aceitarConsentimento(params: { habitos: boolean; versao: string }): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        consentimento_aceito: true,
+        consentimento_data: new Date().toISOString(),
+        consentimento_versao: params.versao,
+        consentimento_habitos: params.habitos,
+      })
+      .eq('id', userId)
+    if (error) throw error
+  },
+
+  /** Liga (ou desliga) o consentimento de hábitos — Hábitos pede antes de abrir. */
+  async definirConsentimentoHabitos(valor: boolean): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { error } = await supabase.from('profiles').update({ consentimento_habitos: valor }).eq('id', userId)
+    if (error) throw error
+  },
+
+  /** Fim do onboarding: grava perfil, metas e localidade, e marca como completo. */
+  async concluirOnboarding(d: DadosOnboarding): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        nome: d.nome,
+        idade: d.idade,
+        sexo: d.sexo,
+        altura_cm: d.alturaCm,
+        peso_atual: d.pesoKg,
+        peso_inicial: d.pesoKg,
+        objetivo: d.objetivo,
+        local_treino: d.localTreino,
+        dias_treino: d.diasTreino,
+        restricoes: d.restricoes,
+        kcal_meta: d.metas.kcal,
+        prot_meta: d.metas.proteina,
+        carbo_meta: d.metas.carboidrato,
+        gord_meta: d.metas.gordura,
+        agua_meta_ml: d.metas.aguaMl,
+        passos_meta: d.metas.passos,
+        idioma: d.localidade.idioma,
+        pais: d.localidade.pais,
+        fuso: d.localidade.fuso,
+        unidades: d.localidade.unidades,
+        onboarding_respostas: d.respostas,
+        onboarding_completo: true,
+      })
+      .eq('id', userId)
+    if (error) throw error
+  },
+
+  /** Idioma/unidades trocados depois (Perfil > Idioma e região). */
+  async atualizarLocalidade(campos: Partial<Localidade>): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { error } = await supabase.from('profiles').update(campos).eq('id', userId)
     if (error) throw error
   },
 

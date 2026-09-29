@@ -1,5 +1,5 @@
 import { supabase } from '@data/supabase/client'
-import type { ExercicioCatalogo, GrupoMuscular, LocalTreino, MedidaSerie } from '@domain/entities/treino'
+import type { ExercicioCatalogo, GrupoMuscular, LocalTreino, MedidaSerie, NivelTreino } from '@domain/entities/treino'
 
 interface Row {
   id: string
@@ -16,6 +16,7 @@ interface Row {
   medida: MedidaSerie | null
   segundos_padrao: number | null
   dica: string | null
+  nivel_minimo?: NivelTreino | null
 }
 
 function paraDominio(r: Row): ExercicioCatalogo {
@@ -34,6 +35,7 @@ function paraDominio(r: Row): ExercicioCatalogo {
     medida: r.medida ?? 'reps',
     segundosPadrao: r.segundos_padrao,
     dica: r.dica,
+    nivelMinimo: r.nivel_minimo ?? 'iniciante',
   }
 }
 
@@ -48,7 +50,7 @@ export const exercicioCatalogoRepository = {
     let query = supabase
       .from('exercicios_catalogo')
       .select(
-        'id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, medida, segundos_padrao, dica',
+        'id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, medida, segundos_padrao, dica, nivel_minimo',
       )
       .order('ordem', { ascending: true })
 

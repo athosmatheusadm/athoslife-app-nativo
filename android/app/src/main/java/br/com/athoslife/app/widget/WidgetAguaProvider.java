@@ -6,12 +6,6 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.text.SpannableStringBuilder;
@@ -28,8 +22,8 @@ import br.com.athoslife.app.R;
 
 /**
  * Widget de hidratação da tela inicial (athoslife-widget-hidratacao.html):
- *  - Life: abre o app; muda de humor (colorido / cinza "ressecado" abaixo de
- *    40% da meta / apagado sem água nenhuma).
+ *  - Life: abre o app; muda de humor (azul hidratado / desidratado abaixo de
+ *    40% da meta / desidratado apagado sem água nenhuma).
  *  - Copos (5): cada um = 1/5 da meta; toque soma o volume do copo.
  *  - Câmera: abre o app direto no scanner.
  *  - Botão de volume ("..." do HTML): 250 ml -> 500 ml -> 1 L.
@@ -43,7 +37,6 @@ public class WidgetAguaProvider extends AppWidgetProvider {
             R.drawable.athos_wg_copo_0, R.drawable.athos_wg_copo_25, R.drawable.athos_wg_copo_50,
             R.drawable.athos_wg_copo_75, R.drawable.athos_wg_copo_100};
 
-    private static Bitmap lifeCinza;
 
     @Override
     public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids) {
@@ -103,8 +96,8 @@ public class WidgetAguaProvider extends AppWidgetProvider {
             v.setImageViewResource(R.id.wg_life, R.drawable.athos_widget_life);
             v.setInt(R.id.wg_life, "setImageAlpha", 255);
         } else {
-            Bitmap cinza = lifeCinza(ctx);
-            if (cinza != null) v.setImageViewBitmap(R.id.wg_life, cinza);
+            // Life desidratado (rachado) — imagem do dono, 2026-09-28.
+            v.setImageViewResource(R.id.wg_life, R.drawable.athos_widget_life_seco);
             v.setInt(R.id.wg_life, "setImageAlpha", "empty".equals(humor) ? 140 : 255);
         }
 
@@ -123,20 +116,5 @@ public class WidgetAguaProvider extends AppWidgetProvider {
         Intent it = new Intent(Intent.ACTION_VIEW, Uri.parse(link), ctx, MainActivity.class)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         return PendingIntent.getActivity(ctx, codigo, it, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    }
-
-    /** Life em tons de cinza ("ressecado") — gerado uma vez e guardado. */
-    private static synchronized Bitmap lifeCinza(Context ctx) {
-        if (lifeCinza != null) return lifeCinza;
-        Bitmap original = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.athos_widget_life);
-        if (original == null) return null;
-        Bitmap saida = Bitmap.createBitmap(original.getWidth(), original.getHeight(), Bitmap.Config.ARGB_8888);
-        ColorMatrix cm = new ColorMatrix();
-        cm.setSaturation(0.1f);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setColorFilter(new ColorMatrixColorFilter(cm));
-        new Canvas(saida).drawBitmap(original, 0, 0, p);
-        lifeCinza = saida;
-        return saida;
     }
 }

@@ -192,3 +192,47 @@ export function mensagemTropeco(melhorStreak: number): string {
   }
   return 'Foi difícil hoje, e tudo bem admitir. Amanhã você tem uma nova chance de recomeçar.'
 }
+
+/**
+ * O ATHOSlife NÃO acompanha álcool, cigarro/nicotina, drogas, apostas nem
+ * conteúdo sexual (decisão do dono, 2026-09-28): é dado sensível de
+ * dependência e fora do escopo do produto. Espelho da função do banco
+ * `habito_nome_proibido` (db/athoslife_habitos_proibidos_consentimento_migration.sql)
+ * — quem manda é o servidor; aqui é só pra avisar antes de enviar.
+ */
+const TERMOS_PROIBIDOS = [
+  // álcool
+  'cerveja', 'cervejas', 'breja', 'chopp', 'chope', 'alcool', 'alcoolica', 'alcoolicas', 'alcoolico',
+  'bebida alcoolica', 'bebidas alcoolicas', 'vinho', 'vinhos', 'vodka', 'vodca', 'whisky', 'whiskey', 'uisque',
+  'cachaca', 'pinga', 'caipirinha', 'caipiroska', 'tequila', 'gin', 'rum', 'licor', 'espumante', 'champagne',
+  'champanhe', 'sake', 'conhaque', 'absinto', 'cerveza', 'cervezas', 'vino', 'vinos', 'borrachera', 'beer',
+  'beers', 'alcohol', 'alcoholic', 'wine', 'liquor', 'booze', 'drunk', 'bebado', 'bebada', 'embriagar',
+  'ressaca', 'hangover',
+  // tabaco / nicotina
+  'cigarro', 'cigarros', 'cigarrinho', 'fumar', 'fumo', 'tabaco', 'nicotina', 'vape', 'vapes', 'vaper',
+  'cigarro eletronico', 'narguile', 'charuto', 'charutos', 'palheiro', 'cigarrillo', 'cigarrillos', 'cigarette',
+  'cigarettes', 'smoking', 'smoke', 'tobacco', 'cigar', 'cigars', 'hookah', 'shisha', 'juul', 'snus',
+  // drogas
+  'maconha', 'cannabis', 'marijuana', 'marihuana', 'weed', 'cocaina', 'cocaine', 'crack', 'droga', 'drogas',
+  'drug', 'drugs', 'heroina', 'heroin', 'metanfetamina', 'meth', 'ecstasy', 'mdma', 'lsd', 'cetamina',
+  'ketamine', 'lanca perfume', 'lolo', 'opioide', 'opioides', 'opioid', 'opioids', 'porro', 'porros',
+  // apostas
+  'aposta', 'apostas', 'apostar', 'bet', 'bets', 'cassino', 'casino', 'gambling', 'jogo do bicho', 'tigrinho',
+  'apuestas',
+  // conteúdo sexual
+  'pornografia', 'porno', 'porn', 'masturbacao', 'masturbation',
+]
+
+function normalizarNome(t: string): string {
+  return ` ${t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()} `
+}
+
+export function habitoNomeProibido(nome: string): boolean {
+  const n = normalizarNome(nome)
+  return TERMOS_PROIBIDOS.some((t) => n.includes(` ${t} `))
+}

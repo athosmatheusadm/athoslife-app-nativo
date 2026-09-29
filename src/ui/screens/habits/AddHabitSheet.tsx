@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { tipoDaCategoria, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
+import { habitoNomeProibido, tipoDaCategoria, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
+import { useI18n } from '@/i18n/I18nProvider'
 
 /**
- * De propósito SEM álcool/cigarro: o app é um acompanhador de hábitos do
- * dia a dia (reduzir doce, aumentar leitura), não uma ferramenta pra vícios
- * que depreciam a vida humana — isso está fora do escopo do produto.
+ * De propósito SEM álcool/cigarro/drogas/apostas: o app é um acompanhador
+ * de hábitos do dia a dia (reduzir doce, aumentar leitura), não uma
+ * ferramenta pra dependência. Digitar um desses no nome é recusado aqui
+ * (habitoNomeProibido) e no banco (trigger validar_habito).
  */
 const CATEGORIAS_EVITAR: readonly { valor: string | null; emoji: string; rotulo: string }[] = [
   { valor: 'doce', emoji: '🍫', rotulo: 'Doce/Açúcar' },
@@ -52,7 +54,9 @@ export function AddHabitSheet(props: {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
+  const { m } = useI18n()
   const categorias = tipo === 'construir' ? CATEGORIAS_CONSTRUIR : CATEGORIAS_EVITAR
+  const proibido = habitoNomeProibido(nome)
 
   function trocarTipo(t: TipoHabito) {
     setTipo(t)
@@ -66,12 +70,13 @@ export function AddHabitSheet(props: {
       await props.onSalvar({ nome: nome.trim(), categoria, intensidade })
       // Sucesso: o pai fecha o painel (desmonta), sem precisar zerar `salvando` aqui.
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não deu pra salvar. Tenta de novo.')
+      const msg = e instanceof Error ? e.message : ''
+      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : msg || 'Não deu pra salvar. Tenta de novo.')
       setSalvando(false)
     }
   }
 
-  const podeSalvar = nome.trim().length > 0 && !salvando
+  const podeSalvar = nome.trim().length > 0 && !salvando && !proibido
 
   return (
     <div
@@ -125,6 +130,12 @@ export function AddHabitSheet(props: {
           autoFocus
           className="mt-1 w-full rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm font-semibold text-content-hi placeholder:font-normal placeholder:text-content-dim focus:border-brand focus:outline-none"
         />
+
+        {proibido && (
+          <p className="mt-2 rounded-xl border border-accent-recaida/40 bg-accent-recaida/10 p-3 text-sm leading-snug text-content-mid">
+            {m.habitos.naoPermitido}
+          </p>
+        )}
 
         <label className="mt-4 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
           Categoria

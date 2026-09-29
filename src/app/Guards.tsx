@@ -29,6 +29,26 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/**
+ * Consentimento e Onboarding: precisam de sessão, e cada um só abre na sua
+ * vez (sem aceite não entra no onboarding; quem já terminou vai pra Home).
+ */
+export function RequireEtapaInicial({ etapa, children }: { etapa: 'consentimento' | 'onboarding'; children: ReactNode }) {
+  const { session, profile, loading } = useSession()
+
+  if (loading) return <SplashGate />
+  if (!session) return <Navigate to="/login" replace />
+  if (!profile) return <SplashGate />
+
+  if (!profile.consentimentoAceito) {
+    return etapa === 'consentimento' ? <>{children}</> : <Navigate to="/consentimento" replace />
+  }
+  if (!profile.onboardingCompleto) {
+    return etapa === 'onboarding' ? <>{children}</> : <Navigate to="/onboarding" replace />
+  }
+  return <Navigate to="/home" replace />
+}
+
 /** Impede que quem já está logado volte para o login. */
 export function RequireAnon({ children }: { children: ReactNode }) {
   const { session, loading } = useSession()

@@ -5,6 +5,8 @@
  * É exatamente esta camada que Android e iOS reusam sem alteração.
  */
 
+import type { Localidade } from '@domain/rules/localidade'
+
 /** Planos existentes no backend (coluna profiles.plano). */
 export const PLANOS = [
   'trial',
@@ -53,7 +55,6 @@ export interface Profile {
   readonly alturaCm: number | null
   readonly idade: number | null
   readonly pesoAtual: number | null
-  /** null enquanto o onboarding real não pergunta (hoje é esqueleto). */
   readonly objetivo: Objetivo | null
   readonly pesoMeta: number | null
   readonly plano: Plano
@@ -71,6 +72,8 @@ export interface Profile {
 
   readonly mascoteModoAtual: MascoteModo
   readonly metas: Metas
+  /** Idioma, país, fuso e unidades (globalização, 2026-09-28). */
+  readonly localidade: Localidade
 }
 
 /**

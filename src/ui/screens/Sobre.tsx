@@ -1,12 +1,11 @@
 import { useNavigate } from 'react-router-dom'
+import { LifeMascote } from '@ui/components/LifeMascote'
+import { Chevron } from '@ui/components/Chevron'
 
 /**
- * Sub-página "Sobre" do Perfil.
- *
- * Termos de uso e política de privacidade ainda não existem como
- * documento de verdade em lugar nenhum do projeto (Consentimento.tsx
- * continua esqueleto da Fase 0) — mostrar link pra um texto que não
- * existe seria pior que não ter a seção. Fica honesto: "em breve".
+ * Sub-página "Sobre" do Perfil. Termos e Política abrem os documentos
+ * de ui/screens/legal (rascunho de 2026-09-28, a revisar por advogado).
+ * Suporte segue "em breve" — ainda não existe canal.
  */
 export function Sobre() {
   const navigate = useNavigate()
@@ -21,23 +20,30 @@ export function Sobre() {
       </header>
 
       <section className="flex flex-col items-center px-5 pb-6 pt-4 text-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-3xl">
-          🦎
-        </span>
+        <LifeMascote humor="normal" className="h-24" />
         <p className="mt-3 text-lg font-bold text-content-hi">ATHOSlife</p>
         <p className="text-micro text-content-dim">Versão 1.0.0</p>
       </section>
 
       <nav className="mx-5 divide-y divide-surface-4/50 overflow-hidden rounded-2xl border border-surface-4 bg-surface-2">
-        <LinhaEmBreve titulo="Termos de uso" />
-        <LinhaEmBreve titulo="Política de privacidade" />
+        <LinhaLink titulo="Termos de uso" onClick={() => navigate('/termos')} />
+        <LinhaLink titulo="Política de privacidade" onClick={() => navigate('/politica-de-privacidade')} />
         <LinhaEmBreve titulo="Suporte" />
       </nav>
 
       <p className="mx-5 mt-4 text-micro text-content-dim">
-        Termos, política e canal de suporte ainda não foram publicados.
+        O canal de suporte ainda não foi publicado.
       </p>
     </main>
+  )
+}
+
+function LinhaLink({ titulo, onClick }: { titulo: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="flex w-full items-center justify-between px-4 py-3.5 text-left">
+      <span className="text-sm text-content-mid">{titulo}</span>
+      <Chevron />
+    </button>
   )
 }
 

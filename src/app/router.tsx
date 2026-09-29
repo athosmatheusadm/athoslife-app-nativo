@@ -1,5 +1,5 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom'
-import { RequireAnon, RequireAuth } from './Guards'
+import { RequireAnon, RequireAuth, RequireEtapaInicial } from './Guards'
 import { useAndroidBackButton } from './useAndroidBackButton'
 import { IntegracoesNativas } from './IntegracoesNativas'
 import { AppShell } from './AppShell'
@@ -21,7 +21,10 @@ import { Privacidade } from '@ui/screens/Privacidade'
 import { Notificacoes } from '@ui/screens/Notificacoes'
 import { Acessibilidade } from '@ui/screens/Acessibilidade'
 import { Sobre } from '@ui/screens/Sobre'
+import { IdiomaRegiao } from '@ui/screens/IdiomaRegiao'
+import { PlanoTreino } from '@ui/screens/PlanoTreino'
 import { Cozinha } from '@ui/screens/Cozinha'
+import { DocumentoLegal } from '@ui/screens/legal/DocumentoLegal'
 
 /** Casca do app: liga o botão Voltar dentro do contexto do roteador. */
 function Shell() {
@@ -41,8 +44,11 @@ export const router = createBrowserRouter([
       { path: '/login', element: <RequireAnon><Login /></RequireAnon> },
       // Fora do RequireAnon: validar o código já abre sessão (ver RecuperarSenha).
       { path: '/recuperar-senha', element: <RecuperarSenha /> },
-      { path: '/consentimento', element: <Consentimento /> },
-      { path: '/onboarding', element: <Onboarding /> },
+      { path: '/consentimento', element: <RequireEtapaInicial etapa="consentimento"><Consentimento /></RequireEtapaInicial> },
+      { path: '/onboarding', element: <RequireEtapaInicial etapa="onboarding"><Onboarding /></RequireEtapaInicial> },
+      // Públicas: abrem do Consentimento (antes do aceite) e do Perfil > Sobre.
+      { path: '/termos', element: <DocumentoLegal tipo="termos" /> },
+      { path: '/politica-de-privacidade', element: <DocumentoLegal tipo="politica" /> },
       {
         element: <RequireAuth><Outlet /></RequireAuth>,
         children: [
@@ -69,6 +75,8 @@ export const router = createBrowserRouter([
           { path: '/perfil/notificacoes', element: <Notificacoes /> },
           { path: '/perfil/acessibilidade', element: <Acessibilidade /> },
           { path: '/perfil/sobre', element: <Sobre /> },
+          { path: '/perfil/idioma', element: <IdiomaRegiao /> },
+          { path: '/treinos/plano', element: <PlanoTreino /> },
           { path: '/dieta/cozinha/:id', element: <Cozinha /> },
         ],
       },

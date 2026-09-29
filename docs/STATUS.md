@@ -33,7 +33,9 @@ Os primeiros passos foram os mais pensados; os próximos andam mais rápido.
 | Home (discos + painel único + streak + refeições + peso) | ✅ | ✅ | — (sem dado falso em nenhum bloco) |
 | Água | ✅ | ✅ | Virou o próprio disco da Home (não é mais card separado) |
 | Dieta (menu por refeição) | ✅ redesenhada 2026-09-24: tocar na refeição abre direto um sheet único (itens + menu de ações), substituiu o acordeão antigo | ✅ **MealSheet** (itens já registrados com ⧉ copiar/🗑 excluir, macros, concluída) + menu "Escanear/Pesquisar/Suplemento/Alimentos salvos/Colar" + **⭐ favoritar alimento** (`alimentos_favoritos`, tabela nova) + **clipboard de copiar/colar entre refeições** (substituiu "copiar de outra refeição") + **Registrar suplemento** com carrossel por tipo (Whey/Creatina/BCAA/Pré-treino/...), 169 produtos reais cadastrados | "Refeições salvas" aparece no menu mas desabilitado ("Em breve") — não existe esse conceito no banco. Auditoria de macros do banco de alimentos feita uma vez (2026-09-24), sem erro estrutural encontrado |
-| Login (email/senha) | ✅ | ✅ | "Criar conta" adicionado em 2026-08-24. **Consentimento/Onboarding não têm nenhum redirecionamento automático** — se `consentimento_aceito`/`onboarding_completo` virarem `true` no banco enquanto o usuário já está na tela, ele fica preso lá até navegar manualmente pra `/home` (rota `/consentimento` fica fora do guard `RequireAuth`) |
+| Login (email/senha) | ✅ | ✅ | "Criar conta" adicionado em 2026-08-24. Esqueci a senha por código (2026-09-27) — falta `{{ .Token }}` no template do Supabase |
+| Consentimento + Onboarding | ✅ HTML do dono (10 telas) | ✅ 2026-09-28: consentimento real (termos + saúde + hábitos), onboarding de 10 telas com metas iniciais, idioma e unidades | Termos/Política são rascunho — dono preencher dados da empresa + advogado |
+| Globalização | ✅ 2026-09-28 | 🔸 banco (idioma/país/fuso/unidades, "hoje" no fuso do usuário), ai-proxy v3 (Life no idioma e cultura do país, linha de apoio por país), base de tradução pt-BR/en/es, telas novas traduzidas | Traduzir as telas antigas; base de alimentos por país; ficha da Play por idioma; preços por país na Play |
 | Perfil + sub-páginas | ✅ | ✅ **todas as 8 sub-páginas reais** (2026-09-24): Conquistas, Conta (nome/foto/e-mail/sexo/altura/idade/peso), Metas, Plano (status real, sem venda — Billing não existe), Privacidade (exportar dados real em `.json`, solicitar exclusão), Notificações (lembretes de hábito centralizados), Acessibilidade (tamanho de texto/reduzir animações/alto contraste — funcionam de verdade, salvos no aparelho), Sobre | Usuário vai revisar/ajustar cada uma ao gosto dele — construídas rápido, sem refinamento visual ainda |
 | Notificações (regra fixa) | ✅ | 🔸 lembrete local só do hábito "construir" (`@capacitor/local-notifications`), agora com tela central em Perfil > Notificações, não testado em build real ainda | Regra fixa pros outros módulos (água/treino), push de verdade (FCM), modo resgate/WhatsApp (nenhum dos dois existe) |
 | Notificações inteligentes (Life) | ✅ (doc) + **novo conceito 2026-09-24**: check-in em 3 momentos do dia (manhã=sono, meio-dia=refeição, noite=treino/dia), grounded em dado real, sem gatilho tipo "notificação de anúncio" — reaproveitar o EmotionalCheckin já existente na Home em vez de criar aviso novo | ⬜ | Pós-lançamento, de propósito. Depende da Life virar componente global (decisão de 2026-09-13, nunca implementada) |
@@ -51,12 +53,10 @@ Os primeiros passos foram os mais pensados; os próximos andam mais rápido.
 - Chat com a Life (tela dedicada, fora de Hábitos) — decisão de arquitetura: a
   construir junto com o agregador de contexto (água/humor/refeições/peso/passos),
   não isolado. Depende da Life virar componente global (2026-09-13, nunca feito)
-- Onboarding + Consentimento reais (hoje são esqueleto — Login já é real)
 - Google Play Billing (venda de assinatura)
 - Push notifications (FCM) + botão físico já feito
 - Primeiro .aab assinado + Play Console
-- Termos de uso / Política de privacidade / canal de suporte — nenhum documento
-  legal existe ainda em lugar nenhum do projeto (Sobre mostra "em breve" de propósito)
+- Canal de suporte (Termos/Política existem como rascunho desde 2026-09-28)
 
 ## Navegação real (fonte de verdade)
 

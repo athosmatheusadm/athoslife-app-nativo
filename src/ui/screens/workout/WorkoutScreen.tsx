@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useI18n } from '@/i18n/I18nProvider'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
   DIAS_SEMANA,
@@ -17,12 +19,15 @@ import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { ExerciseCard } from './ExerciseCard'
 import { AddExercisePanel } from './AddExercisePanel'
 import { TreinoEmAndamento } from './TreinoEmAndamento'
+import { LifeMascote } from '@ui/components/LifeMascote'
 
 /**
  * Tela "Treino" — Local (casa/academia) → dia da semana → exercícios do dia.
  * Substitui o modelo anterior de "Treino nomeado" (Peito/Costas como aba).
  */
 export function WorkoutScreen() {
+  const navigate = useNavigate()
+  const { m } = useI18n()
   const [local, setLocal] = useState<LocalTreino>('academia')
   const [dia, setDia] = useState<DiaSemana>(diaSemanaHoje())
   const [itens, setItens] = useState<ExercicioPlano[]>([])
@@ -128,8 +133,25 @@ export function WorkoutScreen() {
           <h1 className="text-2xl font-extrabold text-content-hi">Treino</h1>
           <p className="text-sm text-content-low">Seu corpo, suas regras.</p>
         </div>
-        <ProfileAvatar />
+        <div className="flex items-end gap-2">
+          <LifeMascote humor="treino" className="-mb-1 h-20" />
+          <ProfileAvatar />
+        </div>
       </header>
+
+      {/* Plano de referência (pago) — docs/PLANOS_TREINO_DIETA_DIRETRIZ.md */}
+      <button
+        type="button"
+        onClick={() => navigate('/treinos/plano')}
+        className="mx-4 mt-3 flex w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-brand/40 bg-brand/5 p-3.5 text-left"
+      >
+        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-brand/15 text-lg" aria-hidden="true">✨</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-content-hi">{m.plano.entrada}</span>
+          <span className="block text-micro text-content-low">{m.plano.entradaSub}</span>
+        </span>
+        <span className="text-content-dim" aria-hidden="true">›</span>
+      </button>
 
       {/* Seletor de local */}
       <div className="mx-4 mb-3 mt-3 flex gap-1.5 rounded-2xl border border-surface-4 bg-[#0d0d0d] p-1.5">

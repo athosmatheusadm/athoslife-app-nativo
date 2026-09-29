@@ -10,6 +10,7 @@ import { foodCaptureService } from '@domain/services/foodCaptureService'
 import { reescalarItem } from '@domain/rules/foodReconciliation'
 import { temAcessoPremium } from '@domain/rules/access'
 import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
+import { LifeMascote } from '@ui/components/LifeMascote'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
@@ -313,6 +314,7 @@ export function Scanner() {
           {foto && (
             <img src={foto.dataUrl} alt="" className="mb-5 h-48 w-48 rounded-3xl object-cover opacity-80" />
           )}
+          <LifeMascote humor="chef" className="mb-3 h-28 motion-safe:animate-pulse" />
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-surface-4 border-t-brand" />
           <p className="mt-4 font-semibold text-content-hi">
             {origem === 'codigo' ? 'Buscando o produto…' : 'O Life está olhando seu prato…'}

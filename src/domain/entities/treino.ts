@@ -72,7 +72,11 @@ export interface ExercicioCatalogo {
   /** Tempo sugerido por série quando `medida` é 'tempo'. */
   readonly segundosPadrao: number | null
   readonly dica: string | null
+  /** Plano de referência: iniciante não recebe exercício técnico (ver diretriz). */
+  readonly nivelMinimo: NivelTreino
 }
+
+export type NivelTreino = 'iniciante' | 'intermediario' | 'avancado'
 
 export type MedidaSerie = 'reps' | 'tempo'
 

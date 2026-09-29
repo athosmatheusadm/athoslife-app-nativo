@@ -6,6 +6,7 @@ import {
   type ExercicioPlano,
   type LocalTreino,
   type MedidaSerie,
+  type NivelTreino,
   type SerieDetalhe,
 } from '@domain/entities/treino'
 
@@ -24,6 +25,7 @@ interface CatalogoRow {
   medida: MedidaSerie | null
   segundos_padrao: number | null
   dica: string | null
+  nivel_minimo?: NivelTreino | null
 }
 
 interface SerieRow {
@@ -66,6 +68,7 @@ function paraDominio(r: PlanoRow): ExercicioPlano {
       medida: c.medida ?? 'reps',
       segundosPadrao: c.segundos_padrao,
       dica: c.dica,
+      nivelMinimo: c.nivel_minimo ?? 'iniciante',
     },
   }
 }
@@ -75,7 +78,7 @@ function paraLinha(series: readonly SerieDetalhe[]): SerieRow[] {
 }
 
 const SELECT_COM_CATALOGO =
-  'id, local, dia_semana, series_detalhe, ordem, concluido_em, exercicios_catalogo(id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, medida, segundos_padrao, dica)'
+  'id, local, dia_semana, series_detalhe, ordem, concluido_em, exercicios_catalogo(id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, medida, segundos_padrao, dica, nivel_minimo)'
 
 /** Único ponto que conhece treino_plano — atribuição pessoal por (local, dia). */
 export const treinoPlanoRepository = {

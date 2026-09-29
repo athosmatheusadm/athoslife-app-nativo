@@ -3,6 +3,7 @@ import { TodayActivity } from './TodayActivity'
 import { StreakCard } from './StreakCard'
 import { MealCards } from './MealCards'
 import { EmotionalCheckin } from './EmotionalCheckin'
+import { LifeSaudacao } from './LifeSaudacao'
 import { WeightCard } from '@ui/screens/weight/WeightCard'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
@@ -29,6 +30,8 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
         </h1>
         <ProfileAvatar />
       </header>
+
+      <LifeSaudacao />
 
       <EmotionalCheckin />
 

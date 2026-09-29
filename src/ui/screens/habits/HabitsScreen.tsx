@@ -4,9 +4,12 @@ import { HabitCard } from './HabitCard'
 import { CravingAssistant } from './CravingAssistant'
 import { AddHabitSheet } from './AddHabitSheet'
 import { LifeChatSheet } from './LifeChatSheet'
+import { LifeMascote } from '@ui/components/LifeMascote'
+import { useI18n } from '@/i18n/I18nProvider'
 import {
   corTermometro,
   nivelBemEstar,
+  statusHabito,
   type Habito,
   type IntensidadeHabito,
 } from '@domain/entities/habito'
@@ -28,6 +31,7 @@ export function HabitsScreen(props: {
   insightIA: string | null
   onRegistrarTropeco: (habitoId: string) => void
   onRegistrarCheckin: (habitoId: string) => void
+  onExcluirHabito: (habitoId: string) => Promise<void>
   onCriarHabito: (params: {
     nome: string
     categoria: string | null
@@ -38,7 +42,7 @@ export function HabitsScreen(props: {
   const [vontadeDe, setVontadeDe] = useState<Habito | null>(null)
   const [mostrarAdicionar, setMostrarAdicionar] = useState(false)
   const [chatAberto, setChatAberto] = useState(false)
-  const [avatarFalhou, setAvatarFalhou] = useState(false)
+  const { m } = useI18n()
 
   const nivel = nivelBemEstar(habitos)
   const corLife = corTermometro(nivel)
@@ -72,6 +76,7 @@ export function HabitsScreen(props: {
             onTropeco={() => props.onRegistrarTropeco(h.id)}
             feitoHoje={h.feitoHoje}
             onFizHoje={() => props.onRegistrarCheckin(h.id)}
+            onExcluir={() => props.onExcluirHabito(h.id)}
           />
         ))}
       </div>
@@ -87,6 +92,8 @@ export function HabitsScreen(props: {
           <span className="block text-micro text-content-low">Açúcar, refrigerante, leitura e mais…</span>
         </span>
       </button>
+
+      <p className="px-2 text-center text-micro leading-relaxed text-content-dim">{m.habitos.aviso}</p>
 
       {/* Assistente da vontade — sobe e escurece o resto */}
       {vontadeDe && (
@@ -122,19 +129,10 @@ export function HabitsScreen(props: {
       )}
 
       {/* O Life flutua no canto inferior esquerdo, acima do BottomNav
-          (z-10), de corpo inteiro — nada de recorte em círculo, porque ele
-          vai ganhar animações próprias. O anel virou um brilho (glow) atrás
-          dele, que muda de cor com o termômetro (verde tranquilo → roxo
-          preocupante).
-          `mixBlendMode: screen` é um ajuste temporário: a imagem hoje tem
-          fundo preto sólido (não é PNG recortado/transparente), e "screen"
-          faz preto puro somar zero contra o fundo escuro do app, então o
-          quadrado do fundo praticamente some. Funciona bem aqui porque o
-          app é todo escuro — mas o certo, quando der, é pedir uma versão
-          com fundo transparente de verdade. Tentativa de troca em
-          2026-09-24 (personagem_athos_referencia.png do lote de pranchas)
-          foi revertida — não era a imagem certa do Life; aguardando a
-          versão correta do usuário. */}
+          (z-10), de corpo inteiro. O brilho atrás muda de cor com o
+          termômetro, e o humor da imagem acompanha: feliz quando está tudo
+          firme, calmo (roxo) quando algum hábito pede atenção. Imagens
+          transparentes de 2026-09-28 — o mix-blend-mode do fundo preto saiu. */}
       <button
         type="button"
         onClick={() => setChatAberto(true)}
@@ -146,22 +144,7 @@ export function HabitsScreen(props: {
           style={{ backgroundColor: corLife, opacity: 0.35 }}
           aria-hidden="true"
         />
-        {avatarFalhou ? (
-          <span
-            className="relative flex h-24 w-20 items-center justify-center rounded-2xl text-4xl"
-            style={{ backgroundColor: `${corLife}22`, color: corLife }}
-          >
-            🌿
-          </span>
-        ) : (
-          <img
-            src="/life/avatar.png"
-            alt="Life"
-            className="relative h-28 w-auto drop-shadow-xl"
-            style={{ mixBlendMode: 'screen' }}
-            onError={() => setAvatarFalhou(true)}
-          />
-        )}
+        <LifeMascote humor={habitos.some((h) => statusHabito(h) !== 'firme') ? 'calmo' : 'feliz'} className="relative h-28" />
       </button>
     </main>
   )

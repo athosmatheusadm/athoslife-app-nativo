@@ -1353,3 +1353,192 @@ lotes menores, mesmo padrão de sessões anteriores.
       antes da produção, trocar o token do GitHub (ficou na conversa).
   Nada pendente de commit: tudo enviado pro GitHub.
 - Build de conferência com o plugin de código de barras **compilou** (run 36348717842).
+
+## 2026-09-28
+
+- **Excluir hábito (feito, app)**: "Excluir hábito" no rodapé do card aberto,
+  com confirmação no próprio card. `habitosRepository.excluir()` faz
+  `ativo=false` (sem migração: política de UPDATE já existia; trigger
+  `limitar_habitos_gratis` deixa desativar e só conta ativos, então libera a
+  vaga do grátis). Histórico/recaídas ficam no banco. Cancela o lembrete
+  local junto. `tsc` 0 erros.
+- **Esqueci a senha**: código já estava pronto desde 27/09. Falta só o dono
+  no painel: template "Reset Password" com `{{ .Token }}`; SMTP próprio
+  antes do beta.
+- **Onboarding**: o dono fez o onboarding (1º, cadastro das informações do
+  usuário) — vai mandar a referência.
+- **Termos + Política de privacidade**: ficam com Claude (já pensando em
+  vários países: LGPD, GDPR, CCPA).
+- **Novas pendências do dono**:
+  1. **Globalização** — vender em qualquer país: textos em i18n (hoje tudo
+     pt-BR fixo no código), unidades (kg/lb, ml/oz, kcal/kJ), fuso do
+     usuário (hoje banco e app fixos em America/Sao_Paulo — vira coluna
+     `profiles.fuso`), base de alimentos regional (a de 1500 é brasileira;
+     Open Food Facts é mundial), preços locais (a Play Billing converte
+     sozinha), leis de dados por região, ficha da Play por idioma.
+  2. **Life adaptável a país e cultura** — idioma e tom do Life, culinária
+     local nas sugestões/receitas, datas e costumes (ex.: jejum religioso,
+     restrições alimentares), exemplos e unidades locais; ai-proxy recebe
+     idioma/país/fuso do perfil no contexto.
+- Item 10 (pranchas, avatar, Perfil, Confirm email, token GitHub): dono
+  pediu pra esperar.
+- **ai-proxy v3 (globalização — PUBLICAR DE NOVO)**: lê idioma/país/fuso/
+  unidades do perfil. Life responde no idioma da pessoa e com a cultura do
+  país (comidas, gírias, unidades, tabela nutricional TACO/USDA/local,
+  práticas religiosas sem presumir). "Hoje" e renovação da cota no fuso do
+  usuário. Crise: termos em en/es + linha de apoio por país (BR CVV 188, US/CA
+  988, PT, GB/IE Samaritans, AU, ES 024, MX, AR, CO, CL; resto
+  findahelpline.com). Filtro anti-prescrição em en/es. Visão e receita no
+  idioma e culinária do país. Contexto do chat inclui respostas do
+  onboarding (gostos, obstáculos, sono, estresse, suplementos). Conferido
+  com `tsc` + shim do Deno: 0 erros.
+- **Migração da globalização (RODADA por Claude, autorizado pelo dono)**:
+  `db/athoslife_globalizacao_onboarding_migration.sql` — profiles ganha
+  `idioma` (pt-BR), `pais`, `fuso` (America/Sao_Paulo), `unidades`
+  (metrico|imperial), `onboarding_respostas` jsonb; funções
+  `fuso_do_usuario`/`hoje_do_usuario`; `consumir_cota_ia`, `cota_ia_status`,
+  `devolver_cota_ia`, `handle_recaida`, `registrar_checkin_habito` usam o
+  fuso do usuário (teto global de tokens segue no dia de Brasília).
+  Conferido: 5 colunas, 5 funções novas, base atual toda
+  America/Sao_Paulo/pt-BR/metrico.
+- **Idiomas no app (base)**: `src/i18n/` — pt-BR (referência), en, es, tipados
+  (faltou chave = erro de compilação). `I18nProvider` (escolha do aparelho >
+  perfil > idioma do aparelho), `formatos.ts` (peso/altura/volume com
+  kg/lb, cm/ft, ml/oz), `domain/rules/localidade.ts` e `unidades.ts`.
+  Telas novas já nascem traduzidas: Onboarding, Consentimento, Termos/
+  Política, Idioma e região, saudação do Life, excluir hábito. **As telas
+  antigas continuam em pt-BR fixo — migração gradual pendente.**
+- **Onboarding real (10 telas, HTML do dono)**: `ui/screens/Onboarding.tsx` +
+  `onboarding/estado.ts` + `onboarding/componentes.tsx`. Uma tela por vez,
+  progresso salvo no aparelho, voltar sem perder dado, resumo com dado real
+  (toque volta pra etapa) + metas iniciais (Mifflin-St Jeor × frequência de
+  treino, piso no basal, proteína 1,6–2 g/kg, água 35 ml/kg — editáveis em
+  Metas). Grava tudo no fim (`concluirOnboarding`) + 1º peso no gráfico.
+  Seletor de idioma na 1ª tela; kg·cm / lb·ft na tela do corpo.
+  Diferenças do HTML (decisão minha): idade é número (não faixa) porque as
+  metas precisam; mínimo 16 anos; alimentos começam vazios com sugestões
+  por idioma (o HTML vinha com lista brasileira pré-marcada); alergia "Sim"
+  abre campo de quais; "Nenhum" nos suplementos.
+- **Consentimento real**: termos + dado de saúde obrigatórios, hábitos
+  opcional; grava versão/data e navega sozinho (fim do bug de ficar preso).
+  Guard novo `RequireEtapaInicial` em /consentimento e /onboarding.
+- **Termos de uso + Política de privacidade (RASCUNHO)**:
+  `ui/screens/legal/documentos.ts` (pt-BR + en; es usa en), rotas públicas
+  `/termos` e `/politica-de-privacidade`, links no Consentimento e no Sobre.
+  LGPD/GDPR/CCPA. ⚠️ Dono preencher [razão social, CNPJ, endereço, e-mail de
+  privacidade, foro] e passar por advogado. ⚠️ A política diz que o Google
+  não treina com os dados — só vale se a chave do Gemini estiver no plano
+  PAGO (faturamento ativo); conferir.
+- **Imagens do Life (dono mandou 8 JPEG + paywall)**: fundo preto recortado
+  por script (sharp) -> `public/life/*.webp`; roxo "calmo" tirado do HTML do
+  onboarding. Onde ficou: Home (normal; "resgate" após 3+ dias sem abrir,
+  toque abre o chat), Hábitos (feliz/calmo, sem o mix-blend-mode),
+  Treinos (treino), Cozinha e Scanner (chef), Conquistas + aviso de
+  conquista (dourado), Sobre (normal), onboarding (treino/chef/azul/roxo),
+  widget de água (azul hidratado / desidratado — trocou o cinza gerado em
+  Java). `avatar.png` antigo apagado. ⚠️ Caneca do "resgate" tem texto em
+  português ("CADÊ VOCÊ?") — pra outros idiomas precisa versão sem texto.
+- **Paywall (imagem do dono)**: referência pra tela de planos/Billing. ⚠️
+  Diverge do servidor: a imagem diz grátis = "Hábitos 2" e "Refeições 4 por
+  dia" e "Com anúncios"; hoje o banco limita 1 hábito ativo, não limita
+  refeições e o app não tem anúncio. Decidir antes do Billing.
+- **Perfil > Idioma e região**: troca idioma e unidades (grava no perfil e
+  atualiza o fuso pelo aparelho).
+- `tsc` 0 erros; `vite build` ok. Java do widget não compila aqui — conferir
+  no próximo build do GitHub.
+- **Decisões do dono (2026-09-28, fim da sessão)**: limites do grátis = os do
+  servidor (1 hábito ativo etc.) — o paywall da imagem é que se adapta.
+  Gemini está no plano GRÁTIS por enquanto -> ⚠️ a Política diz que o Google
+  não treina com os dados, o que no grátis é falso: ativar faturamento antes
+  do lançamento (ou reescrever a Política). Dono ainda não tem CNPJ nem
+  e-mail de privacidade. Dono vai publicar o ai-proxy v3.
+- ⚠️ **Achado**: `consentimento_habitos` é gravado mas não é respeitado —
+  quem desmarca continua usando Hábitos, e o ai-proxy manda os hábitos pro
+  Gemini do mesmo jeito. Corrigir (travar a tela + não mandar no contexto).
+- **Hábitos — álcool/cigarro/drogas/apostas BLOQUEADOS (pedido do dono)**:
+  `db/athoslife_habitos_proibidos_consentimento_migration.sql` (RODADO):
+  `normalizar_texto`, `habito_nome_proibido` (pt/en/es, palavra inteira; de
+  fora de propósito: beber, drink, erva, trago, pod, baseado, saque) e
+  trigger `validar_habito` em vicios_user (nome proibido ->
+  `habito_nao_permitido`; criar/reativar sem `consentimento_habitos` ->
+  `sem_consentimento_habitos`). Testado: bloqueia Cerveja, Parar de fumar,
+  Cigarro eletrônico, Álcool, vinho, Beer, Apostas no tigrinho, Maconha;
+  passa Chocolate, Beber água, Chá de erva-doce, Podcast, baseado em ciência.
+  Os 3 hábitos atuais (chocolate, meditação, pizza/fritura) seguem válidos.
+  App: espelho em `domain/entities/habito.ts` (`habitoNomeProibido`) — o
+  painel de novo hábito avisa e trava o botão. Também pornografia/conteúdo
+  sexual (dado sensível de vida sexual) — decisão minha, confirmar.
+- **Hábitos — consentimento respeitado**: tela Hábitos pede autorização se
+  `consentimento_habitos` = false; Perfil > Privacidade liga/desliga; aviso
+  "não é tratamento para dependência" na tela; ai-proxy só manda hábitos
+  pro Gemini com consentimento e o Life recusa acompanhar álcool/cigarro/
+  drogas/apostas (acolhe e indica serviço especializado, CAPS AD no BR).
+  ⚠️ ai-proxy mudou de novo — **dono publicar outra vez** (878 linhas).
+- **Base de alimentos global (RODADO)**:
+  `db/athoslife_alimentos_globalizacao_migration.sql` — `nome_en`, `nome_es`,
+  `regioes`, RPC `buscar_alimentos(termo, idioma, país)`. 1.481 itens
+  traduzidos pra inglês e espanhol; 110 suplementos de marca BR só aparecem
+  no Brasil; +57 alimentos de fora (EUA, México/América Latina, Espanha,
+  Ásia, Oriente Médio) por 100 g. Total 1.648. App: `alimentosRepository`
+  busca pela RPC e mostra o nome no idioma; `data/localidadeAtual.ts`
+  (mantido pelo I18nProvider) diz idioma/país pros repositórios.
+  ⚠️ Achado: a base mistura "macros por porção" e "por 100 g" — ex.
+  "Burrito de frango" porção 250 g com 224 kcal (valor de 100 g). Auditar.
+- **Plano de referência de TREINO (feito — diretriz nova
+  `docs/PLANOS_TREINO_DIETA_DIRETRIZ.md`)**. Área cinzenta estilo
+  MyFitnessPal/Fitbod: plano montado das escolhas da pessoa + faixas
+  públicas do ACSM, editável, "referência" e nunca "prescrição"; carga
+  sempre da pessoa.
+  - Banco (`db/athoslife_planos_triagem_migration.sql`, RODADO): catálogo
+    ganha `nivel_minimo` (16 intermediário, 4 avançado); `triagens_saude`
+    append-only (sem UPDATE/DELETE) com 11 perguntas (PAR-Q+ adaptado +
+    gravidez/diabetes/transtorno alimentar/cirurgia), data de nascimento e
+    declaração de veracidade obrigatória; aptidão CALCULADA NO SERVIDOR
+    (trigger `avaliar_triagem`: ignora o que o app mandar; bloqueia menor de
+    18, idade do perfil ≠ nascimento, IMC < 18,5 pra dieta); vale 90 dias;
+    `planos_gerados` (histórico, só via RPC; campo `revisao_profissional`
+    pra quando um CREF/CRN assinar); RPC `aplicar_plano_treino` revalida
+    TUDO (pago, triagem, dias 2–6/iniciante ≤ 4, 30–90 min, exercício do
+    local e do nível, séries 1–5, reps 1–20, tempo 10–120 s, ≤ 5/7
+    exercícios por dia, teto semanal de séries por grupo 10/16/20) e troca a
+    ficha do local mantendo as cargas já anotadas.
+  - Testado no servidor (transação desfeita): sem triagem, terra pra
+    iniciante, 50 reps, iniciante 5 dias e volume alto -> recusados; válido
+    -> aplicado + histórico. Triagem: limpa=apta; grávida=bloqueada;
+    menor de 15 mandando apto=true -> bloqueada (menor + idade divergente).
+  - App: `domain/rules/geradorTreino.ts` (divisão 2–6 dias, compostos
+    primeiro, substituto quando falta grupo em casa, trava de volume sem
+    deixar exercício de 1 série; testado com o catálogo real em 5 cenários),
+    `domain/rules/triagemSaude.ts`, `planosRepository`, tela
+    `/treinos/plano` (intro -> triagem + declaração -> inapto com motivos e
+    orientação / parâmetros -> prévia -> aplicar), botão "Montar plano de
+    referência" no Treino. Textos pt/en/es. Exportação LGPD inclui
+    triagem, planos e histórico de treino.
+  - Termos v2.1: seção 5-A (plano de referência, declaração, CDC art. 14
+    §3º II, suspensão por informação falsa, pare se sentir dor).
+  - ai-proxy: Life pode explicar/motivar sobre o plano (sem mudar nada) e
+    recebe o resumo do plano no contexto. **Publicar de novo (889 linhas).**
+  - Pendente: plano de DIETA (etapa 2, triagem já pronta); nomes dos
+    exercícios só em pt; revisão dos modelos por CREF/CRN (opcional, forte).
+
+- **Pendências pra próxima sessão (2026-09-29)**:
+  1. **Dono publicar o ai-proxy de novo** (889 linhas; 1ª linha "v3,
+     2026-09-28"; última linha `}`) e testar chat + Scanner no
+     localhost -> Claude confere `ai_audit_logs`.
+  2. **Plano de DIETA** (etapa 2 da diretriz): meta de referência com pisos,
+     cardápio sugerido com a base (agora global) + Cozinha, só com
+     `apto_dieta`.
+  3. Testar no navegador: onboarding (conta nova), consentimento,
+     Hábitos (tentar "cerveja"), busca de alimentos em en/es, plano de treino
+     (precisa conta paga/trial ou `VITE_DEV_PREMIUM`).
+  4. Commit feito só LOCAL — falta push pro GitHub (precisa token) e build
+     do APK pra conferir o Java do widget.
+  5. Traduzir telas antigas (seguem em pt fixo) + nomes dos exercícios.
+  6. Auditar base de alimentos (porção vs. 100 g, ex. Burrito de frango).
+  7. Revisão jurídica reforçada (Washington MHMDA, FTC, direito de
+     arrependimento, página web de exclusão de conta, Política em link
+     público); dono criar e-mail do app; Gemini pago antes do lançamento.
+  8. Google Play Billing; paywall ajustado aos limites do servidor.
+  9. Life resgate sem texto na caneca (pra outros idiomas); vídeos do dono.
+  10. Seguem de antes: pranchas do Treino, revisão do Perfil, `{{ .Token }}`
+      no template de senha + SMTP, "Confirm email", trocar token do GitHub.

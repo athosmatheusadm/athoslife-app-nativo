@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { authRepository } from '@data/repositories/authRepository'
 import { privacidadeRepository } from '@data/repositories/privacidadeRepository'
+import { profileRepository } from '@data/repositories/profileRepository'
 
 /**
  * Sub-página "Privacidade e dados" do Perfil.
@@ -15,7 +16,8 @@ import { privacidadeRepository } from '@data/repositories/privacidadeRepository'
  */
 export function Privacidade() {
   const navigate = useNavigate()
-  const { profile } = useSession()
+  const { profile, refresh } = useSession()
+  const [trocandoHabitos, setTrocandoHabitos] = useState(false)
   const [exportando, setExportando] = useState(false)
   const [erroExport, setErroExport] = useState<string | null>(null)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
@@ -72,9 +74,28 @@ export function Privacidade() {
         <p className="mt-1 text-micro text-content-low">
           {profile.consentimentoAceito ? 'Você aceitou os termos de uso.' : 'Termos ainda não aceitos.'}
         </p>
-        <p className="mt-1 text-micro text-content-low">
-          Acompanhamento de hábitos: {profile.consentimentoHabitos ? 'autorizado' : 'não autorizado'}.
-        </p>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="text-micro text-content-low">
+            Acompanhamento de hábitos: {profile.consentimentoHabitos ? 'autorizado' : 'não autorizado'}.
+          </p>
+          <button
+            type="button"
+            disabled={trocandoHabitos}
+            onClick={() => {
+              // Retirar o consentimento só esconde a tela e tira os hábitos
+              // do contexto do Life; os registros continuam até a exclusão.
+              setTrocandoHabitos(true)
+              void profileRepository
+                .definirConsentimentoHabitos(!profile.consentimentoHabitos)
+                .then(refresh)
+                .catch(() => {})
+                .finally(() => setTrocandoHabitos(false))
+            }}
+            className="flex-none rounded-pill border border-surface-4 px-3 py-1 text-micro font-semibold text-content-mid disabled:opacity-50"
+          >
+            {profile.consentimentoHabitos ? 'Retirar' : 'Autorizar'}
+          </button>
+        </div>
       </section>
 
       <section className="mx-5 mt-5">

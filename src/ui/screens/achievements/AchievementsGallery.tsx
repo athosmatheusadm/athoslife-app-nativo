@@ -6,6 +6,7 @@ import {
   type CategoriaConquista,
   type Conquista,
 } from '@domain/entities/conquista'
+import { LifeMascote } from '@ui/components/LifeMascote'
 
 const NOME_NIVEL: Record<Conquista['nivel'], string> = {
   bronze: 'Bronze',
@@ -57,6 +58,7 @@ export function AchievementsGallery({
             {desbloqueadas} de {total} desbloqueadas
           </p>
         </div>
+        <LifeMascote humor="conquista" className="ml-auto h-20" />
       </header>
 
       {/* Barra de progresso geral */}

@@ -134,7 +134,24 @@ export const habitosRepository = {
     if (error) throw error
   },
 
-  /** Marca mais um dia firme (quando aplicável ao fluxo do produto). */
+  /**
+   * "Excluir" = desativar (ativo=false). A linha e as recaídas ficam no banco
+   * pro histórico/conquistas e pra exportação de dados; o hábito some da lista
+   * e deixa de contar no limite do grátis (trigger limitar_habitos_gratis só
+   * olha os ativos).
+   */
+  async excluir(habitoId: string): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+
+    const { error } = await supabase
+      .from('vicios_user')
+      .update({ ativo: false })
+      .eq('id', habitoId)
+      .eq('user_id', userId)
+    if (error) throw error
+  },
+
   async criar(params: {
     nome: string
     categoria: string | null
@@ -149,7 +166,10 @@ export const habitosRepository = {
       categoria: params.categoria,
       intensidade: params.intensidade,
     })
-    // Trigger limitar_habitos_gratis: no grátis, só 1 hábito ativo.
+    // Triggers do banco: validar_habito (proibidos + consentimento) e
+    // limitar_habitos_gratis (no grátis, só 1 hábito ativo).
+    if (error?.message.includes('habito_nao_permitido')) throw new Error('habito_nao_permitido')
+    if (error?.message.includes('sem_consentimento_habitos')) throw new Error('sem_consentimento_habitos')
     if (error?.message.includes('limite_habitos_gratis')) {
       throw new Error('No plano grátis dá pra acompanhar 1 hábito por vez. Com o plano pago, são quantos você quiser.')
     }
