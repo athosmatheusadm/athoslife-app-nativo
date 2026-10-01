@@ -77,3 +77,16 @@
     }
   }
 }
+
+/* Protótipo do onboarding em conversa (2026-10-01). */
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes flutuar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes desenhar {
+  to { stroke-dashoffset: 0; }
+}

@@ -11,6 +11,27 @@ import { authRepository } from '@data/repositories/authRepository'
  */
 type Modo = 'entrar' | 'criar'
 
+/** O Supabase devolve o erro em inglês e técnico — aqui vira algo que a pessoa entende. */
+function mensagemErroAuth(err: unknown): string {
+  const codigo = (err as { code?: string } | null)?.code ?? ''
+  const msg = err instanceof Error ? err.message.toLowerCase() : ''
+  if (codigo === 'over_email_send_rate_limit' || msg.includes('rate limit'))
+    return 'Muitos e-mails enviados em pouco tempo. Espera uns minutos e tenta de novo.'
+  if (codigo === 'email_not_confirmed' || msg.includes('not confirmed'))
+    return 'Falta confirmar seu e-mail: abre o link que mandamos (olha também o spam).'
+  if (codigo === 'invalid_credentials' || msg.includes('invalid login'))
+    return 'E-mail ou senha incorretos.'
+  if (codigo === 'email_address_invalid' || (msg.includes('email') && msg.includes('invalid')))
+    return 'Esse e-mail não parece válido. Confere se não tem erro de digitação (ex.: gmail.com).'
+  if (codigo === 'user_already_exists' || msg.includes('already registered'))
+    return 'Já existe uma conta com esse e-mail. Entra com ela ou use "Esqueci a senha".'
+  if (codigo === 'weak_password' || msg.includes('password should'))
+    return 'Senha fraca: use pelo menos 6 caracteres.'
+  if (msg.includes('failed to fetch') || msg.includes('network'))
+    return 'Sem conexão com o servidor. Confere a internet.'
+  return 'Não foi possível completar. Tenta de novo.'
+}
+
 export function Login() {
   const [modo, setModo] = useState<Modo>('entrar')
   const [email, setEmail] = useState('')
@@ -37,13 +58,18 @@ export function Login() {
       } else {
         const { sessaoAtiva } = await authRepository.criarConta(email, senha)
         if (!sessaoAtiva) {
-          setAviso('Conta criada! Confirma seu email antes de entrar (verifica a caixa de entrada).')
+          // Sem sessão = o Supabase pede confirmação. Ele responde igual se o e-mail
+          // já tinha conta (não revela quem está cadastrado), então o texto cobre os dois.
+          setAviso(
+            'Pronto! Mandamos um link pro seu e-mail — abre ele pra ativar a conta (olha também o spam). Se esse e-mail já tinha conta, é só entrar.',
+          )
           setCarregando(false)
         }
         // Se sessaoAtiva, o SessionProvider pega o evento e redireciona sozinho.
       }
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Não foi possível completar. Tenta de novo.')
+      console.warn('auth:', err)
+      setErro(mensagemErroAuth(err))
       setCarregando(false)
     }
   }

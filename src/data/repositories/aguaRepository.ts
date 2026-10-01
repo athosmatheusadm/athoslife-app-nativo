@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { avisarRegistroDoDia } from '@data/registroDoDia'
 import type { AguaDoDia, RegistroAgua } from '@domain/entities/water'
 import { dataLocalISO } from '@domain/rules/datas'
 
@@ -66,6 +67,7 @@ export const aguaRepository = {
       .single<RegistroRow>()
 
     if (error) throw error
+    avisarRegistroDoDia()
     return paraDominio(data)
   },
 
@@ -76,5 +78,6 @@ export const aguaRepository = {
       .delete()
       .eq('id', registroId)
     if (error) throw error
+    avisarRegistroDoDia()
   },
 }

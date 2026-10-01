@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { resumirPesos, type RegistroPeso, type ResumoPeso } from '@domain/entities/weight'
 import { dataDeISO, dataLocalISO } from '@domain/rules/datas'
 
@@ -53,11 +54,13 @@ export const pesoRepository = {
         { onConflict: 'user_id,data' },
       )
     if (error) throw error
+    avisarRegistroDoDia()
   },
 
   /** Apaga o registro de um dia (pesou errado). */
   async excluir(data: Date): Promise<void> {
     const { error } = await supabase.from('registros_peso').delete().eq('data', dataLocalISO(data))
     if (error) throw error
+    avisarRegistroDoDia()
   },
 }

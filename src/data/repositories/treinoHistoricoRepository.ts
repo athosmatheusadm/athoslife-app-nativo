@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { hojeISO } from '@domain/entities/treino'
 import {
   grupoPrincipal,
@@ -11,6 +12,16 @@ import {
  * finalizada (o que as conquistas e o Life leem como "treinou").
  */
 export const treinoHistoricoRepository = {
+  /** Já tem sessão de treino salva hoje? */
+  async treinouHoje(): Promise<boolean> {
+    const { count, error } = await supabase
+      .from('treinos_historico')
+      .select('id', { count: 'exact', head: true })
+      .eq('data', hojeISO())
+    if (error) throw error
+    return (count ?? 0) > 0
+  },
+
   /**
    * Salva a sessão e devolve a ficha atualizada:
    *  - linha em treinos_historico com o que foi feito série a série;
@@ -70,5 +81,6 @@ export const treinoHistoricoRepository = {
             .eq('id', e.planoId)
         }),
     )
+    avisarRegistroDoDia()
   },
 }

@@ -1713,3 +1713,77 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      exercícios; revisão jurídica + e-mail do app + Gemini pago; Billing
      e paywall; Life resgate sem texto; pranchas; Perfil; `{{ .Token }}` +
      SMTP; "Confirm email"; trocar token do GitHub.
+
+## 2026-10-01
+
+- **Conferência do servidor**: ai-proxy no ar (deploy versão 12, publicado
+  29/09 15h48 — a v3.3); últimas chamadas do chat `ok`, nenhuma desde então.
+  Banco: RLS em todas as tabelas, RPCs dos planos/triagem presentes, GRANT
+  das colunas de `profiles` completo, 0 erros do Postgres em 24h. Token do
+  MCP segue sem `edge_functions_read`/`advisors_read` (não dá pra ler o
+  código publicado nem rodar o advisor). Onboarding do dono salvou (sexo,
+  idioma, "não gosto" = frutas, legumes, "dobradinhha").
+- **Lembretes do dia do Life (Perfil > Notificações)** — decisão do dono:
+  água, refeições, treino e pesagem, com a voz do Life.
+  - Regra pura `domain/rules/lembretesDiarios.ts`: avisos AVULSOS pros
+    próximos 7 dias (aviso local não roda código na hora de tocar), refeitos
+    ao abrir/voltar pro app e ~1,5 s depois de qualquer registro. O que já
+    foi feito HOJE sai: água para ao bater a meta; refeição registrada (kcal
+    > 0 ou ✓) não é cobrada; treino só nos dias com exercício na ficha e não
+    cobra se já treinou/concluiu algo; pesagem semanal pula se pesou nos
+    últimos 3 dias. Silêncio entre dormir e acordar (aceita dormir depois da
+    meia-noite). Teto 10/dia (água corta primeiro), água nunca a < 30 min de
+    outro aviso, máx. 56 pendentes (limite do iOS).
+  - `data/notifications/lembretesDiarios.ts`: config no aparelho
+    (Preferences), espelho de acordar/dormir/lembrete_agua/lembrete_treino
+    no perfil; ids 920000–929999 (não mexe no aviso do descanso nem nos de
+    hábito); frase sorteada por dia; tocar abre Home/Dieta/Treinos.
+  - `app/LembretesDoLife.tsx` (montado no Shell) e `data/registroDoDia.ts`
+    (sinal disparado pelos repositórios de água, itens de refeição, peso,
+    ficha e histórico de treino).
+  - Tela `ui/screens/notificacoes/LembretesDoDia.tsx`: chave geral (pede a
+    permissão), acordo/durmo, água (1h/1h30/2h/3h), 4 refeições com horário,
+    treino (mostra os dias da ficha), pesagem (dia + hora), aviso quando o
+    horário cai no silêncio. Textos pt/en/es (`lembretes`). Começa DESLIGADO.
+  - Testado com esbuild (7 cenários: padrão, desligado, coisas já feitas,
+    teto com água de 1 em 1 h, dormir 02h, pesou recente, config inválida).
+  - Sem `SCHEDULE_EXACT_ALARM` no manifesto: no Android 12+ o aviso pode
+    atrasar alguns minutos (o plugin cai pro modo inexato). Ok pra lembrete.
+  - `tsc` 0 erros; `vite build` ok. **Não testado em aparelho.**
+- **Onboarding em conversa (ideia do dono, vídeo do Fitfolio/"Spoty")**:
+  analisado — mascote pergunta em balões, controle certo por pergunta
+  (régua de altura/peso/ritmo, boneco pra escolher músculo, botões), fecha
+  com o plano em árvore + "Ver plano / Entrar sem plano". Proposta: juntar
+  onboarding + check de saúde + montar plano numa conversa só com o Life,
+  roteiro fixo (sem IA), mesmas RPCs. Próximo passo: protótipo visual pro
+  dono aprovar.
+
+- **Protótipo do onboarding em conversa (feito)**: rota pública
+  `/prototipo/onboarding` (`ui/screens/prototipo/OnboardingConversa.tsx`),
+  NADA salva. Abertura com o Life grande pensando -> nome -> chat com
+  "digitando", comentários do Life a cada resposta, barra de progresso,
+  humor do Life muda por assunto (calmo no check, treino, chef). Controles:
+  botões, data, roda de rolar (altura/peso/meta/ritmo), boneco frente/costas
+  (até 3 músculos), dias, refeições, "não como", declaração, lembretes.
+  Fim: "Montando seu plano…" -> Life dourado + árvore kcal/P/C/G + linha do
+  dia (refeições com kcal, treino, água) + Ver meu plano / Entrar sem plano.
+  Metas pelo `calcularMetasIniciais` (o ritmo ainda não entra na conta do
+  protótipo). Percorrido de ponta a ponta no Chromium headless, 0 erros.
+- **Cadastro "não ia" (investigado nos logs do Auth)**: não era bug do
+  código. (1) `betatester01@gamil.com` -> e-mail inválido (gamil);
+  (2) `tester0107@gmail.com` -> conta criada, aguardando confirmação
+  ("Confirm email" foi RELIGADO no Supabase — o STATUS dizia desligado);
+  (3) `matheusbarretonunesknt@gmail.com` -> 429 `over_email_send_rate_limit`
+  (SMTP grátis do Supabase), cadastro desfeito, conta NÃO existe.
+  Login agora traduz os erros do Auth pra português (`mensagemErroAuth`) e
+  o aviso pós-cadastro cobre o caso "e-mail já tinha conta".
+- `.env.local`: `VITE_DEV_PREMIUM` true -> **false** (pra testar o grátis no
+  localhost; voltar pra true + reiniciar o Vite se quiser ver o premium).
+- **Pendências pra próxima sessão**:
+  0. Dono cria a conta `matheusbarretonunesknt@gmail.com` no localhost ->
+     Claude (com ok já dado) confirma o e-mail no banco e põe `plano='free'`
+     (conta nova nasce `trial` 7 dias = tudo liberado).
+  1. Dono aprovar/ajustar o protótipo -> codar o real (onboarding + check +
+     planos numa conversa, mesmas RPCs, textos pt/en/es).
+  2. Testar os lembretes no aparelho (precisa do APK).
+  3. Seguem: testar planos no chat; push GitHub + APK; lista de 28/09.

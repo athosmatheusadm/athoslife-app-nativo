@@ -2,6 +2,8 @@ import { createBrowserRouter, Outlet } from 'react-router-dom'
 import { RequireAnon, RequireAuth, RequireEtapaInicial } from './Guards'
 import { useAndroidBackButton } from './useAndroidBackButton'
 import { IntegracoesNativas } from './IntegracoesNativas'
+import { LembretesDoLife } from './LembretesDoLife'
+import { OnboardingConversa } from '@ui/screens/prototipo/OnboardingConversa'
 import { AppShell } from './AppShell'
 import { Login } from '@ui/screens/Login'
 import { RecuperarSenha } from '@ui/screens/RecuperarSenha'
@@ -31,6 +33,7 @@ function Shell() {
   return (
     <>
       <IntegracoesNativas />
+      <LembretesDoLife />
       <Outlet />
     </>
   )
@@ -48,6 +51,8 @@ export const router = createBrowserRouter([
       // Públicas: abrem do Consentimento (antes do aceite) e do Perfil > Sobre.
       { path: '/termos', element: <DocumentoLegal tipo="termos" /> },
       { path: '/politica-de-privacidade', element: <DocumentoLegal tipo="politica" /> },
+      // PROTÓTIPO (2026-10-01): onboarding em conversa, público e sem salvar nada.
+      { path: '/prototipo/onboarding', element: <OnboardingConversa /> },
       {
         element: <RequireAuth><Outlet /></RequireAuth>,
         children: [

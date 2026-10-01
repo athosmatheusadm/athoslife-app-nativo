@@ -216,6 +216,27 @@ export const profileRepository = {
     if (error) throw error
   },
 
+  /** Horário de acordar/dormir e chaves de lembrete (Perfil > Notificações) — o servidor também pode usar. */
+  async atualizarRotinaLembretes(r: {
+    acordar: string
+    dormir: string
+    lembreteAgua: boolean
+    lembreteTreino: boolean
+  }): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        horario_acordar: r.acordar,
+        horario_dormir: r.dormir,
+        lembrete_agua: r.lembreteAgua,
+        lembrete_treino: r.lembreteTreino,
+      })
+      .eq('id', userId)
+    if (error) throw error
+  },
+
   /** Atualiza a meta diária de água (litros escolhidos no painel do disco). */
   async atualizarMetaAgua(metaMl: number): Promise<void> {
     const userId = (await supabase.auth.getUser()).data.user?.id

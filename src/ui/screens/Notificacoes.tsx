@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { habitosRepository } from '@data/repositories/habitosRepository'
 import { agendarLembrete, buscarLembrete, cancelarLembrete } from '@data/notifications/habitReminders'
 import type { Habito } from '@domain/entities/habito'
+import { LembretesDoDia } from './notificacoes/LembretesDoDia'
 
 /**
  * Sub-página "Notificações" do Perfil.
  *
- * Só lista o que já existe de verdade: os lembretes locais por hábito
- * "construir" (Camada 1 — ver habitReminders.ts), num lugar central em
- * vez de espalhado card por card em Hábitos. "Modo resgate" e WhatsApp
+ * Só lista o que já existe de verdade: os lembretes do dia do Life (água,
+ * refeições, treino, pesagem — ver LembretesDoDia) e os lembretes locais
+ * por hábito "construir" (Camada 1 — ver habitReminders.ts), num lugar
+ * central em vez de espalhado card por card em Hábitos. "Modo resgate" e WhatsApp
  * aparecem como em breve — nenhum dos dois tem qualquer código funcionando
  * ainda (sem Firebase, sem integração de WhatsApp), fingir toggle aqui
  * seria enganar o usuário.
@@ -38,7 +40,9 @@ export function Notificacoes() {
         <h1 className="text-xl font-bold text-content-hi">Notificações</h1>
       </header>
 
-      <section className="mx-5 mt-2">
+      <LembretesDoDia />
+
+      <section className="mx-5 mt-8">
         <h2 className="mb-1 text-sm font-bold text-content-hi">Lembretes de hábitos</h2>
         <p className="mb-3 text-micro text-content-low">
           Um aviso local no seu aparelho, no horário que você escolher — só funciona no app

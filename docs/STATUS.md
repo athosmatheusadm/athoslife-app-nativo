@@ -37,7 +37,7 @@ Os primeiros passos foram os mais pensados; os próximos andam mais rápido.
 | Consentimento + Onboarding | ✅ HTML do dono (10 telas) | ✅ 2026-09-28: consentimento real (termos + saúde + hábitos), onboarding de 10 telas com metas iniciais, idioma e unidades | Termos/Política são rascunho — dono preencher dados da empresa + advogado |
 | Globalização | ✅ 2026-09-28 | 🔸 banco (idioma/país/fuso/unidades, "hoje" no fuso do usuário), ai-proxy v3 (Life no idioma e cultura do país, linha de apoio por país), base de tradução pt-BR/en/es, telas novas traduzidas | Traduzir as telas antigas; base de alimentos por país; ficha da Play por idioma; preços por país na Play |
 | Perfil + sub-páginas | ✅ | ✅ **todas as 8 sub-páginas reais** (2026-09-24): Conquistas, Conta (nome/foto/e-mail/sexo/altura/idade/peso), Metas, Plano (status real, sem venda — Billing não existe), Privacidade (exportar dados real em `.json`, solicitar exclusão), Notificações (lembretes de hábito centralizados), Acessibilidade (tamanho de texto/reduzir animações/alto contraste — funcionam de verdade, salvos no aparelho), Sobre | Usuário vai revisar/ajustar cada uma ao gosto dele — construídas rápido, sem refinamento visual ainda |
-| Notificações (regra fixa) | ✅ | 🔸 lembrete local só do hábito "construir" (`@capacitor/local-notifications`), agora com tela central em Perfil > Notificações, não testado em build real ainda | Regra fixa pros outros módulos (água/treino), push de verdade (FCM), modo resgate/WhatsApp (nenhum dos dois existe) |
+| Notificações (regra fixa) | ✅ | ✅ 2026-10-01: lembretes do dia do Life (água, refeições, treino nos dias da ficha, pesagem semanal) locais, com silêncio, teto 10/dia e sem cobrar o que já foi feito hoje + lembrete do hábito "construir" — tudo em Perfil > Notificações | Testar no aparelho; push de verdade (FCM), modo resgate/WhatsApp (nenhum dos dois existe) |
 | Notificações inteligentes (Life) | ✅ (doc) + **novo conceito 2026-09-24**: check-in em 3 momentos do dia (manhã=sono, meio-dia=refeição, noite=treino/dia), grounded em dado real, sem gatilho tipo "notificação de anúncio" — reaproveitar o EmotionalCheckin já existente na Home em vez de criar aviso novo | ⬜ | Pós-lançamento, de propósito. Depende da Life virar componente global (decisão de 2026-09-13, nunca implementada) |
 | Histórico de peso | 🔸 tem mecânica no app atual | ⬜ | Reaproveitar o gráfico existente |
 | Busca manual de alimentos | 🔸 ref. Macros | ⬜ | Codar (usa alimentos + IA já prontos) |
@@ -72,7 +72,7 @@ Dieta, ou digitando `/scanner` direto.
 1. Google Play Billing (regras da Google, chato).
 2. Modo resgate (push + WhatsApp, várias peças conversando).
 3. Primeiro .aab de pé (quando a teoria vira app instalável).
-4. ⚠️ **"Confirm email" está DESLIGADO no Supabase Auth** (Authentication →
+4. ✅ **"Confirm email" foi RELIGADO** (visto em 2026-10-01: cadastro novo exige o link). Falta SMTP próprio — o grátis do Supabase dá 429 depois de poucos e-mails/hora. Histórico: estava DESLIGADO no Supabase Auth (Authentication →
    Providers → Email) desde 2026-08-24, só pra destravar teste de login local.
    **Tem que reativar antes de qualquer coisa ir pra produção/Play Store** —
    hoje qualquer email, mesmo inventado, consegue criar conta e logar na hora.

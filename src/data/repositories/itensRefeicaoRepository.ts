@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { avisarRegistroDoDia } from '@data/registroDoDia'
 import type { TipoRefeicao } from './refeicoesRepository'
 import type { ItemRefeicao } from '@domain/entities/meal'
 import { dataLocalISO } from '@domain/rules/datas'
@@ -140,12 +141,14 @@ export const itensRefeicaoRepository = {
       .single<ItemRow>()
 
     if (error) throw error
+    avisarRegistroDoDia()
     return paraDominio(row)
   },
 
   async removerItem(itemId: string): Promise<void> {
     const { error } = await supabase.from('itens_refeicao').delete().eq('id', itemId)
     if (error) throw error
+    avisarRegistroDoDia()
   },
 
   /** "Excluir refeição" de um tipo fixo: limpa todos os itens do tipo, no dia (o slot em si continua existindo). */
@@ -161,6 +164,7 @@ export const itensRefeicaoRepository = {
       .eq('tipo', tipo)
 
     if (error) throw error
+    avisarRegistroDoDia()
   },
 
   /**
@@ -206,6 +210,7 @@ export const itensRefeicaoRepository = {
       .returns<ItemRow[]>()
 
     if (erroInsert) throw erroInsert
+    avisarRegistroDoDia()
     return (inseridos ?? []).map(paraDominio)
   },
 
@@ -241,6 +246,7 @@ export const itensRefeicaoRepository = {
       )
 
     if (error) throw error
+    avisarRegistroDoDia()
   },
 
   /** Refeições extras do dia, ordenadas pela posição escolhida pelo usuário (drag). */

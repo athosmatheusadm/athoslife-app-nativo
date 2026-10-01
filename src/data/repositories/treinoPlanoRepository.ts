@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { avisarRegistroDoDia } from '@data/registroDoDia'
 import {
   hojeISO,
   type DiaSemana,
@@ -95,6 +96,23 @@ export const treinoPlanoRepository = {
     return (data ?? []).map(paraDominio)
   },
 
+  /** Dias da semana que têm pelo menos um exercício na ficha (qualquer local) — lembrete de treino. */
+  async diasComExercicio(): Promise<Set<DiaSemana>> {
+    const { data, error } = await supabase.from('treino_plano').select('dia_semana').returns<{ dia_semana: DiaSemana }[]>()
+    if (error) throw error
+    return new Set((data ?? []).map((r) => r.dia_semana))
+  },
+
+  /** Algum exercício da ficha marcado como feito hoje? */
+  async concluiuAlgoHoje(): Promise<boolean> {
+    const { count, error } = await supabase
+      .from('treino_plano')
+      .select('id', { count: 'exact', head: true })
+      .eq('concluido_em', hojeISO())
+    if (error) throw error
+    return (count ?? 0) > 0
+  },
+
   /** Adiciona um exercício do catálogo num local + dia da semana. */
   async adicionar(params: {
     local: LocalTreino
@@ -118,6 +136,7 @@ export const treinoPlanoRepository = {
       .select(SELECT_COM_CATALOGO)
       .single<PlanoRow>()
     if (error) throw error
+    avisarRegistroDoDia()
     return paraDominio(data)
   },
 
@@ -136,10 +155,12 @@ export const treinoPlanoRepository = {
       .update({ concluido_em: concluido ? hojeISO() : null })
       .eq('id', id)
     if (error) throw error
+    avisarRegistroDoDia()
   },
 
   async remover(id: string): Promise<void> {
     const { error } = await supabase.from('treino_plano').delete().eq('id', id)
     if (error) throw error
+    avisarRegistroDoDia()
   },
 }
