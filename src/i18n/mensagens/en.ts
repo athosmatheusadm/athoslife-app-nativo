@@ -515,4 +515,15 @@ export const en: Mensagens = {
       erroSalvar: 'Couldn’t save right now. Try again.',
     },
   },
+  contato: {
+    secao: 'Life reaches out',
+    intro: 'You choose whether Life can reach out to you in the chat. It starts off and you can change it anytime.',
+    lifeTitulo: 'Life starts a chat',
+    lifeSub: 'A short message now and then, at the moments you pick.',
+    momentos: { manha: 'Morning', meio_dia: 'Midday', noite: 'Evening' },
+    momentosSub: { manha: 'How you slept', meio_dia: 'Your meal', noite: 'Workout and how your day went' },
+    emBreve: "Coming soon: Life doesn't start chats yet. Your choice is saved and applies when it arrives.",
+    erroSalvar: "Couldn't save right now. Try again.",
+    erroCarregar: "Couldn't load your choices right now.",
+  },
 }

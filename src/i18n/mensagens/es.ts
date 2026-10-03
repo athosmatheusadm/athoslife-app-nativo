@@ -515,4 +515,15 @@ export const es: Mensagens = {
       erroSalvar: 'No se pudo guardar ahora. Inténtalo de nuevo.',
     },
   },
+  contato: {
+    secao: 'Life te escribe',
+    intro: 'Tú eliges si Life puede buscarte en el chat. Empieza apagado y puedes cambiarlo cuando quieras.',
+    lifeTitulo: 'Life inicia la conversación',
+    lifeSub: 'Un mensaje corto de vez en cuando, en los momentos que elijas.',
+    momentos: { manha: 'Mañana', meio_dia: 'Mediodía', noite: 'Noche' },
+    momentosSub: { manha: 'Cómo dormiste', meio_dia: 'Tu comida', noite: 'Entreno y cómo fue el día' },
+    emBreve: 'Próximamente: Life aún no inicia conversaciones. Tu elección queda guardada y vale cuando llegue.',
+    erroSalvar: 'No se pudo guardar ahora. Inténtalo de nuevo.',
+    erroCarregar: 'No se pudieron cargar tus elecciones ahora.',
+  },
 }

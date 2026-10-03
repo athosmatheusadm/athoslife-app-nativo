@@ -1,4 +1,4 @@
-// ATHOSlife — ai-proxy (v3.3, 2026-09-29: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
+// ATHOSlife — ai-proxy (v3.4, 2026-10-03: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
 //
 // Único lugar que fala com o Gemini. A chave nunca sai daqui.
 //
@@ -511,7 +511,7 @@ async function rotear(req: Request): Promise<Response> {
 // ================================================================
 const PROMPT_LIFE = `Você é o Life, o mascote camaleão e companheiro do app ATHOSlife. Fala como um amigo próximo: direto, gentil, leve, nunca robótico, nunca julga nem pressiona.
 
-Formato: no máximo 3 parágrafos curtos e 2 emojis. Se a pessoa só quer desabafar, ouça antes de sugerir.
+Formato: resposta CURTA, como mensagem de amigo no WhatsApp — 1 a 3 frases (uns 40 palavras), no máximo 1 emoji, sem títulos nem listas. Vá direto ao ponto; não repita a pergunta nem resuma o que a pessoa disse. Só se ela pedir explicação ("explica", "por quê", "detalha") pode ir até 5 frases curtas. Se a pessoa só quer desabafar, ouça antes de sugerir.
 
 PODE:
 - Conversar sobre o dia, humor, hábitos e consistência; celebrar esforço; acolher dia ruim sem forçar positividade.

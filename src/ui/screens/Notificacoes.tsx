@@ -4,6 +4,7 @@ import { habitosRepository } from '@data/repositories/habitosRepository'
 import { agendarLembrete, buscarLembrete, cancelarLembrete } from '@data/notifications/habitReminders'
 import type { Habito } from '@domain/entities/habito'
 import { LembretesDoDia } from './notificacoes/LembretesDoDia'
+import { ContatoDoLife } from './notificacoes/ContatoDoLife'
 
 /**
  * Sub-página "Notificações" do Perfil.
@@ -11,10 +12,10 @@ import { LembretesDoDia } from './notificacoes/LembretesDoDia'
  * Só lista o que já existe de verdade: os lembretes do dia do Life (água,
  * refeições, treino, pesagem — ver LembretesDoDia) e os lembretes locais
  * por hábito "construir" (Camada 1 — ver habitReminders.ts), num lugar
- * central em vez de espalhado card por card em Hábitos. "Modo resgate" e WhatsApp
- * aparecem como em breve — nenhum dos dois tem qualquer código funcionando
- * ainda (sem Firebase, sem integração de WhatsApp), fingir toggle aqui
- * seria enganar o usuário.
+ * central em vez de espalhado card por card em Hábitos. Por último, "Life puxa
+ * conversa" (ContatoDoLife): a pessoa escolhe se aceita o Life puxar conversa
+ * no chat. A escolha fica guardada no servidor, mas ainda não envia nada — a
+ * tela avisa "em breve". WhatsApp ficou pra uma versão futura.
  */
 export function Notificacoes() {
   const navigate = useNavigate()
@@ -65,13 +66,7 @@ export function Notificacoes() {
         </div>
       </section>
 
-      <section className="mx-5 mt-8">
-        <h2 className="mb-1 text-sm font-bold text-content-hi">Modo resgate e WhatsApp</h2>
-        <p className="rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-micro text-content-low">
-          Em breve — ainda não existe integração de push (Firebase) nem de WhatsApp no app.
-          Nenhuma dessas notificações funciona hoje.
-        </p>
-      </section>
+      <ContatoDoLife />
     </main>
   )
 }

@@ -52,8 +52,10 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
 
       <WeightCard />
 
-      {/* O Life da Home junta tudo; fora do 1º acesso do dia, fica no canto. */}
-      {!lifeNoTopo && <LifeFlutuante humor="normal" foco="home" />}
+      {/* O Life da Home junta tudo; fora do 1º acesso do dia, fica no canto.
+          No 1º acesso ele está grande no topo e só vem pro canto depois que
+          a saudação sai de vista. */}
+      <LifeFlutuante humor="normal" foco="home" aparecerDepoisDe={lifeNoTopo ? 320 : 0} />
     </main>
   )
 }

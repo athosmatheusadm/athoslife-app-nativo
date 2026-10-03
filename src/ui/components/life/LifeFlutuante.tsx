@@ -11,19 +11,29 @@ import { LifeChatSheet } from './LifeChatSheet'
  * abre o chat com o foco da tela.
  *
  * Tamanho igual ao do topo da Home (h-32 — o dono achou o h-24 pequeno).
- * Rolando pra baixo ele sai de vista (não tapa o conteúdo); rolando pra
- * cima, volta. Botões da tela (ex.: "Montar plano") abrem este chat via
- * pedirAbrirLife().
+ * Fica SEMPRE à vista, mesmo rolando (dono, 03/10: antes saía da tela ao
+ * rolar pra baixo). Pra não tapar o fim da página, deixa um espaço vazio
+ * no fim do conteúdo — por isso vai sempre como último filho da tela.
+ * Botões da tela (ex.: "Montar plano") abrem este chat via pedirAbrirLife().
+ *
+ * aparecerDepoisDe: só aparece depois de rolar tantos px (Home no 1º acesso
+ * do dia, quando o Life grande já está no topo da página).
  */
-export function LifeFlutuante(props: { humor: HumorLife; foco: FocoLife; corBrilho?: string }) {
+export function LifeFlutuante(props: {
+  humor: HumorLife
+  foco: FocoLife
+  corBrilho?: string
+  aparecerDepoisDe?: number
+}) {
   const { m } = useI18n()
   const [aberto, setAberto] = useState(false)
-  const visivel = useVisivelAoRolar()
+  const visivel = useRolouAlem(props.aparecerDepoisDe ?? 0)
 
   useEffect(() => aoPedirAbrirLife(() => setAberto(true)), [])
 
   return (
     <>
+      <div className="h-28" aria-hidden="true" />
       <button
         type="button"
         onClick={() => setAberto(true)}
@@ -46,20 +56,15 @@ export function LifeFlutuante(props: { humor: HumorLife; foco: FocoLife; corBril
   )
 }
 
-/** Esconde ao rolar pra baixo, mostra ao rolar pra cima ou no topo. */
-function useVisivelAoRolar(): boolean {
-  const [visivel, setVisivel] = useState(true)
+/** true quando a página já rolou mais que `limite` px (limite 0 = sempre). */
+function useRolouAlem(limite: number): boolean {
+  const [rolou, setRolou] = useState(() => limite <= 0 || window.scrollY > limite)
   useEffect(() => {
-    let ultimo = window.scrollY
-    function aoRolar() {
-      const y = window.scrollY
-      if (y < 40) setVisivel(true)
-      else if (y > ultimo + 8) setVisivel(false)
-      else if (y < ultimo - 8) setVisivel(true)
-      ultimo = y
-    }
+    if (limite <= 0) return
+    const aoRolar = () => setRolou(window.scrollY > limite)
+    aoRolar()
     window.addEventListener('scroll', aoRolar, { passive: true })
     return () => window.removeEventListener('scroll', aoRolar)
-  }, [])
-  return visivel
+  }, [limite])
+  return rolou
 }

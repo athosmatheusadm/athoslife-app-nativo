@@ -1787,3 +1787,52 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      planos numa conversa, mesmas RPCs, textos pt/en/es).
   2. Testar os lembretes no aparelho (precisa do APK).
   3. Seguem: testar planos no chat; push GitHub + APK; lista de 28/09.
+
+## 2026-10-02
+
+- Conta `matheusbarretonunesknt@gmail.com` (id 876d79b1…): e-mail já estava
+  confirmado (link clicado 01/10 20:04); `plano` trial -> **free** (pendência 0
+  da sessão anterior). `trial_expira` ficou como estava — o app só olha a data
+  quando `plano='trial'`.
+- Vite de pé em http://localhost:5173 (`VITE_DEV_PREMIUM=false`).
+
+## 2026-10-03
+
+- **Celular pelo cabo USB (funcionou)**: aparelho `2511FPC34G` (Android 16),
+  depuração USB autorizada. `adb` do Google baixado em
+  `C:\Users\Auto Clima\platform-tools` (fora do projeto). O `adb reverse` só
+  alcança o 127.0.0.1 do Windows e o Vite do WSL só aparece no `[::1]`, então
+  roda uma ponte em Node do Windows (`platform-tools\ponte.js`,
+  127.0.0.1:5174 -> [::1]:5173) + `adb reverse tcp:5173 tcp:5174`.
+  `localhost:5173` abriu no Chrome do celular (tela de login). Dispensa Wi-Fi,
+  portproxy e firewall (o que falhou em 27/09).
+- Próximo: APK de teste com `servidor_dev = http://localhost:5173` (precisa
+  push + token do GitHub) pra testar o que é nativo (lembretes, widget, Live
+  Activity, câmera).
+- **Respostas do Life mais curtas** (ai-proxy v3.4, NÃO publicado — o token
+  do MCP não tem `edge_functions_*`; dono publica): formato agora é 1 a 3
+  frases (~40 palavras), 1 emoji, sem listas; até 5 frases só se pedir
+  explicação. Antes: "até 3 parágrafos e 2 emojis".
+- **Life não sai mais da tela ao rolar** (pedido do dono): `LifeFlutuante`
+  fica sempre visível + espaço vazio no fim da página pra não tapar o último
+  card. Home no 1º acesso do dia: o do canto só aparece depois de rolar
+  320 px (a saudação grande já está no topo).
+- **Notificações > "Life e WhatsApp"** (dono escolheu: chave + momentos pro
+  Life; WhatsApp com resgate, lembretes, resumo da semana e conversa).
+  Migração `db/athoslife_preferencias_contato_migration.sql` RODADA (dono
+  autorizou; via `execute_sql`, o token não tem `database_migrations_write`):
+  colunas `life_chat_ligado`, `life_chat_momentos`, `whatsapp_opcoes`,
+  `whatsapp_aceite_em` em profiles (fora do GRANT), log append-only
+  `contato_preferencias_log` (nem admin altera), RPC
+  `salvar_preferencias_contato` (valida, exige número +DDI pro WhatsApp,
+  troca de número zera `whatsapp_verificado`), `telefone` saiu do GRANT.
+  11 tentativas testadas em transação desfeita: todas barradas/corretas.
+  Tela `ui/screens/notificacoes/ContatoDoLife.tsx` + repo
+  `contatoRepository.ts`, textos pt/en/es; avisa "em breve" (nada envia
+  ainda). Quem for enviar no futuro TEM que checar essas colunas.
+- `tsc` 0 erros. Não visto na tela ainda (celular parado no login).
+- **WhatsApp tirado da tela** (dono: fica pra versão futura, ideia
+  descartada por ora — nada de resgate/lembretes/resumo por lá). Notificações
+  agora só tem "Life puxa conversa" (manhã/meio-dia/noite). As colunas
+  `whatsapp_*`/log no banco ficam lá sem uso; a tela manda lista vazia e
+  preserva o `telefone` atual na RPC. `tsc` 0 erros.

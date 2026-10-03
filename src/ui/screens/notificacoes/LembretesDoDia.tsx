@@ -207,11 +207,11 @@ export function LembretesDoDia() {
   )
 }
 
-function Cartao({ children }: { children: ReactNode }) {
+export function Cartao({ children }: { children: ReactNode }) {
   return <div className="rounded-xl border border-surface-4 bg-surface-2 p-3.5">{children}</div>
 }
 
-function Linha(props: { titulo: string; subtitulo: string; ativo: boolean; onMudar: (v: boolean) => void }) {
+export function Linha(props: { titulo: string; subtitulo: string; ativo: boolean; onMudar: (v: boolean) => void }) {
   return (
     <div className="flex items-center gap-3">
       <span className="min-w-0 flex-1">
@@ -223,7 +223,7 @@ function Linha(props: { titulo: string; subtitulo: string; ativo: boolean; onMud
   )
 }
 
-function Chave(props: { ativo: boolean; onMudar: (v: boolean) => void; rotulo?: string }) {
+export function Chave(props: { ativo: boolean; onMudar: (v: boolean) => void; rotulo?: string }) {
   return (
     <button
       type="button"

@@ -524,4 +524,15 @@ export const ptBR = {
       erroSalvar: 'Não deu pra salvar agora. Tenta de novo.',
     },
   },
+  contato: {
+    secao: 'Life puxa conversa',
+    intro: 'Você escolhe se o Life pode te procurar no chat. Começa desligado e dá pra mudar a qualquer hora.',
+    lifeTitulo: 'Life puxa conversa no chat',
+    lifeSub: 'Uma mensagem curta de vez em quando, nos momentos que você escolher.',
+    momentos: { manha: 'Manhã', meio_dia: 'Meio-dia', noite: 'Noite' },
+    momentosSub: { manha: 'Como você dormiu', meio_dia: 'Sua refeição', noite: 'Treino e como foi o dia' },
+    emBreve: 'Em breve: o Life ainda não puxa conversa. Sua escolha já fica guardada e vale quando chegar.',
+    erroSalvar: 'Não deu pra salvar agora. Tenta de novo.',
+    erroCarregar: 'Não deu pra carregar suas escolhas agora.',
+  },
 }
