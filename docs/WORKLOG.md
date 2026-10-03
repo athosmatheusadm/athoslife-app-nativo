@@ -1836,3 +1836,15 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   agora só tem "Life puxa conversa" (manhã/meio-dia/noite). As colunas
   `whatsapp_*`/log no banco ficam lá sem uso; a tela manda lista vazia e
   preserva o `telefone` atual na RPC. `tsc` 0 erros.
+- ai-proxy v3.4 PUBLICADO pelo dono; aprovou o novo jeito de responder.
+- Commit `e100e9b` feito; **push falhou: token do GitHub expirou**.
+- **Pendências pra próxima sessão** (dono quer ver o widget funcionando):
+  1. Dono gera token novo (classic, `repo` + `workflow`) e faz
+     `git push origin main` (usuário `athosmatheusadm`).
+  2. Actions -> "APK de teste" -> Run workflow com servidor_dev
+     `http://localhost:5173` (vai pelo cabo).
+  3. Baixar `athoslife-teste-apk` em Downloads -> Claude instala por `adb`,
+     sobe a ponte (`platform-tools\ponte.js` + `adb reverse tcp:5173 tcp:5174`)
+     e o dono testa widget, Live Activity, lembretes e câmera.
+  4. Ver o chat "estranho" de antes: precisa do Supabase reconectado (`/mcp`)
+     — nesta sessão o MCP não estava ativo.
