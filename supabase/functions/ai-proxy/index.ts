@@ -1,4 +1,4 @@
-// ATHOSlife — ai-proxy (v3.5, 2026-10-05: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
+// ATHOSlife — ai-proxy (v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
 //
 // Único lugar que fala com o Gemini. A chave nunca sai daqui.
 //
@@ -517,6 +517,7 @@ PODE:
 - Conversar sobre o dia, humor, hábitos e consistência; celebrar esforço; acolher dia ruim sem forçar positividade.
 - Dar informação geral de alimentos: calorias, macros e micronutrientes aproximados (cite como aproximado, com a tabela de referência do país da pessoa).
 - Comparar alimentos e sugerir TROCAS equivalentes (ex.: morango x geleia de morango: o que muda de açúcar/fibra e se vale a pena).
+- Dar IDEIAS de comida quando a pessoa pede ("tô com vontade de doce", "o que como no lanche?", "algo sem lactose"): responda já com 1 ou 2 opções caseiras concretas (nome + o que leva, em uma linha), com kcal aproximada se ajudar. Respeite toda restrição/intolerância/alergia que ela disser ou que estiver no contexto — sem lactose = nada de leite, iogurte, queijo, manteiga, whey concentrado ou chocolate ao leite. Isso é sugestão culinária, não dieta: não fale de meta, não diga que "não pode mexer na meta" quando ninguém pediu isso, e não mande a pessoa olhar o plano em vez de responder.
 - Explicar o que é um suplemento, pra que serve em geral, composição e diferenças entre tipos/marcas — como informação pública.
 - Lembrar de leve registros do app (água, refeições, hábitos) usando o contexto abaixo.
 - Quando a pessoa pedir pra MONTAR um treino ou uma dieta: não monte você. Diga que é só tocar em "Montar treino" ou "Montar dieta" aqui embaixo, no chat (na primeira vez tem um check de saúde rápido, 5 perguntas). Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
@@ -635,10 +636,12 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   if (sensivel) {
     await sb.from('eventos_seguranca').insert({ user_id: userId, tipo: 'sinal_sensivel', contexto: sensivel })
   }
-  // Cozinha ATHOS é do plano pago: pro grátis o Life nem menciona.
+  // Cozinha v2 (05/10): todo mundo tem receitas e o "Monte sua receita com o
+  // Life"; o pago só tem mais. O Life responde a ideia primeiro e no máximo
+  // lembra do atalho — nunca troca a resposta por "vai lá na Cozinha".
   const cozinha = pago
-    ? '\n\nCOZINHA ATHOS: esta pessoa tem acesso. Quando fizer sentido (ex.: faltou proteína no dia, pediu ideia de refeição), pode sugerir dar uma olhada nas receitas da Cozinha ATHOS ou montar uma receita com você lá.'
-    : '\n\nNão mencione a Cozinha ATHOS nem receitas do app — esta pessoa não tem acesso.'
+    ? '\n\nCOZINHA ATHOS: esta pessoa tem todas as receitas da Cozinha (na tela de Dieta) e pode montar receitas com você pelo atalho "Monte sua receita com o Life", no chat da Dieta. Depois de dar a ideia, pode lembrar disso de leve, no máximo uma vez.'
+    : '\n\nCOZINHA ATHOS: esta pessoa (plano grátis) tem algumas receitas da Cozinha (na tela de Dieta) e 1 receita por semana pelo atalho "Monte sua receita com o Life", no chat da Dieta. Depois de dar a ideia, pode lembrar disso de leve, no máximo uma vez. Não fale de plano pago nem de preço.'
   const foco = FOCOS_LIFE[String(corpo.foco)] ?? FOCOS_LIFE.home
   const sistema =
     `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +

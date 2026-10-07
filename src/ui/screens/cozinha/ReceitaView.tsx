@@ -70,7 +70,9 @@ export function ReceitaView(props: {
       </div>
 
       {estrutura.porque && estrutura.porque !== props.subtitulo && (
-        <p className="mb-4 text-sm leading-relaxed text-content-mid">{estrutura.porque}</p>
+        <Secao icone="🍽" titulo={t.sobrePrato}>
+          <p className="text-sm leading-relaxed text-content-mid">{estrutura.porque}</p>
+        </Secao>
       )}
 
       {/* Porções + macros do total */}
@@ -118,8 +120,7 @@ export function ReceitaView(props: {
       </button>
 
       {estrutura.ingredientes.length > 0 && (
-        <section className="mb-6">
-          <h3 className="mb-2 text-micro font-extrabold uppercase tracking-wide text-brand">{t.ingredientes}</h3>
+        <Secao icone="🧺" titulo={t.ingredientes}>
           <ul className="space-y-1">
             {estrutura.ingredientes.map((ing, i) => {
               const feito = marcados.has(i)
@@ -140,32 +141,25 @@ export function ReceitaView(props: {
               )
             })}
           </ul>
-        </section>
+        </Secao>
       )}
 
       {estrutura.preparo.length > 0 && (
-        <section className="mb-6">
-          <h3 className="mb-2 text-micro font-extrabold uppercase tracking-wide text-brand">{t.preparo}</h3>
-          <ol className="space-y-3">
-            {estrutura.preparo.map((passo, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="grid h-6 w-6 flex-none place-items-center rounded-full bg-surface-3 text-micro font-bold text-content-hi">
-                  {i + 1}
-                </span>
-                <span className="text-sm leading-relaxed text-content-hi">{passo}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <Secao icone="🔥" titulo={t.preparo}>
+          <Passos passos={estrutura.preparo} />
+        </Secao>
+      )}
+
+      {estrutura.montagem.length > 0 && (
+        <Secao icone="🥄" titulo={t.montagem}>
+          <Passos passos={estrutura.montagem} />
+        </Secao>
       )}
 
       {estrutura.extras.map((bloco, i) => (
-        <section key={i} className="mb-6">
-          {bloco.rotulo && (
-            <h3 className="mb-1 text-micro font-extrabold uppercase tracking-wide text-brand">{bloco.rotulo}</h3>
-          )}
+        <Secao key={i} titulo={bloco.rotulo}>
           <p className="whitespace-pre-line text-sm leading-relaxed text-content-hi">{bloco.texto}</p>
-        </section>
+        </Secao>
       ))}
 
       {estrutura.dica && (
@@ -188,6 +182,36 @@ export function ReceitaView(props: {
         />
       )}
     </div>
+  )
+}
+
+/** Cada parte da receita no seu cartão — ingrediente não se mistura com preparo. */
+function Secao(props: { icone?: string; titulo: string | null; children: ReactNode }) {
+  return (
+    <section className="mb-4 rounded-2xl border border-surface-4 bg-surface-2 p-4">
+      {props.titulo && (
+        <h3 className="mb-3 flex items-center gap-2 border-b border-surface-4 pb-2 text-micro font-extrabold uppercase tracking-wide text-brand">
+          {props.icone && <span aria-hidden="true">{props.icone}</span>}
+          {props.titulo}
+        </h3>
+      )}
+      {props.children}
+    </section>
+  )
+}
+
+function Passos(props: { passos: readonly string[] }) {
+  return (
+    <ol className="space-y-3">
+      {props.passos.map((passo, i) => (
+        <li key={i} className="flex gap-3">
+          <span className="grid h-6 w-6 flex-none place-items-center rounded-full bg-surface-3 text-micro font-bold text-content-hi">
+            {i + 1}
+          </span>
+          <span className="text-sm leading-relaxed text-content-hi">{passo}</span>
+        </li>
+      ))}
+    </ol>
   )
 }
 

@@ -10,7 +10,7 @@ import { formatarConteudo, type Receita, type ReceitaGerada } from '@domain/enti
 
 /** Receita no formato que a tela mostra — vale pra curada e pra criação do Life. */
 export interface ReceitaEstruturada {
-  /** O "POR QUE" da receita curada (ou o subtítulo da criação). */
+  /** "SOBRE O PRATO" (ou o antigo "POR QUE") da curada; subtítulo da criação. */
   readonly porque: string | null
   /** Quantas porções os ingredientes rendem como estão escritos. */
   readonly porcoesBase: number
@@ -18,6 +18,8 @@ export interface ReceitaEstruturada {
   readonly unidadePorcao: string
   readonly ingredientes: readonly string[]
   readonly preparo: readonly string[]
+  /** Como servir — separado do preparo pra pessoa achar fácil. */
+  readonly montagem: readonly string[]
   readonly dica: string | null
   /** Blocos que não se encaixaram em nenhuma parte (mostrados como texto). */
   readonly extras: readonly { rotulo: string | null; texto: string }[]
@@ -26,7 +28,8 @@ export interface ReceitaEstruturada {
 const RE_ROTULO_INGREDIENTES = /^INGREDIENTES/i
 const RE_ROTULO_PREPARO = /PREPARO/i
 const RE_ROTULO_DICA = /LIFE/i
-const RE_ROTULO_PORQUE = /^POR QUE/i
+const RE_ROTULO_PORQUE = /^(POR QUE|SOBRE)/i
+const RE_ROTULO_MONTAGEM = /^(MONTAGEM|PRA SERVIR)/i
 
 /** Tira o marcador "- " ou "1. " do começo da linha. */
 function semMarcador(linha: string): string {
@@ -58,6 +61,7 @@ export function estruturarConteudo(conteudo: string): ReceitaEstruturada {
   let dica: string | null = null
   let ingredientes: string[] = []
   let preparo: string[] = []
+  let montagem: string[] = []
   let rendimento = { porcoes: 1, unidade: 'porção' }
   const extras: { rotulo: string | null; texto: string }[] = []
 
@@ -66,6 +70,8 @@ export function estruturarConteudo(conteudo: string): ReceitaEstruturada {
     if (RE_ROTULO_INGREDIENTES.test(rotulo)) {
       ingredientes = linhas(bloco.texto)
       rendimento = lerRendimento(rotulo)
+    } else if (RE_ROTULO_MONTAGEM.test(rotulo)) {
+      montagem = linhas(bloco.texto)
     } else if (RE_ROTULO_PREPARO.test(rotulo)) {
       preparo = linhas(bloco.texto)
     } else if (RE_ROTULO_DICA.test(rotulo)) {
@@ -83,6 +89,7 @@ export function estruturarConteudo(conteudo: string): ReceitaEstruturada {
     unidadePorcao: rendimento.unidade,
     ingredientes,
     preparo,
+    montagem,
     dica,
     extras,
   }
@@ -97,6 +104,7 @@ export function estruturarGerada(r: ReceitaGerada): ReceitaEstruturada {
     unidadePorcao: 'porção',
     ingredientes: [...r.ingredientes],
     preparo: [...r.modoPreparo],
+    montagem: [],
     dica: r.dicaLife || null,
     extras: [],
   }
@@ -206,7 +214,7 @@ export function refeicaoPeloHorario(agora: Date = new Date()): 'cafe' | 'almoco'
   return 'jantar'
 }
 
-/** "Salada que Mata a Fome" -> "salada-que-mata-a-fome" (nome do arquivo da foto). */
+/** "Salada Power de Frango e Grão-de-Bico" -> "salada-power-de-frango-e-grao-de-bico" (nome do arquivo da foto). */
 export function slugReceita(titulo: string): string {
   return titulo
     .normalize('NFD')

@@ -7,7 +7,7 @@ import { CabecalhoCozinha } from './CabecalhoCozinha'
 
 /**
  * "Tela da receita" (spec: COZINHA_DIRECTIVE.md). O `conteudo` é texto
- * livre — `estruturarConteudo` separa ingredientes, preparo e Dica do Life
+ * livre — `estruturarConteudo` separa sobre o prato, ingredientes, preparo, montagem e Dica do Life
  * pra tela ter checklist e porções. Nunca chega aqui com `conteudo` de uma
  * receita bloqueada: quem decide isso é o servidor (RPC) + `cozinhaService`.
  */

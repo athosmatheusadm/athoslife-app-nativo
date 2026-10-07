@@ -1974,3 +1974,24 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
 - Commit da Cozinha v2 + 23 fotos das receitas (`public/receitas`) + migração
   v2 (já rodada) + worklog; `tsc -b` 0 erros. Zips/imagens/HTML soltos na
   raiz NÃO entram no repo. Push aguardando token do GitHub.
+- **Nomes das receitas** (dono: "bobos e sem foco"): 22 renomeadas pra nome
+  de prato (ex.: "Batata Doce Rústica com Carne", "Espaguete de Abobrinha
+  com Frango", "Sorvete de Banana com Cacau e Amendoim"); Overnight Oats,
+  Sopa Termogênica e Omelete de Forno mantêm o nome (dono). Saíram as
+  promessas de saúde (detox, "acelera o metabolismo", "limpa o organismo")
+  dos nomes/subtítulos/dicas. Fotos renomeadas pro slug novo.
+- **Receita em seções**: texto agora é SOBRE O PRATO / INGREDIENTES /
+  PREPARO / MONTAGEM / DICA DO LIFE; tela mostra cada parte num cartão
+  próprio (ícone + título + linha). `estruturarConteudo` lê MONTAGEM (e
+  aceita o antigo POR QUE). Ingredientes iguais -> macros iguais. Batata
+  rústica: assada com casca, tempo 25 -> 35 min. 25/25 testadas (esbuild).
+- Migração `db/athoslife_cozinha_nomes_migration.sql` **RODADA** (dono
+  aprovou; Management API); seed atualizado igual.
+- **Chat do Life "não respondeu"** ao pedir doce sem lactose: respondeu,
+  mas se esquivou ("não consigo mexer na tua meta de calorias"). Causa: o
+  prompt não tinha "dar ideia de comida" no PODE, e pro grátis dizia "não
+  mencione receitas, não tem acesso" (desatualizado desde a Cozinha v2).
+  ai-proxy **v3.6 (NÃO publicado** — publicação bloqueada pela permissão do
+  Claude Code; dono publica): ideia de comida/doce na hora, 1–2 opções,
+  respeitando restrição/intolerância (lista o que é lactose), sem falar de
+  meta; Cozinha/Life-chef citados de leve pro grátis também.

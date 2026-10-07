@@ -559,6 +559,8 @@ export const es: Mensagens = {
     fechamDiaSub: (kcal: number, prot: number) => `Te faltan ${kcal} kcal y ${prot} g de proteína hoy.`,
     ingredientes: 'Ingredientes',
     preparo: 'Preparación',
+    sobrePrato: 'Sobre el plato',
+    montagem: 'Montaje',
     dicaLife: 'Consejo de Life',
     porcoes: 'Porciones',
     macrosDe: (n: string) => `Valores de ${n} porci${n === '1' || n === '½' ? 'ón' : 'ones'}`,

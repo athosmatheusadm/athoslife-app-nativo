@@ -568,6 +568,8 @@ export const ptBR = {
     fechamDiaSub: (kcal: number, prot: number) => `Faltam ${kcal} kcal e ${prot} g de proteína hoje.`,
     ingredientes: 'Ingredientes',
     preparo: 'Modo de preparo',
+    sobrePrato: 'Sobre o prato',
+    montagem: 'Montagem',
     dicaLife: 'Dica do Life',
     porcoes: 'Porções',
     macrosDe: (n: string) => `Valores de ${n} ${n === '½' || n === '1' || n === '1½' ? 'porção' : 'porções'}`,
