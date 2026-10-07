@@ -1995,3 +1995,25 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   Claude Code; dono publica): ideia de comida/doce na hora, 1–2 opções,
   respeitando restrição/intolerância (lista o que é lactose), sem falar de
   meta; Cozinha/Life-chef citados de leve pro grátis também.
+- **Análise "o que o Life faz e não faz por tela"** entregue ao dono antes de
+  publicar o v3.6 (sessão caiu com o PC desligando; recuperada do log).
+  Brechas achadas: Treino não pode sugerir troca de exercício (máquina
+  ocupada); Hábitos recebe só nome + dias (sem gatilhos, horário de risco,
+  melhor streak, tropeços); v3.6 daria doce a quem está evitando doce;
+  Life não conhece as alternativas que a tela de Hábitos mostra.
+  **Bug que segura o v3.6:** filtro de prescrição barra "use 1 colher de
+  cacau"/"200ml de leite de coco" e troca a resposta inteira -> barrar só
+  se citar suplemento/remédio (whey, creatina, cápsula, comprimido, dose).
+- **Pendências pra próxima sessão**:
+  1. **Dono decide:** fazer num deploy só do ai-proxy (1) filtro só pra
+     suplemento/remédio [obrigatório], (2) contexto de hábitos completo,
+     (3) hábito "evitar X" × pedido de X = reconhece dias firme e oferece
+     versão leve, sem sermão, (4) alternativas da tela de Hábitos no
+     prompt, (5) [opcional] troca equivalente de exercício pelo mesmo
+     músculo, sem série/carga. Pergunta em aberto: os 5 ou sem o 5?
+  2. Publicar ai-proxy (dono publica; Claude Code sem permissão de deploy).
+  3. Token novo do GitHub -> `git push origin main`.
+  4. APK de teste -> widget, Live Activity, lembretes, câmera.
+  5. Fotos: Chips de Batata Doce no Forno e Chá pra Desacelerar.
+  6. Ver logado: cartões da receita em seções, Cozinha, "Monte sua
+     receita", porções, registrar.
