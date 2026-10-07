@@ -1848,3 +1848,129 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      e o dono testa widget, Live Activity, lembretes e câmera.
   4. Ver o chat "estranho" de antes: precisa do Supabase reconectado (`/mcp`)
      — nesta sessão o MCP não estava ativo.
+
+## 2026-10-05
+
+- Vite de pé em http://localhost:5173 (`VITE_DEV_PREMIUM=false`).
+- **Cozinha v2** (opinião dada ao dono: base boa, mas solta da dieta, só
+  cadeado pro free, sem foto, texto corrido; dono aprovou tudo + quer o
+  Life-chef com foto do prato):
+  - Regras puras `domain/rules/cozinha.ts`: `estruturarConteudo` (separa
+    POR QUE / INGREDIENTES (N porções) / PREPARO / DICA DO LIFE — as 25 do
+    seed passam sem sobra), `escalarIngrediente` (½, 1/2, g/ml, ignora %),
+    `receitasQueFechamODia` (só liberadas, 20%–110% das kcal que faltam,
+    prioriza proteína), `refeicaoPeloHorario`, `slugReceita`.
+  - Tela da receita refeita (`cozinha/ReceitaView.tsx`): porções 1–6
+    (ingredientes e macros recalculados), checklist de ingredientes, passos
+    numerados, Dica do Life com o Life chef, selo de gordura, botão
+    **Registrar na refeição** (`RegistrarReceitaSheet`: ½/1/1½/2 porções +
+    café/almoço/lanche/jantar, padrão pelo horário; vira 1 item no diário).
+  - Dieta: `cozinha/CozinhaSecao.tsx` substitui o `CozinhaTab` — card do
+    Life-chef, "Receitas que fecham seu dia" (só olhando Hoje), vitrine,
+    "Minhas criações", erro com "Tentar de novo"; coração não é mais botão
+    dentro de botão. "Ver todas" -> `/dieta/cozinha` (grade, Favoritas,
+    Minhas criações, categorias).
+  - **Life-chef** `/dieta/cozinha/life`: ingredientes (texto + sugestões),
+    momento (café/principal/lanche/doce), mostra o que vai deixar de fora
+    (restrições + "não gosto" do onboarding) e as kcal que cabem no dia;
+    usa o handler `recipe` que já existia no ai-proxy (pago, cota no
+    servidor). Salvar -> `/dieta/cozinha/criacao/:id`: "Fiz! Pôr a foto"
+    (câmera/galeria), trocar foto, excluir.
+  - Fotos das receitas curadas: `public/receitas/<slug-do-titulo>.webp`;
+    sem arquivo cai no emoji (nada no banco).
+  - Textos novos em pt/en/es (`cozinha`); conteúdo das receitas segue só pt.
+  - Migração `db/athoslife_cozinha_v2_migration.sql` **NÃO RODADA**:
+    4 grátis (Salada que Mata a Fome, Panqueca de Banana e Aveia, Pipoca
+    Salgada Consciente, Vitamina de Banana e Whey), tabela
+    `receitas_criadas` (RLS dona, GRANT por coluna, foto só na pasta da
+    dona, teto 300) e bucket PRIVADO `receitas-criadas` (5 MB, imagem).
+    Antes dela, "Minhas criações" só não aparece; salvar dá erro.
+  - ai-proxy **v3.5 (não publicado)**: prompt da receita pede macros POR
+    PORÇÃO e rendimento em porções (a tela multiplica por porção).
+  - `tsc -b` 0 erros; `vite build` ok; regras testadas com esbuild.
+    **Telas não vistas logado** (sem login no headless).
+- **Life-chef sem cadeado** (dono não gostou do card "é do pago"): aberto
+  pra todos, o pago só destrava mais. Grátis: 1 receita/dia (cota
+  `limite_ia('recipe')` 0 -> 1, na migração v2), salvar + foto, até 5
+  criações; sem "Outra ideia" e sem mirar nos macros do dia (o serviço
+  manda macros zerados e o ai-proxy v3.5 trata 0 como "porção normal").
+  Pago: 10/dia, "Outra ideia", mira no que falta do dia, até 300 criações.
+  Convite pro pago só aparece quando a cota grátis acaba (link discreto).
+- **Erro do dono ao rodar a v2** (`42601 syntax error at end of input`,
+  linha 76): `CASE ... THEN` dentro de `IF ... THEN` no PL/pgSQL (ele corta
+  a condição no 1º THEN). Reescrito com variáveis; validado com o parser do
+  Postgres (`@libpg-query/parser`: SQL e corpos PL/pgSQL ok, versão antiga
+  reproduz o erro). Script tem begin/commit — a tentativa que falhou não
+  aplicou nada; é só rodar de novo.
+- **Life-chef saiu da tela** (dono: sem card): agora é o atalho
+  "👨‍🍳 Monte sua receita com o Life" dentro do chat do Life da Dieta
+  (`LifeChatSheet`, só com foco `dieta`, fixo abaixo do cabeçalho). Título
+  da tela também virou "Monte sua receita com o Life" (pt/en/es).
+- Dono pediu pra Claude rodar a v2 — MCP do Supabase não conectou nesta
+  sessão (configurado em ~/.claude.json, mas sem ferramentas). Precisa `/mcp`.
+- **Grátis apertado** (dono, medo de comodismo com 1/dia): Life-chef grátis
+  = **1 receita por SEMANA** (segunda a domingo, fuso da pessoa) e **3
+  criações**; chat do Life igual; **3 receitas prontas grátis** (saiu a
+  Vitamina de Banana e Whey). Semana sem tabela nova: `dia_da_cota()` põe o
+  uso grátis de 'recipe' na segunda-feira da semana em `ia_uso_diario`;
+  `consumir_cota_ia`/`cota_ia_status`/`devolver_cota_ia` recriadas iguais à
+  globalização trocando `hoje_do_usuario` por `dia_da_cota`. **Antes de
+  rodar: conferir no banco se essas 3 funções ainda batem com o arquivo da
+  globalização** (pg_get_functiondef). Parser do Postgres: tudo ok.
+- ai-proxy **v3.5 PUBLICADO** pelo dono. Migração v2 segue pendente (MCP
+  fora). Até ela rodar, o grátis recebe `premium_required` no Life-chef e a
+  tela mostra "receita grátis da semana já foi" (cota grátis ainda é 0).
+
+## 2026-10-06
+
+- Dono mandou token novo do Supabase (Management API); Claude usou direto
+  pela API (`/v1/projects/gsdwsxwbmxcvutpvpkyi/database/query`), token num
+  arquivo 600 da sessão — não foi pro repo nem pro ~/.claude.json.
+- **Migração Cozinha v2 já estava rodada** (dono rodou no painel). Conferido
+  no banco: 3 grátis (Panqueca, Pipoca, Salada), RLS + 4 policies, GRANT só
+  das colunas, bucket privado 5 MB, trigger com limite 3/300, funções de
+  cota = arquivo (dia_da_cota semanal).
+- Teste num bloco que se desfaz (raise no fim; conferido 0 rastro): grátis
+  1ª receita ok (1/1), 2ª barrada; conta na segunda-feira (05/10); devolver
+  volta a 0; VIP 10/dia no dia de hoje; chat grátis segue 4; 4ª criação
+  barrada (`limite_criacoes`); foto na pasta alheia e trocar dona barrados;
+  VIP não vê criações do grátis.
+- Falta: ver as telas logado (Dieta > Cozinha, Life > "Monte sua receita",
+  porções, registrar, foto) e as imagens/receitas novas do dono.
+- Token antigo do Supabase apagado pelo dono; o novo (mais acessos) foi
+  posto no MCP (`~/.claude.json`, backup `.claude.json.bak-2026-10-06`).
+  Achado: o MCP estava registrado só na pasta de cima
+  (`athoslife-github-ready`), por isso nunca aparecia nesta — agora está nas
+  duas. Vale a partir da próxima sessão (ou `/mcp` -> reconectar).
+- **Fotos das receitas (1ª leva)**: `ATHOSlife_Imagens_Receitas-1.zip` veio
+  CORTADO (23,7 MB, sem o índice do zip). Recuperadas 9 PNG inteiras
+  (1254x1254) -> `public/receitas/<slug>.webp` 800x800 q78 (80–140 KB) com
+  sharp: Omelete de Forno, Macarrão com Atum, Batata Doce com Carne Moída,
+  Tofu Grelhado, Lentilha Cremosa, Café Gelado Proteico, Shake Pós-Treino,
+  Shake Detox Verde, Vitamina de Banana e Whey. Panqueca Vegana veio pela
+  metade; 15 nem estão no arquivo. Faltam 16 (incl. as 3 grátis).
+- Vite reiniciado: ele lista a pasta `public` ao ligar e no disco do
+  Windows não vê arquivo novo (servia o index.html no lugar da imagem).
+- `ATHOSlife_Imagens_Receitas-2.zip` era idêntico ao -1 (mesmo md5, cortado
+  nos mesmos 23.724.544 bytes = 362 x 64 KB -> corte na origem do download).
+- **`ATHOSlife_Receitas_CONFERIDO.zip` (57 MB) íntegro**: 24 PNG + sha256
+  conferidos. **23 de 25 receitas com foto** em `public/receitas/*.webp`
+  (800x800 q78, 2 MB no total). "Pipoca com Azeite" -> Pipoca Salgada
+  Consciente; "Bowl de Frango com Arroz - Gourmetizado" NÃO usado (molho e
+  limão que a receita não tem; a versão simples bate). Painel com as 23
+  conferido visualmente. **Faltam: Chips de Batata Doce no Forno e Chá pra
+  Desacelerar** (caem no emoji). Vite reiniciado de novo pela pasta public.
+- **Pendências pra próxima sessão**:
+  1. Dono manda token novo do GitHub -> `git push origin main`.
+  2. APK de teste (Actions, servidor_dev `http://localhost:5173`) -> instalar
+     por `adb` + ponte -> testar widget, Live Activity, lembretes, câmera.
+  3. Fotos que faltam: Chips de Batata Doce no Forno e Chá pra Desacelerar.
+  4. Ver logado: Dieta > Cozinha, Life > "Monte sua receita", porções,
+     registrar, foto da criação.
+  5. Investigar o chat "estranho" do Life (MCP do Supabase já nas 2 pastas).
+
+## 2026-10-07
+
+- Commit da Cozinha v2 + 23 fotos das receitas (`public/receitas`) + migração
+  v2 (já rodada) + worklog; `tsc -b` 0 erros. Zips/imagens/HTML soltos na
+  raiz NÃO entram no repo. Push aguardando token do GitHub.

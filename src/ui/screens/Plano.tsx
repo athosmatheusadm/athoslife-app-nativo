@@ -14,7 +14,7 @@ const NOME_PLANO: Record<string, string> = {
 const BENEFICIOS = [
   'Scanner de comida por IA sem limite diário',
   'Chat com a Life sem limite diário',
-  'Cozinha ATHOS completa (todas as receitas)',
+  'Cozinha ATHOS completa + Life-chef (receitas com o que você tem em casa)',
   'Catálogo de treino completo',
 ]
 

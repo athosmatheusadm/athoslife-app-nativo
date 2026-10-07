@@ -1,11 +1,12 @@
 import { receitasRepository } from '@data/repositories/receitasRepository'
+import { criacoesRepository } from '@data/repositories/criacoesRepository'
 import { gerarReceitaComIA } from '@data/ai/recipeAi'
 import { temAcessoPremium } from '@domain/rules/access'
 import type { Profile } from '@domain/entities/profile'
 import type {
-  CategoriaReceita,
   ContextoReceita,
   Receita,
+  ReceitaCriada,
   ReceitaGerada,
 } from '@domain/entities/receita'
 import type { Macros } from '@domain/entities/food'
@@ -57,9 +58,10 @@ export const cozinhaService = {
   /**
    * O Life monta uma receita com o que a pessoa tem.
    *
-   * Regra de negócio: gerar receita é recurso premium (usa IA, que custa).
-   * A checagem de acesso final é do backend/RLS; aqui a gente evita nem
-   * chamar se o usuário claramente não tem acesso — economiza uma ida à IA.
+   * Aberto pra todos: a cota é do servidor (limite_ia 'recipe' +
+   * dia_da_cota: grátis 1/semana, pago 10/dia). O que é do pago aqui: mirar no que falta do dia —
+   * pro grátis os macros não vão (a receita só respeita ingredientes e
+   * restrições).
    */
   async montarComLife(params: {
     profile: Pick<Profile, 'plano' | 'trialExpira'>
@@ -67,19 +69,39 @@ export const cozinhaService = {
     restricoes: readonly string[]
     objetivo: string | null
     macrosRestantes: Macros
-    categoriaDesejada?: CategoriaReceita | null
+    categoriaDesejada?: string | null
   }): Promise<ReceitaGerada> {
-    if (!temAcessoPremium(params.profile)) {
-      throw new Error('recurso_premium')
-    }
-
+    const premium = temAcessoPremium(params.profile)
     const contexto: ContextoReceita = {
       ingredientesDisponiveis: params.ingredientesDisponiveis,
       restricoes: params.restricoes,
       objetivo: params.objetivo,
-      macrosRestantes: params.macrosRestantes,
+      macrosRestantes: premium ? params.macrosRestantes : { calorias: 0, proteina: 0, carboidrato: 0, gordura: 0 },
       categoriaDesejada: params.categoriaDesejada ?? null,
     }
     return gerarReceitaComIA(contexto)
+  },
+
+  // ── Minhas criações (receitas do Life que a pessoa salvou) ──
+
+  listarCriacoes(): Promise<ReceitaCriada[]> {
+    return criacoesRepository.listar()
+  },
+
+  buscarCriacao(id: string): Promise<ReceitaCriada | null> {
+    return criacoesRepository.buscar(id)
+  },
+
+  salvarCriacao(receita: ReceitaGerada): Promise<string> {
+    return criacoesRepository.salvar(receita)
+  },
+
+  /** "Fiz!" — guarda a foto do prato que a pessoa fez. Devolve a URL pra mostrar. */
+  definirFotoCriacao(id: string, foto: { base64: string; mime: string }): Promise<string | null> {
+    return criacoesRepository.definirFoto(id, foto)
+  },
+
+  excluirCriacao(id: string): Promise<void> {
+    return criacoesRepository.excluir(id)
   },
 }

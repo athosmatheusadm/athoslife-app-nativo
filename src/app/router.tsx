@@ -25,6 +25,9 @@ import { Acessibilidade } from '@ui/screens/Acessibilidade'
 import { Sobre } from '@ui/screens/Sobre'
 import { IdiomaRegiao } from '@ui/screens/IdiomaRegiao'
 import { Cozinha } from '@ui/screens/Cozinha'
+import { CozinhaListaScreen } from '@ui/screens/cozinha/CozinhaListaScreen'
+import { LifeChefScreen } from '@ui/screens/cozinha/LifeChefScreen'
+import { CriacaoScreen } from '@ui/screens/cozinha/CriacaoScreen'
 import { DocumentoLegal } from '@ui/screens/legal/DocumentoLegal'
 
 /** Casca do app: liga o botão Voltar dentro do contexto do roteador. */
@@ -80,6 +83,9 @@ export const router = createBrowserRouter([
           { path: '/perfil/acessibilidade', element: <Acessibilidade /> },
           { path: '/perfil/sobre', element: <Sobre /> },
           { path: '/perfil/idioma', element: <IdiomaRegiao /> },
+          { path: '/dieta/cozinha', element: <CozinhaListaScreen /> },
+          { path: '/dieta/cozinha/life', element: <LifeChefScreen /> },
+          { path: '/dieta/cozinha/criacao/:id', element: <CriacaoScreen /> },
           { path: '/dieta/cozinha/:id', element: <Cozinha /> },
         ],
       },

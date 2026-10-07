@@ -75,6 +75,17 @@ export interface ReceitaGerada {
   readonly respeitaRestricoes: readonly string[]
 }
 
+/** Receita do Life que a pessoa salvou em "Minhas criações". */
+export interface ReceitaCriada {
+  readonly id: string
+  readonly receita: ReceitaGerada
+  /** URL assinada (temporária) da foto do prato que a pessoa fez. */
+  readonly fotoUrl: string | null
+  /** Quando ela pôs a foto ("fiz!"). */
+  readonly feitaEm: Date | null
+  readonly criadaEm: Date
+}
+
 /** Um bloco do `conteudo` já separado em rótulo (se houver) + texto. */
 export interface BlocoConteudo {
   readonly rotulo: string | null
@@ -121,5 +132,6 @@ export interface ContextoReceita {
   readonly objetivo: string | null
   /** Macros que ainda faltam para bater a meta do dia. */
   readonly macrosRestantes: Macros
-  readonly categoriaDesejada: CategoriaReceita | null
+  /** Momento/tipo pedido ("Lanche", "Algo doce"…), já no idioma da pessoa. */
+  readonly categoriaDesejada: string | null
 }

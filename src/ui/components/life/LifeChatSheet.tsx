@@ -114,6 +114,24 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
           </div>
         </div>
 
+        {/* Life-chef mora aqui, no Life da Dieta (dono, 05/10: sem card na tela). */}
+        {foco === 'dieta' && (
+          <div className="flex-none px-6 pb-3">
+            <button
+              type="button"
+              onClick={() => {
+                props.onFechar()
+                navigate('/dieta/cozinha/life')
+              }}
+              className="flex w-full items-center gap-2 rounded-2xl border border-brand/40 bg-brand/10 px-4 py-3 text-left text-sm font-bold text-brand active:scale-[0.99]"
+            >
+              <span aria-hidden="true">👨‍🍳</span>
+              <span className="flex-1">{m.cozinha.lifeChefTitulo}</span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 space-y-3 overflow-y-auto px-6">
           {historico.length === 0 && (
             <div className="rounded-2xl border border-surface-4 bg-surface-2 p-4">

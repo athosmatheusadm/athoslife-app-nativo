@@ -23,8 +23,8 @@ import { macrosRepository } from '@data/repositories/macrosRepository'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
 import { calcularProgresso, type Metas, type Profile } from '@domain/entities/profile'
 import { gerarTiraDias, tituloDia } from '@domain/entities/diaDieta'
-import { cozinhaService } from '@domain/services/cozinhaService'
-import { CATEGORIAS_RECEITA, CATEGORIA_META, type CategoriaReceita, type Receita } from '@domain/entities/receita'
+import { CozinhaSecao } from '@ui/screens/cozinha/CozinhaSecao'
+import { macrosRestantes } from '@domain/rules/cozinha'
 import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { aoAplicarPlano } from '@app/eventosLife'
 import { planosRepository, type PlanoDietaSalvo } from '@data/repositories/planosRepository'
@@ -381,11 +381,19 @@ export function DietScreen(props: {
         + Nova refeição
       </button>
 
-      {/* Cozinha ATHOS — embutida na tela do dia, não uma aba separada. */}
-      <div>
-        <h2 className="mb-2 px-1 text-base font-bold text-content-hi">Cozinha Athos</h2>
-        <CozinhaTab profile={profile} onAbrirReceita={(id) => navigate(`/dieta/cozinha/${id}`)} />
-      </div>
+      {/* Cozinha ATHOS — embutida na tela do dia, não uma aba separada.
+          "Fecham seu dia" só olhando Hoje (é o que ainda dá pra comer). */}
+      <CozinhaSecao
+        profile={profile}
+        restante={
+          diaSel.toDateString() === new Date().toDateString()
+            ? macrosRestantes(
+                { calorias: metas.kcal, proteina: metas.proteina, carboidrato: metas.carboidrato, gordura: metas.gordura },
+                { calorias: consumido.kcal, proteina: consumido.proteina, carboidrato: consumido.carboidrato, gordura: consumido.gordura },
+              )
+            : null
+        }
+      />
 
       {sheetChave && (() => {
         const r = refeicoes.find((x) => x.chave === sheetChave)
@@ -467,136 +475,3 @@ function MacroBar({ valor, label, pct, cor }: { valor: string; label: string; pc
   )
 }
 
-/**
- * "Cozinha" — o mini e-book de receitas (spec: COZINHA_DIRECTIVE.md).
- * Grade filtrável por categoria, com cadeado nas receitas premium (usuário
- * sem acesso) e favoritar direto no card. Toda a decisão de bloqueio já
- * vem pronta de `cozinhaService.listar()` — a UI não decide acesso.
- */
-function CozinhaTab({
-  profile,
-  onAbrirReceita,
-}: {
-  profile: Pick<Profile, 'plano' | 'trialExpira'>
-  onAbrirReceita: (id: string) => void
-}) {
-  const [receitas, setReceitas] = useState<Receita[] | null>(null)
-  const [filtro, setFiltro] = useState<CategoriaReceita | 'todos'>('todos')
-
-  useEffect(() => {
-    let ativo = true
-    void cozinhaService
-      .listar(profile)
-      .then((todas) => {
-        if (!ativo) return
-        setReceitas(todas)
-      })
-      .catch(() => ativo && setReceitas([]))
-    return () => {
-      ativo = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  async function alternarFavorito(r: Receita) {
-    if (r.favoritada) await cozinhaService.desfavoritar(r.id)
-    else await cozinhaService.favoritar(r.id)
-    setReceitas((atual) => atual?.map((x) => (x.id === r.id ? { ...x, favoritada: !x.favoritada } : x)) ?? atual)
-  }
-
-  if (receitas === null) {
-    return <p className="py-10 text-center text-micro text-content-low">Carregando…</p>
-  }
-  if (receitas.length === 0) {
-    return <p className="py-10 text-center text-micro text-content-low">A Cozinha ATHOS aparece aqui em breve.</p>
-  }
-
-  const filtradas = filtro === 'todos' ? receitas : receitas.filter((r) => r.categoria === filtro)
-
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          onClick={() => setFiltro('todos')}
-          className={`flex-none rounded-pill px-3.5 py-1.5 text-micro font-bold transition-colors ${filtro === 'todos' ? 'bg-brand text-[#04120a]' : 'border border-surface-4 bg-surface-2 text-content-mid'}`}
-        >
-          Todos
-        </button>
-        {CATEGORIAS_RECEITA.map((cat) => {
-          const meta = CATEGORIA_META[cat]
-          const ativo = filtro === cat
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setFiltro(cat)}
-              className={`flex-none rounded-pill px-3.5 py-1.5 text-micro font-bold transition-colors ${ativo ? '' : 'border border-surface-4 bg-surface-2'}`}
-              style={ativo ? { backgroundColor: meta.cor, color: '#04120a' } : { color: meta.cor }}
-            >
-              {meta.emoji} {meta.rotulo}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {filtradas.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            onClick={() => onAbrirReceita(r.id)}
-            className={`w-40 flex-none overflow-hidden rounded-2xl border border-surface-4 bg-surface-2 text-left transition-transform active:scale-[0.98] ${r.bloqueada ? 'opacity-60' : ''}`}
-          >
-            <div
-              className="flex h-24 items-center justify-center text-4xl"
-              style={{ background: `linear-gradient(135deg, ${r.corTema}33, transparent)` }}
-            >
-              {CATEGORIA_META[r.categoria].emoji}
-            </div>
-            <div className="p-2.5">
-              <div className="mb-1.5 line-clamp-2 text-micro font-bold leading-snug text-content-hi">
-                {r.titulo}
-              </div>
-              <div className="mb-2 flex flex-wrap gap-1">
-                <span
-                  className="rounded-pill px-2 py-0.5 text-[9px] font-bold"
-                  style={{ backgroundColor: `${r.corTema}22`, color: r.corTema }}
-                >
-                  {r.macros.calorias} kcal
-                </span>
-                <span className="rounded-pill bg-[#f43f5e22] px-2 py-0.5 text-[9px] font-bold text-[#f43f5e]">
-                  {r.macros.proteina}g prot
-                </span>
-                <span className="rounded-pill bg-[#3b82f622] px-2 py-0.5 text-[9px] font-bold text-[#3b82f6]">
-                  {r.macros.carboidrato}g carb
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-content-dim">
-                  {r.tempoPreparoMin != null ? `⏱ ${r.tempoPreparoMin}min` : ''}
-                </span>
-                {r.bloqueada ? (
-                  <span aria-label="Receita premium" className="flex-none text-content-dim">🔒</span>
-                ) : (
-                  <span
-                    role="button"
-                    tabIndex={-1}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void alternarFavorito(r)
-                    }}
-                    aria-label={r.favoritada ? 'Desfavoritar' : 'Favoritar'}
-                    className={`flex-none text-sm ${r.favoritada ? 'text-[#f43f5e]' : 'text-content-dim'}`}
-                  >
-                    {r.favoritada ? '♥' : '♡'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
