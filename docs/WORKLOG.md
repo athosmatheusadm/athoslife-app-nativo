@@ -2090,3 +2090,38 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   4. FCM: criar projeto Firebase -> push de verdade (resgate com app fechado).
   5. Revogar o token do Supabase colado no chat; token do GitHub -> push.
   6. Seguem: APK de teste, fotos que faltam, ver telas logado.
+- **Aplicado pelo dono (08/10)**: teste que se desfaz bateu 12/12 (conferido
+  0 rastro), migração Life MVP rodada e ai-proxy v3.7 publicado (versão 17,
+  verify_jwt ligado) — conferido no banco/API.
+- **Custo da IA** (Gemini 3.5 Flash-Lite US$ 0,30/2,50 por 1M, confirmado na
+  web; dólar ~5,15 + 10% impostos): v3.7 ≈ 4.300 tokens entrada + 200 saída
+  = **~R$ 0,01 por mensagem** (antes ~R$ 0,004: prompt maior + histórico 15).
+  Preço do paywall: mensal R$ 28,90 (líquido 24,56), anual R$ 238,80
+  (líquido 16,92/mês). Uso típico: grátis 6/dia ≈ R$ 0,33/usuário/mês
+  (histórico 15) ou 0,28 (histórico 8); pago ≈ R$ 2-3/mês; pago no talo
+  60/dia todo dia ≈ R$ 18/mês.
+  **Teto global `IA_TETO_TOKENS_DIA` = 2M tokens ≈ 440 mensagens/dia pra
+  TODOS os usuários** — aumentar no painel (Secrets) antes de lançar.
+- **Paywall (`paywall de pagamento.jpeg`) promete o que o app não faz**:
+  Premium "ilimitado" no chat (40/dia), scanner (5/dia) e receitas IA
+  (10/dia); grátis "Cozinha —" (tem 3), "receitas IA —" (tem 1/semana),
+  "hábitos 2 por dia" (é 1 hábito), "refeições 4 por dia" (sem limite),
+  "com anúncios" (não existe). Dono: esquecer anúncios; quer volume bom nos
+  dois planos; ciente do risco de "ilimitado" com teto (CDC/Play).
+- Dono: **scanner só no pago** (não dar foto ao grátis).
+- Localhost: `npx vite --host --port 5173` -> http://localhost:5173.
+- **Pendências pra próxima sessão**:
+  1. Dono fechar os limites. Proposta na mesa: grátis 6 msgs/dia (manter
+     histórico 15 — só ~R$ 0,05/usuário/mês a mais que 8), pago 60/dia,
+     scanner pago 15/dia (grátis 0), receitas iguais (grátis 1/semana, pago
+     10/dia). Depois: SQL em `limite_ia` (+ `cota_ia_status`) e textos do
+     paywall batendo com os números ("até 60 mensagens por dia").
+  2. Teste de estresse do Life: dono cria conta de teste nova (7 dias de
+     trial = 40 msgs/dia) e passa e-mail/senha. Roteiro de 24 perguntas
+     pronto no scratchpad da sessão (se sumir: refazer — 4 telas, 3 idiomas,
+     luto, recusa, dose, burlar regras, doce sem lactose, repetir refeição
+     ambígua/substituir, pausa, crise, reenvio e toque duplo).
+  3. Subir `IA_TETO_TOKENS_DIA` conforme a base de usuários.
+  4. Revogar o token do Supabase colado no chat; token do GitHub -> push.
+  5. FCM (projeto Firebase), APK de teste, fotos que faltam, telas logado.
+
