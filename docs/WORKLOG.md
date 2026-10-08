@@ -2118,9 +2118,9 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      paywall batendo com os números ("até 60 mensagens por dia").
   2. Teste de estresse do Life: dono cria conta de teste nova (7 dias de
      trial = 40 msgs/dia) e passa e-mail/senha. Roteiro de 24 perguntas
-     pronto no scratchpad da sessão (se sumir: refazer — 4 telas, 3 idiomas,
-     luto, recusa, dose, burlar regras, doce sem lactose, repetir refeição
-     ambígua/substituir, pausa, crise, reenvio e toque duplo).
+     pronto em `scripts/estresse-life/` (`node estresse.mjs ../../.env <arquivo
+     com e-mail e senha>`; 4 telas, 3 idiomas, luto, recusa, dose, burlar
+     regras, doce sem lactose, repetir refeição, pausa, crise, reenvio).
   3. Subir `IA_TETO_TOKENS_DIA` conforme a base de usuários.
   4. Revogar o token do Supabase colado no chat; token do GitHub -> push.
   5. FCM (projeto Firebase), APK de teste, fotos que faltam, telas logado.
