@@ -2017,3 +2017,76 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   5. Fotos: Chips de Batata Doce no Forno e Chá pra Desacelerar.
   6. Ver logado: cartões da receita em seções, Cozinha, "Monte sua
      receita", porções, registrar.
+
+## 2026-10-08
+
+- **Divisão dos Lifes por tela** (dono): Home sabe de tudo e liga as áreas,
+  só conversa; Treino = "Montar treino" + "Trocar um exercício"; Dieta =
+  "Montar dieta" + "Trocar um alimento" + atalhos no topo "Monte sua receita
+  com o Life" e "Analisar um alimento" (-> `/scanner`, escolhe a refeição lá);
+  Hábitos = só conversa. `PlanosNoLife` ganhou `area` (check de saúde segue
+  único, vale pros dois). Subtítulos dos chats e textos dos planos por área
+  em pt/en/es. Prompt (`FOCOS_LIFE`): cada Life sabe quais botões tem no
+  chat dele e manda pra tela certa quando o botão não está ali. Entra no
+  mesmo deploy do ai-proxy v3.6 (ainda NÃO publicado). `tsc -b` 0 erros.
+  Não visto logado.
+- Briefing do ai-proxy passado ao dono pra estruturar a "nova inteligência"
+  do Life com o GPT (aguardando o material dele).
+- **Life MVP** (briefing do GPT `ATHOSlife_Estrutura_Life_MVP_Claude.md`
+  cruzado com o código; decisões do dono: histórico 15, pausa por botão E por
+  texto, repetir refeição com fixas + extras, pausou = congela sem perder
+  sequência, autonomia pra notificações):
+  - ai-proxy **v3.7 (NÃO publicado)**: histórico 15; prompt com acolhimento
+    (luto/desabafo sem dica nem puxar assunto), recusa respeitada, falta de
+    registro ≠ fato, sem "cobrança", pausa do dia, hábito "evitar X" × pedido
+    de X; contexto com hábitos completos (gatilhos, horário de risco, melhor
+    sequência, tropeços, alternativas da tela), REFEIÇÕES de hoje/ontem
+    (fixas + extras) e "Life pausado hoje"; **function calling**:
+    `repetir_refeicao` e `pausar_life_hoje` — modelo só indica, servidor
+    resolve nomes, valida, grava e escreve o "Pronto" (sem 2ª chamada à IA);
+    destino com itens -> botões Adicionar/Substituir/Deixa; restrição × itens
+    -> "Copiar mesmo assim?"; idempotente por `id_envio` (tabela
+    `life_acoes`); novo `{tipo:'acao', id, escolha}` sem IA e sem cota.
+    Filtro de dose: só barra com suplemento/remédio ou unidade de farmácia
+    (15/15 casos pt/en/es; "vitamina de banana" passa).
+  - Migração `db/athoslife_life_mvp_migration.sql` **NÃO RODADA**:
+    `life_pausas`, `pausar_life_hoje()`/`retomar_life_hoje()`,
+    `dias_ativos_entre()`, `registrar_checkin_habito` e `handle_recaida` com
+    dia pausado não quebrando "construir" (conferido no banco: as versões
+    atuais batem com a globalização, só muda a regra da pausa), `life_acoes`,
+    `life_repetir_refeicao()` (só service_role, atômica, cria a extra no
+    destino se faltar). Parser do Postgres ok. Teste que se desfaz:
+    `db/athoslife_life_mvp_TESTE_desfaz.sql` (resultado esperado no topo).
+  - App: botão 🌙 "Pausar hoje / Retomar" no chat (todos os Lifes); botões
+    de escolha; refeição repetida atualiza Dieta/Home; pausa cancela os
+    lembretes do dia e troca os de hábito por avisos avulsos a partir de
+    amanhã (volta o repetido ao abrir num dia sem pausa); sequências de
+    hábito "construir" e conquistas de dias seguidos pulam dias pausados.
+  - **Check-ins inteligentes** (avisos locais, sem IA e sem custo): manhã
+    (acordar+1h), meio-dia (13:15), noite (dormir-1h30), só com "Life puxa
+    conversa" ligado e nos momentos marcados; texto olha o dia (almoço
+    registrado, treino feito) sem deduzir nada de falta; não toca até 3 h
+    depois de uma conversa nem em dia pausado; tocar abre o chat da Home.
+  - Push de verdade (FCM) **não feito**: precisa de projeto Firebase na
+    conta do dono (google-services.json + chave de servidor).
+  - `tsc -b` 0 erros, `vite build` ok, ai-proxy em tsc strict com shims,
+    regras testadas (sequência com pausa, lembretes, check-ins, frases
+    pt/en/es, restrições). **Não visto no celular nem logado.**
+- Banco/deploy: dono mandou token novo (guardado só num arquivo 600 da
+  sessão). Leitura pela Management API passou; **gravar (até o teste que se
+  desfaz) e publicar foram negados pela trava do modo automático do Claude
+  Code** — não contornado. Dono deve revogar esse token (foi colado no chat).
+- **Pendências pra próxima sessão**:
+  1. Rodar `db/athoslife_life_mvp_TESTE_desfaz.sql` no SQL Editor e conferir
+     o RESULTADO; bateu -> rodar `db/athoslife_life_mvp_migration.sql`.
+  2. Publicar ai-proxy v3.7 (JWT verificado = igual à v16 publicada):
+     `SUPABASE_ACCESS_TOKEN=... npx supabase functions deploy ai-proxy
+     --project-ref gsdwsxwbmxcvutpvpkyi --use-api` (ou colar o index.ts no
+     painel). Ordem: migração antes (sem ela tudo falha com aviso, sem
+     quebrar o chat).
+  3. Testar no chat: "coloca na janta o mesmo de ontem", jantar já com
+     itens, extra pelo nome, "minha mãe morreu", "não me manda mais nada
+     hoje", 🌙, check-ins (Perfil > Notificações > Life puxa conversa).
+  4. FCM: criar projeto Firebase -> push de verdade (resgate com app fechado).
+  5. Revogar o token do Supabase colado no chat; token do GitHub -> push.
+  6. Seguem: APK de teste, fotos que faltam, ver telas logado.

@@ -54,7 +54,7 @@ interface RespostaVisaoCrua {
 }
 
 export async function chamar<T>(
-  tipo: 'vision' | 'chat' | 'recipe',
+  tipo: 'vision' | 'chat' | 'recipe' | 'acao',
   payload: Record<string, unknown>,
 ): Promise<T> {
   const { data: sessao } = await supabase.auth.getSession()
@@ -115,10 +115,22 @@ export interface MensagemChat {
   texto: string
 }
 
+export type EscolhaAcao = 'adicionar' | 'substituir' | 'forcar' | 'cancelar'
+
+/**
+ * O que o Life FEZ no app (Life MVP 08/10) — só vem depois que o servidor
+ * gravou. `escolha`: precisa da pessoa (ex.: "adicionar ou substituir?").
+ */
+export type AcaoLife =
+  | { tipo: 'refeicao_atualizada'; data: string }
+  | { tipo: 'pausa'; dia: string }
+  | { tipo: 'escolha'; id: string; opcoes: { valor: EscolhaAcao; rotulo: string }[] }
+
 export interface RespostaChat {
   resposta: string
   /** Mensagens que ainda restam hoje; null quando a resposta não gastou cota. */
   restantes: number | null
+  acao: AcaoLife | null
 }
 
 /**
@@ -129,9 +141,28 @@ export interface RespostaChat {
 /** De qual tela o chat foi aberto — cada Life puxa pro assunto da sua tela. */
 export type FocoLife = 'home' | 'dieta' | 'treino' | 'habitos'
 
-export async function enviarMensagemChat(mensagem: string, foco: FocoLife = 'home'): Promise<RespostaChat> {
-  const cru = await chamar<{ resposta: string; restantes: number | null }>('chat', { mensagem, foco })
-  return { resposta: cru.resposta, restantes: cru.restantes }
+/**
+ * `idEnvio`: um por mensagem. Reenviar a MESMA mensagem (depois de erro de
+ * rede) com o mesmo id faz o servidor devolver a ação que já aconteceu em
+ * vez de repetir a refeição de novo.
+ */
+export async function enviarMensagemChat(
+  mensagem: string,
+  foco: FocoLife = 'home',
+  idEnvio: string = crypto.randomUUID(),
+): Promise<RespostaChat> {
+  const cru = await chamar<{ resposta: string; restantes: number | null; acao?: AcaoLife }>('chat', {
+    mensagem,
+    foco,
+    id_envio: idEnvio,
+  })
+  return { resposta: cru.resposta, restantes: cru.restantes, acao: cru.acao ?? null }
+}
+
+/** Resposta a um botão de escolha do Life. Não usa IA nem gasta mensagem. */
+export async function responderAcaoLife(id: string, escolha: EscolhaAcao): Promise<{ resposta: string; acao: AcaoLife | null }> {
+  const cru = await chamar<{ resposta: string; acao?: AcaoLife | null }>('acao', { id, escolha })
+  return { resposta: cru.resposta, acao: cru.acao ?? null }
 }
 
 /** Últimas mensagens da conversa (RLS: só as do próprio usuário). */

@@ -12,7 +12,31 @@ import type { DiaSemana } from '@domain/entities/treino'
  */
 
 export type TipoRefeicaoLembrete = 'cafe' | 'almoco' | 'lanche' | 'jantar'
-export type TipoLembrete = 'agua' | TipoRefeicaoLembrete | 'treino' | 'pesagem'
+export type MomentoCheckin = 'manha' | 'meio_dia' | 'noite'
+export type TipoCheckin = 'checkin_manha' | 'checkin_meio_dia' | 'checkin_noite'
+export type TipoLembrete = 'agua' | TipoRefeicaoLembrete | 'treino' | 'pesagem' | TipoCheckin
+
+/** "Life puxa conversa" (Perfil > Notificações): em quais momentos ele pode chamar. */
+export interface ConfigCheckins {
+  readonly momentos: readonly MomentoCheckin[]
+  /** Última conversa com o Life — check-in não toca colado nela. */
+  readonly ultimaConversa: Date | null
+}
+
+/** Check-in nunca toca até 3 h depois de uma conversa (já conversaram). */
+const SILENCIO_DEPOIS_DE_CONVERSA_MS = 3 * 60 * 60_000
+const TIPO_CHECKIN: Record<MomentoCheckin, TipoCheckin> = {
+  manha: 'checkin_manha',
+  meio_dia: 'checkin_meio_dia',
+  noite: 'checkin_noite',
+}
+
+/** Horário de cada check-in, dentro do horário acordado. */
+function minutoCheckin(momento: MomentoCheckin, acordar: number, dormir: number): number {
+  if (momento === 'manha') return (acordar + 60) % (24 * 60)
+  if (momento === 'meio_dia') return 13 * 60 + 15
+  return (dormir - 90 + 24 * 60) % (24 * 60)
+}
 
 export interface ConfigLembretes {
   readonly ligado: boolean
@@ -103,9 +127,14 @@ export function planejarLembretes(params: {
   /** Dias da semana com exercício na ficha (qualquer local). */
   readonly diasComTreino: ReadonlySet<DiaSemana>
   readonly agora: Date
+  /** Life pausado hoje (Life MVP 08/10): nada toca hoje; amanhã segue normal. */
+  readonly pausadoHoje?: boolean
+  /** Check-ins do Life — só com "Life puxa conversa" ligado. */
+  readonly checkins?: ConfigCheckins | null
 }): LembretePlanejado[] {
   const { config, feitoHoje, diasComTreino, agora } = params
-  if (!config.ligado) return []
+  const checkins = params.checkins?.momentos.length ? params.checkins : null
+  if (!config.ligado && !checkins) return []
   const acordar = minutosDe(config.acordar)
   const dormir = minutosDe(config.dormir)
   if (acordar === null || dormir === null) return []
@@ -115,6 +144,22 @@ export function planejarLembretes(params: {
   for (let i = 0; i < DIAS_A_FRENTE; i++) {
     const dia = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + i)
     const hoje = i === 0
+    if (hoje && params.pausadoHoje) continue
+    const quandoNoDia = (min: number) =>
+      // Depois da meia-noite (quem dorme tarde) pertence ao dia seguinte.
+      noDia(dia, min < acordar && dormir < acordar ? min + 24 * 60 : min)
+
+    if (checkins) {
+      for (const momento of checkins.momentos) {
+        const min = minutoCheckin(momento, acordar, dormir)
+        if (!acordado(min)) continue
+        const quando = quandoNoDia(min)
+        const conversa = checkins.ultimaConversa?.getTime()
+        if (conversa !== undefined && quando.getTime() - conversa < SILENCIO_DEPOIS_DE_CONVERSA_MS) continue
+        if (quando.getTime() > agora.getTime() + 60_000) todos.push({ tipo: TIPO_CHECKIN[momento], quando })
+      }
+    }
+    if (!config.ligado) continue
     const diaSemana = ORDEM_DIA[dia.getDay()] ?? 'dom'
     const fixos: { tipo: TipoLembrete; min: number }[] = []
 
@@ -147,8 +192,7 @@ export function planejarLembretes(params: {
     }
 
     for (const l of doDia.slice(0, MAX_POR_DIA)) {
-      // Depois da meia-noite (quem dorme tarde) pertence ao dia seguinte.
-      const quando = noDia(dia, l.min < acordar && dormir < acordar ? l.min + 24 * 60 : l.min)
+      const quando = quandoNoDia(l.min)
       if (quando.getTime() > agora.getTime() + 60_000) todos.push({ tipo: l.tipo, quando })
     }
   }

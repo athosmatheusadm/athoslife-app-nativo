@@ -70,12 +70,25 @@ export function streakEvitar(criadoEm: Date, ultimaRecaida: Date | null, hojeISO
  * "Construir" (ex. Leitura): sucesso é explícito (check-in "Fiz hoje"), por
  * isso precisa de um contador (streak_atual) — mas ele se autocorrige na
  * leitura: se o último check-in não foi hoje nem ontem, o streak já quebrou
- * sozinho (sem precisar de job noturno pra "descobrir" isso).
+ * sozinho (sem precisar de job noturno pra "descobrir" isso) — a não ser que
+ * os dias do meio tenham sido pausados (mesma regra do registrar_checkin_habito).
  */
-export function streakConstruir(streakAtual: number, ultimoCheckin: string | null, hojeISO: string): number {
+export function streakConstruir(
+  streakAtual: number,
+  ultimoCheckin: string | null,
+  hojeISO: string,
+  /** Dias com o Life pausado (08/10): congelam — não quebram a sequência. */
+  pausados: ReadonlySet<string> = new Set(),
+): number {
   if (!ultimoCheckin) return 0
   const gap = diasEntre(ultimoCheckin, hojeISO)
-  return gap <= 1 ? streakAtual : 0
+  if (gap <= 1) return streakAtual
+  for (let i = 1; i < gap; i++) {
+    const d = new Date(`${ultimoCheckin}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() + i)
+    if (!pausados.has(d.toISOString().slice(0, 10))) return 0
+  }
+  return streakAtual
 }
 
 function diasEntre(deISO: string, ateISO: string): number {

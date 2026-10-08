@@ -370,6 +370,11 @@ export const en: Mensagens = {
   },
 
   lifeChat: {
+    pausar: 'Pause today',
+    pausado: 'Paused today',
+    retomar: 'Resume',
+    pausadoAviso: 'No reminders or messages from Life today. It still answers if you call — and no streak is lost.',
+    erroPausa: 'Couldn’t change the pause right now. Try again.',
     abrir: 'Talk to Life',
     titulo: {
       home: 'Chat with Life',
@@ -378,17 +383,20 @@ export const en: Mensagens = {
       habitos: 'Life on habits',
     },
     sub: {
-      home: 'It brings everything together: food, training, water and habits.',
-      dieta: 'Swaps, portions and food questions.',
-      treino: 'Exercises, sets and your training plan.',
-      habitos: "It's here to listen.",
+      home: 'It knows it all: food, training, water, mood and habits.',
+      dieta: 'Your diet, recipes, swaps and food analysis.',
+      treino: 'Your training, exercises and swaps in your plan.',
+      habitos: 'It\'s here to help you hold steady.',
     },
   },
   lifePlanos: {
-    cartao: 'Build my plans',
+    cartao: { treino: 'Build my training', dieta: 'Build my diet' },
     cartaoSub: 'First, a quick health check: 5 questions, just once.',
     comecar: 'Start the check',
-    intro: 'Before building your training or diet plan, I need to ask you a few quick health questions. Just once.',
+    intro: {
+      treino: 'Before building your training, I need to ask you a few quick health questions. Just once (it counts for the diet too).',
+      dieta: 'Before building your diet, I need to ask you a few quick health questions. Just once (it counts for training too).',
+    },
     progresso: (n: number, total: number) => `${n}/${total}`,
     sexo: 'First: what is your biological sex? It changes the math and some questions.',
     perguntas: {
@@ -416,8 +424,8 @@ export const en: Mensagens = {
     bloqueado: "For now I can't build automatic plans for you:",
     montarTreino: 'Build training',
     montarDieta: 'Build diet',
-    trocarNoPlano: 'Swap something in my plan',
-    trocarTexto: 'I want to swap an item in my plan: ',
+    trocarNoPlano: { treino: 'Swap an exercise', dieta: 'Swap a food' },
+    trocarTexto: { treino: 'I want to swap an exercise in my training: ', dieta: 'I want to swap a food in my diet: ' },
     erroIncompleto: 'Enter your date of birth and tick the statement.',
     erroNascimento: 'Check your date of birth.',
   },
@@ -483,6 +491,13 @@ export const en: Mensagens = {
         'Let’s see how it’s going? Step on the scale and log it.',
       ],
     },
+    checkins: {
+      manha: ['Good morning! How did you sleep? 🌤️', 'Morning! Did you sleep well?', 'Day starting — how did you wake up today?'],
+      meioDia: ['How’s your day going so far?', 'Just checking in. All good over there?', 'Middle of the day — how are you?'],
+      meioDiaAlmocou: ['Lunch logged 👌 How’s the day going so far?', 'Saw your lunch here. How’s the rest of the day?'],
+      noite: ['How was your day? I’m here if you want to talk 🌙', 'End of the day coming. How are you?', 'Busy day? Tell me how it went.'],
+      noiteTreinou: ['Workout done today 💪 How are you feeling?', 'Nice job on today’s workout. How was the rest of your day?'],
+    },
     tela: {
       secao: 'Daily reminders',
       intro: 'Life nudges you at the right time — and stays quiet when you’ve already done it. Works only in the installed app, no internet needed.',
@@ -517,7 +532,7 @@ export const en: Mensagens = {
   },
   contato: {
     secao: 'Life reaches out',
-    intro: 'You choose whether Life can reach out to you in the chat. It starts off and you can change it anytime.',
+    intro: 'You choose whether Life can reach out — a phone notification that opens the chat, at the moments you pick. It stays quiet if you just talked or paused the day. It starts off.',
     lifeTitulo: 'Life starts a chat',
     lifeSub: 'A short message now and then, at the moments you pick.',
     momentos: { manha: 'Morning', meio_dia: 'Midday', noite: 'Evening' },
@@ -579,6 +594,7 @@ export const en: Mensagens = {
     erroRegistrar: "Couldn't log it right now. Try again.",
     aproximado: 'Approximate macros.',
     lifeChefTitulo: 'Build your recipe with Life',
+    analisarAlimento: 'Analyze a food (photo or barcode)',
     lifeChefPergunta: "What's in your kitchen today?",
     ingredientePlaceholder: 'E.g. eggs, chicken, rice…',
     adicionar: 'Add',

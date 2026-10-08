@@ -3,7 +3,8 @@ import { App as CapApp } from '@capacitor/app'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from './SessionProvider'
-import { aoAplicarPlano } from './eventosLife'
+import { aoAplicarPlano, pedirAbrirLife } from './eventosLife'
+import { aoMudarPausa } from '@data/lifePausa'
 import { aoRegistrarNoDia } from '@data/registroDoDia'
 import { nativo, replanejarLembretes } from '@data/notifications/lembretesDiarios'
 
@@ -33,6 +34,8 @@ export function LembretesDoLife() {
     }
     const tirarRegistro = aoRegistrarNoDia(logoMais)
     const tirarPlano = aoAplicarPlano(logoMais)
+    // Pausou/retomou ou mudou o "Life puxa conversa": refaz na hora.
+    const tirarPausa = aoMudarPausa(logoMais)
     const app = CapApp.addListener('appStateChange', ({ isActive }) => {
       if (isActive) void replanejarLembretes(metaMl)
     })
@@ -40,6 +43,7 @@ export function LembretesDoLife() {
       if (espera) clearTimeout(espera)
       tirarRegistro()
       tirarPlano()
+      tirarPausa()
       void app.then((h) => h.remove())
     }
   }, [logado, metaMl])
@@ -49,6 +53,8 @@ export function LembretesDoLife() {
     const h = LocalNotifications.addListener('localNotificationActionPerformed', ({ notification }) => {
       const rota: unknown = notification.extra?.rota
       if (typeof rota === 'string' && ROTAS.has(rota)) navigate(rota)
+      // Check-in do Life: abre o chat (o Life do canto da Home escuta o pedido).
+      if (notification.extra?.abrirLife === true) setTimeout(pedirAbrirLife, 400)
     })
     return () => void h.then((x) => x.remove())
   }, [navigate])

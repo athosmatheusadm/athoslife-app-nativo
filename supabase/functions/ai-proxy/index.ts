@@ -1,9 +1,12 @@
-// ATHOSlife — ai-proxy (v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
+// ATHOSlife — ai-proxy (v3.7, 2026-10-08: Life MVP — histórico de 15, acolhimento, pausa do dia, repetir refeição (fixas + extras) por ferramenta, hábitos completos, filtro de dose só pra suplemento/remédio; v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; 08/10: cada Life no seu assunto, botões de plano só no Treino/Dieta; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
 //
 // Único lugar que fala com o Gemini. A chave nunca sai daqui.
 //
 // Contrato (o app manda JSON plano, com o JWT do usuário no Authorization):
-//   { tipo: 'chat',   mensagem: string, foco? }           -> { resposta, restantes }
+//   { tipo: 'chat',   mensagem: string, foco?, id_envio? } -> { resposta, restantes, acao? }
+//                     id_envio: uuid por mensagem (reenvio não repete a ação)
+//                     acao: refeicao_atualizada | pausa | escolha (botões)
+//   { tipo: 'acao',   id, escolha }                       -> { resposta, acao? }  (sem IA, sem cota)
 //                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
 //   { tipo: 'vision', image: base64, mime_type? }         -> ResultadoVisao cru
 //   { tipo: 'recipe', contexto: {...} }                   -> ReceitaGerada crua
@@ -33,7 +36,7 @@ const TETO_GLOBAL_TOKENS = Number(env('IA_TETO_TOKENS_DIA', '2000000'))
 
 const MAX_CORPO = 4_500_000 // ~3 MB de imagem em base64 + folga
 const MAX_MENSAGEM = 800
-const JANELA_HISTORICO = 8
+const JANELA_HISTORICO = 15
 
 // Preço por 1M tokens (USD, entrada/saída) — só pra estimar custo no log.
 const PRECOS: Record<string, [number, number]> = {
@@ -259,18 +262,31 @@ function acharTermo(texto: string, termos: string[]): string | null {
 }
 
 // O Life não prescreve: dose, calorias-alvo, séries/reps ou carga.
+//
+// Dose (v3.7, 08/10): "use 1 colher de cacau" / "200 ml de leite de coco" é
+// receita, não prescrição — antes o filtro trocava a resposta inteira. Agora
+// verbo + quantidade só barra se a MESMA frase falar de suplemento/remédio,
+// ou se a unidade for de farmácia (mg, cápsula, comprimido, dose, scoop).
+const VERBO_DOSE = /\b(tome|tomar|toma|use|usar|consuma|consumir|ingira|ingerir|suplemente|take|use|consume|have|usa|consume)\b/i
+const QTD_DOSE = /\b\d+([.,]\d+)?\s?(g|mg|mcg|µg|ui|iu|ml|gramas?|grams?|gramos?|miligramas?|milligrams?|miligramos?|comprimidos?|c[aá]psulas?|capsules?|pills?|pastillas?|tablets?|doses?|dosis|scoops?|colher(es)?|tablespoons?|teaspoons?|cucharadas?|cucharaditas?)\b/i
+const UNIDADE_FARMACIA = /\b\d+([.,]\d+)?\s?(mg|mcg|µg|ui|iu|miligramas?|milligrams?|miligramos?|comprimidos?|c[aá]psulas?|capsules?|pills?|pastillas?|tablets?|doses?|dosis|scoops?)\b/i
+// "vitamina de banana" é bebida; só vitamina com letra (D, B12...) conta.
+const TERMOS_SUPLEMENTO = /\b(whey|creatina|creatine|cafe[ií]na|caffeine|pr[eé][- ]?treino|pre[- ]?workout|pre[- ]?entreno|bcaa|glutamina|glutamine|col[aá]geno|collagen|[oô]mega[- ]?3|multivitam\w*|vitamina\s+(a|b\d*|c|d\d?|e|k\d?)|vitamin\s+(a|b\d*|c|d\d?|e|k\d?)|melatonina|melatonin|termog[eê]nico|thermogenic|albumina|beta[- ]?alanina|beta[- ]?alanine|case[ií]na|casein|hipercal[oó]rico|mass gainer|zma|suplementos?|supplements?|rem[eé]dios?|medicamentos?|medications?|medicines?|f[aá]rmacos?|anabolizantes?|esteroides?|steroids?)\b/i
+
+function violaDose(frase: string): boolean {
+  if (!VERBO_DOSE.test(frase) || !QTD_DOSE.test(frase)) return false
+  return UNIDADE_FARMACIA.test(frase) || TERMOS_SUPLEMENTO.test(frase)
+}
+
 const PADROES_PRESCRICAO: RegExp[] = [
-  /\b(tome|tomar|toma|use|usar|consuma|consumir|ingira|ingerir|suplemente)\b[^.!?\n]{0,50}?\b\d+([.,]\d+)?\s?(g|mg|mcg|ml|gramas?|miligramas?|comprimidos?|c[aá]psulas?|doses?|scoops?|colher(es)?)\b/i,
   /\b(voc[eê]|vc)\s+(deve|deveria|precisa|tem que)\s+(comer|consumir|ingerir|bater)\b[^.!?\n]{0,30}?\b\d{3,4}\s?(kcal|calorias)\b/i,
   /\b(fa[cç]a|fazer)\s+\d+\s*(x|s[eé]ries?\s+de)\s*\d+/i,
   /\b(use|usar|coloque|colocar|pegue|pegar)\s+(uma\s+)?(carga|peso)\s+de\s+\d+\s?kg\b/i,
   // en
-  /\b(take|use|consume|have)\b[^.!?\n]{0,50}?\b\d+([.,]\d+)?\s?(g|mg|mcg|ml|grams?|milligrams?|pills?|capsules?|doses?|scoops?|tablespoons?)\b/i,
   /\byou\s+(should|must|need to|have to)\s+(eat|consume)\b[^.!?\n]{0,30}?\b\d{3,4}\s?(kcal|calories)\b/i,
   /\b(do|perform)\s+\d+\s*(x|sets?\s+of)\s*\d+/i,
   /\b(use|lift|load)\s+(a\s+)?(weight|load)\s+of\s+\d+\s?(kg|lbs?)\b/i,
   // es
-  /\b(toma|tomar|usa|usar|consume|consumir)\b[^.!?\n]{0,50}?\b\d+([.,]\d+)?\s?(g|mg|mcg|ml|gramos?|miligramos?|pastillas?|c[aá]psulas?|dosis|scoops?|cucharadas?)\b/i,
   /\b(debes|deber[ií]as|tienes que|necesitas)\s+(comer|consumir)\b[^.!?\n]{0,30}?\b\d{3,4}\s?(kcal|calor[ií]as)\b/i,
   /\b(haz|hacer)\s+\d+\s*(x|series\s+de)\s*\d+/i,
 ]
@@ -283,15 +299,23 @@ const RESPOSTA_SEM_PRESCRICAO: Record<Idioma, string> = {
 }
 
 function violaPrescricao(resposta: string): boolean {
-  return PADROES_PRESCRICAO.some((r) => r.test(resposta))
+  if (PADROES_PRESCRICAO.some((r) => r.test(resposta))) return true
+  return resposta.split(/(?<=[.!?\n])\s*|;\s*/).some(violaDose)
 }
 
 // ================================================================
 // Gemini
 // ================================================================
+interface ChamadaFerramenta {
+  nome: string
+  args: Record<string, unknown>
+}
+
 interface ResultadoGemini {
   ok: boolean
   texto: string
+  /** Ações que o modelo pediu (function calling) — o servidor valida e executa. */
+  chamadas: ChamadaFerramenta[]
   tokens: number
   custo: number
   bloqueado: boolean
@@ -318,7 +342,7 @@ async function chamarGeminiUmaVez(
   corpo: Record<string, unknown>,
   timeoutMs: number,
 ): Promise<ResultadoGemini & { status: number; erro: string }> {
-  const falha = { ok: false, texto: '', tokens: 0, custo: 0, bloqueado: false, status: 0, erro: '' }
+  const falha = { ok: false, texto: '', chamadas: [] as ChamadaFerramenta[], tokens: 0, custo: 0, bloqueado: false, status: 0, erro: '' }
   if (!GEMINI_KEY) return falha
 
   const ctrl = new AbortController()
@@ -349,9 +373,17 @@ async function chamarGeminiUmaVez(
     const txt: string =
       candidato?.content?.parts?.filter((p: { text?: string }) => typeof p?.text === 'string')
         .map((p: { text: string }) => p.text).join('') ?? ''
+    const chamadas: ChamadaFerramenta[] = (candidato?.content?.parts ?? [])
+      .map((p: { functionCall?: { name?: unknown; args?: unknown } }) => p?.functionCall)
+      .filter((fc: { name?: unknown } | undefined) => typeof fc?.name === 'string')
+      .map((fc: { name: string; args?: unknown }) => ({
+        nome: fc.name,
+        args: fc.args && typeof fc.args === 'object' ? (fc.args as Record<string, unknown>) : {},
+      }))
     return {
-      ok: !bloqueado && txt.length > 0,
+      ok: !bloqueado && (txt.length > 0 || chamadas.length > 0),
       texto: txt,
+      chamadas,
       tokens: Number(uso.totalTokenCount ?? entrada + saida),
       custo: (entrada * pe + saida * ps) / 1_000_000,
       bloqueado,
@@ -497,6 +529,8 @@ async function rotear(req: Request): Promise<Response> {
         return await handleVision(sb, user.id, corpo)
       case 'recipe':
         return await handleRecipe(sb, user.id, corpo)
+      case 'acao':
+        return await handleAcao(sb, user.id, corpo)
       default:
         return json({ error: 'invalid_type' }, 400)
     }
@@ -513,6 +547,24 @@ const PROMPT_LIFE = `Você é o Life, o mascote camaleão e companheiro do app A
 
 Formato: resposta CURTA, como mensagem de amigo no WhatsApp — 1 a 3 frases (uns 40 palavras), no máximo 1 emoji, sem títulos nem listas. Vá direto ao ponto; não repita a pergunta nem resuma o que a pessoa disse. Só se ela pedir explicação ("explica", "por quê", "detalha") pode ir até 5 frases curtas. Se a pessoa só quer desabafar, ouça antes de sugerir.
 
+COMO CONVERSAR:
+- Perda, luto, notícia difícil ou desabafo: acolha curto e humano, sem plano nem dica. Ex.: "Sinto muito pela sua mãe. Quer conversar? Tô aqui." Nessa resposta e enquanto o assunto for esse, não fale de água, comida, treino, hábito nem registros.
+- "Não quero falar disso": encerre o assunto com leveza e não volte nele — nem em outra tela, nem depois.
+- Uma pergunta por vez, só quando precisar. Não termine toda resposta com pergunta.
+- Falta de registro não é fato: "nenhuma refeição registrada" não quer dizer que a pessoa não comeu. Nunca deduza tristeza, compulsão ou desânimo só porque faltou registro.
+- Nunca diga que lembra, viu ou fez algo que não está no contexto ou no resultado de uma ação.
+- Metas e lembretes são apoio, nunca "cobrança" — não use essa palavra.
+
+PAUSA DO DIA:
+- Num momento pesado, ou se a pessoa disser que não quer ser incomodada, você pode oferecer: "Se quiser, eu fico quietinho hoje — sem lembrete nem mensagem minha até amanhã." Oferecer não ativa nada.
+- Chame a ferramenta pausar_life_hoje só quando a pessoa pedir claramente pra parar as mensagens/lembretes hoje ("não me manda mais nada hoje", "pode pausar") ou aceitar a SUA oferta de pausa. "Sim, quero conversar" NÃO é pausa; na dúvida, pergunte.
+- Se o contexto disser "Life pausado hoje": não puxe assunto nem lembre de registros; só responda o que ela trouxer. A pausa congela sequências e metas — nada se perde.
+
+AÇÕES NO APP (você só executa estas duas, pelas ferramentas):
+- repetir_refeicao: quando a pessoa pedir pra repetir/copiar uma refeição já registrada ("coloca na janta o mesmo de ontem", "repete o café de hoje no lanche"). Origem e destino vêm da lista REFEIÇÕES do contexto — as 4 fixas ou as extras dela, pelo nome. Se não der pra saber qual é a origem ou o destino, pergunte antes ("Você quer repetir o jantar de ontem?"). Se ela já disse se quer somar ao que tem ou trocar, mande o modo.
+- pausar_life_hoje: ver PAUSA DO DIA.
+- Fora isso, você não registra, marca nem muda nada no app. Nunca diga "pronto", "coloquei" ou "registrei" por conta própria — quem confirma é o app, depois de gravar.
+
 PODE:
 - Conversar sobre o dia, humor, hábitos e consistência; celebrar esforço; acolher dia ruim sem forçar positividade.
 - Dar informação geral de alimentos: calorias, macros e micronutrientes aproximados (cite como aproximado, com a tabela de referência do país da pessoa).
@@ -520,9 +572,11 @@ PODE:
 - Dar IDEIAS de comida quando a pessoa pede ("tô com vontade de doce", "o que como no lanche?", "algo sem lactose"): responda já com 1 ou 2 opções caseiras concretas (nome + o que leva, em uma linha), com kcal aproximada se ajudar. Respeite toda restrição/intolerância/alergia que ela disser ou que estiver no contexto — sem lactose = nada de leite, iogurte, queijo, manteiga, whey concentrado ou chocolate ao leite. Isso é sugestão culinária, não dieta: não fale de meta, não diga que "não pode mexer na meta" quando ninguém pediu isso, e não mande a pessoa olhar o plano em vez de responder.
 - Explicar o que é um suplemento, pra que serve em geral, composição e diferenças entre tipos/marcas — como informação pública.
 - Lembrar de leve registros do app (água, refeições, hábitos) usando o contexto abaixo.
-- Quando a pessoa pedir pra MONTAR um treino ou uma dieta: não monte você. Diga que é só tocar em "Montar treino" ou "Montar dieta" aqui embaixo, no chat (na primeira vez tem um check de saúde rápido, 5 perguntas). Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
-- Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude séries, repetições, carga ou dias do plano — se a pessoa quiser mudar, diga que ela ajusta na ficha ou monta de novo no botão "Montar treino" aqui embaixo, no chat.
-- Explicar e motivar sobre o PLANO DE REFERÊNCIA de dieta que o app montou (se estiver no contexto): de onde vem a meta (fórmula de gasto + objetivo), por que proteína/carboidrato/gordura, como usar o dia-modelo e trocar alimentos equivalentes DENTRO dele. Nunca mude calorias, macros ou quantidades — se a pessoa quiser mudar, diga que ela monta de novo no botão "Montar dieta" aqui embaixo, no chat. Fale "a meta de referência do seu plano é X kcal", nunca "você deve comer X kcal".
+- Hábito de EVITAR algo (ex.: doce) e a pessoa pede justamente isso: atenda o pedido, sem sermão e sem negar, e reconheça de leve o esforço uma vez (ex.: "Tá firme há 5 dias no doce — se quiser uma versão mais leve: ..."). Use as alternativas que a tela de Hábitos mostra (no contexto) quando couber. Não repita o hábito como advertência a cada mensagem.
+- Hábitos: use os gatilhos, o horário de risco, a melhor sequência e os tropeços do contexto pra ajudar no momento — tropeço é parte do caminho, nunca fracasso.
+- Quando a pessoa pedir pra MONTAR um treino ou uma dieta: não monte você. O botão "Montar treino" fica no chat do Life da tela de Treino e o "Montar dieta" no chat do Life da tela de Dieta (na primeira vez tem um check de saúde rápido, 5 perguntas). Se o botão estiver neste chat (veja ONDE VOCÊ ESTÁ), diga que é só tocar nele aqui embaixo; se não, diga em qual tela ele fica. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
+- Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude séries, repetições, carga ou dias do plano — se a pessoa quiser mudar, diga que ela ajusta na ficha ou monta de novo no botão "Montar treino" (chat do Life no Treino).
+- Explicar e motivar sobre o PLANO DE REFERÊNCIA de dieta que o app montou (se estiver no contexto): de onde vem a meta (fórmula de gasto + objetivo), por que proteína/carboidrato/gordura, como usar o dia-modelo e trocar alimentos equivalentes DENTRO dele. Nunca mude calorias, macros ou quantidades — se a pessoa quiser mudar, diga que ela monta de novo no botão "Montar dieta" (chat do Life na Dieta). Fale "a meta de referência do seu plano é X kcal", nunca "você deve comer X kcal".
 
 NUNCA:
 - Montar dieta ou cardápio, definir calorias/macros-alvo para a pessoa.
@@ -580,10 +634,10 @@ ${linhaApoio(loc)}`
  * Valor desconhecido cai no da Home.
  */
 const FOCOS_LIFE: Record<string, string> = {
-  home: 'ONDE VOCÊ ESTÁ: na Home. Você é o Life que junta tudo — comida, treino, água, peso, humor e hábitos. Ligue os pontos entre as áreas quando fizer sentido.',
-  dieta: 'ONDE VOCÊ ESTÁ: na tela de Dieta (você está de chef). Você sabe de tudo, mas puxe pra comida: refeições do dia, trocas equivalentes (informando kcal/macros, sem recomendar), porções, rótulos e o plano de referência de dieta.',
-  treino: 'ONDE VOCÊ ESTÁ: na tela de Treino. Você sabe de tudo, mas puxe pro treino: exercícios, execução em linhas gerais, ordem, séries anotadas, descanso e o plano de referência de treino. Carga é sempre a pessoa quem define.',
-  habitos: 'ONDE VOCÊ ESTÁ: na tela de Hábitos. Você sabe de tudo, mas puxe pros hábitos: acolher a vontade, celebrar os dias firmes, ajudar a atravessar o momento difícil — sem julgar.',
+  home: 'ONDE VOCÊ ESTÁ: na Home. Você é o Life que sabe de tudo do app — comida, treino, água, peso, humor e hábitos — e liga os pontos entre as áreas quando fizer sentido (ex.: dormiu mal e tem treino pesado hoje; vontade de doce à noite num dia sem almoço). Este chat é só conversa, sem botões: montar treino é no Life da tela de Treino; montar dieta, montar receita e analisar alimento são no Life da tela de Dieta.',
+  dieta: 'ONDE VOCÊ ESTÁ: na tela de Dieta — você é o Life da comida (de chef). Você sabe de tudo, mas puxe pra alimentação: refeições do dia, ideias de comida, trocas equivalentes (informando kcal/macros, sem recomendar), porções, rótulos e o plano de referência de dieta. Botões deste chat: "Montar dieta", "Trocar um alimento", "Monte sua receita com o Life" e "Analisar um alimento" (foto do prato ou código de barras). Se a pessoa quiser saber o que tem num prato ou produto, lembre do "Analisar um alimento". Se perguntarem de treino, responda curto e diga que o Life do Treino ajuda melhor nisso.',
+  treino: 'ONDE VOCÊ ESTÁ: na tela de Treino — você é o Life do treino. Você sabe de tudo, mas puxe pro treino: exercícios do plano, execução em linhas gerais, ordem, séries anotadas, descanso, constância e o plano de referência de treino. Carga é sempre a pessoa quem define. Botões deste chat: "Montar treino" e "Trocar um exercício". Se perguntarem de comida, responda curto e diga que o Life da Dieta ajuda melhor nisso.',
+  habitos: 'ONDE VOCÊ ESTÁ: na tela de Hábitos — você é o Life dos hábitos. Você sabe de tudo, mas puxe pros hábitos: acolher a vontade, celebrar os dias firmes, ajudar a atravessar o momento difícil (respirar, mudar de lugar, beber água, esperar a onda passar), entender o que dispara a vontade e recomeçar depois de um tropeço — sem julgar e sem sermão. Este chat é só conversa, sem botões de plano: montar treino é no Life da tela de Treino e montar dieta no Life da tela de Dieta.',
 }
 
 async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>) {
@@ -653,6 +707,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const g = await chamarGemini({
     systemInstruction: { parts: [{ text: sistema }] },
     contents: conteudos,
+    tools: FERRAMENTAS_LIFE,
+    toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
     generationConfig: configGeracao(400, 0.8),
   })
 
@@ -662,10 +718,21 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     return json({ error: 'ia_falhou' }, 502)
   }
 
-  // 5. Filtro de saída.
+  // 5. Ação pedida pelo modelo (o texto dele é ignorado: quem diz "pronto"
+  //    é o servidor, depois de gravar) ou filtro de saída na resposta.
   let resposta = g.texto.trim()
   let status = 'ok'
-  if (violaPrescricao(resposta)) {
+  let acao: AcaoCliente | null = null
+  const chamada = g.chamadas[0]
+  const feito = chamada ? await executarFerramenta(sb, userId, loc, chamada, uuidValido(corpo.id_envio)) : null
+  if (feito) {
+    resposta = feito.resposta
+    acao = feito.acao
+    status = feito.status
+  } else if (!resposta) {
+    resposta = TXT[loc.idioma].naoEntendi
+    status = 'ferramenta_desconhecida'
+  } else if (violaPrescricao(resposta)) {
     resposta = RESPOSTA_SEM_PRESCRICAO[loc.idioma]
     status = 'filtrado'
   }
@@ -676,20 +743,21 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   ])
   await auditar(sb, userId, 'chat', status, g)
 
-  return json({ resposta, restantes: Math.max(cota.limite - cota.usados, 0) })
+  return json({ resposta, restantes: Math.max(cota.limite - cota.usados, 0), ...(acao ? { acao } : {}) })
 }
 
 /** Contexto compacto (poucas linhas = poucos tokens). Tolera falha parcial. */
 async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<string> {
   const hoje = hojeNoFuso(fuso)
+  const ontem = somarDias(hoje, -1)
   const r = await Promise.allSettled([
     sb.from('profiles')
       .select('nome, objetivo, restricoes, kcal_meta, prot_meta, agua_meta_ml, onboarding_respostas, consentimento_habitos')
       .eq('id', userId).maybeSingle(),
     sb.from('registros_agua').select('quantidade_ml').eq('user_id', userId).eq('data', hoje),
     sb.from('itens_refeicao')
-      .select('nome, calorias, proteina')
-      .eq('user_id', userId).eq('data', hoje).limit(40),
+      .select('nome, calorias, proteina, tipo, refeicao_extra_id, data')
+      .eq('user_id', userId).in('data', [hoje, ontem]).limit(120),
     sb.from('checkins_emocionais')
       .select('humor').eq('user_id', userId).eq('data', hoje)
       .order('created_at', { ascending: false }).limit(1),
@@ -697,13 +765,17 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
     sb.from('treino_plano')
       .select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('concluido_em', hoje),
     sb.from('vicios_user')
-      .select('nome, categoria, streak_atual, ultimo_checkin, ultima_recaida, criado_em')
+      .select('nome, categoria, streak_atual, melhor_streak, total_recaidas, gatilhos, horario_risco, ultimo_checkin, ultima_recaida, criado_em')
       .eq('user_id', userId).eq('ativo', true).limit(5),
     sb.from('registros_peso')
       .select('peso_kg, data').eq('user_id', userId).order('data', { ascending: false }).limit(1),
     // Sessões do modo "treino em andamento" (2026-09-27).
     sb.from('treinos_historico')
       .select('duracao_min, completo, series_feitas').eq('user_id', userId).eq('data', hoje),
+    sb.from('refeicoes_extra')
+      .select('id, nome, data, ordem').eq('user_id', userId).in('data', [hoje, ontem]).order('ordem'),
+    // Dias pausados (Life MVP 08/10): hoje pausado + sequência congelada.
+    sb.from('life_pausas').select('dia').eq('user_id', userId).gte('dia', somarDias(hoje, -60)),
   ])
   // deno-lint-ignore no-explicit-any
   const val = (i: number): any => (r[i].status === 'fulfilled' ? (r[i] as PromiseFulfilledResult<any>).value : null)
@@ -731,7 +803,8 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
   const dia: string[] = []
   const agua = ((val(1)?.data ?? []) as { quantidade_ml: number }[]).reduce((s, x) => s + (x.quantidade_ml ?? 0), 0)
   dia.push(`água ${agua}/${p?.agua_meta_ml ?? 2500}ml`)
-  const itens = (val(2)?.data ?? []) as { nome: string; calorias: number; proteina: number }[]
+  const itensDoisDias = (val(2)?.data ?? []) as ItemContexto[]
+  const itens = itensDoisDias.filter((x) => x.data === hoje)
   if (itens.length) {
     const kcal = Math.round(itens.reduce((s, x) => s + Number(x.calorias ?? 0), 0))
     const prot = Math.round(itens.reduce((s, x) => s + Number(x.proteina ?? 0), 0))
@@ -755,23 +828,38 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
   }
   linhas.push(`Hoje: ${dia.join(' · ')}`)
 
+  const pausas = new Set(((val(10)?.data ?? []) as { dia: string }[]).map((x) => x.dia))
+  if (pausas.has(hoje)) {
+    linhas.push('Life pausado hoje (a pessoa pediu silêncio até amanhã): não puxe assunto nem lembre de registros; só responda.')
+  }
+
   const habitos = (val(6)?.data ?? []) as {
-    nome: string; categoria: string | null; streak_atual: number
+    nome: string; categoria: string | null; streak_atual: number; melhor_streak: number | null
+    total_recaidas: number | null; gatilhos: string[] | null; horario_risco: string | null
     ultimo_checkin: string | null; ultima_recaida: string | null; criado_em: string
   }[]
   // Hábitos só entram no contexto com consentimento (profiles.consentimento_habitos).
   if (habitos.length && p?.consentimento_habitos === true) {
-    const hojeMs = Date.parse(hoje)
     const desc = habitos.map((h) => {
+      const extras: string[] = []
+      if (h.melhor_streak) extras.push(`melhor sequência ${h.melhor_streak}`)
+      if (h.total_recaidas) extras.push(`${h.total_recaidas} tropeço(s)`)
+      const gat = (h.gatilhos ?? []).map((g) => texto(g, 30)).filter(Boolean).slice(0, 4)
+      if (gat.length) extras.push(`gatilhos: ${gat.join(', ')}`)
+      if (h.horario_risco) extras.push(`horário de risco: ${texto(h.horario_risco, 20)}`)
+      const mais = extras.length ? ` (${extras.join('; ')})` : ''
       if (h.categoria === 'leitura') {
-        const ativo = h.ultimo_checkin && hojeMs - Date.parse(h.ultimo_checkin) <= 86_400_000
-        return `"${h.nome}" (construir) ${ativo ? h.streak_atual : 0} dias`
+        const firme = !!h.ultimo_checkin && diasAtivosEntre(h.ultimo_checkin, hoje, pausas) === 0
+        return `"${h.nome}" (construir) ${firme ? h.streak_atual : 0} dias${mais}`
       }
       const base = Math.max(Date.parse(h.criado_em), h.ultima_recaida ? Date.parse(h.ultima_recaida) : 0)
-      return `"${h.nome}" (evitar) ${Math.max(Math.floor((Date.now() - base) / 86_400_000), 0)} dias firme`
+      const alt = alternativasHabito(h.categoria).join(' | ')
+      return `"${h.nome}" (evitar) ${Math.max(Math.floor((Date.now() - base) / 86_400_000), 0)} dias firme${mais}; alternativas da tela: ${alt}`
     })
-    linhas.push(`Hábitos: ${desc.join('; ')}`)
+    linhas.push(`Hábitos: ${desc.join('\n  ')}`)
   }
+
+  linhas.push(listaRefeicoes(itensDoisDias, (val(9)?.data ?? []) as ExtraContexto[], hoje, ontem))
 
   const peso = val(7)?.data?.[0]
   if (peso) linhas.push(`Último peso: ${peso.peso_kg}kg (${peso.data})`)
@@ -797,6 +885,514 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
   }
 
   return linhas.join('\n')
+}
+
+// ================================================================
+// AÇÕES DO LIFE (Life MVP 08/10) — repetir refeição e pausa do dia.
+// O modelo só indica a intenção (function calling); quem resolve nomes,
+// valida, grava e escreve o "pronto" é o servidor. Nada de SQL vindo da IA.
+// ================================================================
+type TipoFixo = 'cafe' | 'almoco' | 'lanche' | 'jantar'
+const TIPOS_FIXOS: readonly TipoFixo[] = ['cafe', 'almoco', 'lanche', 'jantar']
+
+interface ItemContexto {
+  nome: string
+  calorias: number
+  proteina: number
+  tipo: string
+  refeicao_extra_id: string | null
+  data: string
+}
+interface ExtraContexto {
+  id: string
+  nome: string
+  data: string
+}
+
+/** 'AAAA-MM-DD' + n dias (sem fuso: é aritmética de calendário). */
+function somarDias(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+/** Dias estritamente entre `de` e `ate` que NÃO foram pausados (0 = sequência intacta). */
+function diasAtivosEntre(de: string, ate: string, pausas: ReadonlySet<string>): number {
+  let n = 0
+  for (let d = somarDias(de, 1); d < ate; d = somarDias(d, 1)) if (!pausas.has(d)) n++
+  return n
+}
+
+// Mesmas alternativas da tela de Hábitos (src/domain/entities/habito.ts —
+// se mudar lá, mudar aqui).
+const ALTERNATIVAS_HABITO: Record<string, readonly string[]> = {
+  doce: [
+    'Banana com pasta de amendoim',
+    'Chá de canela com mel',
+    '2 quadradinhos de chocolate 70%',
+  ],
+  fast_food: [
+    'Lanche rápido em casa — ovo, pão integral, queijo',
+    'Um copo de água antes',
+    'Se for sair, o item mais leve do cardápio',
+  ],
+  refrigerante: ['Água com gás e limão', 'Chá gelado sem açúcar', 'Suco natural bem diluído'],
+}
+const ALTERNATIVAS_HABITO_PADRAO = [
+  'Um copo de água e esperar uns 5 minutos',
+  'Levantar, andar um pouco, mudar de ambiente',
+  'Mandar mensagem pra alguém de confiança',
+]
+function alternativasHabito(categoria: string | null): readonly string[] {
+  return (categoria && ALTERNATIVAS_HABITO[categoria]) || ALTERNATIVAS_HABITO_PADRAO
+}
+
+/** Linha REFEIÇÕES do contexto: o que existe hoje e ontem, pelos nomes que a ferramenta aceita. */
+function listaRefeicoes(itens: ItemContexto[], extras: ExtraContexto[], hoje: string, ontem: string): string {
+  const dia = (d: string, rotulo: string) => {
+    const doDia = itens.filter((i) => i.data === d)
+    const partes = TIPOS_FIXOS.map((t) => {
+      const n = doDia.filter((i) => i.tipo === t).length
+      return `${t} (${n ? `${n} itens` : 'vazio'})`
+    })
+    for (const e of extras.filter((x) => x.data === d)) {
+      const n = doDia.filter((i) => i.refeicao_extra_id === e.id).length
+      partes.push(`"${texto(e.nome, 40)}" (${n ? `${n} itens` : 'vazio'})`)
+    }
+    return `${rotulo}: ${partes.join(', ')}`
+  }
+  return `REFEIÇÕES (nomes aceitos por repetir_refeicao; aspas = extras dela): ${dia(hoje, 'hoje')} · ${dia(ontem, 'ontem')}`
+}
+
+const FERRAMENTAS_LIFE = [
+  {
+    functionDeclarations: [
+      {
+        name: 'repetir_refeicao',
+        description:
+          'Copia os itens de uma refeição já registrada pra outra (ex.: "coloca na janta o mesmo de ontem"). Só quando a pessoa pedir claramente. Use os nomes da lista REFEIÇÕES do contexto.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            origem_dia: { type: 'STRING', description: "'hoje', 'ontem', 'anteontem' ou data AAAA-MM-DD" },
+            origem_refeicao: {
+              type: 'STRING',
+              description: 'cafe, almoco, lanche, jantar, ou o nome de uma refeição extra da pessoa',
+            },
+            destino_dia: { type: 'STRING', description: "'hoje', 'ontem', 'anteontem' ou data AAAA-MM-DD" },
+            destino_refeicao: {
+              type: 'STRING',
+              description: 'cafe, almoco, lanche, jantar, ou o nome de uma refeição extra (nova ou existente)',
+            },
+            modo: {
+              type: 'STRING',
+              enum: ['adicionar', 'substituir'],
+              description: 'Só se a pessoa já disse se quer somar ao que já tem no destino ou trocar',
+            },
+          },
+          required: ['origem_dia', 'origem_refeicao', 'destino_dia', 'destino_refeicao'],
+        },
+      },
+      {
+        name: 'pausar_life_hoje',
+        description:
+          'Pausa o Life até o fim do dia: sem lembretes, check-ins nem mensagens iniciadas pelo Life. Só quando a pessoa pedir claramente ou aceitar a oferta de pausa.',
+      },
+    ],
+  },
+]
+
+// ---------- textos (pt/en/es) ----------
+interface RefResolvida {
+  tipo: TipoFixo | 'extra'
+  extraId: string | null
+  nome: string // nome da extra (ou '' nas fixas)
+  dia: string
+}
+
+const NOME_FIXO: Record<Idioma, Record<TipoFixo, string>> = {
+  'pt-BR': { cafe: 'café da manhã', almoco: 'almoço', lanche: 'lanche', jantar: 'jantar' },
+  en: { cafe: 'breakfast', almoco: 'lunch', lanche: 'snack', jantar: 'dinner' },
+  es: { cafe: 'desayuno', almoco: 'almuerzo', lanche: 'merienda', jantar: 'cena' },
+}
+const ART_ES: Record<TipoFixo, string> = { cafe: 'el', almoco: 'el', lanche: 'la', jantar: 'la' }
+
+function rotuloDia(dia: string, hoje: string, idioma: Idioma): string {
+  const [, m, d] = dia.split('-')
+  const tabela: Record<Idioma, [string, string, string]> = {
+    'pt-BR': ['hoje', 'ontem', `${d}/${m}`],
+    en: ['today', 'yesterday', `${m}/${d}`],
+    es: ['hoy', 'ayer', `${d}/${m}`],
+  }
+  const [h, o, data] = tabela[idioma]
+  return dia === hoje ? h : dia === somarDias(hoje, -1) ? o : data
+}
+
+/** "o jantar de ontem" / "the dinner from yesterday" / "la cena de ayer" — com artigo. */
+function frase(ref: RefResolvida, hoje: string, idioma: Idioma): string {
+  const dia = rotuloDia(ref.dia, hoje, idioma)
+  if (idioma === 'en') return ref.tipo === 'extra' ? `"${ref.nome}" from ${dia}` : `the ${NOME_FIXO.en[ref.tipo]} from ${dia}`
+  if (idioma === 'es') return ref.tipo === 'extra' ? `"${ref.nome}" de ${dia}` : `${ART_ES[ref.tipo]} ${NOME_FIXO.es[ref.tipo]} de ${dia}`
+  return ref.tipo === 'extra' ? `a refeição "${ref.nome}" de ${dia}` : `o ${NOME_FIXO['pt-BR'][ref.tipo]} de ${dia}`
+}
+
+/** Preposição + artigo: em+o = no, a+el = al... */
+function contrair(prep: string, f: string): string {
+  const pares: Record<string, string> = {
+    'em o ': 'no ', 'em a ': 'na ', 'de o ': 'do ', 'de a ': 'da ',
+    'a el ': 'al ', 'de el ': 'del ',
+  }
+  const junto = `${prep} ${f}`
+  for (const [de, para] of Object.entries(pares)) if (junto.startsWith(de)) return para + junto.slice(de.length)
+  return junto
+}
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+
+const TXT = {
+  'pt-BR': {
+    pronto: (o: string, d: string, n: number, kcal: number) =>
+      `Pronto! Copiei ${o} para ${d} (${n} ${n === 1 ? 'item' : 'itens'}, ~${kcal} kcal).`,
+    ocupado: (d: string, n: number) => `${cap(d)} já tem ${n} ${n === 1 ? 'item' : 'itens'}. Adiciono junto ou substituo?`,
+    vazia: (o: string) => `Não achei nada registrado ${contrair('em', o)}. O que você comeu?`,
+    ambigua: (nome: string) => `Achei mais de uma refeição chamada "${nome}" nesse dia. Qual delas?`,
+    restricao: (itens: string, r: string) => `Antes de copiar: ${itens} pode ter ${r}, que está nas suas restrições. Copio mesmo assim?`,
+    futuro: 'Por enquanto eu só registro em hoje ou em dias que já passaram.',
+    naoEntendi: 'Não entendi qual refeição repetir. Me diz qual (e de que dia) que eu coloco.',
+    falhou: 'Não consegui registrar agora — nada foi alterado. Tenta de novo daqui a pouco.',
+    cancelado: 'Beleza, deixei como estava.',
+    expirou: 'Essa pergunta já ficou pra trás. Se ainda quiser, me pede de novo.',
+    andamento: 'Tô terminando de registrar — já aparece aí.',
+    pausa: 'Combinado. Hoje eu fico quietinho: sem lembrete nem mensagem minha até amanhã. Se quiser falar, é só chamar.',
+    pausaFalhou: 'Não consegui pausar agora. Tenta pelo botão 🌙 aqui em cima.',
+    escolha: { adicionar: 'Adicionar junto', substituir: 'Substituir', forcar: 'Copiar mesmo assim', cancelar: 'Deixa como está' },
+  },
+  en: {
+    pronto: (o: string, d: string, n: number, kcal: number) =>
+      `Done! I copied ${o} to ${d} (${n} ${n === 1 ? 'item' : 'items'}, ~${kcal} kcal).`,
+    ocupado: (d: string, n: number) => `${cap(d)} already has ${n} ${n === 1 ? 'item' : 'items'}. Should I add to it or replace it?`,
+    vazia: (o: string) => `I couldn't find anything logged for ${o}. What did you eat?`,
+    ambigua: (nome: string) => `I found more than one meal called "${nome}" that day. Which one?`,
+    restricao: (itens: string, r: string) => `Before I copy it: ${itens} may contain ${r}, which is on your restrictions. Copy anyway?`,
+    futuro: 'For now I can only log to today or past days.',
+    naoEntendi: "I didn't get which meal to repeat. Tell me which one (and which day) and I'll add it.",
+    falhou: "I couldn't log it right now — nothing was changed. Try again in a bit.",
+    cancelado: 'Alright, I left it as it was.',
+    expirou: 'That question is a bit old now. If you still want it, just ask me again.',
+    andamento: "I'm finishing logging it — it'll show up in a sec.",
+    pausa: "Got it. I'll stay quiet today: no reminders or messages from me until tomorrow. If you want to talk, just call me.",
+    pausaFalhou: "I couldn't pause right now. Try the 🌙 button up top.",
+    escolha: { adicionar: 'Add to it', substituir: 'Replace', forcar: 'Copy anyway', cancelar: 'Leave it' },
+  },
+  es: {
+    pronto: (o: string, d: string, n: number, kcal: number) =>
+      `¡Listo! Copié ${o} a ${d} (${n} ${n === 1 ? 'ítem' : 'ítems'}, ~${kcal} kcal).`.replace(' a el ', ' al '),
+    ocupado: (d: string, n: number) => `${cap(d)} ya tiene ${n} ${n === 1 ? 'ítem' : 'ítems'}. ¿Lo agrego o lo reemplazo?`,
+    vazia: (o: string) => `No encontré nada registrado en ${o}. ¿Qué comiste?`,
+    ambigua: (nome: string) => `Encontré más de una comida llamada "${nome}" ese día. ¿Cuál?`,
+    restricao: (itens: string, r: string) => `Antes de copiar: ${itens} puede tener ${r}, que está en tus restricciones. ¿Lo copio igual?`,
+    futuro: 'Por ahora solo registro en hoy o en días que ya pasaron.',
+    naoEntendi: 'No entendí qué comida repetir. Dime cuál (y de qué día) y la agrego.',
+    falhou: 'No pude registrarlo ahora — no se cambió nada. Intenta de nuevo en un rato.',
+    cancelado: 'Listo, lo dejé como estaba.',
+    expirou: 'Esa pregunta ya quedó atrás. Si todavía quieres, pídemelo de nuevo.',
+    andamento: 'Estoy terminando de registrarlo — ya aparece.',
+    pausa: 'Hecho. Hoy me quedo calladito: sin recordatorios ni mensajes míos hasta mañana. Si quieres hablar, solo llámame.',
+    pausaFalhou: 'No pude pausar ahora. Prueba con el botón 🌙 de arriba.',
+    escolha: { adicionar: 'Agregar', substituir: 'Reemplazar', forcar: 'Copiar igual', cancelar: 'Dejarlo así' },
+  },
+} satisfies Record<Idioma, unknown>
+
+// ---------- resolução ----------
+const SINONIMOS_REFEICAO: Record<string, TipoFixo> = {
+  cafe: 'cafe', 'cafe da manha': 'cafe', 'cafe manha': 'cafe', breakfast: 'cafe', desayuno: 'cafe',
+  almoco: 'almoco', lunch: 'almoco', almuerzo: 'almoco',
+  lanche: 'lanche', 'lanche da tarde': 'lanche', snack: 'lanche', merienda: 'lanche',
+  jantar: 'jantar', janta: 'jantar', dinner: 'jantar', cena: 'jantar', 'la cena': 'jantar',
+}
+
+function resolverDia(arg: unknown, hoje: string): string | null {
+  const t = normalizar(String(arg ?? ''))
+  if (['hoje', 'today', 'hoy'].includes(t)) return hoje
+  if (['ontem', 'yesterday', 'ayer'].includes(t)) return somarDias(hoje, -1)
+  if (['anteontem', 'antes de ontem', 'day before yesterday', 'anteayer'].includes(t)) return somarDias(hoje, -2)
+  const iso = String(arg ?? '').trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso) && !Number.isNaN(Date.parse(iso))) return iso
+  return null
+}
+
+type Resolucao =
+  | { ok: true; ref: RefResolvida }
+  | { ok: false; motivo: 'ambigua' | 'nao_existe'; nome: string }
+
+async function resolverRefeicao(sb: Sb, userId: string, dia: string, arg: unknown, criarSeFaltar: boolean): Promise<Resolucao> {
+  const cru = texto(arg, 60).trim()
+  const n = normalizar(cru).replace(/^(o|a|the|el|la) /, '')
+  const fixo = SINONIMOS_REFEICAO[n]
+  if (fixo) return { ok: true, ref: { tipo: fixo, extraId: null, nome: '', dia } }
+  const { data } = await sb.from('refeicoes_extra').select('id, nome').eq('user_id', userId).eq('data', dia)
+  const iguais = ((data ?? []) as { id: string; nome: string }[]).filter((e) => normalizar(e.nome) === n)
+  if (iguais.length === 1) return { ok: true, ref: { tipo: 'extra', extraId: iguais[0].id, nome: iguais[0].nome, dia } }
+  if (iguais.length > 1) return { ok: false, motivo: 'ambigua', nome: cru }
+  if (criarSeFaltar && n.length > 0) return { ok: true, ref: { tipo: 'extra', extraId: null, nome: cru, dia } }
+  return { ok: false, motivo: 'nao_existe', nome: cru }
+}
+
+// Restrição × itens copiados (os itens só guardam o nome: é um aviso por texto).
+const TERMOS_RESTRICAO: { chaves: string[]; rotulo: Record<Idioma, string>; termos: string[] }[] = [
+  {
+    chaves: ['lactose', 'sem lactose', 'sem_lactose', 'leite', 'lacteos', 'dairy', 'lactosa'],
+    rotulo: { 'pt-BR': 'lactose', en: 'lactose', es: 'lactosa' },
+    termos: ['leite', 'queijo', 'iogurte', 'requeijao', 'manteiga', 'cottage', 'creme de leite', 'nata', 'whey', 'milk', 'cheese', 'yogurt', 'butter', 'leche', 'queso', 'yogur', 'mantequilla'],
+  },
+  {
+    chaves: ['gluten', 'sem gluten', 'sem_gluten', 'celiaco', 'celiaca', 'trigo'],
+    rotulo: { 'pt-BR': 'glúten', en: 'gluten', es: 'gluten' },
+    termos: ['pao', 'macarrao', 'trigo', 'centeio', 'cevada', 'biscoito', 'bolo', 'pizza', 'aveia', 'bread', 'pasta', 'wheat', 'pan', 'galleta'],
+  },
+  {
+    chaves: ['vegetariano', 'vegetariana', 'vegano', 'vegana', 'vegetarian', 'vegan'],
+    rotulo: { 'pt-BR': 'carne', en: 'meat', es: 'carne' },
+    termos: ['frango', 'carne', 'patinho', 'peixe', 'atum', 'tilapia', 'salmao', 'sardinha', 'camarao', 'presunto', 'bacon', 'linguica', 'peru', 'chicken', 'beef', 'fish', 'tuna', 'ham', 'pollo', 'pescado', 'jamon'],
+  },
+]
+
+function conflitosRestricao(itens: string[], restricoes: string[], idioma: Idioma): { itens: string[]; rotulos: string[] } {
+  const achados = new Set<string>()
+  const rotulos = new Set<string>()
+  const temPalavra = (nomeItem: string, termo: string) => new RegExp(`(^| )${termo}( |$)`).test(nomeItem)
+  for (const cruR of restricoes) {
+    const r = normalizar(String(cruR))
+    if (r.length < 3) continue
+    const grupo = TERMOS_RESTRICAO.find((g) => g.chaves.includes(r) || g.chaves.includes(r.replace(/ /g, '_')))
+    const termos = grupo ? grupo.termos : [r]
+    for (const item of itens) {
+      if (termos.some((t) => temPalavra(normalizar(item), t))) {
+        achados.add(item)
+        rotulos.add(grupo ? grupo.rotulo[idioma] : String(cruR))
+      }
+    }
+  }
+  return { itens: [...achados], rotulos: [...rotulos] }
+}
+
+// ---------- execução ----------
+type Escolha = 'adicionar' | 'substituir' | 'forcar' | 'cancelar'
+type AcaoCliente =
+  | { tipo: 'refeicao_atualizada'; data: string }
+  | { tipo: 'pausa'; dia: string }
+  | { tipo: 'escolha'; id: string; opcoes: { valor: Escolha; rotulo: string }[] }
+
+interface ResultadoAcao {
+  resposta: string
+  acao: AcaoCliente | null
+  status: string
+}
+
+interface ArgsRepetir {
+  origem: RefResolvida
+  destino: RefResolvida
+  modo: 'perguntar' | 'adicionar' | 'substituir'
+  forcar: boolean
+}
+
+function uuidValido(v: unknown): string | null {
+  return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v.toLowerCase() : null
+}
+
+function opcoes(idioma: Idioma, valores: Escolha[]) {
+  return valores.map((valor) => ({ valor, rotulo: TXT[idioma].escolha[valor] }))
+}
+
+async function fecharAcao(sb: Sb, id: string, status: string, r: ResultadoAcao, args?: ArgsRepetir) {
+  const { error } = await sb.from('life_acoes').update({
+    status,
+    resultado: { resposta: r.resposta, acao: r.acao },
+    ...(args ? { args } : {}),
+    ...(status === 'pendente' ? { expira_em: new Date(Date.now() + 15 * 60_000).toISOString() } : {}),
+  }).eq('id', id)
+  if (error) console.warn('[acao] fechar falhou', error.message)
+}
+
+/** Executa a cópia já resolvida. Deixa a ação 'pendente' quando precisa da pessoa. */
+async function executarRepeticao(sb: Sb, userId: string, idAcao: string, args: ArgsRepetir, idioma: Idioma, hoje: string): Promise<ResultadoAcao> {
+  const t = TXT[idioma]
+  const fO = frase(args.origem, hoje, idioma)
+  const fD = frase(args.destino, hoje, idioma)
+
+  if (!args.forcar) {
+    const consulta = sb.from('itens_refeicao').select('nome')
+      .eq('user_id', userId).eq('data', args.origem.dia).eq('tipo', args.origem.tipo)
+    const [{ data: itensO }, { data: perfil }] = await Promise.all([
+      (args.origem.extraId ? consulta.eq('refeicao_extra_id', args.origem.extraId) : consulta.is('refeicao_extra_id', null)).limit(60),
+      sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle(),
+    ])
+    const nomes = ((itensO ?? []) as { nome: string }[]).map((i) => i.nome)
+    const restr = Array.isArray(perfil?.restricoes) ? (perfil.restricoes as string[]) : []
+    const c = conflitosRestricao(nomes, restr, idioma)
+    if (c.itens.length) {
+      const r: ResultadoAcao = {
+        resposta: t.restricao(c.itens.slice(0, 3).join(', '), c.rotulos.join(', ')),
+        acao: { tipo: 'escolha', id: idAcao, opcoes: opcoes(idioma, ['forcar', 'cancelar']) },
+        status: 'acao_pendente',
+      }
+      await fecharAcao(sb, idAcao, 'pendente', r, args)
+      return r
+    }
+  }
+
+  const { data, error } = await sb.rpc('life_repetir_refeicao', {
+    p_user_id: userId,
+    p_origem_data: args.origem.dia,
+    p_origem_tipo: args.origem.tipo,
+    p_origem_extra_id: args.origem.extraId,
+    p_destino_data: args.destino.dia,
+    p_destino_tipo: args.destino.tipo,
+    p_destino_extra_id: args.destino.extraId,
+    p_destino_nome: args.destino.nome || null,
+    p_modo: args.modo,
+  })
+  if (error) {
+    console.error('[acao] repetir falhou', error.message)
+    const r: ResultadoAcao = { resposta: t.falhou, acao: null, status: 'acao_falhou' }
+    await fecharAcao(sb, idAcao, 'falhou', r, args)
+    return r
+  }
+  const res = (data ?? {}) as { status?: string; itens?: number; kcal?: number; itens_destino?: number }
+  let r: ResultadoAcao
+  let st: string
+  switch (res.status) {
+    case 'ok':
+      r = { resposta: t.pronto(fO, fD, Number(res.itens ?? 0), Number(res.kcal ?? 0)), acao: { tipo: 'refeicao_atualizada', data: args.destino.dia }, status: 'acao_ok' }
+      st = 'feita'
+      break
+    case 'destino_ocupado':
+      r = {
+        resposta: t.ocupado(fD, Number(res.itens_destino ?? 0)),
+        acao: { tipo: 'escolha', id: idAcao, opcoes: opcoes(idioma, ['adicionar', 'substituir', 'cancelar']) },
+        status: 'acao_pendente',
+      }
+      st = 'pendente'
+      break
+    case 'origem_vazia':
+      r = { resposta: t.vazia(fO), acao: null, status: 'acao_origem_vazia' }
+      st = 'cancelada'
+      break
+    default:
+      r = { resposta: t.naoEntendi, acao: null, status: 'acao_invalida' }
+      st = 'cancelada'
+  }
+  await fecharAcao(sb, idAcao, st, r, args)
+  return r
+}
+
+/** Chamada de ferramenta vinda do chat. `idEnvio` = idempotência por mensagem. */
+async function executarFerramenta(
+  sb: Sb, userId: string, loc: Localidade, chamada: ChamadaFerramenta, idEnvio: string | null,
+): Promise<ResultadoAcao | null> {
+  const t = TXT[loc.idioma]
+  const hoje = hojeNoFuso(loc.fuso)
+
+  if (chamada.nome === 'pausar_life_hoje') {
+    const { error } = await sb.from('life_pausas').upsert({ user_id: userId, dia: hoje }, { onConflict: 'user_id,dia', ignoreDuplicates: true })
+    if (error) {
+      console.error('[acao] pausa falhou', error.message)
+      return { resposta: t.pausaFalhou, acao: null, status: 'pausa_falhou' }
+    }
+    return { resposta: t.pausa, acao: { tipo: 'pausa', dia: hoje }, status: 'pausa_ok' }
+  }
+
+  if (chamada.nome !== 'repetir_refeicao') return null
+  const id = idEnvio ?? crypto.randomUUID()
+
+  // Mesma mensagem reenviada: devolve o que já aconteceu, sem copiar de novo.
+  const { error: erroNovo } = await sb.from('life_acoes').insert({ id, user_id: userId, tipo: 'repetir_refeicao', status: 'executando' })
+  if (erroNovo) {
+    const { data: antiga } = await sb.from('life_acoes').select('status, resultado').eq('id', id).eq('user_id', userId).maybeSingle()
+    if (!antiga) {
+      console.error('[acao] registrar falhou', erroNovo.message)
+      return { resposta: t.falhou, acao: null, status: 'acao_falhou' }
+    }
+    if (antiga.status === 'executando') return { resposta: t.andamento, acao: null, status: 'acao_repetida' }
+    const res = (antiga.resultado ?? {}) as { resposta?: string; acao?: AcaoCliente | null }
+    return { resposta: res.resposta ?? t.andamento, acao: res.acao ?? null, status: 'acao_repetida' }
+  }
+
+  const a = chamada.args
+  const diaO = resolverDia(a.origem_dia, hoje)
+  const diaD = resolverDia(a.destino_dia, hoje)
+  const encerrar = async (r: ResultadoAcao) => {
+    await fecharAcao(sb, id, 'cancelada', r)
+    return r
+  }
+  if (!diaO || !diaD) return encerrar({ resposta: t.naoEntendi, acao: null, status: 'acao_invalida' })
+  if (diaO > hoje || diaD > hoje) return encerrar({ resposta: t.futuro, acao: null, status: 'acao_futuro' })
+  if (diaO < somarDias(hoje, -30)) return encerrar({ resposta: t.naoEntendi, acao: null, status: 'acao_invalida' })
+
+  const [o, d] = await Promise.all([
+    resolverRefeicao(sb, userId, diaO, a.origem_refeicao, false),
+    resolverRefeicao(sb, userId, diaD, a.destino_refeicao, true),
+  ])
+  if (!o.ok) {
+    if (o.motivo === 'ambigua') return encerrar({ resposta: t.ambigua(o.nome), acao: null, status: 'acao_ambigua' })
+    const ref: RefResolvida = { tipo: 'extra', extraId: null, nome: o.nome, dia: diaO }
+    return encerrar({ resposta: t.vazia(frase(ref, hoje, loc.idioma)), acao: null, status: 'acao_origem_vazia' })
+  }
+  if (!d.ok) return encerrar({ resposta: t.ambigua(d.nome), acao: null, status: 'acao_ambigua' })
+
+  const modo = a.modo === 'adicionar' || a.modo === 'substituir' ? a.modo : 'perguntar'
+  return executarRepeticao(sb, userId, id, { origem: o.ref, destino: d.ref, modo, forcar: false }, loc.idioma, hoje)
+}
+
+/**
+ * Resposta a uma escolha pendente (botões do chat: adicionar / substituir /
+ * copiar mesmo assim / deixa como está). Sem IA e sem gastar mensagem.
+ * { tipo: 'acao', id, escolha } -> { resposta, acao }
+ */
+async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+  const id = uuidValido(corpo.id)
+  const escolha = corpo.escolha
+  if (!id || !['adicionar', 'substituir', 'forcar', 'cancelar'].includes(String(escolha))) {
+    return json({ error: 'invalid_action' }, 400)
+  }
+  const loc = await lerLocalidade(sb, userId)
+  const t = TXT[loc.idioma]
+  const hoje = hojeNoFuso(loc.fuso)
+
+  const { data: pend } = await sb.from('life_acoes')
+    .select('status, args, expira_em, resultado').eq('id', id).eq('user_id', userId).maybeSingle()
+
+  let r: ResultadoAcao
+  if (!pend) {
+    r = { resposta: t.expirou, acao: null, status: 'acao_invalida' }
+  } else if (pend.status !== 'pendente') {
+    // Toque duplo: devolve o resultado que já existe.
+    const res = (pend.resultado ?? {}) as { resposta?: string; acao?: AcaoCliente | null }
+    const acao = res.acao?.tipo === 'escolha' ? null : res.acao ?? null
+    return json({ resposta: res.resposta ?? t.cancelado, acao })
+  } else if (pend.expira_em && Date.parse(pend.expira_em) < Date.now()) {
+    r = { resposta: t.expirou, acao: null, status: 'acao_expirada' }
+    await fecharAcao(sb, id, 'cancelada', r)
+  } else if (escolha === 'cancelar') {
+    r = { resposta: t.cancelado, acao: null, status: 'acao_cancelada' }
+    await fecharAcao(sb, id, 'cancelada', r)
+  } else {
+    // Trava a pendência antes de executar (dois toques ao mesmo tempo).
+    const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
+      .eq('id', id).eq('status', 'pendente').select('id')
+    if (!travou?.length) return json({ resposta: t.andamento, acao: null })
+    const args = pend.args as ArgsRepetir
+    const novo: ArgsRepetir = escolha === 'forcar'
+      ? { ...args, forcar: true }
+      : { ...args, forcar: true, modo: escolha as 'adicionar' | 'substituir' }
+    r = await executarRepeticao(sb, userId, id, novo, loc.idioma, hoje)
+  }
+
+  await sb.from('life_chat_mensagens').insert([
+    { user_id: userId, autor: 'usuario', texto: t.escolha[escolha as Escolha] },
+    { user_id: userId, autor: 'life', texto: r.resposta },
+  ])
+  await auditar(sb, userId, 'acao', r.status)
+  return json({ resposta: r.resposta, acao: r.acao })
 }
 
 // ================================================================

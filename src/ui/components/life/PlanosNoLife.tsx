@@ -19,6 +19,8 @@ import { useI18n } from '@/i18n/I18nProvider'
 import { BalaoLife, BalaoPessoa, Opcao } from './baloes'
 import { MontarDietaNoLife, MontarTreinoNoLife } from './MontarPlanoNoLife'
 
+export type AreaPlano = 'treino' | 'dieta'
+
 type Passo =
   | { tipo: 'carregando' }
   | { tipo: 'convite' }
@@ -36,14 +38,16 @@ type Passo =
  *   2. Teve "Sim": o Life aconselha procurar um médico. Se a pessoa quiser
  *      o plano mesmo assim, declara que está ciente (gravado, append-only)
  *      e recebe. Não trava — é a nossa "apólice", não uma catraca.
- *   3. Depois fica aqui: Montar treino · Montar dieta · Trocar algo no plano.
+ *   3. Depois fica aqui o "Montar" da área (dono, 08/10: cada Life no seu
+ *      assunto — no Treino só o treino, na Dieta só a dieta; Home e Hábitos
+ *      não têm planos) + trocar um item do plano.
  *      Montar acontece AQUI no chat (MontarPlanoNoLife); aplicou, o plano
  *      vai pra ficha do Treino / cards da Dieta e o chat leva a pessoa lá.
  *
  * Roteiro do app, sem IA: não gasta mensagem da cota. Quem decide o que vale
  * é o servidor (avaliar_triagem + RPCs dos planos).
  */
-export function PlanosNoLife(props: { onMudou: () => void; onPreencher: (texto: string) => void; onIr: (rota: string) => void }) {
+export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPreencher: (texto: string) => void; onIr: (rota: string) => void }) {
   const { m } = useI18n()
   const t = m.lifePlanos
   const navigate = useNavigate()
@@ -158,7 +162,7 @@ export function PlanosNoLife(props: { onMudou: () => void; onPreencher: (texto: 
   if (passo.tipo === 'convite') {
     return (
       <div className="rounded-2xl border border-brand/40 bg-brand/5 p-4">
-        <p className="text-sm font-bold text-content-hi">{t.cartao}</p>
+        <p className="text-sm font-bold text-content-hi">{t.cartao[props.area]}</p>
         <p className="mt-1 text-sm leading-relaxed text-content-mid">{t.cartaoSub}</p>
         <button
           type="button"
@@ -181,7 +185,7 @@ export function PlanosNoLife(props: { onMudou: () => void; onPreencher: (texto: 
     <div className="space-y-3">
       {emCheck && (
         <>
-          <BalaoLife>{t.intro}</BalaoLife>
+          <BalaoLife>{t.intro[props.area]}</BalaoLife>
           {passo.tipo === 'sexo' && (
             <>
               <BalaoLife>{t.sexo}</BalaoLife>
@@ -293,11 +297,12 @@ export function PlanosNoLife(props: { onMudou: () => void; onPreencher: (texto: 
 
       {passo.tipo === 'pronto' && triagem && !(montando && pago) && (
         <Pronto
+          area={props.area}
           triagem={triagem}
           combinado={combinado}
           onMontarTreino={() => setMontando('treino')}
           onMontarDieta={() => setMontando('dieta')}
-          onTrocar={() => props.onPreencher(t.trocarTexto)}
+          onTrocar={() => props.onPreencher(t.trocarTexto[props.area])}
           onQueroMesmoAssim={() => {
             setCiente(false)
             setPasso({ tipo: 'ressalva', depoisDeGravado: true })
@@ -372,6 +377,7 @@ function Ressalva(props: {
 }
 
 function Pronto(props: {
+  area: AreaPlano
   triagem: TriagemVigente
   combinado: boolean
   onMontarTreino: () => void
@@ -399,7 +405,7 @@ function Pronto(props: {
     )
   }
 
-  const precisaCiente = treino === 'precisa_ciente' || dieta === 'precisa_ciente'
+  const precisaCiente = (props.area === 'treino' ? treino : dieta) === 'precisa_ciente'
   return (
     <>
       {props.combinado && <BalaoLife>{t.combinado}</BalaoLife>}
@@ -407,12 +413,11 @@ function Pronto(props: {
         {precisaCiente ? (
           <Opcao onClick={props.onQueroMesmoAssim}>{t.querMesmoAssim}</Opcao>
         ) : (
-          <>
-            <Opcao onClick={props.onMontarTreino}>🏋️ {t.montarTreino}</Opcao>
-            <Opcao onClick={props.onMontarDieta}>🥗 {t.montarDieta}</Opcao>
-          </>
+          props.area === 'treino'
+            ? <Opcao onClick={props.onMontarTreino}>🏋️ {t.montarTreino}</Opcao>
+            : <Opcao onClick={props.onMontarDieta}>🥗 {t.montarDieta}</Opcao>
         )}
-        <Opcao onClick={props.onTrocar}>🔄 {t.trocarNoPlano}</Opcao>
+        <Opcao onClick={props.onTrocar}>🔄 {t.trocarNoPlano[props.area]}</Opcao>
       </div>
     </>
   )

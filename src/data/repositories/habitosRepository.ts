@@ -7,6 +7,7 @@ import {
   type IntensidadeHabito,
 } from '@domain/entities/habito'
 import { dataLocalISO } from '@domain/rules/datas'
+import { diasPausados } from '@data/lifePausa'
 
 interface HabitoRow {
   id: string
@@ -28,14 +29,20 @@ function hojeISO(): string {
   return dataLocalISO()
 }
 
-function paraDominio(r: HabitoRow): Habito {
+function diasAtras(n: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return dataLocalISO(d)
+}
+
+function paraDominio(r: HabitoRow, pausados: ReadonlySet<string>): Habito {
   const tipo = tipoDaCategoria(r.categoria)
   const hoje = hojeISO()
   const ultimaRecaida = r.ultima_recaida ? new Date(r.ultima_recaida) : null
 
   const streak =
     tipo === 'construir'
-      ? streakConstruir(r.streak_atual ?? 0, r.ultimo_checkin, hoje)
+      ? streakConstruir(r.streak_atual ?? 0, r.ultimo_checkin, hoje, pausados)
       : streakEvitar(new Date(r.criado_em), ultimaRecaida, hoje)
 
   // proximaConquista: próximo marco de dias acima do streak atual.
@@ -96,7 +103,8 @@ export const habitosRepository = {
       .returns<HabitoRow[]>()
 
     if (error) throw error
-    return (data ?? []).map(paraDominio)
+    const pausados = await diasPausados(diasAtras(90))
+    return (data ?? []).map((r) => paraDominio(r, pausados))
   },
 
   /**

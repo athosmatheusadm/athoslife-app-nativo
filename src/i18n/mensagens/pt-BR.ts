@@ -379,6 +379,11 @@ export const ptBR = {
   },
 
   lifeChat: {
+    pausar: 'Pausar hoje',
+    pausado: 'Pausado hoje',
+    retomar: 'Retomar',
+    pausadoAviso: 'Hoje sem lembretes nem mensagens do Life. Ele responde se você chamar — e nenhuma sequência se perde.',
+    erroPausa: 'Não deu pra mudar a pausa agora. Tenta de novo.',
     abrir: 'Conversar com o Life',
     titulo: {
       home: 'Conversa com o Life',
@@ -387,17 +392,20 @@ export const ptBR = {
       habitos: 'Life nos hábitos',
     },
     sub: {
-      home: 'Ele junta tudo: comida, treino, água e hábitos.',
-      dieta: 'Trocas, porções e dúvidas de comida.',
-      treino: 'Exercícios, séries e o seu plano de treino.',
-      habitos: 'Ele está aqui pra te ouvir.',
+      home: 'Ele sabe de tudo: comida, treino, água, humor e hábitos.',
+      dieta: 'Sua dieta, receitas, trocas e análise de alimentos.',
+      treino: 'Seu treino, exercícios e trocas na ficha.',
+      habitos: 'Ele está aqui pra te ajudar a segurar firme.',
     },
   },
   lifePlanos: {
-    cartao: 'Montar meus planos',
+    cartao: { treino: 'Montar meu treino', dieta: 'Montar minha dieta' },
     cartaoSub: 'Antes, um check de saúde rápido: 5 perguntas, uma vez só.',
     comecar: 'Começar o check',
-    intro: 'Antes de montar seu treino ou sua dieta, preciso te fazer algumas perguntas rápidas de saúde. É só uma vez.',
+    intro: {
+      treino: 'Antes de montar seu treino, preciso te fazer algumas perguntas rápidas de saúde. É só uma vez (vale pra dieta também).',
+      dieta: 'Antes de montar sua dieta, preciso te fazer algumas perguntas rápidas de saúde. É só uma vez (vale pro treino também).',
+    },
     progresso: (n: number, total: number) => `${n}/${total}`,
     sexo: 'Primeiro: qual seu sexo biológico? Ele muda as contas e algumas perguntas.',
     perguntas: {
@@ -425,8 +433,8 @@ export const ptBR = {
     bloqueado: 'Por enquanto não consigo montar planos automáticos pra você:',
     montarTreino: 'Montar treino',
     montarDieta: 'Montar dieta',
-    trocarNoPlano: 'Trocar algo no plano',
-    trocarTexto: 'Quero trocar um item do meu plano: ',
+    trocarNoPlano: { treino: 'Trocar um exercício', dieta: 'Trocar um alimento' },
+    trocarTexto: { treino: 'Quero trocar um exercício do meu treino: ', dieta: 'Quero trocar um alimento da minha dieta: ' },
     erroIncompleto: 'Informe a data de nascimento e marque a declaração.',
     erroNascimento: 'Confira a data de nascimento.',
   },
@@ -492,6 +500,13 @@ export const ptBR = {
         'Bora ver como está indo? Sobe na balança e registra.',
       ],
     },
+    checkins: {
+      manha: ['Bom dia! Como foi a noite de sono? 🌤️', 'Bom dia! Dormiu bem?', 'Dia começando — como você acordou hoje?'],
+      meioDia: ['Como tá o dia até agora?', 'Passando pra saber de você. Tudo certo por aí?', 'Meio do dia — como você tá?'],
+      meioDiaAlmocou: ['Almoço registrado 👌 Como tá o dia até agora?', 'Vi seu almoço por aqui. E o resto do dia, como tá?'],
+      noite: ['Como foi seu dia? Tô por aqui se quiser conversar 🌙', 'Fim de dia chegando. Como você tá?', 'Dia corrido? Me conta como foi.'],
+      noiteTreinou: ['Treino feito hoje 💪 Como você tá se sentindo?', 'Mandou bem no treino hoje. Como foi o resto do dia?'],
+    },
     tela: {
       secao: 'Lembretes do dia',
       intro: 'O Life te chama na hora certa — e fica quieto quando você já fez. Funciona só no app instalado, sem internet.',
@@ -526,7 +541,7 @@ export const ptBR = {
   },
   contato: {
     secao: 'Life puxa conversa',
-    intro: 'Você escolhe se o Life pode te procurar no chat. Começa desligado e dá pra mudar a qualquer hora.',
+    intro: 'Você escolhe se o Life pode te chamar — um aviso no celular que abre a conversa, nos momentos que você marcar. Ele fica quieto se vocês acabaram de conversar ou se você pausou o dia. Começa desligado.',
     lifeTitulo: 'Life puxa conversa no chat',
     lifeSub: 'Uma mensagem curta de vez em quando, nos momentos que você escolher.',
     momentos: { manha: 'Manhã', meio_dia: 'Meio-dia', noite: 'Noite' },
@@ -588,6 +603,7 @@ export const ptBR = {
     erroRegistrar: 'Não deu pra registrar agora. Tenta de novo.',
     aproximado: 'Macros aproximados.',
     lifeChefTitulo: 'Monte sua receita com o Life',
+    analisarAlimento: 'Analisar um alimento (foto ou código)',
     lifeChefPergunta: 'O que tem aí na sua cozinha hoje?',
     ingredientePlaceholder: 'Ex.: ovo, frango, arroz…',
     adicionar: 'Adicionar',

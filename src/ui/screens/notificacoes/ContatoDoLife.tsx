@@ -7,6 +7,7 @@ import {
   type PreferenciasContato,
 } from '@data/repositories/contatoRepository'
 import { Cartao, Chave, Linha } from './LembretesDoDia'
+import { avisarEstadoDoLife } from '@data/lifePausa'
 
 /**
  * "Life puxa conversa" em Perfil > Notificações: a pessoa escolhe se o Life
@@ -41,6 +42,8 @@ export function ContatoDoLife() {
     setErro(null)
     try {
       await contatoRepository.salvar(nova)
+      // Os check-ins do Life são avisos no aparelho: refaz a lista já.
+      avisarEstadoDoLife()
     } catch {
       setPrefs(anterior)
       setErro(t.erroSalvar)

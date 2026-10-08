@@ -7,6 +7,7 @@ import type {
 } from '@domain/entities/conquista'
 import type { Metas, Objetivo } from '@domain/entities/profile'
 import { dataLocalISO } from '@domain/rules/datas'
+import { diasPausados } from '@data/lifePausa'
 
 interface CatalogoRow {
   id: string
@@ -28,16 +29,24 @@ function hojeISO(): string {
   return dataLocalISO()
 }
 
-/** Maior sequência de dias consecutivos dentro do conjunto de datas dado (ISO yyyy-mm-dd). */
-function maiorSequencia(dias: ReadonlySet<string>): number {
+/**
+ * Maior sequência de dias consecutivos dentro do conjunto de datas dado (ISO
+ * yyyy-mm-dd). Dias com o Life pausado (08/10) congelam: não quebram a
+ * sequência nem contam como dia cumprido.
+ */
+function maiorSequencia(dias: ReadonlySet<string>, pausados: ReadonlySet<string> = new Set()): number {
   if (dias.size === 0) return 0
   const ordenados = Array.from(dias).sort()
+  const proximo = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00.000Z`)
+    d.setUTCDate(d.getUTCDate() + 1)
+    return d.toISOString().slice(0, 10)
+  }
   let maior = 1
   let atual = 1
   for (let i = 1; i < ordenados.length; i++) {
-    const anterior = new Date(`${ordenados[i - 1]}T00:00:00.000Z`)
-    anterior.setUTCDate(anterior.getUTCDate() + 1)
-    const esperado = anterior.toISOString().slice(0, 10)
+    let esperado = proximo(ordenados[i - 1] ?? '')
+    while (esperado < (ordenados[i] ?? '') && pausados.has(esperado)) esperado = proximo(esperado)
     atual = ordenados[i] === esperado ? atual + 1 : 1
     maior = Math.max(maior, atual)
   }
@@ -95,6 +104,7 @@ export const conquistasRepository = {
       aguaRows,
       pesoAlvo,
       resumoPeso,
+      pausados,
     ] = await Promise.all([
       supabase
         .from('conquistas_catalogo')
@@ -113,6 +123,7 @@ export const conquistasRepository = {
       supabase.from('registros_agua').select('data, quantidade_ml').eq('user_id', userId).returns<{ data: string; quantidade_ml: number }[]>(),
       supabase.from('profiles').select('peso_meta, objetivo').eq('id', userId).maybeSingle<{ peso_meta: number | null; objetivo: Objetivo | null }>(),
       pesoRepository.resumo(),
+      diasPausados('2000-01-01'),
     ])
 
     if (catalogo.error) throw catalogo.error
@@ -156,7 +167,7 @@ export const conquistasRepository = {
         .map(([data]) => data),
     )
     const diaCompletoAlgumaVez = diasCompletos.size > 0
-    const maiorSequenciaDietaCompleta = maiorSequencia(diasCompletos)
+    const maiorSequenciaDietaCompleta = maiorSequencia(diasCompletos, pausados)
 
     const TOLERANCIA_MACRO = 0.1 // ±10% da meta conta como "certo"
     function dentroDaMeta(valor: number, meta: number): boolean {
@@ -168,7 +179,7 @@ export const conquistasRepository = {
         .filter(([, m]) => dentroDaMeta(m.prot, metas.proteina))
         .map(([data]) => data),
     )
-    const maiorSequenciaProteina = maiorSequencia(diasProteinaNaMeta)
+    const maiorSequenciaProteina = maiorSequencia(diasProteinaNaMeta, pausados)
 
     const diasMacrosPerfeitos = new Set(
       Array.from(macrosPorDia.entries())
@@ -181,7 +192,7 @@ export const conquistasRepository = {
         )
         .map(([data]) => data),
     )
-    const maiorSequenciaMacros = maiorSequencia(diasMacrosPerfeitos)
+    const maiorSequenciaMacros = maiorSequencia(diasMacrosPerfeitos, pausados)
 
     const aguaRegistrosTotal = (aguaRows.data ?? []).length
     const aguaPorDia = new Map<string, number>()
@@ -193,7 +204,7 @@ export const conquistasRepository = {
         .filter(([, ml]) => metas.aguaMl > 0 && ml >= metas.aguaMl)
         .map(([data]) => data),
     )
-    const maiorSequenciaAgua = maiorSequencia(diasAguaNaMeta)
+    const maiorSequenciaAgua = maiorSequencia(diasAguaNaMeta, pausados)
 
     const pesoRegistrosTotal = resumoPeso.registros.length
     const semanasComPeso = new Set(

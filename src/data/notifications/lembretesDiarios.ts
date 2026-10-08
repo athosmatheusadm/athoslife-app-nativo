@@ -2,6 +2,9 @@ import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Preferences } from '@capacitor/preferences'
 import { localidadeAtual } from '@data/localidadeAtual'
+import { lifePausadoHoje, ultimaConversaComLife } from '@data/lifePausa'
+import { contatoRepository } from '@data/repositories/contatoRepository'
+import { sincronizarLembretesHabito } from './habitReminders'
 import { aguaRepository } from '@data/repositories/aguaRepository'
 import { itensRefeicaoRepository } from '@data/repositories/itensRefeicaoRepository'
 import { pesoRepository } from '@data/repositories/pesoRepository'
@@ -14,7 +17,9 @@ import {
   normalizarConfig,
   planejarLembretes,
   type ConfigLembretes,
+  type ConfigCheckins,
   type FeitoHoje,
+  type LembretePlanejado,
   type TipoLembrete,
   type TipoRefeicaoLembrete,
 } from '@domain/rules/lembretesDiarios'
@@ -46,6 +51,9 @@ const ROTA: Record<TipoLembrete, string> = {
   jantar: '/dieta',
   treino: '/treinos',
   pesagem: '/home',
+  checkin_manha: '/home',
+  checkin_meio_dia: '/home',
+  checkin_noite: '/home',
 }
 
 export const nativo = Capacitor.isNativePlatform()
@@ -123,17 +131,52 @@ async function cancelarTodos(): Promise<void> {
   if (nossos.length > 0) await LocalNotifications.cancel({ notifications: nossos })
 }
 
+/**
+ * Check-in do Life (Life MVP 08/10): frase fixa, sem IA, mas que olha o dia
+ * de hoje — almoço registrado, treino feito. Os outros dias levam a frase
+ * neutra (ainda não aconteceram). Nunca deduz nada de um registro que falta.
+ */
+function textoCheckin(m: Mensagens, p: LembretePlanejado, feito: FeitoHoje, n: number): string {
+  const c = m.lembretes.checkins
+  const hoje = dataLocalISO(p.quando) === dataLocalISO(new Date())
+  const lista =
+    p.tipo === 'checkin_manha'
+      ? c.manha
+      : p.tipo === 'checkin_meio_dia'
+        ? hoje && feito.refeicoes.has('almoco') ? c.meioDiaAlmocou : c.meioDia
+        : hoje && feito.treino ? c.noiteTreinou : c.noite
+  return escolherTexto(lista, p.quando, n)
+}
+
+/** "Life puxa conversa" ligado? Sem rede/sem resposta: não chama (é opt-in). */
+async function configCheckins(): Promise<ConfigCheckins | null> {
+  const contato = await contatoRepository.buscar().catch(() => null)
+  if (!contato?.lifeLigado || contato.lifeMomentos.length === 0) return null
+  return { momentos: contato.lifeMomentos, ultimaConversa: await ultimaConversaComLife() }
+}
+
 async function replanejarAgora(metaAguaMl: number): Promise<void> {
   const config = await lerConfigLembretes()
+  // Pausa do dia: vale pros lembretes de hábito também (trocados por avisos avulsos a partir de amanhã).
+  const pausado = await lifePausadoHoje().catch(() => false)
+  await sincronizarLembretesHabito(pausado).catch((e: unknown) => console.warn('lembretes de hábito: pausa falhou', e))
   await cancelarTodos()
-  if (!config.ligado) return
+  const checkins = await configCheckins()
+  if (!config.ligado && !checkins) return
   if ((await LocalNotifications.checkPermissions()).display !== 'granted') return
 
   const [feito, dias] = await Promise.all([
     feitoHoje(metaAguaMl),
     treinoPlanoRepository.diasComExercicio().catch(() => new Set<never>()),
   ])
-  const planejados = planejarLembretes({ config, feitoHoje: feito, diasComTreino: dias, agora: new Date() })
+  const planejados = planejarLembretes({
+    config,
+    feitoHoje: feito,
+    diasComTreino: dias,
+    agora: new Date(),
+    pausadoHoje: pausado,
+    checkins,
+  })
   if (planejados.length === 0) return
 
   const m = DICIONARIOS[localidadeAtual().idioma] ?? ptBR
@@ -146,9 +189,12 @@ async function replanejarAgora(metaAguaMl: number): Promise<void> {
       return {
         id: ID_BASE + i,
         title: m.lembretes.titulo,
-        body: escolherTexto(m.lembretes.textos[p.tipo], p.quando, n),
+        body: p.tipo.startsWith('checkin_')
+          ? textoCheckin(m, p, feito, n)
+          : escolherTexto(m.lembretes.textos[p.tipo as Exclude<TipoLembrete, `checkin_${string}`>], p.quando, n),
         schedule: { at: p.quando, allowWhileIdle: true },
-        extra: { rota: ROTA[p.tipo] },
+        // Check-in abre o chat do Life na Home.
+        extra: { rota: ROTA[p.tipo], abrirLife: p.tipo.startsWith('checkin_') },
       }
     }),
   })
