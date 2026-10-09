@@ -2125,3 +2125,52 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   4. Revogar o token do Supabase colado no chat; token do GitHub -> push.
   5. FCM (projeto Firebase), APK de teste, fotos que faltam, telas logado.
 
+
+## 2026-10-08 (noite) — proteção contra abuso da IA
+
+- **Custo explicado ao dono**: R$ 0,33/usuário/mês era uso leve (~1 msg/dia),
+  não 6/dia cheio. Chat com histórico 12 ≈ R$ 0,0098/msg; scanner ≈ R$ 0,008
+  por foto (estimado, não medido — o token do MCP em `~/.claude.json` deu
+  "Invalid access token"). Pior caso: 8 msgs/dia = R$ 2,35/mês; 15 fotos/dia =
+  R$ 3,60/mês; pago no talo (60 + 15) ≈ R$ 21/mês. Teto global atual (2M
+  tokens/dia) = **no máximo ~R$ 4,50/dia (~R$ 135/mês) somando todos** —
+  dono preocupado com custo no começo: manter 2M e só subir com receita.
+- Dono: plano pago continua generoso (benefício do usuário primeiro); limite
+  de gasto por pessoa descartado (o limite de mensagens já cobre, cada
+  mensagem tem tamanho máximo).
+- **Feito (NADA rodado nem publicado ainda)**:
+  - `db/athoslife_protecao_ia_migration.sql` + teste que se desfaz
+    `db/athoslife_protecao_ia_TESTE_desfaz.sql` (esperado no topo; parser do
+    Postgres ok, SQL e corpos PL/pgSQL):
+    1. Teste grátis: conta nova nasce sem dias (trigger zera `trial_expira`);
+       o app pede `liberar_teste_gratis(id do aparelho)` ao abrir. Uma vez
+       por conta e por aparelho (só hash, sem ligar à conta), e-mail
+       confirmado, sem e-mail descartável (~50 domínios). Todas as contas
+       atuais ficam marcadas "já usou"; quem está no teste mantém os dias.
+    2. Teto global: grátis barra em 60%, os 40% ficam pra quem paga.
+    3. Sinais de abuso por dia (`ia_sinais_uso`, sem texto): fora do tema e
+       mensagem repetida. 10 fora do tema no dia = chat pausado até a
+       meia-noite dela (`ia_restricoes`; app mostra "volta em HH:MM").
+       Visão `vw_ia_sinais_abuso` pro dono no SQL Editor.
+  - ai-proxy **v3.8**: pedido claro de tarefa tipo GPT (código, redação,
+    tradução, lição de casa, currículo, poema... pt/en/es) = resposta fixa,
+    sem IA e sem cota (28/28 frases de teste certas; com palavra de
+    comida/treino/saúde passa pra IA). Prompt "FORA DO TEMA": não faz nem
+    um pedaço da tarefa, recusa com [FORA] (servidor tira a marca e conta).
+    Mesma mensagem (15+ letras) em menos de 2 min = devolve a resposta que
+    já está lá, sem IA. tsc strict com shim do Deno: 0 erros.
+  - App: `@capacitor/device` (ANDROID_ID), pedido do teste no
+    `SessionProvider` (falha nunca trava o app), aviso na tela Plano quando
+    o teste não sai. `tsc -b` 0 erros, `vite build` ok.
+- **Pendências pra próxima sessão**:
+  1. Dono roda `db/athoslife_protecao_ia_TESTE_desfaz.sql` no SQL Editor ->
+     confere o RESULTADO -> roda `db/athoslife_protecao_ia_migration.sql`.
+  2. Publicar ai-proxy v3.8 (depois da migração): `SUPABASE_ACCESS_TOKEN=...
+     npx supabase functions deploy ai-proxy --project-ref gsdwsxwbmxcvutpvpkyi
+     --use-api`.
+  3. Fechar números: grátis 8 msgs/dia + histórico 12 (dono inclinado),
+     scanner pago 15/dia; aí SQL em `limite_ia` + `JANELA_HISTORICO`.
+  4. Dono vai mandar skill de UI/UX (engenheiro de UI/UX) pra próximas telas.
+  5. Google Cloud: limite de requisições/dia na chave do Gemini + alerta de
+     orçamento (passo a passo a fazer com o dono).
+  6. Token novo do Supabase pro Claude (o do MCP venceu) e do GitHub (push).

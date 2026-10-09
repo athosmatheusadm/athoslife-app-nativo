@@ -11,6 +11,14 @@ const NOME_PLANO: Record<string, string> = {
   vip: 'VIP',
 }
 
+// Por que o teste grátis não saiu (resposta de liberar_teste_gratis).
+const AVISO_TESTE: Partial<Record<string, string>> = {
+  aparelho_ja_usou: 'Este aparelho já usou o teste grátis em outra conta — aqui você segue no plano grátis.',
+  conta_ja_usou: 'Esta conta já usou o teste grátis.',
+  email_descartavel: 'O teste grátis não vale pra e-mail temporário. Com um e-mail pessoal ele sai na hora.',
+  email_nao_confirmado: 'Confirme seu e-mail pelo link que mandamos e abra o app de novo pra liberar os 7 dias de Premium.',
+}
+
 const BENEFICIOS = [
   'Scanner de comida por IA sem limite diário',
   'Chat com a Life sem limite diário',
@@ -26,7 +34,7 @@ const BENEFICIOS = [
  */
 export function Plano() {
   const navigate = useNavigate()
-  const { profile } = useSession()
+  const { profile, statusTeste } = useSession()
   if (!profile) return null
 
   const premium = temAcessoPremium(profile)
@@ -54,6 +62,9 @@ export function Plano() {
           <p className="mt-1 text-sm text-content-low">
             Acesso limitado — sem scanner/chat sem limite, receitas e treinos premium bloqueados.
           </p>
+        )}
+        {!premium && statusTeste && AVISO_TESTE[statusTeste] && (
+          <p className="mt-3 rounded-xl bg-surface-2 p-3 text-micro text-content-mid">{AVISO_TESTE[statusTeste]}</p>
         )}
       </section>
 

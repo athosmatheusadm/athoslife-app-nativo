@@ -3,18 +3,22 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@data/supabase/client'
-import { profileRepository } from '@data/repositories/profileRepository'
+import { profileRepository, type StatusTesteGratis } from '@data/repositories/profileRepository'
+import { idDoAparelho } from '@data/native/aparelho'
 import type { Profile } from '@domain/entities/profile'
 
 interface SessionState {
   readonly session: Session | null
   readonly profile: Profile | null
   readonly loading: boolean
+  /** Resposta do pedido de teste grátis desta sessão (null = não pediu). */
+  readonly statusTeste: StatusTesteGratis | null
   readonly refresh: () => Promise<void>
 }
 
@@ -24,6 +28,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [statusTeste, setStatusTeste] = useState<StatusTesteGratis | null>(null)
+  // Um pedido de teste por conta por abertura do app.
+  const testePedido = useRef<string | null>(null)
 
   async function loadProfile(userId: string): Promise<void> {
     // Ordem importa e é regra de negócio:
@@ -32,7 +39,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // 3) só então lemos o perfil já consistente.
     await profileRepository.verificarAcesso()
     await profileRepository.registrarAbertura()
-    setProfile(await profileRepository.buscar(userId))
+    const perfil = await profileRepository.buscar(userId)
+    setProfile(perfil)
+
+    // 4) Conta nova nasce sem dias de teste: o app pede os 7 dias com o id
+    //    do aparelho e o servidor decide (db/athoslife_protecao_ia_migration.sql).
+    //    Falhar aqui nunca impede de usar o app — fica no grátis.
+    const semTeste = perfil && !perfil.trialExpira && (perfil.plano === 'trial' || perfil.plano === 'free')
+    if (!semTeste || testePedido.current === userId) return
+    testePedido.current = userId
+    try {
+      const aparelho = await idDoAparelho()
+      if (!aparelho) return
+      const status = await profileRepository.liberarTesteGratis(aparelho)
+      setStatusTeste(status)
+      if (status === 'liberado') setProfile(await profileRepository.buscar(userId))
+    } catch (err) {
+      console.warn('teste grátis:', err)
+    }
   }
 
   useEffect(() => {
@@ -50,6 +74,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setSession(novaSessao)
         if (!novaSessao) {
           setProfile(null)
+          setStatusTeste(null)
+          testePedido.current = null
           return
         }
         void loadProfile(novaSessao.user.id)
@@ -67,11 +93,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       loading,
+      statusTeste,
       refresh: async () => {
         if (session) await loadProfile(session.user.id)
       },
     }),
-    [session, profile, loading],
+    [session, profile, loading, statusTeste],
   )
 
   return (

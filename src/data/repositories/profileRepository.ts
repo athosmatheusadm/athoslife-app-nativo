@@ -36,6 +36,18 @@ interface ProfileRow {
   unidades: string | null
 }
 
+/** Resposta de liberar_teste_gratis (db/athoslife_protecao_ia_migration.sql). */
+export type StatusTesteGratis =
+  | 'liberado'
+  | 'ja_liberado'
+  | 'nao_elegivel'
+  | 'conta_ja_usou'
+  | 'email_nao_confirmado'
+  | 'email_descartavel'
+  | 'aparelho_invalido'
+  | 'aparelho_ja_usou'
+  | 'sem_sessao'
+
 /** Tudo que o onboarding grava de uma vez no fim (ver ui/screens/onboarding). */
 export interface DadosOnboarding {
   readonly nome: string
@@ -112,6 +124,16 @@ export const profileRepository = {
   async verificarAcesso(): Promise<void> {
     const { error } = await supabase.rpc('check_access_status')
     if (error) throw error
+  },
+
+  /**
+   * Pede os 7 dias de teste grátis. Quem decide é o servidor: uma vez por
+   * conta e por aparelho, com e-mail confirmado e não descartável.
+   */
+  async liberarTesteGratis(aparelho: string): Promise<StatusTesteGratis> {
+    const { data, error } = await supabase.rpc('liberar_teste_gratis', { p_aparelho: aparelho })
+    if (error) throw error
+    return data as StatusTesteGratis
   },
 
   /**
