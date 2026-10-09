@@ -6,6 +6,24 @@ import type { AlimentoBase, Macros } from '@domain/entities/food'
 import type { ItemRefeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { AiProxyError, estimarAlimento, type AlimentoEstimado } from '@data/ai/aiProxy'
+import type { Mensagens } from '@/i18n/mensagens/tipo'
+
+/** Erro do "Life estima" em texto pra pessoa (busca da Dieta e scanner). */
+export function mensagemErroEstimar(e: unknown, t: Mensagens['dieta']['busca']['estimar']): string {
+  if (e instanceof AiProxyError) {
+    if (e.info.tipo === 'limit_reached') return e.info.proximoReset ? t.limite(e.info.proximoReset) : t.limiteSemHora
+    if (e.info.tipo === 'rate_limited') return t.rapido
+    if (e.info.tipo === 'indisponivel') return t.pausado
+  }
+  return t.falhou
+}
+
+/** Estimativa do Life no formato da base — id fixo, não existe na tabela (sem ⭐). */
+export const ID_ESTIMADO = 'life-estimado'
+export function alimentoDeEstimativa(e: AlimentoEstimado): AlimentoBase {
+  return { id: ID_ESTIMADO, nome: e.nome, porcaoG: e.porcaoG, categoria: null, calorias: e.calorias, proteina: e.proteina, carboidrato: e.carboidrato, gordura: e.gordura }
+}
 
 /**
  * Busca de alimento que abre DENTRO do card da refeição.
@@ -23,9 +41,28 @@ export function InlineFoodSearch(props: {
 }) {
   const { termo, setTermo, resultados, buscando } = useFoodSearch()
   const [escolhido, setEscolhido] = useState<AlimentoBase | null>(null)
+  const [estimando, setEstimando] = useState(false)
+  const [erroEstimar, setErroEstimar] = useState<string | null>(null)
   const { m } = useI18n()
   const t = m.dieta.busca
   useFecharNoVoltar(escolhido !== null, () => setEscolhido(null))
+
+  // Termo novo: o aviso do pedido anterior não vale mais.
+  useEffect(() => setErroEstimar(null), [termo])
+
+  async function pedirEstimativa() {
+    setErroEstimar(null)
+    setEstimando(true)
+    try {
+      const e = await estimarAlimento(termo.trim())
+      if (e) setEscolhido(alimentoDeEstimativa(e))
+      else setErroEstimar(t.estimar.naoReconhecido)
+    } catch (err) {
+      setErroEstimar(mensagemErroEstimar(err, t.estimar))
+    } finally {
+      setEstimando(false)
+    }
+  }
 
   if (escolhido) {
     return (
@@ -58,7 +95,19 @@ export function InlineFoodSearch(props: {
       {buscando && <p className="py-2 text-micro text-content-low">{t.buscando}</p>}
 
       {!buscando && termo.trim().length >= 2 && resultados.length === 0 && (
-        <p className="py-3 text-center text-micro text-content-low">{t.nada}</p>
+        <div className="py-3 text-center">
+          <p className="text-micro text-content-low">{t.nada}</p>
+          <button
+            type="button"
+            onClick={() => void pedirEstimativa()}
+            disabled={estimando}
+            className="mt-2 min-h-12 w-full rounded-xl border border-brand/60 px-3 text-sm font-bold text-brand transition-colors active:bg-brand/10 disabled:opacity-50"
+          >
+            {estimando ? t.estimar.estimando : t.estimar.botao(termo.trim())}
+          </button>
+          <p className="mt-1 text-micro text-content-low">{t.estimar.custo}</p>
+          {erroEstimar && <p role="alert" className="mt-2 text-micro text-accent-danger">{erroEstimar}</p>}
+        </div>
       )}
 
       <ul className="max-h-52 overflow-y-auto">
@@ -110,11 +159,12 @@ export function PorcaoInline(props: {
           ‹
         </button>
         <span className="flex-1 truncate text-sm font-semibold text-content-hi">{alimento.nome}</span>
-        <FavoritoStar alimentoId={alimento.id} />
+        {alimento.id !== ID_ESTIMADO && <FavoritoStar alimentoId={alimento.id} />}
         <span className="text-sm font-bold text-brand">{m.calorias} kcal</span>
       </div>
 
       <MacroChips m={m} />
+      {alimento.id === ID_ESTIMADO && <p className="mt-1 text-micro text-content-low">{t.estimar.nota}</p>}
 
       <div className="mt-2 flex items-center gap-2">
         <input

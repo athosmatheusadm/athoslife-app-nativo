@@ -13,9 +13,8 @@ import { avisar, vibrar } from '@ui/feedback'
  * Sub-página "Privacidade e dados" do Perfil.
  *
  * Exportar: baixa um JSON real com todo dado pessoal do usuário (direito
- * de portabilidade). Excluir: REGISTRA o pedido e desconecta — não apaga
- * a conta de verdade aqui (o client não tem permissão pra isso, precisa
- * de service role no backend). Ver privacidadeRepository.
+ * de portabilidade). Excluir: apaga a conta de verdade, confirmando a
+ * senha (ver privacidadeRepository.excluirConta).
  */
 export function Privacidade() {
   const navigate = useNavigate()
@@ -25,7 +24,8 @@ export function Privacidade() {
   const [erroExport, setErroExport] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
-  const [erroExclusao, setErroExclusao] = useState(false)
+  const [erroExclusao, setErroExclusao] = useState<string | null>(null)
+  const [senha, setSenha] = useState('')
   const [pedidoEnviado, setPedidoEnviado] = useState(false)
   const { m } = useI18n()
   const t = m.perfil.privacidade
@@ -52,15 +52,21 @@ export function Privacidade() {
   }
 
   async function confirmarExclusao() {
-    setErroExclusao(false)
+    setErroExclusao(null)
     setExcluindo(true)
     try {
-      await privacidadeRepository.solicitarExclusaoConta('Solicitado pela tela de Privacidade')
+      const r = await privacidadeRepository.excluirConta(senha)
+      if (r !== 'ok') {
+        setErroExclusao(r === 'senha_incorreta' ? t.senhaIncorreta : t.muitasTentativas)
+        setExcluindo(false)
+        return
+      }
       setPedidoEnviado(true)
-      await authRepository.sair()
+      avisar.ok(t.pedidoOk)
+      await authRepository.limparSessaoLocal()
       navigate('/login', { replace: true })
     } catch {
-      setErroExclusao(true)
+      setErroExclusao(t.erroExclusao)
       setExcluindo(false)
     }
   }
@@ -133,10 +139,25 @@ export function Privacidade() {
           <div className="rounded-2xl border border-accent-danger/50 bg-accent-danger/10 p-4">
             <p className="text-sm font-semibold text-content-hi">{t.certeza}</p>
             <p className="mt-1 text-micro text-content-low">{t.semVolta}</p>
+            <label className="mt-3 block">
+              <span className="sr-only">{t.senha}</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder={t.senha}
+                className="min-h-12 w-full rounded-xl border border-surface-4 bg-surface-1 px-4 text-base text-content-hi placeholder:text-content-low focus:border-accent-danger focus:outline-none"
+              />
+            </label>
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
-                onClick={() => setConfirmandoExclusao(false)}
+                onClick={() => {
+                  setConfirmandoExclusao(false)
+                  setSenha('')
+                  setErroExclusao(null)
+                }}
                 className="min-h-12 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
               >
                 {t.cancelar}
@@ -144,7 +165,7 @@ export function Privacidade() {
               <button
                 type="button"
                 onClick={() => void confirmarExclusao()}
-                disabled={excluindo}
+                disabled={excluindo || senha.length === 0}
                 className="min-h-12 flex-1 rounded-xl bg-accent-danger text-sm font-bold text-white disabled:opacity-50"
               >
                 {excluindo ? t.enviando : t.simExcluir}
@@ -152,7 +173,7 @@ export function Privacidade() {
             </div>
           </div>
         )}
-        {erroExclusao && <p role="alert" className="mt-2 text-micro text-accent-danger">{t.erroExclusao}</p>}
+        {erroExclusao && <p role="alert" className="mt-2 text-micro text-accent-danger">{erroExclusao}</p>}
       </section>
     </main>
   )

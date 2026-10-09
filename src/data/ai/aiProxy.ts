@@ -54,7 +54,7 @@ interface RespostaVisaoCrua {
 }
 
 export async function chamar<T>(
-  tipo: 'vision' | 'chat' | 'recipe' | 'acao',
+  tipo: 'vision' | 'chat' | 'recipe' | 'acao' | 'estimar',
   payload: Record<string, unknown>,
 ): Promise<T> {
   const { data: sessao } = await supabase.auth.getSession()
@@ -107,6 +107,45 @@ export async function analisarFoto(base64: string, mime = 'image/jpeg'): Promise
       carboidrato: i.carboidrato,
       gordura: i.gordura,
     })),
+  }
+}
+
+/** Alimento estimado pelo Life (fora da base). Macros POR PORÇÃO. */
+export interface AlimentoEstimado {
+  nome: string
+  porcaoG: number
+  calorias: number
+  proteina: number
+  carboidrato: number
+  gordura: number
+  confianca: number
+}
+
+/**
+ * Life estima um alimento/produto que não está na base (busca da Dieta ou
+ * código de barras desconhecido). Gasta 1 mensagem da cota do chat.
+ * `null` = não reconheceu como comida (e não gastou cota).
+ */
+export async function estimarAlimento(nome: string): Promise<AlimentoEstimado | null> {
+  const cru = await chamar<{
+    reconhecido: boolean
+    nome?: string
+    porcao_g?: number
+    calorias?: number
+    proteina?: number
+    carboidrato?: number
+    gordura?: number
+    confianca?: number
+  }>('estimar', { nome })
+  if (!cru.reconhecido) return null
+  return {
+    nome: cru.nome ?? nome,
+    porcaoG: cru.porcao_g ?? 100,
+    calorias: cru.calorias ?? 0,
+    proteina: cru.proteina ?? 0,
+    carboidrato: cru.carboidrato ?? 0,
+    gordura: cru.gordura ?? 0,
+    confianca: cru.confianca ?? 0,
   }
 }
 

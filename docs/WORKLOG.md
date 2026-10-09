@@ -2363,3 +2363,33 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      desfazer o visual da passada ou apontar tela por tela.
   3. Respostas do Life (IA) e avisos do servidor: conferir se seguem o
      idioma do perfil.
+
+## 2026-10-09 (noite) — exclusão de conta de verdade + Life estima o que falta
+
+- Dono: 16 e 17 das pendências já resolvidos; FCM ele está ajeitando;
+  Health Connect só quando tiver conta de dev da Play; conquistas: o fluxo
+  vem dele (já existe o Life dourado + bolinha vermelha no Perfil); música
+  do timer: fora.
+- **Excluir conta** (era só um pedido gravado, ninguém apagava):
+  `db/athoslife_excluir_conta_migration.sql` — `excluir_minha_conta(senha,
+  so_conferir)`: confere a senha (5 erros/hora bloqueiam), anonimiza
+  ai_audit_logs/eventos_seguranca, grava 'conta_excluida' sem dono e apaga
+  auth.users (o resto cai em cascata). O app confere a senha, apaga as fotos
+  (avatars, receitas-criadas) e chama a exclusão. Tela de Privacidade com o
+  mesmo layout + campo de senha; textos pt/en/es. **Testada com ROLLBACK
+  na conta teste0107** (senha errada recusada, conta/perfil somem, eventos
+  anonimizados). **Ainda NÃO aplicada.**
+- **Life estima** (ai-proxy v3.9, tipo `estimar`, 1 mensagem da cota do
+  chat, só devolve números; não reconheceu = devolve a cota): busca da Dieta
+  sem resultado ganha "✨ Life estima “termo”" (vai pra porção, sem ⭐, com
+  aviso "estimativa"); código de barras fora do Open Food Facts pede o nome
+  do produto e cai na mesma revisão do scanner. **ai-proxy v3.9 ainda NÃO
+  publicado.**
+- **Pendências**:
+  1. Rodar `db/athoslife_excluir_conta_migration.sql` no SQL Editor.
+  2. Publicar ai-proxy v3.9: `! npx supabase functions deploy ai-proxy
+     --project-ref gsdwsxwbmxcvutpvpkyi --use-api`.
+  3. Play exige também um LINK na web pra pedir exclusão (quem já
+     desinstalou) — página simples ou formulário; decidir onde hospedar.
+  4. Seguem: Billing, Termos com dados da empresa, suporte, .aab assinado,
+     SMTP + template do código.

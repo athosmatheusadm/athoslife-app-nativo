@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
-import { AiProxyError, cotaIaHoje } from '@data/ai/aiProxy'
+import { AiProxyError, cotaIaHoje, estimarAlimento } from '@data/ai/aiProxy'
 import { capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
 import type { RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
 import { produtoCodigoBarrasRepository } from '@data/repositories/produtoCodigoBarrasRepository'
@@ -15,6 +15,7 @@ import { useI18n } from '@/i18n/I18nProvider'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { avisar, vibrar } from '@ui/feedback'
+import { mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
@@ -85,6 +86,10 @@ export function Scanner() {
   const [imagemProduto, setImagemProduto] = useState<string | null>(null)
   const [digitando, setDigitando] = useState(false)
   const [codigoDigitado, setCodigoDigitado] = useState('')
+  // Código que o Open Food Facts não conhece: o Life estima pelo nome.
+  const [semBase, setSemBase] = useState(false)
+  const [nomeProduto, setNomeProduto] = useState('')
+  const [estimando, setEstimando] = useState(false)
 
   const pago = profile ? temAcessoPremium(profile) : false
   const { m } = useI18n()
@@ -139,10 +144,11 @@ export function Scanner() {
     try {
       const produto = await produtoCodigoBarrasRepository.buscar(codigo)
       if (!produto) {
-        setErro(t.erros.semProduto)
+        setSemBase(true)
         setEtapa('captura')
         return
       }
+      setSemBase(false)
       setImagemProduto(produto.imagemUrl)
       setRascunho(foodCaptureService.rascunhoDeProduto(produto, t.rotuloSemPorcao))
       setDigitando(false)
@@ -151,6 +157,50 @@ export function Scanner() {
     } catch {
       setErro(t.erros.buscaProduto)
       setEtapa('captura')
+    }
+  }
+
+  async function estimarProduto() {
+    const nome = nomeProduto.trim()
+    if (nome.length < 2) return
+    setErro(null)
+    setEstimando(true)
+    try {
+      const e = await estimarAlimento(nome)
+      if (!e) {
+        setErro(m.dieta.busca.estimar.naoReconhecido)
+        return
+      }
+      setOrigem('codigo')
+      setImagemProduto(null)
+      setRascunho({
+        descricao: e.nome,
+        confianca: e.confianca,
+        observacao: m.dieta.busca.estimar.nota,
+        itens: [
+          {
+            id: `estimado-${Date.now()}`,
+            nome: e.nome,
+            quantidadeG: e.porcaoG,
+            alimentoBaseId: null,
+            fonte: 'ia',
+            incluir: true,
+            calorias: e.calorias,
+            proteina: e.proteina,
+            carboidrato: e.carboidrato,
+            gordura: e.gordura,
+          },
+        ],
+      })
+      setSemBase(false)
+      setNomeProduto('')
+      setDigitando(false)
+      setCodigoDigitado('')
+      setEtapa('revisao')
+    } catch (err) {
+      setErro(mensagemErroEstimar(err, m.dieta.busca.estimar))
+    } finally {
+      setEstimando(false)
     }
   }
 
@@ -231,6 +281,35 @@ export function Scanner() {
           >
             {t.buscar}
           </button>
+        </form>
+      )}
+      {semBase && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void estimarProduto()
+          }}
+          className="rounded-card border border-brand/40 bg-surface-2 p-3"
+        >
+          <p className="text-sm text-content-mid">{t.semProdutoEstimar}</p>
+          <input
+            type="text"
+            autoFocus
+            value={nomeProduto}
+            onChange={(e) => setNomeProduto(e.target.value.slice(0, 80))}
+            enterKeyHint="send"
+            placeholder={t.nomeProduto}
+            aria-label={t.nomeProduto}
+            className="mt-2 min-h-12 w-full rounded-card border border-surface-4 bg-surface-1 px-3 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={estimando || nomeProduto.trim().length < 2}
+            className="mt-2 min-h-12 w-full rounded-pill bg-brand px-4 text-sm font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
+          >
+            {estimando ? m.dieta.busca.estimar.estimando : m.dieta.busca.estimar.botao(nomeProduto.trim() || '…')}
+          </button>
+          <p className="mt-1 text-center text-micro text-content-low">{m.dieta.busca.estimar.custo}</p>
         </form>
       )}
     </div>

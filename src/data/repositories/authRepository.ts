@@ -48,4 +48,9 @@ export const authRepository = {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   },
+
+  /** Depois de excluir a conta: a sessão no servidor já não existe, só limpa a local. */
+  async limparSessaoLocal(): Promise<void> {
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+  },
 }
