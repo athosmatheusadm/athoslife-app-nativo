@@ -2250,3 +2250,16 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     novo"; falhas avisam (antes calavam); vibração ao marcar feito e ao
     salvar treino; aviso "Treino salvo"; dias da semana por Intl; grupos
     musculares, locais e todo texto do Treino em pt/en/es; cores por token.
+  - **Hábitos**: "Hoje eu cedi" / "Não consegui hoje" agora pedem 2º toque
+    com texto acolhedor ("Tudo bem. A sequência recomeça de hoje —
+    registrar?") — antes zerava a sequência num toque sem querer, sem
+    volta; aviso "Registrado. Recomeçar faz parte 💜" e "feito hoje ✓"
+    com vibração; erros avisam (antes `.catch(() => {})`); Voltar do
+    Android fecha o assistente da vontade (espera/alternativa voltam pro
+    menu) e o "Novo hábito"; tirada a nota de dev "(música de fundo ainda
+    não configurada)" que aparecia pro usuário; vibração ao fim dos 10 min;
+    "Novo hábito" rola com teclado aberto; chips/categorias/intensidade,
+    lembrete e excluir com 44–48px; aviso de "Outro" deixou de ser
+    vermelho; cores verde/roxo por token; carregando em forma de card;
+    todos os textos da tela em pt/en/es. **Falta**: alternativas da
+    vontade (`ALTERNATIVAS_POR_CATEGORIA`) ainda só em pt.

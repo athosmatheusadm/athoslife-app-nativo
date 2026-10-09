@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import {
   faltamParaConquista,
   progressoConquista,
-  rotuloStatus,
   statusHabito,
   type Habito,
 } from '@domain/entities/habito'
@@ -37,7 +36,11 @@ export function HabitCard(props: {
 }) {
   const { habito } = props
   const { m } = useI18n()
+  const t = m.habitos.card
   const [aberto, setAberto] = useState(false)
+  // Recaída zera a sequência: pede um 2º toque (antes registrava no 1º, e um
+  // toque sem querer apagava semanas). Texto acolhedor, nunca bronca.
+  const [confirmandoTropeco, setConfirmandoTropeco] = useState(false)
   const status = statusHabito(habito)
   const firme = status === 'firme'
   const pct = progressoConquista(habito.streakAtual, habito.proximaConquista)
@@ -71,7 +74,7 @@ export function HabitCard(props: {
     if (!aberto || habito.tipo !== 'construir') return
     buscarLembrete(habito.id)
       .then(setLembrete)
-      .catch(() => setLembreteErro('Lembrete só funciona no app instalado, não aqui no navegador.'))
+      .catch(() => setLembreteErro(t.lembreteSoApp))
   }, [aberto, habito.id, habito.tipo])
 
   async function salvarLembrete() {
@@ -80,7 +83,7 @@ export function HabitCard(props: {
       await agendarLembrete({ habitoId: habito.id, nomeHabito: habito.nome, horaMinuto: horaEscolhida })
       setLembrete(horaEscolhida)
     } catch {
-      setLembreteErro('Não deu pra agendar — checa a permissão de notificação do app.')
+      setLembreteErro(t.lembreteErro)
     }
   }
 
@@ -90,23 +93,56 @@ export function HabitCard(props: {
       await cancelarLembrete(habito.id)
       setLembrete(null)
     } catch {
-      setLembreteErro('Não deu pra remover o lembrete agora.')
+      setLembreteErro(t.lembreteRemoverErro)
     }
   }
 
   // Verde firme / roxo atenção — a mesma dupla que já rege a recaída no app.
-  const acento = firme ? '#22c55e' : '#8b5cf6'
+  const acento = firme
+    ? { texto: 'text-brand', fundo: 'bg-brand', borda: 'border-l-brand', selo: 'bg-brand/15 text-brand' }
+    : { texto: 'text-accent-recaida', fundo: 'bg-accent-recaida', borda: 'border-l-accent-recaida', selo: 'bg-accent-recaida/15 text-accent-recaidaSoft' }
+
+  const botaoTropeco = (rotulo: string) =>
+    confirmandoTropeco ? (
+      <div className="mt-3 rounded-xl border border-accent-recaida/40 bg-accent-recaida/10 p-3">
+        <p className="text-sm text-content-mid">{t.confirmarTropeco}</p>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmandoTropeco(false)}
+            className="min-h-11 flex-1 rounded-lg border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
+          >
+            {m.comum.cancelar}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmandoTropeco(false)
+              props.onTropeco()
+            }}
+            className="min-h-11 flex-1 rounded-lg bg-accent-recaida text-sm font-bold text-white active:scale-[0.98]"
+          >
+            {t.registrar}
+          </button>
+        </div>
+      </div>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setConfirmandoTropeco(true)}
+        className="min-h-12 flex-1 rounded-xl border border-accent-recaida/50 text-sm font-semibold text-accent-recaidaSoft transition-colors active:bg-accent-recaida/10"
+      >
+        {rotulo}
+      </button>
+    )
 
   return (
-    <div
-      className="overflow-hidden rounded-2xl border border-surface-4 bg-surface-2"
-      style={{ borderLeftWidth: 3, borderLeftColor: acento }}
-    >
+    <div className={`overflow-hidden rounded-2xl border border-l-[3px] border-surface-4 bg-surface-2 ${acento.borda}`}>
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
-        className="flex w-full items-center gap-3 p-4 text-left"
+        className="flex min-h-16 w-full items-center gap-3 p-4 text-left active:bg-white/5"
       >
         <span className="text-2xl" aria-hidden="true">{habito.emoji}</span>
 
@@ -114,80 +150,65 @@ export function HabitCard(props: {
 
         <span className="flex flex-none items-center gap-2">
           <span className="flex items-baseline gap-1">
-            <span className="text-xl font-extrabold" style={{ color: acento }}>
+            <span className={`text-xl font-extrabold tabular-nums ${acento.texto}`}>
               {habito.streakAtual}
             </span>
-            <span className="text-micro text-content-low">dias</span>
+            <span className="text-micro text-content-low">{t.dias(habito.streakAtual)}</span>
           </span>
-          <span
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: acento }}
-            aria-hidden="true"
-          />
+          <span className={`h-2.5 w-2.5 rounded-full ${acento.fundo}`} aria-hidden="true" />
         </span>
       </button>
 
       {aberto && (
         <div className="px-4 pb-4">
           {habito.gatilhos.length > 0 && (
-            <p className="text-micro text-content-low">
-              Gatilhos: {habito.gatilhos.join(', ')}
-            </p>
+            <p className="text-micro text-content-low">{t.gatilhos(habito.gatilhos.join(', '))}</p>
           )}
 
-          <span
-            className="mt-2 inline-block rounded-pill px-2.5 py-1 text-micro font-bold"
-            style={{ color: acento, backgroundColor: `${acento}22` }}
-          >
-            {rotuloStatus(status)}
+          <span className={`mt-2 inline-block rounded-pill px-2.5 py-1 text-micro font-bold ${acento.selo}`}>
+            {firme ? t.firme : t.atencao}
           </span>
 
           <div className="mt-3">
             <div className="h-1.5 overflow-hidden rounded-full bg-surface-4">
               <div
-                className="h-full rounded-full transition-all duration-500 ease-athos"
-                style={{ width: `${pct}%`, backgroundColor: acento }}
+                className={`h-full w-full origin-left rounded-full transition-transform duration-500 ease-athos ${acento.fundo}`}
+                style={{ transform: `scaleX(${pct / 100})` }}
               />
             </div>
-            <p className="mt-1.5 text-micro text-content-low">
-              Próxima conquista: {faltam} dias 🎯
-            </p>
+            <p className="mt-1.5 text-micro text-content-low">{t.proxima(faltam)}</p>
           </div>
 
           {habito.tipo === 'construir' ? (
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                disabled={props.feitoHoje}
-                onClick={props.onFizHoje}
-                className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-60"
-              >
-                {props.feitoHoje ? 'Feito hoje ✓' : 'Fiz hoje'}
-              </button>
-              <button
-                type="button"
-                onClick={props.onTropeco}
-                className="flex-1 rounded-xl border border-accent-recaida/50 py-3 text-sm font-semibold text-accent-recaida transition-colors active:bg-accent-recaida/10"
-              >
-                Não consegui hoje
-              </button>
-            </div>
+            confirmandoTropeco ? (
+              botaoTropeco(t.naoConsegui)
+            ) : (
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  disabled={props.feitoHoje}
+                  onClick={props.onFizHoje}
+                  className="min-h-12 flex-1 rounded-xl bg-brand text-sm font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-60"
+                >
+                  {props.feitoHoje ? t.feitoHoje : t.fizHoje}
+                </button>
+                {botaoTropeco(t.naoConsegui)}
+              </div>
+            )
           ) : null}
 
           {habito.tipo === 'construir' && (
             <div className="mt-3 rounded-xl border border-surface-4 bg-surface-3 p-3">
-              <p className="text-micro font-bold uppercase tracking-wide text-content-dim">
-                Lembrete diário
-              </p>
+              <p className="text-micro font-bold uppercase tracking-wide text-content-low">{t.lembrete}</p>
               {lembrete ? (
                 <div className="mt-1.5 flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-content-hi">Todo dia às {lembrete}</span>
+                  <span className="text-sm font-semibold text-content-hi">{t.todoDia(lembrete)}</span>
                   <button
                     type="button"
                     onClick={() => void removerLembrete()}
-                    className="text-micro font-bold text-accent-recaida"
+                    className="-mr-2 min-h-11 px-3 text-sm font-bold text-content-mid active:text-content-hi"
                   >
-                    Remover
+                    {t.remover}
                   </button>
                 </div>
               ) : (
@@ -196,38 +217,37 @@ export function HabitCard(props: {
                     type="time"
                     value={horaEscolhida}
                     onChange={(e) => setHoraEscolhida(e.target.value)}
-                    className="rounded-lg border border-surface-4 bg-surface-2 px-2 py-1.5 text-sm text-content-hi"
+                    aria-label={t.horaAria}
+                    className="min-h-11 rounded-lg border border-surface-4 bg-surface-2 px-2 text-base text-content-hi"
                   />
                   <button
                     type="button"
                     onClick={() => void salvarLembrete()}
-                    className="flex-1 rounded-lg bg-brand py-1.5 text-sm font-bold text-brand-ink"
+                    className="min-h-11 flex-1 rounded-lg bg-brand text-sm font-bold text-brand-ink active:scale-[0.98]"
                   >
-                    Lembrar
+                    {t.lembrar}
                   </button>
                 </div>
               )}
-              {lembreteErro && <p className="mt-1.5 text-[11px] text-accent-danger">{lembreteErro}</p>}
+              {lembreteErro && <p role="alert" className="mt-1.5 text-micro text-accent-danger">{lembreteErro}</p>}
             </div>
           )}
 
           {habito.tipo !== 'construir' && (
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={props.onEstouComVontade}
-                className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-brand-ink transition-transform active:scale-[0.98]"
-              >
-                Estou com vontade
-              </button>
-              <button
-                type="button"
-                onClick={props.onTropeco}
-                className="flex-1 rounded-xl border border-accent-recaida/50 py-3 text-sm font-semibold text-accent-recaida transition-colors active:bg-accent-recaida/10"
-              >
-                Hoje eu cedi
-              </button>
-            </div>
+            confirmandoTropeco ? (
+              botaoTropeco(t.cedi)
+            ) : (
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={props.onEstouComVontade}
+                  className="min-h-12 flex-1 rounded-xl bg-brand text-sm font-bold text-brand-ink transition-transform active:scale-[0.98]"
+                >
+                  {t.vontade}
+                </button>
+                {botaoTropeco(t.cedi)}
+              </div>
+            )
           )}
 
           <div className="mt-4 border-t border-surface-4 pt-3">
@@ -242,7 +262,7 @@ export function HabitCard(props: {
                     type="button"
                     disabled={excluindo}
                     onClick={() => setConfirmarExclusao(false)}
-                    className="flex-1 rounded-lg border border-surface-4 py-2 text-sm font-semibold text-content-mid"
+                    className="min-h-11 flex-1 rounded-lg border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
                   >
                     {m.comum.cancelar}
                   </button>
@@ -250,18 +270,18 @@ export function HabitCard(props: {
                     type="button"
                     disabled={excluindo}
                     onClick={() => void excluir()}
-                    className="flex-1 rounded-lg bg-accent-danger py-2 text-sm font-bold text-white disabled:opacity-60"
+                    className="min-h-11 flex-1 rounded-lg bg-accent-danger text-sm font-bold text-white disabled:opacity-60"
                   >
                     {excluindo ? m.habitos.excluindo : m.habitos.excluir}
                   </button>
                 </div>
-                {exclusaoErro && <p className="mt-1.5 text-[11px] text-accent-danger">{exclusaoErro}</p>}
+                {exclusaoErro && <p role="alert" className="mt-1.5 text-micro text-accent-danger">{exclusaoErro}</p>}
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => setConfirmarExclusao(true)}
-                className="w-full py-1 text-center text-micro font-semibold text-content-low"
+                className="min-h-11 w-full text-center text-sm font-semibold text-content-low active:text-content-hi"
               >
                 {m.habitos.excluir}
               </button>

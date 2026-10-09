@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { alternativasPara, mensagemVontade, type Habito } from '@domain/entities/habito'
+import { alternativasPara, type Habito } from '@domain/entities/habito'
+import { useI18n } from '@/i18n/I18nProvider'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { vibrar } from '@ui/feedback'
 
 const DEZ_MINUTOS_SEG = 10 * 60
 
@@ -33,6 +36,17 @@ export function CravingAssistant(props: {
   const [vista, setVista] = useState<Vista>('menu')
   const [segundosRestantes, setSegundosRestantes] = useState(DEZ_MINUTOS_SEG)
   const [tocando, setTocando] = useState(false)
+  const t = useI18n().m.habitos.vontade
+  const nomeMin = habito.nome.toLowerCase()
+
+  // Voltar do Android: espera/alternativa voltam pro menu; o menu fecha.
+  useFecharNoVoltar(true, props.onFechar)
+  useFecharNoVoltar(vista !== 'menu', () => setVista('menu'))
+
+  // Fim dos 10 minutos: vibração de conquista (só uma vez).
+  useEffect(() => {
+    if (vista === 'esperar' && segundosRestantes === 0) vibrar.sucesso()
+  }, [vista, segundosRestantes])
 
   // Escape fecha (acessibilidade + hábito de app premium).
   useEffect(() => {
@@ -50,7 +64,7 @@ export function CravingAssistant(props: {
     return () => clearInterval(id)
   }, [vista, segundosRestantes])
 
-  const mensagem = mensagemVontade(habito.horarioRisco !== null)
+  const mensagem = `${habito.horarioRisco !== null ? t.mensagemHorario : t.mensagem}\n\n${t.mensagemFim}`
   const alternativas = alternativasPara(habito.categoria)
 
   function abrirEsperar() {
@@ -67,10 +81,10 @@ export function CravingAssistant(props: {
       className="fixed inset-0 z-50 flex items-end justify-center"
       role="dialog"
       aria-modal="true"
-      aria-label={`Assistente para ${habito.nome}`}
+      aria-label={t.aria(habito.nome)}
     >
       <button
-        aria-label="Fechar"
+        aria-label={t.fechar}
         onClick={props.onFechar}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.2s_ease]"
       />
@@ -80,10 +94,8 @@ export function CravingAssistant(props: {
 
         {vista === 'menu' && (
           <>
-            <h2 className="text-xl font-bold text-content-hi">
-              Vontade de {habito.nome.toLowerCase()}…
-            </h2>
-            <p className="mt-1 text-sm text-content-low">O Life está aqui.</p>
+            <h2 className="text-xl font-bold text-content-hi">{t.titulo(nomeMin)}</h2>
+            <p className="mt-1 text-sm text-content-low">{t.lifeAqui}</p>
 
             <div className="mt-4 rounded-2xl border border-surface-4 bg-surface-2 p-4">
               <p className="whitespace-pre-line text-sm leading-relaxed text-content-mid">
@@ -95,30 +107,30 @@ export function CravingAssistant(props: {
               <button
                 type="button"
                 onClick={abrirEsperar}
-                className="w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98]"
+                className="min-h-14 w-full rounded-2xl bg-brand font-bold text-brand-ink transition-transform active:scale-[0.98]"
               >
-                Vou esperar 10 minutos ⏱️
+                {t.esperar}
               </button>
               <button
                 type="button"
                 onClick={() => setVista('alternativa')}
-                className="w-full rounded-2xl border border-surface-4 py-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
               >
-                Quero uma alternativa 🍎
+                {t.alternativa}
               </button>
               <button
                 type="button"
                 onClick={props.onConversar}
-                className="w-full rounded-2xl border border-surface-4 py-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
               >
-                Conversar com o Life 💬
+                {t.conversar}
               </button>
               <button
                 type="button"
                 onClick={props.onFechar}
-                className="w-full rounded-2xl border border-surface-4 py-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
               >
-                Já passou, obrigado!
+                {t.passou}
               </button>
             </div>
           </>
@@ -126,24 +138,21 @@ export function CravingAssistant(props: {
 
         {vista === 'esperar' && (
           <>
-            <h2 className="text-xl font-bold text-content-hi">Vamos esperar juntos</h2>
-            <p className="mt-1 text-sm text-content-low">
-              {MUSICA_ACOLHEDORA_URL
-                ? 'Respira. A vontade passa.'
-                : 'Respira. A vontade passa. (música de fundo ainda não configurada)'}
-            </p>
+            <h2 className="text-xl font-bold text-content-hi">{t.esperarTitulo}</h2>
+            {/* Antes aparecia "(música de fundo ainda não configurada)" pro usuário. */}
+            <p className="mt-1 text-sm text-content-low">{t.respira}</p>
 
             <div className="mt-6 flex flex-col items-center py-4">
               <div
                 className="flex h-32 w-32 items-center justify-center rounded-full bg-brand/10 motion-safe:animate-[respirar_4s_ease-in-out_infinite]"
-                aria-hidden="true"
+                role="timer"
               >
                 <span className="text-3xl font-extrabold tabular-nums text-brand">
                   {min}:{seg}
                 </span>
               </div>
               {segundosRestantes === 0 && (
-                <p className="mt-4 text-sm font-semibold text-brand">Conseguiu. Isso conta.</p>
+                <p role="status" className="mt-4 text-sm font-semibold text-brand">{t.conseguiu}</p>
               )}
             </div>
 
@@ -153,9 +162,9 @@ export function CravingAssistant(props: {
                 <button
                   type="button"
                   onClick={() => setTocando((t) => !t)}
-                  className="mx-auto block rounded-pill border border-surface-4 px-4 py-2 text-sm text-content-mid"
+                  className="mx-auto block min-h-11 rounded-pill border border-surface-4 px-4 text-sm text-content-mid"
                 >
-                  {tocando ? '🔇 Pausar música' : '🔊 Tocar música'}
+                  {tocando ? t.pausarMusica : t.tocarMusica}
                 </button>
               </>
             )}
@@ -163,17 +172,17 @@ export function CravingAssistant(props: {
             <button
               type="button"
               onClick={props.onFechar}
-              className="mt-5 w-full rounded-2xl border border-surface-4 py-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+              className="mt-5 min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
             >
-              Já passou, obrigado!
+              {t.passou}
             </button>
           </>
         )}
 
         {vista === 'alternativa' && (
           <>
-            <h2 className="text-xl font-bold text-content-hi">Tenta uma dessas 👇</h2>
-            <p className="mt-1 text-sm text-content-low">Pra trocar {habito.nome.toLowerCase()} agora.</p>
+            <h2 className="text-xl font-bold text-content-hi">{t.alternativaTitulo}</h2>
+            <p className="mt-1 text-sm text-content-low">{t.alternativaSub(nomeMin)}</p>
 
             <ul className="mt-4 space-y-2.5">
               {alternativas.map((a) => (
@@ -189,9 +198,9 @@ export function CravingAssistant(props: {
             <button
               type="button"
               onClick={props.onFechar}
-              className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98]"
+              className="mt-5 min-h-14 w-full rounded-2xl bg-brand font-bold text-brand-ink transition-transform active:scale-[0.98]"
             >
-              Consegui, obrigado!
+              {t.consegui}
             </button>
           </>
         )}

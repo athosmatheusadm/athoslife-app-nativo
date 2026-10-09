@@ -7,15 +7,21 @@ import type { Habito } from '@domain/entities/habito'
 import { LifeMascote } from '@ui/components/LifeMascote'
 import { useI18n } from '@/i18n/I18nProvider'
 import { HabitsScreen } from './habits/HabitsScreen'
+import { avisar, vibrar } from '@ui/feedback'
 
 export function Habitos() {
   const { profile, refresh } = useSession()
   const { m } = useI18n()
   const [habitos, setHabitos] = useState<Habito[]>([])
+  const [carregando, setCarregando] = useState(true)
   const autorizado = profile?.consentimentoHabitos ?? false
 
   function recarregar() {
-    void habitosRepository.listar().then(setHabitos).catch(() => {})
+    void habitosRepository
+      .listar()
+      .then(setHabitos)
+      .catch(() => avisar.erro(m.habitos.erroSalvar))
+      .finally(() => setCarregando(false))
   }
 
   useEffect(() => {
@@ -34,16 +40,29 @@ export function Habitos() {
   return (
     <HabitsScreen
       habitos={habitos}
+      carregando={carregando}
       maiorStreak={profile.maiorStreak}
       insightIA={null}
       onRegistrarTropeco={(habitoId) => {
         void habitosRepository
           .registrarRecaida({ habitoId, gatilho: null, contexto: null })
-          .then(recarregar)
-          .catch(() => {})
+          .then(() => {
+            vibrar.leve()
+            avisar.ok(m.habitos.tropecoOk)
+            recarregar()
+          })
+          .catch(() => avisar.erro(m.habitos.erroSalvar))
       }}
       onRegistrarCheckin={(habitoId) => {
-        void habitosRepository.registrarCheckin(habitoId).then(recarregar).catch(() => {})
+        const nome = habitos.find((h) => h.id === habitoId)?.nome ?? ''
+        void habitosRepository
+          .registrarCheckin(habitoId)
+          .then(() => {
+            vibrar.sucesso()
+            avisar.ok(m.habitos.feitoOk(nome))
+            recarregar()
+          })
+          .catch(() => avisar.erro(m.habitos.erroSalvar))
       }}
       onExcluirHabito={async (habitoId) => {
         await habitosRepository.excluir(habitoId)
@@ -69,7 +88,7 @@ function PedirConsentimento(props: { onAutorizar: () => Promise<void>; m: Return
       <LifeMascote humor="calmo" className="mt-10 h-36" />
       <h1 className="mt-5 text-2xl font-extrabold text-content-hi">{h.consentTitulo}</h1>
       <p className="mt-2 text-sm leading-relaxed text-content-low">{h.consentLead}</p>
-      <p className="mt-4 text-micro leading-relaxed text-content-dim">{h.aviso}</p>
+      <p className="mt-4 text-micro leading-relaxed text-content-low">{h.aviso}</p>
       <button
         type="button"
         disabled={salvando}
@@ -81,11 +100,11 @@ function PedirConsentimento(props: { onAutorizar: () => Promise<void>; m: Return
             setSalvando(false)
           })
         }}
-        className="mt-6 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink disabled:opacity-60"
+        className="mt-6 min-h-14 w-full rounded-2xl bg-brand font-bold text-brand-ink active:scale-[0.98] disabled:opacity-60"
       >
         {h.consentBotao}
       </button>
-      <p className="mt-2 text-micro text-content-dim">{h.consentNota}</p>
+      <p className="mt-2 text-micro text-content-low">{h.consentNota}</p>
       {erro && <p className="mt-2 text-sm text-accent-danger">{props.m.comum.erroGenerico}</p>}
     </main>
   )

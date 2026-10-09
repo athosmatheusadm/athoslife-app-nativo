@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { habitoNomeProibido, tipoDaCategoria, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
 import { useI18n } from '@/i18n/I18nProvider'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
 
 /**
  * De propósito SEM álcool/cigarro/drogas/apostas: o app é um acompanhador
@@ -8,24 +9,22 @@ import { useI18n } from '@/i18n/I18nProvider'
  * ferramenta pra dependência. Digitar um desses no nome é recusado aqui
  * (habitoNomeProibido) e no banco (trigger validar_habito).
  */
-const CATEGORIAS_EVITAR: readonly { valor: string | null; emoji: string; rotulo: string }[] = [
-  { valor: 'doce', emoji: '🍫', rotulo: 'Doce/Açúcar' },
-  { valor: 'fast_food', emoji: '🍟', rotulo: 'Fast food' },
-  { valor: 'refrigerante', emoji: '🥤', rotulo: 'Refrigerante' },
-  { valor: null, emoji: '🎯', rotulo: 'Outro' },
+type ChaveCategoria = 'doce' | 'fast_food' | 'refrigerante' | 'leitura' | 'outro'
+
+const CATEGORIAS_EVITAR: readonly { valor: string | null; emoji: string; chave: ChaveCategoria }[] = [
+  { valor: 'doce', emoji: '🍫', chave: 'doce' },
+  { valor: 'fast_food', emoji: '🍟', chave: 'fast_food' },
+  { valor: 'refrigerante', emoji: '🥤', chave: 'refrigerante' },
+  { valor: null, emoji: '🎯', chave: 'outro' },
 ]
 
 /** Categorias aqui precisam bater com CATEGORIAS_CONSTRUIR em domain/entities/habito.ts. */
-const CATEGORIAS_CONSTRUIR: readonly { valor: string | null; emoji: string; rotulo: string }[] = [
-  { valor: 'leitura', emoji: '📚', rotulo: 'Leitura' },
-  { valor: null, emoji: '🎯', rotulo: 'Outro' },
+const CATEGORIAS_CONSTRUIR: readonly { valor: string | null; emoji: string; chave: ChaveCategoria }[] = [
+  { valor: 'leitura', emoji: '📚', chave: 'leitura' },
+  { valor: null, emoji: '🎯', chave: 'outro' },
 ]
 
-const INTENSIDADES: readonly { valor: IntensidadeHabito; rotulo: string }[] = [
-  { valor: 'leve', rotulo: 'Leve' },
-  { valor: 'medio', rotulo: 'Médio' },
-  { valor: 'forte', rotulo: 'Forte' },
-]
+const INTENSIDADES: readonly IntensidadeHabito[] = ['leve', 'medio', 'forte']
 
 /**
  * Painel "Acompanhar novo hábito" — mesmo padrão de bottom sheet do
@@ -55,6 +54,8 @@ export function AddHabitSheet(props: {
   const [erro, setErro] = useState<string | null>(null)
 
   const { m } = useI18n()
+  const t = m.habitos.novoSheet
+  useFecharNoVoltar(true, props.onFechar)
   const categorias = tipo === 'construir' ? CATEGORIAS_CONSTRUIR : CATEGORIAS_EVITAR
   const proibido = habitoNomeProibido(nome)
 
@@ -71,7 +72,7 @@ export function AddHabitSheet(props: {
       // Sucesso: o pai fecha o painel (desmonta), sem precisar zerar `salvando` aqui.
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
-      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : msg || 'Não deu pra salvar. Tenta de novo.')
+      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : t.erro)
       setSalvando(false)
     }
   }
@@ -83,52 +84,53 @@ export function AddHabitSheet(props: {
       className="fixed inset-0 z-50 flex items-end justify-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Acompanhar novo hábito"
+      aria-label={t.titulo}
     >
       <button
-        aria-label="Fechar"
+        aria-label={t.fechar}
         onClick={props.onFechar}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.2s_ease]"
       />
 
-      <div className="relative w-full max-w-md rounded-t-3xl border-t border-surface-4 bg-surface-1 p-6 pb-safe-b motion-safe:animate-[slideUp_0.3s_cubic-bezier(0.22,1,0.36,1)]">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-surface-4 bg-surface-1 p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] motion-safe:animate-[slideUp_0.3s_cubic-bezier(0.22,1,0.36,1)]">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-surface-4" aria-hidden="true" />
 
-        <h2 className="text-xl font-bold text-content-hi">Acompanhar novo hábito</h2>
-        <p className="mt-1 text-sm text-content-low">
-          {tipo === 'construir' ? 'O que você quer aumentar a partir de hoje?' : 'O que você quer superar a partir de hoje?'}
-        </p>
+        <h2 className="text-xl font-bold text-content-hi">{t.titulo}</h2>
+        <p className="mt-1 text-sm text-content-low">{tipo === 'construir' ? t.leadConstruir : t.leadEvitar}</p>
 
         <div className="mt-4 flex gap-2">
           <button
             type="button"
             onClick={() => trocarTipo('evitar')}
-            className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-              tipo === 'evitar' ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
+            aria-pressed={tipo === 'evitar'}
+            className={`min-h-12 flex-1 rounded-xl border px-2 text-sm font-semibold transition-colors ${
+              tipo === 'evitar' ? 'border-brand bg-brand/10 text-brand' : 'border-surface-4 text-content-mid'
             }`}
           >
-            Quero evitar algo
+            {t.evitar}
           </button>
           <button
             type="button"
             onClick={() => trocarTipo('construir')}
-            className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-              tipo === 'construir' ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
+            aria-pressed={tipo === 'construir'}
+            className={`min-h-12 flex-1 rounded-xl border px-2 text-sm font-semibold transition-colors ${
+              tipo === 'construir' ? 'border-brand bg-brand/10 text-brand' : 'border-surface-4 text-content-mid'
             }`}
           >
-            Quero construir um hábito
+            {t.construir}
           </button>
         </div>
 
-        <label className="mt-4 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
-          Nome
+        <label htmlFor="novo-habito-nome" className="mt-4 block text-micro font-bold uppercase tracking-wide text-content-low">
+          {t.nome}
         </label>
         <input
+          id="novo-habito-nome"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          placeholder={tipo === 'construir' ? 'Ex.: Leitura, Meditação…' : 'Ex.: Refrigerante, Doce…'}
+          placeholder={tipo === 'construir' ? t.exConstruir : t.exEvitar}
           autoFocus
-          className="mt-1 w-full rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm font-semibold text-content-hi placeholder:font-normal placeholder:text-content-dim focus:border-brand focus:outline-none"
+          className="mt-1 min-h-12 w-full rounded-xl border border-surface-4 bg-surface-2 px-3.5 text-base font-semibold text-content-hi placeholder:font-normal placeholder:text-content-low focus:border-brand focus:outline-none"
         />
 
         {proibido && (
@@ -137,60 +139,54 @@ export function AddHabitSheet(props: {
           </p>
         )}
 
-        <label className="mt-4 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
-          Categoria
-        </label>
+        <p className="mt-4 block text-micro font-bold uppercase tracking-wide text-content-low">{t.categoria}</p>
         <div className="mt-1.5 flex flex-wrap gap-2">
           {categorias.map((c) => (
             <button
-              key={c.rotulo}
+              key={c.chave}
               type="button"
               onClick={() => setCategoria(c.valor)}
-              className={`rounded-pill px-3.5 py-1.5 text-micro font-bold transition-colors ${
+              aria-pressed={categoria === c.valor}
+              className={`min-h-11 rounded-pill px-4 text-sm font-bold transition-colors active:scale-95 ${
                 categoria === c.valor
                   ? 'bg-brand text-brand-ink'
                   : 'border border-surface-4 bg-surface-2 text-content-mid'
               }`}
             >
-              {c.emoji} {c.rotulo}
+              {c.emoji} {t.categorias[c.chave]}
             </button>
           ))}
         </div>
         {tipoDaCategoria(categoria) !== tipo && (
-          <p className="mt-1.5 text-[11px] text-accent-danger">
-            "Outro" ainda não guarda o tipo — esse hábito vai aparecer como "evitar" depois de salvo.
-          </p>
+          <p className="mt-1.5 text-micro text-content-low">ℹ️ {t.avisoOutro}</p>
         )}
 
-        <label className="mt-4 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
-          Intensidade
-        </label>
+        <p className="mt-4 block text-micro font-bold uppercase tracking-wide text-content-low">{t.intensidade}</p>
         <div className="mt-1.5 flex gap-2">
           {INTENSIDADES.map((i) => (
             <button
-              key={i.valor}
+              key={i}
               type="button"
-              onClick={() => setIntensidade(i.valor)}
-              className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-                intensidade === i.valor
-                  ? 'border-brand text-brand'
-                  : 'border-surface-4 text-content-mid'
+              onClick={() => setIntensidade(i)}
+              aria-pressed={intensidade === i}
+              className={`min-h-12 flex-1 rounded-xl border text-sm font-semibold transition-colors ${
+                intensidade === i ? 'border-brand bg-brand/10 text-brand' : 'border-surface-4 text-content-mid'
               }`}
             >
-              {i.rotulo}
+              {t.intensidades[i]}
             </button>
           ))}
         </div>
 
-        {erro && <p className="mt-2 text-[11px] text-accent-danger">{erro}</p>}
+        {erro && <p role="alert" className="mt-2 text-sm text-accent-danger">{erro}</p>}
 
         <button
           type="button"
           disabled={!podeSalvar}
           onClick={() => void salvar()}
-          className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
+          className="mt-5 min-h-14 w-full rounded-2xl bg-brand font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
         >
-          {salvando ? 'Salvando…' : 'Começar a acompanhar'}
+          {salvando ? t.salvando : t.salvar}
         </button>
       </div>
 

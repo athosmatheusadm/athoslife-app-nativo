@@ -26,6 +26,7 @@ import {
  */
 export function HabitsScreen(props: {
   habitos: readonly Habito[]
+  carregando: boolean
   maiorStreak: number
   insightIA: string | null
   onRegistrarTropeco: (habitoId: string) => void
@@ -42,24 +43,23 @@ export function HabitsScreen(props: {
   const [mostrarAdicionar, setMostrarAdicionar] = useState(false)
   const [chatAberto, setChatAberto] = useState(false)
   const { m } = useI18n()
+  const t = m.habitos
 
   const nivel = nivelBemEstar(habitos)
   const corLife = corTermometro(nivel)
 
   return (
-    <main className="space-y-4 px-4 pb-24 pt-safe-t">
+    <main className="space-y-4 px-4 pb-28 pt-safe-t">
       {/* Header com streak geral */}
       <header className="flex items-start justify-between pt-3">
         <div>
-          <div className="text-micro font-bold uppercase tracking-[3px] text-brand">Athos</div>
+          <div className="text-micro font-bold uppercase tracking-[3px] text-brand">{t.marca}</div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🌱</span>
-            <h1 className="text-2xl font-extrabold text-content-hi">Meus Hábitos</h1>
+            <span className="text-2xl" aria-hidden="true">🌱</span>
+            <h1 className="text-2xl font-extrabold text-content-hi">{t.titulo}</h1>
           </div>
           {maiorStreak > 0 && (
-            <p className="mt-1 text-sm text-content-low">
-              Você está firme há {maiorStreak} {maiorStreak === 1 ? 'dia' : 'dias'} 🔥
-            </p>
+            <p className="mt-1 text-sm text-content-low">{t.firmeHa(maiorStreak)}</p>
           )}
         </div>
         <ProfileAvatar />
@@ -67,6 +67,8 @@ export function HabitsScreen(props: {
 
       {/* Cards */}
       <div className="space-y-3">
+        {props.carregando &&
+          [0, 1].map((i) => <div key={i} className="h-[62px] animate-pulse rounded-2xl border border-surface-4 bg-surface-2" aria-hidden="true" />)}
         {habitos.map((h) => (
           <HabitCard
             key={h.id}
@@ -83,16 +85,16 @@ export function HabitsScreen(props: {
       {/* Adicionar novo hábito */}
       <button
         onClick={() => setMostrarAdicionar(true)}
-        className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-brand/40 p-4 text-left"
+        className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-dashed border-brand/40 p-4 text-left transition-colors active:bg-white/5"
       >
-        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-surface-3 text-2xl text-brand">+</span>
+        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-surface-3 text-2xl text-brand" aria-hidden="true">+</span>
         <span>
-          <span className="block font-semibold text-content-hi">Acompanhar novo hábito</span>
-          <span className="block text-micro text-content-low">Açúcar, refrigerante, leitura e mais…</span>
+          <span className="block font-semibold text-content-hi">{t.novo}</span>
+          <span className="block text-micro text-content-low">{t.novoSub}</span>
         </span>
       </button>
 
-      <p className="px-2 text-center text-micro leading-relaxed text-content-dim">{m.habitos.aviso}</p>
+      <p className="px-2 text-center text-micro leading-relaxed text-content-low">{t.aviso}</p>
 
       {/* Assistente da vontade — sobe e escurece o resto */}
       {vontadeDe && (
