@@ -2181,3 +2181,13 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
 - **Migração `db/athoslife_protecao_ia_migration.sql` RODADA pelo dono** (09/10,
   "Success"; não conferida pelo Claude — sem token válido). Falta publicar o
   ai-proxy v3.8.
+- 09/10: dono deu token novo (salvo via `supabase login` em
+  `~/.supabase/access-token`; foi colado no chat -> revogar depois).
+  **Migração conferida no banco**: tabelas/funções/gatilho novos, cota com
+  'restrito', 6 contas marcadas "já usou". ai-proxy no ar ainda **v3.7
+  (versão 17)** — deploy do v3.8 negado pela trava do modo automático;
+  dono publica com `! npx supabase functions deploy ai-proxy --project-ref
+  gsdwsxwbmxcvutpvpkyi --use-api`.
+- Custo real (ai_audit_logs, 30 dias): só 10 chamadas de chat, média 1.752
+  tokens (~US$ 0,00077 ≈ R$ 0,0044/msg); nenhuma foto do scanner registrada
+  — custo do scanner segue estimado.
