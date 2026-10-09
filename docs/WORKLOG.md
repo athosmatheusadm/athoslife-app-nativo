@@ -2178,3 +2178,6 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   false por erro do TESTE (is_premium_like é STABLE e, no mesmo comando,
   vê o banco de antes da liberação) — `12_teto_pago ok` prova que a conta
   virou premium. Teste corrigido (comando separado). Liberado rodar a migração.
+- **Migração `db/athoslife_protecao_ia_migration.sql` RODADA pelo dono** (09/10,
+  "Success"; não conferida pelo Claude — sem token válido). Falta publicar o
+  ai-proxy v3.8.
