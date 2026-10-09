@@ -167,7 +167,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
         <button
           type="button"
           onClick={comecarCheck}
-          className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-[#04120a] active:scale-[0.98]"
+          className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-brand-ink active:scale-[0.98]"
         >
           {t.comecar}
         </button>
@@ -253,7 +253,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
               type="button"
               disabled={salvando}
               onClick={fechar}
-              className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-[#04120a] disabled:opacity-60"
+              className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-brand-ink disabled:opacity-60"
             >
               {t.confirmar}
             </button>
@@ -359,7 +359,7 @@ function Ressalva(props: {
           type="button"
           disabled={!props.ciente || props.salvando}
           onClick={props.onQuero}
-          className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-[#04120a] disabled:opacity-40"
+          className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-brand-ink disabled:opacity-40"
         >
           {t.querMesmoAssim}
         </button>

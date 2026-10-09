@@ -247,7 +247,7 @@ export function SupplementSheet(props: {
           <button
             type="button"
             onClick={() => abrirGrupo(grupoAtual)}
-            className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98]"
+            className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98]"
           >
             {grupoAtual.itens.length === 1 ? t.continuar : t.verOpcoes}
           </button>
@@ -344,7 +344,7 @@ function DoseSuplemento(props: {
           props.onConfirmar({ id: `item-${Date.now()}`, nome: alimento.nome, quantidade: `${gramas} g`, ...m })
         }
         disabled={gramas <= 0}
-        className="mt-4 w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98] disabled:opacity-40"
+        className="mt-4 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
       >
         {t.registrar}
       </button>

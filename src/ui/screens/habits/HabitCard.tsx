@@ -160,7 +160,7 @@ export function HabitCard(props: {
                 type="button"
                 disabled={props.feitoHoje}
                 onClick={props.onFizHoje}
-                className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-[#04120a] transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-60"
               >
                 {props.feitoHoje ? 'Feito hoje ✓' : 'Fiz hoje'}
               </button>
@@ -201,7 +201,7 @@ export function HabitCard(props: {
                   <button
                     type="button"
                     onClick={() => void salvarLembrete()}
-                    className="flex-1 rounded-lg bg-brand py-1.5 text-sm font-bold text-[#04120a]"
+                    className="flex-1 rounded-lg bg-brand py-1.5 text-sm font-bold text-brand-ink"
                   >
                     Lembrar
                   </button>
@@ -216,7 +216,7 @@ export function HabitCard(props: {
               <button
                 type="button"
                 onClick={props.onEstouComVontade}
-                className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-[#04120a] transition-transform active:scale-[0.98]"
+                className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-brand-ink transition-transform active:scale-[0.98]"
               >
                 Estou com vontade
               </button>

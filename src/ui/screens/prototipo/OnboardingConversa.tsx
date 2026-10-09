@@ -421,7 +421,7 @@ export function OnboardingConversa() {
               {msg.texto}
             </div>
           ) : (
-            <div key={i} className="ml-auto w-fit max-w-[85%] animate-[aparecer_.25s_ease-out] rounded-2xl rounded-tr-md bg-brand px-3.5 py-2.5 text-sm font-semibold text-[#04120a]">
+            <div key={i} className="ml-auto w-fit max-w-[85%] animate-[aparecer_.25s_ease-out] rounded-2xl rounded-tr-md bg-brand px-3.5 py-2.5 text-sm font-semibold text-brand-ink">
               {msg.texto}
             </div>
           ),
@@ -519,7 +519,7 @@ function BotaoEnviar(props: { desligado: boolean; onClick?: () => void }) {
       onClick={props.onClick}
       disabled={props.desligado}
       aria-label="Enviar"
-      className="grid h-12 w-12 flex-none place-items-center rounded-full bg-brand text-[#04120a] disabled:opacity-40"
+      className="grid h-12 w-12 flex-none place-items-center rounded-full bg-brand text-brand-ink disabled:opacity-40"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
     </button>
@@ -533,7 +533,7 @@ function Chip(props: { ativo?: boolean; onClick: () => void; children: ReactNode
       disabled={props.desligado}
       onClick={props.onClick}
       className={`rounded-pill border px-4 py-2.5 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-40 ${
-        props.ativo ? 'border-brand bg-brand text-[#04120a]' : 'border-brand/60 bg-brand/10 text-brand'
+        props.ativo ? 'border-brand bg-brand text-brand-ink' : 'border-brand/60 bg-brand/10 text-brand'
       }`}
     >
       {props.children}
@@ -547,7 +547,7 @@ function BotaoPrincipal(props: { onClick: () => void; children: ReactNode; desli
       type="button"
       onClick={props.onClick}
       disabled={props.desligado}
-      className="mt-3 w-full rounded-pill bg-brand py-3 text-sm font-bold text-[#04120a] disabled:opacity-40"
+      className="mt-3 w-full rounded-pill bg-brand py-3 text-sm font-bold text-brand-ink disabled:opacity-40"
     >
       {props.children}
     </button>
@@ -884,7 +884,7 @@ function PlanoPronto(props: { r: Respostas; onRecomecar: () => void }) {
         <button
           type="button"
           onClick={() => setAviso('No app de verdade: abre a Home já com as metas, a ficha de treino e os cards da Dieta preenchidos.')}
-          className="w-full rounded-pill bg-brand py-3.5 text-sm font-bold text-[#04120a]"
+          className="w-full rounded-pill bg-brand py-3.5 text-sm font-bold text-brand-ink"
         >
           {comPlano ? 'Ver meu plano' : 'Entrar no app'}
         </button>

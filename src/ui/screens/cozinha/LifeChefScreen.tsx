@@ -226,7 +226,7 @@ export function LifeChefScreen() {
                   onClick={() => setMomento(mo)}
                   aria-pressed={momento === mo}
                   className={`rounded-pill px-3 py-1.5 text-micro font-bold ${
-                    momento === mo ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid'
+                    momento === mo ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
                   }`}
                 >
                   {t.momentos[mo]}
@@ -247,7 +247,7 @@ export function LifeChefScreen() {
           <button
             type="button"
             onClick={() => void montar()}
-            className="w-full rounded-pill bg-brand py-3.5 text-sm font-bold text-[#04120a] active:opacity-90"
+            className="w-full rounded-pill bg-brand py-3.5 text-sm font-bold text-brand-ink active:opacity-90"
           >
             👨‍🍳 {t.montar}
           </button>

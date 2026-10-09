@@ -367,7 +367,7 @@ export function DietScreen(props: {
               onClick={() => setDiaSel(d.data)}
               aria-pressed={sel}
               className={`min-h-12 min-w-14 flex-none rounded-xl px-3 py-1.5 text-center transition-colors active:scale-95 ${
-                sel ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid active:bg-white/5'
+                sel ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid active:bg-white/5'
               }`}
             >
               <span className="block text-sm font-bold capitalize">{d.ehHoje ? m.dieta.hoje : diaSemanaCurto.format(d.data).replace('.', '')}</span>

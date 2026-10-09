@@ -153,7 +153,7 @@ export function WorkoutScreen() {
             onClick={() => setLocal(l.id)}
             className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all ${
               local === l.id
-                ? 'bg-brand text-[#04120a] shadow-[0_0_20px_rgba(34,197,94,0.45)]'
+                ? 'bg-brand text-brand-ink shadow-[0_0_20px_rgba(34,197,94,0.45)]'
                 : 'text-content-low'
             }`}
           >
@@ -173,11 +173,11 @@ export function WorkoutScreen() {
               key={d.id}
               onClick={() => setDia(d.id)}
               className={`flex w-14 flex-none flex-col items-center rounded-xl py-2 text-xs font-bold transition-colors ${
-                ativo ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid'
+                ativo ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
               }`}
             >
               <span>{ehHoje ? 'Hoje' : d.rotulo}</span>
-              <span className={`text-[11px] font-semibold ${ativo ? 'text-[#04120a]/70' : 'text-content-dim'}`}>
+              <span className={`text-[11px] font-semibold ${ativo ? 'text-brand-ink/70' : 'text-content-dim'}`}>
                 {ehHoje ? d.rotulo : dataDaSemana(d.id)}
               </span>
             </button>

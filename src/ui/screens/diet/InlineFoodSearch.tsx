@@ -149,7 +149,7 @@ export function PorcaoInline(props: {
           })
         }
         disabled={gramas <= 0}
-        className="mt-3 min-h-12 w-full rounded-xl bg-brand text-base font-bold text-[#04120a] transition-transform active:scale-[0.98] disabled:opacity-40"
+        className="mt-3 min-h-12 w-full rounded-xl bg-brand text-base font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
       >
         {t.adicionar}
       </button>

@@ -2227,3 +2227,17 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     44px, proteína com a cor de macro.
   - `tsc -b` 0 erros, `vite build` ok. **Não visto logado** (precisa de
     login) — dono olhar no localhost.
+  - **Home**: "Ver todas" das Refeições virou botão de verdade (era texto
+    que parecia botão e não fazia nada); refeição sem registro mostra
+    "Registrar" no lugar de "—"; check-in de humor com emojis de 48px
+    dividindo a largura (eram ~28px) e alinhado aos outros cards (tinha
+    margem dupla); sequência zerada vira convite ("Hoje é um ótimo dia pra
+    começar") em vez de "0 dias"; discos com cor por token (proteína azul
+    igual à Dieta; passos verde pra não repetir o laranja das calorias);
+    água: atalhos 48px, Enter adiciona, "−" (tirar último gole) cinza em vez
+    de vermelho, vibração ao registrar; passos e meta de água avisam erro
+    (antes falhavam calados); peso: variação contra o objetivo em cinza
+    (era vermelho = bronca), apagar registro pede 2º toque, botões e
+    períodos 44–48px, aviso "Peso registrado"; avatar do topo 44px. Todos
+    os textos da Home em pt/en/es; números/horas com Intl. Token
+    `brand-ink` no lugar do hex do texto sobre o verde (32 arquivos).

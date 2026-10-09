@@ -41,7 +41,7 @@ export function ReceitaDetalheScreen(props: {
               <button
                 type="button"
                 onClick={props.onIrParaPlano}
-                className="rounded-pill bg-brand px-5 py-2.5 text-sm font-bold text-[#04120a]"
+                className="rounded-pill bg-brand px-5 py-2.5 text-sm font-bold text-brand-ink"
               >
                 {t.verPlanos}
               </button>

@@ -88,7 +88,7 @@ export function Login() {
           type="button"
           onClick={() => trocarModo('entrar')}
           className={`flex-1 rounded-pill py-2.5 text-sm font-semibold transition-colors ${
-            modo === 'entrar' ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid'
+            modo === 'entrar' ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
           }`}
         >
           Entrar
@@ -97,7 +97,7 @@ export function Login() {
           type="button"
           onClick={() => trocarModo('criar')}
           className={`flex-1 rounded-pill py-2.5 text-sm font-semibold transition-colors ${
-            modo === 'criar' ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid'
+            modo === 'criar' ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
           }`}
         >
           Criar conta

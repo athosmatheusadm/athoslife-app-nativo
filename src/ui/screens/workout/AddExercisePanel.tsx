@@ -122,7 +122,7 @@ export function AddExercisePanel(props: {
                     </span>
                     <span
                       className={`flex h-8 w-8 flex-none items-center justify-center rounded-full text-lg font-bold ${
-                        jaAdicionado ? 'bg-surface-3 text-content-dim' : 'bg-brand text-[#04120a]'
+                        jaAdicionado ? 'bg-surface-3 text-content-dim' : 'bg-brand text-brand-ink'
                       }`}
                     >
                       {jaAdicionado ? '✓' : '+'}
@@ -141,7 +141,7 @@ export function AddExercisePanel(props: {
       <div className="px-4 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
         <button
           onClick={props.onFechar}
-          className="w-full rounded-card bg-brand py-3.5 font-bold text-[#04120a] transition-transform active:scale-[0.98]"
+          className="w-full rounded-card bg-brand py-3.5 font-bold text-brand-ink transition-transform active:scale-[0.98]"
         >
           Concluir
         </button>
@@ -155,7 +155,7 @@ function Chip(props: { rotulo: string; ativo: boolean; onClick: () => void }) {
     <button
       onClick={props.onClick}
       className={`flex-none rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-        props.ativo ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid'
+        props.ativo ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
       }`}
     >
       {props.rotulo}

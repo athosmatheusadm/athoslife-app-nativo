@@ -69,7 +69,7 @@ export function ExerciseCard(props: {
             onClick={props.onToggleConcluido}
             aria-label={concluido ? 'Marcar como não concluído' : 'Marcar como concluído'}
             className={`flex h-7 w-7 flex-none items-center justify-center rounded-full border-2 text-sm font-bold transition-colors ${
-              concluido ? 'border-brand bg-brand text-[#04120a]' : 'border-surface-4 text-transparent'
+              concluido ? 'border-brand bg-brand text-brand-ink' : 'border-surface-4 text-transparent'
             }`}
           >
             ✓

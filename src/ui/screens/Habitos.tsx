@@ -81,7 +81,7 @@ function PedirConsentimento(props: { onAutorizar: () => Promise<void>; m: Return
             setSalvando(false)
           })
         }}
-        className="mt-6 w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] disabled:opacity-60"
+        className="mt-6 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink disabled:opacity-60"
       >
         {h.consentBotao}
       </button>

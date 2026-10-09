@@ -36,7 +36,7 @@ export function ProfileScreen({
       </header>
 
       <section className="flex items-center gap-3.5 px-5 pb-5 pt-2">
-        <span className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-2xl font-bold text-[#04120a] ring-2 ring-brand/35">
+        <span className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-2xl font-bold text-brand-ink ring-2 ring-brand/35">
           {profile.avatarUrl ? (
             <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
           ) : (

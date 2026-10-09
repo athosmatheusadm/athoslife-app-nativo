@@ -229,7 +229,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
               key={i}
               className={`max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed ${
                 m.autor === 'usuario'
-                  ? 'ml-auto bg-brand text-[#04120a]'
+                  ? 'ml-auto bg-brand text-brand-ink'
                   : 'border border-surface-4 bg-surface-2 text-content-mid'
               }`}
             >
@@ -302,7 +302,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             type="button"
             onClick={() => void enviar()}
             disabled={enviando || texto.trim().length === 0}
-            className="flex-none rounded-xl bg-brand px-4 py-3 text-sm font-bold text-[#04120a] transition-transform active:scale-[0.98] disabled:opacity-40"
+            className="flex-none rounded-xl bg-brand px-4 py-3 text-sm font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
           >
             Enviar
           </button>

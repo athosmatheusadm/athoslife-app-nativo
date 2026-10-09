@@ -88,7 +88,7 @@ export function ReceitaView(props: {
                 aria-checked={porcoes === n}
                 onClick={() => setPorcoes(n)}
                 className={`h-8 min-w-8 rounded-full px-2 text-sm font-bold transition-colors ${
-                  porcoes === n ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid'
+                  porcoes === n ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
                 }`}
               >
                 {n}
@@ -114,7 +114,7 @@ export function ReceitaView(props: {
       <button
         type="button"
         onClick={() => setRegistrando(true)}
-        className="mb-6 w-full rounded-pill bg-brand py-3 text-sm font-bold text-[#04120a] active:opacity-90"
+        className="mb-6 w-full rounded-pill bg-brand py-3 text-sm font-bold text-brand-ink active:opacity-90"
       >
         🍽 {t.registrar}
       </button>

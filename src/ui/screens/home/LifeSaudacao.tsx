@@ -32,7 +32,7 @@ export function LifeSaudacao() {
         <LifeMascote humor={resgate ? 'resgate' : 'normal'} className="h-32 flex-none" />
         <span className="relative mb-4 flex-1 rounded-2xl rounded-bl-sm border border-surface-4 bg-surface-2 px-3.5 py-2.5">
           <span className="block text-sm font-semibold leading-snug text-content-hi">{fala}</span>
-          <span className="mt-0.5 block text-micro text-content-dim">{m.home.lifeToque}</span>
+          <span className="mt-0.5 block text-micro text-content-low">{m.home.lifeToque}</span>
         </span>
       </button>
       {chatAberto && <LifeChatSheet foco="home" onFechar={() => setChatAberto(false)} />}

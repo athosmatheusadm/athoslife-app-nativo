@@ -148,7 +148,7 @@ export function AddHabitSheet(props: {
               onClick={() => setCategoria(c.valor)}
               className={`rounded-pill px-3.5 py-1.5 text-micro font-bold transition-colors ${
                 categoria === c.valor
-                  ? 'bg-brand text-[#04120a]'
+                  ? 'bg-brand text-brand-ink'
                   : 'border border-surface-4 bg-surface-2 text-content-mid'
               }`}
             >
@@ -188,7 +188,7 @@ export function AddHabitSheet(props: {
           type="button"
           disabled={!podeSalvar}
           onClick={() => void salvar()}
-          className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98] disabled:opacity-40"
+          className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
         >
           {salvando ? 'Salvando…' : 'Começar a acompanhar'}
         </button>

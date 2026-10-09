@@ -15,6 +15,8 @@ export default {
           DEFAULT: '#22c55e',
           dark: '#16a34a',
           glow: '#0f1f0f',
+          /** Texto/ícone em cima do verde da marca (botão primário). */
+          ink: '#04120a',
         },
         surface: {
           1: '#161616', // fundo do app

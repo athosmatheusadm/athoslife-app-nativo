@@ -95,7 +95,7 @@ export function CravingAssistant(props: {
               <button
                 type="button"
                 onClick={abrirEsperar}
-                className="w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98]"
+                className="w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98]"
               >
                 Vou esperar 10 minutos ⏱️
               </button>
@@ -189,7 +189,7 @@ export function CravingAssistant(props: {
             <button
               type="button"
               onClick={props.onFechar}
-              className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98]"
+              className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98]"
             >
               Consegui, obrigado!
             </button>

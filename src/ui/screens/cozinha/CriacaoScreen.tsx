@@ -111,7 +111,7 @@ export function CriacaoScreen() {
               {estadoFoto === 'erro' && <p className="text-center text-micro text-[#f43f5e]">{t.erroFoto}</p>}
               {escolhendo ? (
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => void porFoto('camera')} className="rounded-pill bg-brand py-3 text-sm font-bold text-[#04120a]">
+                  <button type="button" onClick={() => void porFoto('camera')} className="rounded-pill bg-brand py-3 text-sm font-bold text-brand-ink">
                     📷 {t.tirarFoto}
                   </button>
                   <button type="button" onClick={() => void porFoto('galeria')} className="rounded-pill border border-brand py-3 text-sm font-bold text-brand">

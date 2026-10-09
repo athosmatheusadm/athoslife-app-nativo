@@ -80,7 +80,7 @@ export function TreinoEmAndamento() {
         <div className="flex flex-none flex-col gap-1.5">
           <button
             onClick={() => setPainel('resumo')}
-            className="rounded-pill bg-brand px-3 py-1.5 text-micro font-bold text-[#04120a]"
+            className="rounded-pill bg-brand px-3 py-1.5 text-micro font-bold text-brand-ink"
           >
             Encerrar
           </button>

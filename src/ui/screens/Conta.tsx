@@ -72,7 +72,7 @@ export function Conta() {
           onClick={() => void trocarFoto()}
           disabled={enviandoFoto}
           aria-label="Trocar foto de perfil"
-          className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-3xl font-bold text-[#04120a] ring-2 ring-brand/35 disabled:opacity-60"
+          className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-3xl font-bold text-brand-ink ring-2 ring-brand/35 disabled:opacity-60"
         >
           {profile.avatarUrl ? (
             <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -117,7 +117,7 @@ export function Conta() {
                 }}
                 className={`rounded-pill px-3.5 py-1.5 text-micro font-bold transition-colors ${
                   profile.sexo === s.valor
-                    ? 'bg-brand text-[#04120a]'
+                    ? 'bg-brand text-brand-ink'
                     : 'border border-surface-4 bg-surface-2 text-content-mid'
                 }`}
               >

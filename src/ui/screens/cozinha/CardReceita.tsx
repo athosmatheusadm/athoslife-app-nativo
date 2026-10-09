@@ -75,7 +75,7 @@ export function CardReceita(props: {
       </button>
 
       {!r.premium && (
-        <span className="absolute left-2 top-2 rounded-pill bg-brand px-2 py-0.5 text-micro font-extrabold text-[#04120a]">
+        <span className="absolute left-2 top-2 rounded-pill bg-brand px-2 py-0.5 text-micro font-extrabold text-brand-ink">
           {t.gratis}
         </span>
       )}

@@ -138,7 +138,7 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
           />
           <button
             onClick={() => void salvar()}
-            className="flex-1 rounded-lg bg-brand py-1.5 text-sm font-bold text-[#04120a]"
+            className="flex-1 rounded-lg bg-brand py-1.5 text-sm font-bold text-brand-ink"
           >
             Lembrar
           </button>

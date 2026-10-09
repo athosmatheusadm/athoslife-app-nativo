@@ -89,7 +89,7 @@ export function MealSheet(props: {
             >
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 transition-colors ${
-                  refeicao.concluida ? 'border-brand bg-brand text-[#04120a]' : 'border-content-dim'
+                  refeicao.concluida ? 'border-brand bg-brand text-brand-ink' : 'border-content-dim'
                 }`}
               >
                 {refeicao.concluida && (

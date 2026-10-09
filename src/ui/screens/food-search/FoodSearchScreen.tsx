@@ -169,7 +169,7 @@ function PortionView(props: {
         <button
           onClick={() => props.onConfirmar(gramas, macros)}
           disabled={gramas <= 0}
-          className="w-full rounded-card bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98] disabled:opacity-40"
+          className="w-full rounded-card bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
         >
           Adicionar {macros.calorias} kcal
         </button>

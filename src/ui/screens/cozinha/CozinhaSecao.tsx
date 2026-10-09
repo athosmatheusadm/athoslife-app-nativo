@@ -132,7 +132,7 @@ export function Chip(props: { ativo: boolean; cor?: string; onClick: () => void;
       onClick={props.onClick}
       aria-pressed={props.ativo}
       className={`min-h-11 flex-none rounded-pill px-4 text-sm font-bold transition-colors active:scale-95 ${
-        props.ativo ? (cor ? '' : 'bg-brand text-[#04120a]') : 'border border-surface-4 bg-surface-2 text-content-mid'
+        props.ativo ? (cor ? '' : 'bg-brand text-brand-ink') : 'border border-surface-4 bg-surface-2 text-content-mid'
       }`}
       style={props.ativo && cor ? { backgroundColor: cor, color: '#04120a' } : !props.ativo && cor ? { color: cor } : undefined}
     >

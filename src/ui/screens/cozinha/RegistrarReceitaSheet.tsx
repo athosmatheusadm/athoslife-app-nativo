@@ -107,7 +107,7 @@ export function RegistrarReceitaSheet(props: {
             type="button"
             disabled={estado === 'salvando'}
             onClick={() => void registrar()}
-            className="mt-4 w-full rounded-pill bg-brand py-3 text-sm font-bold text-[#04120a] disabled:opacity-60"
+            className="mt-4 w-full rounded-pill bg-brand py-3 text-sm font-bold text-brand-ink disabled:opacity-60"
           >
             {t.confirmarRegistro}
           </button>

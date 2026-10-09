@@ -362,7 +362,7 @@ export function Scanner() {
                     onClick={() => mudarItem(item.id, (i) => ({ ...i, incluir: !i.incluir }))}
                     aria-label={item.incluir ? `Tirar ${item.nome}` : `Incluir ${item.nome}`}
                     className={`flex h-6 w-6 flex-none items-center justify-center rounded-md border-2 text-xs font-bold ${
-                      item.incluir ? 'border-brand bg-brand text-[#04120a]' : 'border-surface-4 text-transparent'
+                      item.incluir ? 'border-brand bg-brand text-brand-ink' : 'border-surface-4 text-transparent'
                     }`}
                   >
                     ✓

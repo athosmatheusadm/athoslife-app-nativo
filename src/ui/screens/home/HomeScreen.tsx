@@ -28,7 +28,7 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
   if (!profile) return null
 
   return (
-    <main className="space-y-4 px-4 pb-24 pt-safe-t">
+    <main className="space-y-4 px-4 pb-28 pt-safe-t">
       {/* Header: só a marca — o streak agora tem card próprio, mais abaixo. */}
       <header className="flex items-center justify-between pt-3">
         <h1 className="text-2xl font-bold text-content-hi">
@@ -48,6 +48,7 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
       <MealCards
         onAbrir={(tipo: TipoRefeicao) => onNavigate(`/dieta?refeicao=${tipo}`)}
         onCriarNovaRefeicao={() => onNavigate('/dieta?novaExtra=1')}
+        onVerTodas={() => onNavigate('/dieta')}
       />
 
       <WeightCard />

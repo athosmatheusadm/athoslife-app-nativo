@@ -11,7 +11,7 @@ export function BalaoLife(props: { children: ReactNode }) {
 }
 
 export function BalaoPessoa(props: { children: ReactNode }) {
-  return <div className="ml-auto w-fit max-w-[85%] rounded-2xl bg-brand p-3 text-sm font-semibold text-[#04120a]">{props.children}</div>
+  return <div className="ml-auto w-fit max-w-[85%] rounded-2xl bg-brand p-3 text-sm font-semibold text-brand-ink">{props.children}</div>
 }
 
 export function Opcao(props: { onClick: () => void; children: ReactNode; ativa?: boolean; disabled?: boolean }) {
@@ -22,7 +22,7 @@ export function Opcao(props: { onClick: () => void; children: ReactNode; ativa?:
       aria-pressed={props.ativa}
       onClick={props.onClick}
       className={`rounded-pill border px-3.5 py-2 text-sm font-semibold active:scale-[0.97] disabled:opacity-40 ${
-        props.ativa ? 'border-brand bg-brand text-[#04120a]' : 'border-brand/60 bg-brand/10 text-brand'
+        props.ativa ? 'border-brand bg-brand text-brand-ink' : 'border-brand/60 bg-brand/10 text-brand'
       }`}
     >
       {props.children}

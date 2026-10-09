@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
+import { useI18n } from '@/i18n/I18nProvider'
 
 /**
  * Avatar do canto superior direito — presente no header de toda tela raiz.
@@ -11,14 +12,15 @@ import { useSession } from '@app/SessionProvider'
 export function ProfileAvatar() {
   const navigate = useNavigate()
   const { profile } = useSession()
+  const { m } = useI18n()
   const inicial = (profile?.nome ?? '?').trim().charAt(0).toUpperCase() || '?'
 
   return (
     <button
       type="button"
       onClick={() => navigate('/perfil')}
-      aria-label="Abrir perfil"
-      className="flex h-9 w-9 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-[#04120a] ring-1 ring-white/10 transition-transform active:scale-95"
+      aria-label={m.home.abrirPerfil}
+      className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-brand-ink ring-1 ring-white/10 transition-transform active:scale-95"
     >
       {profile?.avatarUrl ? (
         <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
