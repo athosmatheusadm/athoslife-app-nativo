@@ -62,9 +62,9 @@ export function CozinhaSecao(props: {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-baseline justify-between px-1">
+      <div className="flex items-center justify-between px-1">
         <h2 className="text-base font-bold text-content-hi">{t.titulo}</h2>
-        <button type="button" onClick={() => navigate('/dieta/cozinha')} className="text-micro font-bold text-brand">
+        <button type="button" onClick={() => navigate('/dieta/cozinha')} className="-mr-2 min-h-11 px-2 text-sm font-bold text-brand active:opacity-70">
           {t.verTodas} ›
         </button>
       </div>
@@ -74,7 +74,7 @@ export function CozinhaSecao(props: {
       {erro && (
         <div className="py-6 text-center">
           <p className="mb-2 text-micro text-content-low">{t.erroCarregar}</p>
-          <button type="button" onClick={carregar} className="text-micro font-bold text-brand">{t.tentarDeNovo}</button>
+          <button type="button" onClick={carregar} className="min-h-11 px-3 text-sm font-bold text-brand active:opacity-70">{t.tentarDeNovo}</button>
         </div>
       )}
 
@@ -131,7 +131,7 @@ export function Chip(props: { ativo: boolean; cor?: string; onClick: () => void;
       type="button"
       onClick={props.onClick}
       aria-pressed={props.ativo}
-      className={`flex-none rounded-pill px-3.5 py-1.5 text-micro font-bold transition-colors ${
+      className={`min-h-11 flex-none rounded-pill px-4 text-sm font-bold transition-colors active:scale-95 ${
         props.ativo ? (cor ? '' : 'bg-brand text-[#04120a]') : 'border border-surface-4 bg-surface-2 text-content-mid'
       }`}
       style={props.ativo && cor ? { backgroundColor: cor, color: '#04120a' } : !props.ativo && cor ? { color: cor } : undefined}
@@ -158,14 +158,14 @@ export function CardCriacao(props: { criacao: ReceitaCriada; onAbrir: () => void
           <img src="/life/chef.webp" alt="" className="h-20 w-auto" draggable={false} />
         )}
         {criacao.feitaEm && (
-          <span className="absolute left-2 top-2 rounded-pill bg-black/60 px-2 py-0.5 text-[9px] font-bold text-white">
+          <span className="absolute left-2 top-2 rounded-pill bg-black/60 px-2 py-0.5 text-micro font-bold text-white">
             ✓ {t.feita}
           </span>
         )}
       </div>
       <div className="p-2.5">
         <div className="mb-1.5 line-clamp-2 min-h-[2.4em] text-micro font-bold leading-snug text-content-hi">{criacao.receita.titulo}</div>
-        <span className="rounded-pill bg-brand/15 px-2 py-0.5 text-[9px] font-bold text-brand">
+        <span className="rounded-pill bg-brand/15 px-2 py-0.5 text-micro font-bold text-brand">
           {criacao.receita.macros.calorias} {t.kcal}
         </span>
       </div>

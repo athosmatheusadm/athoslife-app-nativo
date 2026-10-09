@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { App } from '@capacitor/app'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { fecharCamadaDoTopo } from './voltarAndroid'
 
 /** Telas onde "Voltar" deve sair do app, não navegar. */
 const RAIZES = new Set(['/home', '/login', '/dieta', '/treinos', '/habitos'])
@@ -20,6 +21,8 @@ export function useAndroidBackButton(): void {
 
   useEffect(() => {
     const handle = App.addListener('backButton', ({ canGoBack }) => {
+      // Sheet/modal aberto fecha primeiro (ver voltarAndroid.ts).
+      if (fecharCamadaDoTopo()) return
       if (RAIZES.has(location.pathname) || !canGoBack) {
         void App.minimizeApp()
         return

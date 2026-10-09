@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
@@ -22,7 +22,8 @@ import { itensRefeicaoRepository, type RefeicaoAlvo } from '@data/repositories/i
 import { macrosRepository } from '@data/repositories/macrosRepository'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
 import { calcularProgresso, type Metas, type Profile } from '@domain/entities/profile'
-import { gerarTiraDias, tituloDia } from '@domain/entities/diaDieta'
+import { gerarTiraDias } from '@domain/entities/diaDieta'
+import { avisar, vibrar } from '@ui/feedback'
 import { CozinhaSecao } from '@ui/screens/cozinha/CozinhaSecao'
 import { macrosRestantes } from '@domain/rules/cozinha'
 import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
@@ -77,7 +78,7 @@ export function DietScreen(props: {
   const { profile } = props
   const metas: Metas = profile.metas
   const navigate = useNavigate()
-  const { m } = useI18n()
+  const { m, idioma } = useI18n()
 
   /**
    * Só abre sozinho quando veio de navegação explícita (ex.: Home tocando
@@ -96,6 +97,8 @@ export function DietScreen(props: {
   )
   const [consumido, setConsumido] = useState({ kcal: 0, proteina: 0, carboidrato: 0, gordura: 0 })
   const [erroExtra, setErroExtra] = useState<string | null>(null)
+  // 'carregando' só na 1ª vez: trocar de dia mantém a lista anterior na tela.
+  const [estado, setEstado] = useState<'carregando' | 'ok' | 'erro'>('carregando')
 
   async function carregarDia(dia: Date) {
     try {
@@ -135,11 +138,28 @@ export function DietScreen(props: {
         carboidrato: macros.carboidrato,
         gordura: macros.gordura,
       })
+      setEstado('ok')
     } catch (e) {
-      // Falha silenciosa pro usuário (mesmo padrão do resto do app: mantém o
-      // que já tinha na tela) — mas loga, porque essa é a causa mais comum
-      // de "salvei e não mudou nada visualmente".
+      // Mantém o que já tinha na tela; se nunca carregou, mostra o erro com
+      // "Tentar de novo" (antes ficava a lista vazia, como se não houvesse nada).
       console.error('carregarDia falhou:', e)
+      setEstado((atual) => (atual === 'ok' ? 'ok' : 'erro'))
+      if (estado === 'ok') avisar.erro(m.dieta.erroCarregar)
+    }
+  }
+
+  /** Grava, recarrega o dia e dá retorno (vibração leve / aviso de erro). */
+  async function gravar(acao: () => Promise<unknown>, aoDarCerto?: () => void): Promise<boolean> {
+    try {
+      await acao()
+      vibrar.leve()
+      aoDarCerto?.()
+      await carregarDia(diaSel)
+      return true
+    } catch (e) {
+      console.error('Dieta: gravar falhou:', e)
+      avisar.erro(m.dieta.erroSalvar)
+      return false
     }
   }
 
@@ -177,10 +197,11 @@ export function DietScreen(props: {
   }
 
   async function registrarDoPlano(r: Refeicao, itens: readonly ItemRefeicao[]) {
-    for (const { id: _temporario, ...item } of itens) {
-      await itensRefeicaoRepository.adicionar(paraAlvo(r), diaSel, item)
-    }
-    await carregarDia(diaSel)
+    return gravar(async () => {
+      for (const { id: _temporario, ...item } of itens) {
+        await itensRefeicaoRepository.adicionar(paraAlvo(r), diaSel, item)
+      }
+    })
   }
 
   // Veio do "+" da Home: cria a extra, abre ela, e avisa o pai pra limpar a URL.
@@ -217,33 +238,41 @@ export function DietScreen(props: {
 
   async function adicionarItem(r: Refeicao, item: ItemRefeicao) {
     const { id: _idTemporario, ...semId } = item
-    await itensRefeicaoRepository.adicionar(paraAlvo(r), diaSel, semId)
-    await carregarDia(diaSel)
+    await gravar(
+      () => itensRefeicaoRepository.adicionar(paraAlvo(r), diaSel, semId),
+      () => avisar.ok(m.dieta.itemAdicionado(item.nome)),
+    )
   }
 
-  async function removerItem(itemId: string) {
-    await itensRefeicaoRepository.removerItem(itemId)
-    await carregarDia(diaSel)
-  }
-
-  async function excluirRefeicao(r: Refeicao) {
-    if (r.tipo === 'extra' && r.id) {
-      if (!window.confirm(`Excluir "${r.nome}" e todos os alimentos dela hoje?`)) return
-      await itensRefeicaoRepository.excluirExtra(r.id)
-    } else {
-      if (!window.confirm('Excluir todos os alimentos desta refeição hoje?')) return
-      await itensRefeicaoRepository.removerTodosDoTipo(r.tipo as TipoFixo, diaSel)
+  /** Excluir não pergunta: avisa com "Desfazer" (5 s), que grava o item de volta. */
+  async function removerItem(r: Refeicao, itemId: string) {
+    const item = r.itens.find((i) => i.id === itemId)
+    const ok = await gravar(() => itensRefeicaoRepository.removerItem(itemId))
+    if (ok && item) {
+      avisar.desfazer(m.dieta.itemExcluido(item.nome), m.dieta.desfazer, () => {
+        const { id: _antigo, ...semId } = item
+        void gravar(() => itensRefeicaoRepository.adicionar(paraAlvo(r), diaSel, semId))
+      })
     }
-    await carregarDia(diaSel)
+  }
+
+  // A confirmação ("toque de novo") fica no próprio botão do MealSheet.
+  async function excluirRefeicao(r: Refeicao) {
+    const ok = await gravar(() =>
+      r.tipo === 'extra' && r.id
+        ? itensRefeicaoRepository.excluirExtra(r.id)
+        : itensRefeicaoRepository.removerTodosDoTipo(r.tipo as TipoFixo, diaSel),
+    )
+    if (ok && r.tipo === 'extra') setSheetChave(null)
   }
 
   async function alternarConcluida(r: Refeicao) {
-    if (r.tipo === 'extra' && r.id) {
-      await itensRefeicaoRepository.definirConcluidaExtra(r.id, !r.concluida)
-    } else {
-      await itensRefeicaoRepository.definirConcluida(r.tipo as TipoFixo, diaSel, !r.concluida)
-    }
-    await carregarDia(diaSel)
+    await gravar(() =>
+      r.tipo === 'extra' && r.id
+        ? itensRefeicaoRepository.definirConcluidaExtra(r.id, !r.concluida)
+        : itensRefeicaoRepository.definirConcluida(r.tipo as TipoFixo, diaSel, !r.concluida),
+    () => !r.concluida && vibrar.sucesso(),
+    )
   }
 
   async function renomearExtra(r: Refeicao, nome: string) {
@@ -255,8 +284,7 @@ export function DietScreen(props: {
       await itensRefeicaoRepository.renomearExtraPorId(r.id, limpo)
       await carregarDia(diaSel)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Não deu pra salvar o nome.'
-      setErroExtra(msg)
+      setErroExtra(e instanceof Error ? e.message : 'erro')
       console.error('renomearExtra falhou:', e)
     }
   }
@@ -296,12 +324,26 @@ export function DietScreen(props: {
     })
   }
 
+  // Nome das 4 fixas no idioma da pessoa (as extras têm o nome que ela deu).
+  const visiveis = refeicoes.map((r) => (r.tipo === 'extra' ? r : { ...r, nome: m.dieta.refeicoes[r.tipo as TipoFixo] }))
+  const diaSemanaCurto = new Intl.DateTimeFormat(idioma, { weekday: 'short' })
+  const diaSemanaLongo = new Intl.DateTimeFormat(idioma, { weekday: 'long' })
+  const dataCurta = new Intl.DateTimeFormat(idioma, { weekday: 'long', day: '2-digit', month: '2-digit' })
+  const ehHoje = diaSel.toDateString() === new Date().toDateString()
+  const tituloDoDia = ehHoje ? m.dieta.tituloHoje(diaSemanaLongo.format(diaSel)) : dataCurta.format(diaSel)
+
+  // A tira tem 3 dias antes de Hoje: rola pra deixar o Hoje à vista na 1ª vez.
+  const hojeRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    hojeRef.current?.scrollIntoView({ inline: 'center', block: 'nearest' })
+  }, [])
+
   return (
-    <main className="space-y-4 px-4 pb-24 pt-safe-t">
+    <main className="space-y-4 px-4 pb-28 pt-safe-t">
       <header className="flex items-center justify-between pt-3">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🥗</span>
-          <h1 className="text-xl font-bold text-content-hi">Meu Plano</h1>
+          <span className="text-2xl" aria-hidden="true">🥗</span>
+          <h1 className="text-xl font-bold text-content-hi">{m.dieta.titulo}</h1>
         </div>
         <ProfileAvatar />
       </header>
@@ -309,25 +351,27 @@ export function DietScreen(props: {
       {/* Cards de macro — kcal já mora no disco da Home; aqui o foco é
           mapear os 3 macros de verdade (proteína, carbo, gordura). */}
       <div className="flex gap-2">
-        <MacroBar valor={`${consumido.proteina}g`} label="proteína" pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="#f43f5e" />
-        <MacroBar valor={`${consumido.carboidrato}g`} label="carbo" pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="#3b82f6" />
-        <MacroBar valor={`${consumido.gordura}g`} label="gordura" pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="#fbbf24" />
+        <MacroBar valor={`${consumido.proteina}g`} label={m.dieta.macroCurto.proteina} pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="proteina" />
+        <MacroBar valor={`${consumido.carboidrato}g`} label={m.dieta.macroCurto.carbo} pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="carbo" />
+        <MacroBar valor={`${consumido.gordura}g`} label={m.dieta.macroCurto.gordura} pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="gordura" />
       </div>
 
       {/* TIRA DE DIAS — padrão Hoje */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         {tira.map((d) => {
           const sel = d.data.toDateString() === diaSel.toDateString()
           return (
             <button
               key={d.data.toISOString()}
+              ref={d.ehHoje ? hojeRef : undefined}
               onClick={() => setDiaSel(d.data)}
-              className={`flex-none rounded-xl px-4 py-2 text-center transition-colors ${
-                sel ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid'
+              aria-pressed={sel}
+              className={`min-h-12 min-w-14 flex-none rounded-xl px-3 py-1.5 text-center transition-colors active:scale-95 ${
+                sel ? 'bg-brand text-[#04120a]' : 'border border-surface-4 text-content-mid active:bg-white/5'
               }`}
             >
-              <span className="block text-sm font-bold">{d.rotulo}</span>
-              <span className="block text-[10px] opacity-80">{String(d.data.getDate()).padStart(2, '0')}</span>
+              <span className="block text-sm font-bold capitalize">{d.ehHoje ? m.dieta.hoje : diaSemanaCurto.format(d.data).replace('.', '')}</span>
+              <span className="block text-micro tabular-nums opacity-80">{String(d.data.getDate()).padStart(2, '0')}</span>
             </button>
           )
         })}
@@ -335,19 +379,41 @@ export function DietScreen(props: {
 
       {/* Cabeçalho do dia */}
       <div className="flex items-center gap-2 px-1">
-        <span>📅</span>
+        <span aria-hidden="true">📅</span>
         <div>
-          <div className="font-semibold text-content-hi">{tituloDia(diaSel)}</div>
-          <div className="text-micro text-content-low">{consumido.kcal} kcal registradas</div>
+          <div className="font-semibold capitalize text-content-hi">{tituloDoDia}</div>
+          <div className="text-micro tabular-nums text-content-low">{m.dieta.kcalRegistradas(consumido.kcal)}</div>
         </div>
       </div>
 
+      {estado === 'carregando' && (
+        <div className="space-y-2" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-16 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+          ))}
+        </div>
+      )}
+
+      {estado === 'erro' && (
+        <div className="rounded-2xl border border-surface-4 bg-surface-2 p-5 text-center">
+          <p className="text-sm text-content-mid">{m.dieta.erroCarregar}</p>
+          <button
+            type="button"
+            onClick={() => void carregarDia(diaSel)}
+            className="mt-3 min-h-12 rounded-xl bg-surface-3 px-5 text-sm font-bold text-content-hi active:bg-surface-4"
+          >
+            {m.dieta.tentarDeNovo}
+          </button>
+        </div>
+      )}
+
       {/* Refeições — as 4 fixas + as extras do usuário, arrastáveis. Tocar
           abre direto o MealSheet (sem acordeão intermediário). */}
+      {estado === 'ok' && (
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={refeicoes.map((r) => r.chave)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
-            {refeicoes.map((r) => (
+            {visiveis.map((r) => (
               <SortableMealRow key={r.chave} chave={r.chave} draggable={r.tipo === 'extra'}>
                 {(handle) => (
                   <MealAccordion
@@ -372,14 +438,17 @@ export function DietScreen(props: {
           </div>
         </SortableContext>
       </DndContext>
+      )}
 
-      <button
-        type="button"
-        onClick={() => void criarExtraInline()}
-        className="w-full rounded-2xl border border-dashed border-surface-4 py-3.5 text-sm font-semibold text-content-mid transition-colors active:bg-white/5"
-      >
-        + Nova refeição
-      </button>
+      {estado === 'ok' && (
+        <button
+          type="button"
+          onClick={() => void criarExtraInline()}
+          className="min-h-14 w-full rounded-2xl border border-dashed border-surface-4 text-sm font-semibold text-content-mid transition-colors active:bg-white/5"
+        >
+          {m.dieta.novaRefeicao}
+        </button>
+      )}
 
       {/* Cozinha ATHOS — embutida na tela do dia, não uma aba separada.
           "Fecham seu dia" só olhando Hoje (é o que ainda dá pra comer). */}
@@ -396,7 +465,7 @@ export function DietScreen(props: {
       />
 
       {sheetChave && (() => {
-        const r = refeicoes.find((x) => x.chave === sheetChave)
+        const r = visiveis.find((x) => x.chave === sheetChave)
         if (!r) return null
         return (
           <MealSheet
@@ -406,8 +475,12 @@ export function DietScreen(props: {
             onAdicionarItem={(item) => void adicionarItem(r, item)}
             sugestoesPlano={itensDoPlano(r)}
             onAdicionarPlano={(itens) => void registrarDoPlano(r, itens)}
-            onRemoverItem={(itemId) => void removerItem(itemId)}
-            onCopiarItem={(item) => setClipboard(item)}
+            onRemoverItem={(itemId) => void removerItem(r, itemId)}
+            onCopiarItem={(item) => {
+              setClipboard(item)
+              vibrar.leve()
+              avisar.ok(m.dieta.itemCopiado(item.nome))
+            }}
             onColar={() => clipboard && void adicionarItem(r, clipboard)}
             onExcluir={() => void excluirRefeicao(r)}
             onToggleConcluida={() => void alternarConcluida(r)}
@@ -463,13 +536,21 @@ function SortableMealRow(props: {
   )
 }
 
-function MacroBar({ valor, label, pct, cor }: { valor: string; label: string; pct: number; cor: string }) {
+// Classes inteiras (o Tailwind não enxerga classe montada por template).
+const COR_MACRO = {
+  proteina: { texto: 'text-macro-proteina', barra: 'bg-macro-proteina' },
+  carbo: { texto: 'text-macro-carbo', barra: 'bg-macro-carbo' },
+  gordura: { texto: 'text-macro-gordura', barra: 'bg-macro-gordura' },
+} as const
+
+function MacroBar({ valor, label, pct, cor }: { valor: string; label: string; pct: number; cor: keyof typeof COR_MACRO }) {
+  const c = COR_MACRO[cor]
   return (
     <div className="flex-1 rounded-xl border border-surface-4 bg-surface-2 p-3">
-      <div className="text-center text-lg font-bold" style={{ color: cor }}>{valor}</div>
-      <div className="mb-2 text-center text-micro text-content-dim">{label}</div>
-      <div className="h-1 overflow-hidden rounded-full bg-surface-4">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: cor }} />
+      <div className={`text-center text-lg font-bold tabular-nums ${c.texto}`}>{valor}</div>
+      <div className="mb-2 text-center text-micro text-content-low">{label}</div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-4" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+        <div className={`h-full w-full origin-left rounded-full transition-transform duration-500 ease-athos ${c.barra}`} style={{ transform: `scaleX(${pct / 100})` }} />
       </div>
     </div>
   )

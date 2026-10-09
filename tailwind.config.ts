@@ -42,6 +42,18 @@ export default {
           recaidaSoft: '#a78bfa',
           /** Só erro real e ação destrutiva. Nunca para recaída. */
           danger: '#f43f5e',
+          /** Coração de favorito (convenção de mercado). Não é erro. */
+          favorito: '#fb7185',
+        },
+        /**
+         * Uma cor por macro, a mesma em todo o app (antes a proteína era
+         * vermelha num lugar e azul no outro). Nenhuma é vermelho: macro não
+         * é erro. Contraste ≥ 6,8:1 sobre surface-1/2 (WCAG AA).
+         */
+        macro: {
+          proteina: '#60a5fa',
+          carbo: '#fb923c',
+          gordura: '#facc15',
         },
       },
       fontFamily: {

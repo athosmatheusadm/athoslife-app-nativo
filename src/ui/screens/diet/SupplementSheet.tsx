@@ -4,6 +4,8 @@ import { escalarMacros } from '@domain/rules/foodReconciliation'
 import { FavoritoStar, MacroChips } from './InlineFoodSearch'
 import type { AlimentoBase } from '@domain/entities/food'
 import type { ItemRefeicao } from '@domain/entities/meal'
+import { useI18n } from '@/i18n/I18nProvider'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
 
 interface Grupo {
   nome: string
@@ -65,19 +67,26 @@ export function SupplementSheet(props: {
   onFechar: () => void
 }) {
   const [suplementos, setSuplementos] = useState<AlimentoBase[] | null>(null)
-  const [erro, setErro] = useState<string | null>(null)
+  const [erro, setErro] = useState(false)
   const [indice, setIndice] = useState(0)
   const [termo, setTermo] = useState('')
   const [grupoAberto, setGrupoAberto] = useState<Grupo | null>(null)
   const [termoGrupo, setTermoGrupo] = useState('')
   const [escolhido, setEscolhido] = useState<AlimentoBase | null>(null)
+  const { m } = useI18n()
+  const t = m.dieta.suplemento
+
+  // Voltar do Android: dose -> lista do grupo -> carrossel -> fecha.
+  useFecharNoVoltar(true, props.onFechar)
+  useFecharNoVoltar(grupoAberto !== null, () => setGrupoAberto(null))
+  useFecharNoVoltar(escolhido !== null, () => setEscolhido(null))
 
   useEffect(() => {
     let ativo = true
     alimentosRepository
       .porCategoria('suplemento')
       .then((lista) => ativo && setSuplementos(lista))
-      .catch(() => ativo && setErro('Não deu pra carregar os suplementos agora.'))
+      .catch(() => ativo && setErro(true))
     return () => {
       ativo = false
     }
@@ -121,7 +130,7 @@ export function SupplementSheet(props: {
 
   if (escolhido) {
     return (
-      <Casca onFechar={props.onFechar} titulo="Registrar suplemento">
+      <Casca onFechar={props.onFechar} titulo={t.titulo}>
         <DoseSuplemento
           alimento={escolhido}
           onVoltar={() => setEscolhido(null)}
@@ -141,8 +150,8 @@ export function SupplementSheet(props: {
           <button
             type="button"
             onClick={() => setGrupoAberto(null)}
-            aria-label="Voltar aos tipos de suplemento"
-            className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-surface-4 text-2xl leading-none text-content-hi"
+            aria-label={t.voltarTipos}
+            className="flex h-11 w-11 flex-none items-center justify-center rounded-lg border border-surface-4 text-2xl leading-none text-content-hi"
           >
             ‹
           </button>
@@ -154,9 +163,9 @@ export function SupplementSheet(props: {
             <input
               value={termoGrupo}
               onChange={(e) => setTermoGrupo(e.target.value)}
-              placeholder={`Pesquisar em ${grupoAberto.nome}…`}
+              placeholder={t.buscarEm(grupoAberto.nome)}
               autoFocus
-              className="min-h-10 flex-1 bg-transparent text-sm text-content-hi placeholder:text-content-dim focus:outline-none"
+              className="min-h-12 flex-1 bg-transparent text-base text-content-hi placeholder:text-content-low focus:outline-none"
             />
           </div>
         </div>
@@ -166,21 +175,21 @@ export function SupplementSheet(props: {
             <li key={a.id}>
               <button
                 onClick={() => setEscolhido(a)}
-                className="flex w-full items-center justify-between gap-3 border-t border-surface-3 py-2.5 text-left first:border-t-0"
+                className="flex min-h-14 w-full items-center justify-between gap-3 border-t border-surface-3 py-2 text-left transition-colors first:border-t-0 active:bg-white/5"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm text-content-hi">{a.nome}</span>
-                  <span className="block text-micro text-content-low">{a.porcaoG}g de referência</span>
+                  <span className="block text-micro text-content-low">{m.dieta.busca.referencia(a.porcaoG)}</span>
                 </span>
                 <span className="flex-none text-right">
                   <span className="block text-sm font-bold text-brand">{a.calorias} kcal</span>
-                  <span className="block text-micro text-content-dim">{a.proteina}g prot</span>
+                  <span className="block text-micro text-macro-proteina">{m.dieta.busca.prot(a.proteina)}</span>
                 </span>
               </button>
             </li>
           ))}
           {itensDoGrupoFiltrados.length === 0 && (
-            <li className="py-3 text-center text-micro text-content-low">Nada encontrado.</li>
+            <li className="py-3 text-center text-micro text-content-low">{t.nada}</li>
           )}
         </ul>
       </Casca>
@@ -188,11 +197,11 @@ export function SupplementSheet(props: {
   }
 
   return (
-    <Casca onFechar={props.onFechar} titulo="Registrar suplemento">
-      {erro && <p className="mt-4 text-sm text-accent-danger">{erro}</p>}
-      {!erro && !suplementos && <p className="mt-6 text-center text-sm text-content-low">Carregando…</p>}
+    <Casca onFechar={props.onFechar} titulo={t.titulo}>
+      {erro && <p className="mt-4 text-sm text-accent-danger">{t.erro}</p>}
+      {!erro && !suplementos && <p className="mt-6 text-center text-sm text-content-low">{t.carregando}</p>}
       {!erro && suplementos && suplementos.length === 0 && (
-        <p className="mt-6 text-center text-sm text-content-low">Nenhum suplemento cadastrado na base ainda.</p>
+        <p className="mt-6 text-center text-sm text-content-low">{t.vazio}</p>
       )}
 
       {grupoAtual && (
@@ -205,8 +214,8 @@ export function SupplementSheet(props: {
             <input
               value={termo}
               onChange={(e) => setTermo(e.target.value)}
-              placeholder="Pesquisar tipo de suplemento…"
-              className="min-h-10 flex-1 bg-transparent text-sm text-content-hi placeholder:text-content-dim focus:outline-none"
+              placeholder={t.buscarTipo}
+              className="min-h-12 flex-1 bg-transparent text-base text-content-hi placeholder:text-content-low focus:outline-none"
             />
           </div>
 
@@ -214,9 +223,9 @@ export function SupplementSheet(props: {
             <button
               type="button"
               onClick={() => trocar(-1)}
-              aria-label="Tipo anterior"
+              aria-label={t.anterior}
               disabled={gruposFiltrados.length <= 1}
-              className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi disabled:opacity-30"
+              className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi active:bg-white/5 disabled:opacity-30"
             >
               ‹
             </button>
@@ -227,9 +236,9 @@ export function SupplementSheet(props: {
             <button
               type="button"
               onClick={() => trocar(1)}
-              aria-label="Próximo tipo"
+              aria-label={t.proximo}
               disabled={gruposFiltrados.length <= 1}
-              className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi disabled:opacity-30"
+              className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi active:bg-white/5 disabled:opacity-30"
             >
               ›
             </button>
@@ -240,7 +249,7 @@ export function SupplementSheet(props: {
             onClick={() => abrirGrupo(grupoAtual)}
             className="mt-5 w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98]"
           >
-            {grupoAtual.itens.length === 1 ? 'Continuar' : 'Ver opções'}
+            {grupoAtual.itens.length === 1 ? t.continuar : t.verOpcoes}
           </button>
         </>
       )}
@@ -250,10 +259,11 @@ export function SupplementSheet(props: {
 
 /** Casca compartilhada do bottom sheet (fundo + título + fechar). */
 function Casca(props: { titulo: string; onFechar: () => void; children: ReactNode }) {
+  const { m } = useI18n()
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={props.titulo}>
       <button
-        aria-label="Fechar"
+        aria-label={m.dieta.sheet.fechar}
         onClick={props.onFechar}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.2s_ease]"
       />
@@ -261,7 +271,7 @@ function Casca(props: { titulo: string; onFechar: () => void; children: ReactNod
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-surface-4" aria-hidden="true" />
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-content-hi">{props.titulo}</h2>
-          <button onClick={props.onFechar} aria-label="Fechar" className="text-2xl text-content-dim">×</button>
+          <button onClick={props.onFechar} aria-label={m.dieta.sheet.fechar} className="-mr-2 flex h-11 w-11 items-center justify-center text-2xl text-content-low active:text-content-hi">×</button>
         </div>
         {props.children}
       </div>
@@ -289,15 +299,15 @@ function DoseSuplemento(props: {
   const { alimento } = props
   const [gramas, setGramas] = useState(alimento.porcaoG)
   const m = escalarMacros(alimento, gramas)
-  const hoje = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+  const t = useI18n().m.dieta.suplemento
 
   return (
     <div className="mt-4">
       <div className="flex items-center gap-2">
         <button
           onClick={props.onVoltar}
-          aria-label="Voltar aos tipos de suplemento"
-          className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-surface-4 text-2xl leading-none text-content-hi"
+          aria-label={t.voltarTipos}
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-lg border border-surface-4 text-2xl leading-none text-content-hi"
         >
           ‹
         </button>
@@ -307,7 +317,7 @@ function DoseSuplemento(props: {
 
       <div className="mt-2 text-center">
         <span className="text-5xl">{emojiGrupo(grupoDe(alimento.nome))}</span>
-        <p className="mt-2 text-micro font-bold uppercase tracking-wide text-content-dim">Suplemento</p>
+        <p className="mt-2 text-micro font-bold uppercase tracking-wide text-content-low">{t.rotulo}</p>
         <h3 className="mt-1 text-2xl font-extrabold text-content-hi">{alimento.nome}</h3>
       </div>
 
@@ -321,7 +331,8 @@ function DoseSuplemento(props: {
           inputMode="numeric"
           value={gramas}
           onChange={(e) => setGramas(Math.max(0, Number(e.target.value) || 0))}
-          className="w-24 rounded-xl border border-surface-4 bg-surface-3 px-3 py-2.5 text-center font-bold text-content-hi focus:border-brand focus:outline-none"
+          aria-label="g"
+          className="min-h-12 w-24 rounded-xl border border-surface-4 bg-surface-3 px-3 text-center text-base font-bold text-content-hi focus:border-brand focus:outline-none"
         />
         <span className="text-sm font-semibold text-content-low">g</span>
         <span className="ml-3 text-sm font-bold text-brand">{m.calorias} kcal</span>
@@ -335,12 +346,10 @@ function DoseSuplemento(props: {
         disabled={gramas <= 0}
         className="mt-4 w-full rounded-2xl bg-brand py-4 font-bold text-[#04120a] transition-transform active:scale-[0.98] disabled:opacity-40"
       >
-        Registrar consumo
+        {t.registrar}
       </button>
 
-      <p className="mt-2 text-center text-micro text-content-dim">
-        Dose habitual: {alimento.porcaoG} g • hoje, {hoje}
-      </p>
+      <p className="mt-2 text-center text-micro text-content-low">{t.doseHabitual(alimento.porcaoG)}</p>
     </div>
   )
 }

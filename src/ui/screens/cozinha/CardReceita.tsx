@@ -47,7 +47,7 @@ export function CardReceita(props: {
 
   return (
     <div
-      className={`relative flex-none overflow-hidden rounded-2xl border border-surface-4 bg-surface-2 ${props.largo ? 'w-full' : 'w-40'}`}
+      className={`relative flex-none overflow-hidden rounded-2xl border border-surface-4 bg-surface-2 ${props.largo ? 'w-full' : 'w-44'}`}
     >
       <button
         type="button"
@@ -59,36 +59,36 @@ export function CardReceita(props: {
           <div className="mb-1.5 line-clamp-2 min-h-[2.4em] text-micro font-bold leading-snug text-content-hi">{r.titulo}</div>
           <div className="mb-2 flex flex-wrap gap-1">
             <span
-              className="rounded-pill px-2 py-0.5 text-[9px] font-bold"
+              className="rounded-pill px-2 py-0.5 text-micro font-bold"
               style={{ backgroundColor: `${r.corTema}22`, color: r.corTema }}
             >
               {r.macros.calorias} {t.kcal}
             </span>
-            <span className="rounded-pill bg-[#f43f5e22] px-2 py-0.5 text-[9px] font-bold text-[#f43f5e]">
+            <span className="rounded-pill bg-macro-proteina/15 px-2 py-0.5 text-micro font-bold text-macro-proteina">
               {r.macros.proteina}g {t.prot}
             </span>
           </div>
-          <div className="flex h-5 items-center text-[10px] font-semibold text-content-dim">
+          <div className="flex h-5 items-center pr-9 text-micro font-semibold text-content-low">
             {r.tempoPreparoMin != null ? `⏱ ${t.minutos(r.tempoPreparoMin)}` : ''}
           </div>
         </div>
       </button>
 
       {!r.premium && (
-        <span className="absolute left-2 top-2 rounded-pill bg-brand px-2 py-0.5 text-[9px] font-extrabold text-[#04120a]">
+        <span className="absolute left-2 top-2 rounded-pill bg-brand px-2 py-0.5 text-micro font-extrabold text-[#04120a]">
           {t.gratis}
         </span>
       )}
 
       {r.bloqueada ? (
-        <span aria-label={t.premium} className="absolute bottom-2.5 right-2.5 text-sm text-content-dim">🔒</span>
+        <span aria-label={t.premium} className="absolute bottom-2.5 right-2.5 text-sm text-content-low">🔒</span>
       ) : (
         <button
           type="button"
           onClick={props.onFavoritar}
           aria-label={r.favoritada ? t.desfavoritar : t.favoritar}
           aria-pressed={r.favoritada}
-          className={`absolute bottom-1.5 right-1.5 grid h-8 w-8 place-items-center text-base ${r.favoritada ? 'text-[#f43f5e]' : 'text-content-dim'}`}
+          className={`absolute bottom-0 right-0 grid h-11 w-11 place-items-center text-lg active:scale-90 ${r.favoritada ? 'text-accent-favorito' : 'text-content-low'}`}
         >
           {r.favoritada ? '♥' : '♡'}
         </button>

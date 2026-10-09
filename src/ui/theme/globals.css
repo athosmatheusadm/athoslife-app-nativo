@@ -61,6 +61,11 @@
 }
 
 @layer components {
+  /* Aviso de erro (ui/feedback.tsx): mesma caixa, borda de erro. */
+  .athos-toast-erro {
+    border-color: theme('colors.accent.danger / 50%') !important;
+  }
+
   /* Só transform/opacity: as duas propriedades que a GPU anima a 60fps. */
   .animate-rise {
     animation: rise 0.28s theme('transitionTimingFunction.athos') both;

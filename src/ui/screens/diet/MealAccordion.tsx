@@ -1,5 +1,6 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
 import { macrosRefeicao, resumoRefeicao, type Refeicao } from '@domain/entities/meal'
+import { useI18n } from '@/i18n/I18nProvider'
 
 /**
  * Linha de refeição na lista da Dieta.
@@ -26,71 +27,66 @@ export function MealAccordion(props: {
   dragHandleProps?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners } | null
 }) {
   const { refeicao } = props
+  const { m } = useI18n()
   const totalKcal = macrosRefeicao(refeicao.itens).calorias
 
+  // UI/UX (09/10): o ✓ era um span de 24px DENTRO do botão da linha
+  // (alvo pequeno e controle aninhado, que leitor de tela não anuncia).
+  // Agora linha, puxador e ✓ são irmãos, cada um com ≥ 48px.
   return (
-    <div className="overflow-hidden rounded-2xl border border-surface-4 bg-surface-2">
+    <div className="flex items-stretch overflow-hidden rounded-2xl border border-surface-4 bg-surface-2">
+      {props.dragHandleProps && (
+        <span
+          {...props.dragHandleProps.attributes}
+          {...props.dragHandleProps.listeners}
+          aria-label={m.dieta.arrastar(refeicao.nome)}
+          className="flex w-9 flex-none touch-none items-center justify-center text-content-low active:bg-white/5"
+        >
+          ⋮⋮
+        </span>
+      )}
+
       <button
         type="button"
         onClick={props.onAbrir}
-        className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+        className={`flex min-h-16 min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors active:bg-white/5 ${props.dragHandleProps ? 'pl-1' : 'pl-4'}`}
       >
-        {props.dragHandleProps && (
-          <span
-            {...props.dragHandleProps.attributes}
-            {...props.dragHandleProps.listeners}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`Arrastar ${refeicao.nome} pra reordenar`}
-            className="flex-none touch-none px-0.5 text-content-dim"
-          >
-            ⋮⋮
-          </span>
-        )}
         <span className="text-2xl" aria-hidden="true">{refeicao.emoji}</span>
 
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-content-hi">{refeicao.nome}</span>
           {props.sugestaoPlano ? (
-            <span className="block truncate text-micro italic text-content-dim">✨ {props.sugestaoPlano.resumo}</span>
+            <span className="block truncate text-micro italic text-content-low">✨ {props.sugestaoPlano.resumo}</span>
           ) : (
-            <span className="block truncate text-micro text-content-low">{resumoRefeicao(refeicao.itens)}</span>
+            <span className="block truncate text-micro text-content-low">{refeicao.itens.length ? resumoRefeicao(refeicao.itens) : m.dieta.linhaVazia}</span>
           )}
         </span>
 
         {props.sugestaoPlano ? (
-          <span className="text-sm font-semibold text-content-dim">~{props.sugestaoPlano.kcal} kcal</span>
+          <span className="flex-none text-sm font-semibold tabular-nums text-content-low">~{props.sugestaoPlano.kcal} kcal</span>
         ) : (
-          <span className="text-sm font-bold text-content-mid">{totalKcal} kcal</span>
+          <span className="flex-none text-sm font-bold tabular-nums text-content-mid">{totalKcal} kcal</span>
         )}
+      </button>
 
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={refeicao.concluida}
+        aria-label={m.dieta.marcarFeita(refeicao.nome)}
+        onClick={props.onToggleConcluida}
+        className="flex w-14 flex-none items-center justify-center active:bg-white/5"
+      >
         <span
-          role="checkbox"
-          aria-checked={refeicao.concluida}
-          onClick={(e) => {
-            e.stopPropagation()
-            props.onToggleConcluida()
-          }}
-          className={`flex h-6 w-6 flex-none items-center justify-center rounded-md border ${
-            refeicao.concluida
-              ? 'border-brand bg-brand text-[#04120a]'
-              : 'border-surface-4 bg-transparent'
+          className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 transition-colors ${
+            refeicao.concluida ? 'border-brand bg-brand text-[#04120a]' : 'border-content-dim'
           }`}
         >
           {refeicao.concluida && (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
           )}
         </span>
-
-        <svg
-          width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          className="flex-none text-content-dim"
-          aria-hidden="true"
-        >
-          <path d="M9 6l6 6-6 6" />
-        </svg>
       </button>
-
     </div>
   )
 }

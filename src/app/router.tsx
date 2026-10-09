@@ -3,6 +3,7 @@ import { RequireAnon, RequireAuth, RequireEtapaInicial } from './Guards'
 import { useAndroidBackButton } from './useAndroidBackButton'
 import { IntegracoesNativas } from './IntegracoesNativas'
 import { LembretesDoLife } from './LembretesDoLife'
+import { Avisos } from '@ui/feedback'
 import { OnboardingConversa } from '@ui/screens/prototipo/OnboardingConversa'
 import { AppShell } from './AppShell'
 import { Login } from '@ui/screens/Login'
@@ -38,6 +39,7 @@ function Shell() {
       <IntegracoesNativas />
       <LembretesDoLife />
       <Outlet />
+      <Avisos />
     </>
   )
 }

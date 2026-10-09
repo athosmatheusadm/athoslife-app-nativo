@@ -2204,3 +2204,26 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   app, princípios, método, checklist por tela e ferramentas; catálogo por
   lista em `references/catalogo.md`). Contraste dos tokens medido (WCAG).
 - Próximo: dono escolhe a primeira tela pra auditar/melhorar.
+- **UI/UX tela a tela (skill athoslife-ui-ux)** — ordem: Dieta → Home →
+  Treino → Hábitos → chat do Life → Scanner → Perfil → Onboarding/Login.
+  - **Base reaproveitável**: `app/voltarAndroid.ts` (Voltar do Android fecha
+    sheet/busca antes de sair — antes, na Dieta, minimizava o app com o
+    sheet aberto); `ui/feedback.tsx` (vibração leve/sucesso + avisos com
+    `sonner`, inclusive "Desfazer"); tokens `macro-proteina/carbo/gordura`
+    (a proteína era vermelha num lugar e azul no outro) e `accent-favorito`.
+  - **BottomNav**: legenda 7px -> 12px, aba inteira tocável (56px), i18n.
+  - **Dieta**: ✓ da refeição virou botão próprio de 48px (era span de 24px
+    dentro do botão da linha); puxador de arrastar com área; linha vazia
+    convida ("Toque pra registrar"); carregando em forma de lista + erro
+    com "Tentar de novo" (antes ficava vazio como se não houvesse nada);
+    gravar com vibração e aviso de erro (antes falhava calado); excluir
+    alimento com "Desfazer" em vez de sumir; "Excluir refeição" com 2º
+    toque no lugar do confirm() do sistema; copiar avisa; tira de dias
+    traduzida (Intl) e rolada até Hoje; alvos ≥ 44px em busca, porção,
+    salvos, suplemento e plano; textos de 9–11px -> 12px; `content-dim` em
+    texto -> `content-low`; barra de macro anima com transform. Todos os
+    textos da Dieta em pt/en/es (`nav`, `dieta` no i18n).
+  - **Cozinha (na Dieta)**: etiquetas 9px -> 12px, coração 44px, filtros
+    44px, proteína com a cor de macro.
+  - `tsc -b` 0 erros, `vite build` ok. **Não visto logado** (precisa de
+    login) — dono olhar no localhost.
