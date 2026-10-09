@@ -2194,3 +2194,13 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
 - **ai-proxy v3.8 publicado pelo dono** — conferido: versão 18, ACTIVE,
   verify_jwt ligado. Proteção da IA toda no ar.
 - Próximo: dono vai passar skills de UI/UX pra melhorar páginas e botões.
+
+## 2026-10-09 — skill de UI/UX
+
+- Dono mandou 4 listas de design (bradtraversy/design-resources-for-developers,
+  reinaldosimoes/design-resources, birobirobiro/awesome-shadcn-ui,
+  uhub/awesome-css) — não são skills, são catálogos de links. Lidas uma a uma
+  e destiladas em `.claude/skills/athoslife-ui-ux/` (SKILL.md com regras do
+  app, princípios, método, checklist por tela e ferramentas; catálogo por
+  lista em `references/catalogo.md`). Contraste dos tokens medido (WCAG).
+- Próximo: dono escolhe a primeira tela pra auditar/melhorar.
