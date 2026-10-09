@@ -2356,8 +2356,8 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     ganhou `nomeBase` (pt) — o gerador de treino casa por ele.
   - Leitor das receitas entende rótulos em en/es.
 - **Pendências pra próxima sessão**:
-  1. Dono rodar a migração `db/athoslife_traducoes_conteudo_migration.sql`
-     no SQL Editor do Supabase (auto mode não deixa o Claude escrever no banco).
+  1. ~~Rodar `db/athoslife_traducoes_conteudo_migration.sql`~~ — dono rodou
+     em 09/10; conferido no banco (26/100/25, 0 suplemento sem en, RPC com p_idioma).
   2. Polimento de estética (botões, profundidade, cor) SEM mexer em
      layout — perguntar antes de mudar estrutura; dono escolhe entre
      desfazer o visual da passada ou apontar tela por tela.
