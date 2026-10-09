@@ -41,7 +41,7 @@ export function ReceitaDetalheScreen(props: {
               <button
                 type="button"
                 onClick={props.onIrParaPlano}
-                className="rounded-pill bg-brand px-5 py-2.5 text-sm font-bold text-brand-ink"
+                className="min-h-12 rounded-pill bg-brand px-5 text-sm font-bold text-brand-ink active:scale-95"
               >
                 {t.verPlanos}
               </button>
@@ -64,7 +64,7 @@ export function ReceitaDetalheScreen(props: {
               onClick={props.onToggleFavorito}
               aria-label={receita.favoritada ? t.desfavoritar : t.favoritar}
               aria-pressed={receita.favoritada}
-              className={`flex-none text-2xl ${receita.favoritada ? 'text-[#f43f5e]' : 'text-content-dim'}`}
+              className={`-m-2 flex h-12 w-12 flex-none items-center justify-center text-2xl active:scale-90 ${receita.favoritada ? 'text-accent-favorito' : 'text-content-low'}`}
             >
               {receita.favoritada ? '♥' : '♡'}
             </button>

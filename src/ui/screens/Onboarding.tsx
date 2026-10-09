@@ -8,6 +8,7 @@ import type { FrequenciaTreino } from '@domain/rules/metasIniciais'
 import { localidadeAtualDoAparelho, useI18n } from '@/i18n/I18nProvider'
 import { volume } from '@/i18n/formatos'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
 import {
   estadoInicial,
   lerProgresso,
@@ -100,6 +101,9 @@ export function Onboarding() {
     if (e.etapa > 0) mudar({ etapa: e.etapa - 1 })
   }
 
+  // Voltar do Android volta uma etapa (antes saía do onboarding inteiro).
+  useFecharNoVoltar(e.etapa > 0, voltar)
+
   async function concluir() {
     const dados = paraDadosOnboarding(e, { ...localidade, idioma })
     if (!dados) {
@@ -154,7 +158,7 @@ export function Onboarding() {
       {mensagemErro && <p className="mb-3 text-center text-sm text-accent-danger">{mensagemErro}</p>}
       <Cta onClick={acao}>{textoCta}</Cta>
       {e.etapa > 0 && (
-        <button type="button" onClick={voltar} className="mt-2 w-full py-2 text-sm text-[#65766b]">
+        <button type="button" onClick={voltar} className="mt-2 min-h-12 w-full text-sm text-[#8f9f94] active:text-[#c4d0c7]">
           ← {m.comum.voltar}
         </button>
       )}
@@ -237,7 +241,8 @@ export function Onboarding() {
                 key={u}
                 type="button"
                 onClick={() => mudar({ unidades: u })}
-                className={`rounded-pill border px-3 py-1 text-micro font-semibold ${
+                aria-pressed={e.unidades === u}
+                className={`min-h-11 rounded-pill border px-4 text-sm font-semibold ${
                   e.unidades === u ? 'border-[#7be153] text-[#f0ffe9]' : 'border-[#2b4a37] text-[#8f9f94]'
                 }`}
               >

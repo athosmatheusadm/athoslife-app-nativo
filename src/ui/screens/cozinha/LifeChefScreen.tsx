@@ -177,7 +177,7 @@ export function LifeChefScreen() {
                 placeholder={t.ingredientePlaceholder}
                 maxLength={120}
                 enterKeyHint="done"
-                className="min-w-0 flex-1 rounded-xl border border-surface-4 bg-surface-2 px-3 py-2.5 text-sm text-content-hi placeholder:text-content-dim focus:border-brand focus:outline-none"
+                className="min-h-12 min-w-0 flex-1 rounded-xl border border-surface-4 bg-surface-2 px-3 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
               />
               <button type="submit" className="flex-none rounded-xl bg-surface-3 px-4 text-sm font-bold text-content-hi">
                 {t.adicionar}
@@ -192,7 +192,7 @@ export function LifeChefScreen() {
                     type="button"
                     onClick={() => setIngredientes((a) => a.filter((x) => x !== ing))}
                     aria-label={t.remover(ing)}
-                    className="rounded-pill bg-brand/15 px-3 py-1.5 text-micro font-bold text-brand"
+                    className="min-h-11 rounded-pill bg-brand/15 px-4 text-sm font-bold text-brand active:scale-95"
                   >
                     {ing} ✕
                   </button>
@@ -208,7 +208,7 @@ export function LifeChefScreen() {
                     key={s}
                     type="button"
                     onClick={() => adicionar(s)}
-                    className="rounded-pill border border-surface-4 px-3 py-1.5 text-micro font-semibold text-content-mid"
+                    className="min-h-11 rounded-pill border border-surface-4 px-4 text-sm font-semibold text-content-mid active:scale-95"
                   >
                     + {s}
                   </button>
@@ -225,7 +225,7 @@ export function LifeChefScreen() {
                   type="button"
                   onClick={() => setMomento(mo)}
                   aria-pressed={momento === mo}
-                  className={`rounded-pill px-3 py-1.5 text-micro font-bold ${
+                  className={`min-h-11 rounded-pill px-4 text-sm font-bold active:scale-95 ${
                     momento === mo ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
                   }`}
                 >

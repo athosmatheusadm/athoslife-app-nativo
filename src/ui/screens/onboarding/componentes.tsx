@@ -11,7 +11,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 }
 
 export function Titulo({ children }: { children: ReactNode }) {
-  return <h1 className="mb-2 text-[22px] font-extrabold leading-tight tracking-tight text-content-hi">{children}</h1>
+  return <h1 className="mb-2 text-[1.375rem] font-extrabold leading-tight tracking-tight text-content-hi">{children}</h1>
 }
 
 export function Lead({ children }: { children: ReactNode }) {
@@ -94,14 +94,14 @@ export function ListaTags(props: {
           {props.itens.map((x) => (
             <span
               key={x}
-              className="flex items-center gap-1 rounded-lg border border-[#31533e] bg-[#0b1710] px-2.5 py-1.5 text-sm text-[#c4d0c7]"
+              className="flex min-h-11 items-center gap-1 rounded-lg border border-[#31533e] bg-[#0b1710] pl-3 pr-1.5 text-sm text-[#c4d0c7]"
             >
               {x}
               <button
                 type="button"
                 aria-label={`${props.rotuloRemover} ${x}`}
                 onClick={() => props.onMudar(props.itens.filter((i) => i !== x))}
-                className="px-0.5 text-[#86e85b]"
+                className="-my-2 -mr-1.5 flex h-10 w-9 items-center justify-center text-lg text-[#86e85b] active:opacity-70"
               >
                 ×
               </button>
@@ -138,7 +138,7 @@ export function ListaTags(props: {
               key={s}
               type="button"
               onClick={() => adicionar(s)}
-              className="rounded-lg border border-dashed border-[#31533e] px-2.5 py-1 text-micro text-[#8f9f94]"
+              className="min-h-11 rounded-lg border border-dashed border-[#31533e] px-3 text-sm text-[#8f9f94] active:bg-white/5"
             >
               + {s}
             </button>

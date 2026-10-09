@@ -53,7 +53,7 @@ export function Consentimento() {
           <img src="/life/calmo.webp" alt="Life" className="h-36 w-auto" />
         </div>
 
-        <h1 className="mt-4 text-[22px] font-extrabold leading-tight text-content-hi">{c.titulo}</h1>
+        <h1 className="mt-4 text-[1.375rem] font-extrabold leading-tight text-content-hi">{c.titulo}</h1>
         <p className="mt-2 text-sm leading-relaxed text-[#98a69d]">{c.lead}</p>
 
         <ul className="mt-4 space-y-2">

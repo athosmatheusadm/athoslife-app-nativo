@@ -102,7 +102,7 @@ export function ReceitaView(props: {
           <Macro valor={`${macrosTotais.carboidrato}g`} rotulo={t.carb} cor="#3b82f6" />
           <Macro valor={`${macrosTotais.gordura}g`} rotulo={t.gord} cor="#fbbf24" />
         </div>
-        <p className="mt-2 text-center text-[10px] text-content-dim">
+        <p className="mt-2 text-center text-micro text-content-low">
           {t.macrosDe(String(porcoes))}
           {estrutura.porcoesBase !== 1 || estrutura.unidadePorcao !== 'porção'
             ? ` · ${t.rendimentoBase(estrutura.porcoesBase, estrutura.unidadePorcao)}`
@@ -133,7 +133,7 @@ export function ReceitaView(props: {
                       onChange={() => alternar(i)}
                       className="mt-0.5 h-5 w-5 flex-none accent-[#22c55e]"
                     />
-                    <span className={`text-sm leading-snug ${feito ? 'text-content-dim line-through' : 'text-content-hi'}`}>
+                    <span className={`text-sm leading-snug ${feito ? 'text-content-low line-through' : 'text-content-hi'}`}>
                       {escalarIngrediente(ing, fatorIngredientes)}
                     </span>
                   </label>
@@ -219,7 +219,7 @@ function Macro(props: { valor: number | string; rotulo: string; cor: string }) {
   return (
     <div className="rounded-xl bg-surface-1 py-2">
       <div className="text-base font-extrabold" style={{ color: props.cor }}>{props.valor}</div>
-      <div className="text-[10px] font-semibold uppercase text-content-dim">{props.rotulo}</div>
+      <div className="text-micro font-semibold uppercase text-content-low">{props.rotulo}</div>
     </div>
   )
 }

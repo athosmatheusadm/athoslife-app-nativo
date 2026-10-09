@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authRepository } from '@data/repositories/authRepository'
+import { useI18n } from '@/i18n/I18nProvider'
+import type { Mensagens } from '@/i18n/mensagens/tipo'
 
 /**
  * Esqueci a senha — em duas etapas, por código de e-mail (não por link):
@@ -14,24 +16,16 @@ import { authRepository } from '@data/repositories/authRepository'
 type Etapa = 'email' | 'codigo'
 
 const CAMPO =
-  'w-full rounded-card border border-surface-4 bg-surface-2 px-4 py-3.5 text-content-hi placeholder:text-content-dim focus:border-brand focus:outline-none'
+  'min-h-12 w-full rounded-card border border-surface-4 bg-surface-2 px-4 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none'
 
 /** Erros do Supabase Auth vêm em inglês — traduz os que a pessoa pode ver aqui. */
-function traduzirErro(err: unknown): string {
+function traduzirErro(err: unknown, t: Mensagens['entrar']['recuperar']['erros']): string {
   const msg = err instanceof Error ? err.message.toLowerCase() : ''
-  if (msg.includes('rate limit') || msg.includes('security purposes')) {
-    return 'Muitas tentativas seguidas. Espera alguns minutos e tenta de novo.'
-  }
-  if (msg.includes('expired') || msg.includes('invalid') || msg.includes('otp')) {
-    return 'Código inválido ou expirado. Confere o e-mail ou pede um novo.'
-  }
-  if (msg.includes('should be different')) {
-    return 'A senha nova precisa ser diferente da antiga.'
-  }
-  if (msg.includes('password')) {
-    return 'Senha fraca demais. Usa pelo menos 6 caracteres.'
-  }
-  return 'Não foi possível completar. Tenta de novo.'
+  if (msg.includes('rate limit') || msg.includes('security purposes')) return t.muitas
+  if (msg.includes('expired') || msg.includes('invalid') || msg.includes('otp')) return t.codigo
+  if (msg.includes('should be different')) return t.igual
+  if (msg.includes('password')) return t.fraca
+  return t.geral
 }
 
 export function RecuperarSenha() {
@@ -42,6 +36,8 @@ export function RecuperarSenha() {
   const [senha, setSenha] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const { m } = useI18n()
+  const t = m.entrar.recuperar
 
   async function pedirCodigo(e?: FormEvent) {
     e?.preventDefault()
@@ -51,7 +47,7 @@ export function RecuperarSenha() {
       await authRepository.pedirCodigoRecuperacao(email.trim())
       setEtapa('codigo')
     } catch (err) {
-      setErro(traduzirErro(err))
+      setErro(traduzirErro(err, t.erros))
     } finally {
       setCarregando(false)
     }
@@ -65,91 +61,93 @@ export function RecuperarSenha() {
       await authRepository.redefinirSenha(email.trim(), codigo.trim(), senha)
       navigate('/home', { replace: true })
     } catch (err) {
-      setErro(traduzirErro(err))
+      setErro(traduzirErro(err, t.erros))
       setCarregando(false)
     }
   }
 
   return (
     <main className="flex min-h-full flex-col justify-center animate-rise px-6 pt-safe-t">
-      <h1 className="text-2xl font-bold text-content-hi">Esqueci a senha</h1>
+      <h1 className="text-2xl font-bold text-content-hi">{t.titulo}</h1>
 
       {etapa === 'email' ? (
         <>
-          <p className="mt-1 text-sm text-content-low">
-            Informa o e-mail da conta. A gente manda um código pra você criar uma senha nova.
-          </p>
+          <p className="mt-1 text-sm text-content-low">{t.lead}</p>
           <form onSubmit={(e) => void pedirCodigo(e)} className="mt-6 space-y-3">
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className={CAMPO}
-            />
-            {erro && <p className="text-sm font-medium text-accent-danger">{erro}</p>}
+            <label className="block">
+              <span className="mb-1 block text-micro font-semibold text-content-low">{m.entrar.email}</span>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={CAMPO}
+              />
+            </label>
+            {erro && <p role="alert" className="text-sm font-medium text-accent-danger">{erro}</p>}
             <button
               type="submit"
               disabled={carregando}
-              className="w-full rounded-pill bg-brand py-3.5 text-sm font-bold text-surface-1 transition-transform active:scale-[0.98] disabled:opacity-60"
+              className="min-h-12 w-full rounded-pill bg-brand text-base font-bold text-surface-1 transition-transform active:scale-[0.98] disabled:opacity-60"
             >
-              {carregando ? 'Enviando…' : 'Enviar código'}
+              {carregando ? t.enviando : t.enviar}
             </button>
           </form>
         </>
       ) : (
         <>
           {/* Mesma mensagem exista ou não a conta — não entrega quais e-mails são cadastrados. */}
-          <p className="mt-1 text-sm text-content-low">
-            Se existir uma conta com <span className="text-content-hi">{email.trim()}</span>, o
-            código chegou no e-mail. Confere também o spam.
-          </p>
+          <p className="mt-1 text-sm text-content-low">{t.chegou(email.trim())}</p>
           <form onSubmit={(e) => void redefinir(e)} className="mt-6 space-y-3">
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              pattern="[0-9]{6,10}"
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
-              placeholder="Código do e-mail"
-              className={`${CAMPO} tracking-[0.3em]`}
-            />
-            <input
-              type="password"
-              required
-              minLength={6}
-              autoComplete="new-password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              placeholder="Senha nova (mín. 6 caracteres)"
-              className={CAMPO}
-            />
-            {erro && <p className="text-sm font-medium text-accent-danger">{erro}</p>}
+            <label className="block">
+              <span className="mb-1 block text-micro font-semibold text-content-low">{t.codigo}</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                pattern="[0-9]{6,10}"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+                className={`${CAMPO} tracking-[0.3em]`}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-micro font-semibold text-content-low">{t.senhaNova}</span>
+              <input
+                type="password"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                className={CAMPO}
+              />
+            </label>
+            {erro && <p role="alert" className="text-sm font-medium text-accent-danger">{erro}</p>}
             <button
               type="submit"
               disabled={carregando}
-              className="w-full rounded-pill bg-brand py-3.5 text-sm font-bold text-surface-1 transition-transform active:scale-[0.98] disabled:opacity-60"
+              className="min-h-12 w-full rounded-pill bg-brand text-base font-bold text-surface-1 transition-transform active:scale-[0.98] disabled:opacity-60"
             >
-              {carregando ? 'Salvando…' : 'Salvar senha nova'}
+              {carregando ? t.salvando : t.salvar}
             </button>
             <button
               type="button"
               disabled={carregando}
               onClick={() => void pedirCodigo()}
-              className="w-full py-2 text-sm font-medium text-content-mid disabled:opacity-60"
+              className="min-h-12 w-full text-sm font-medium text-content-mid disabled:opacity-60"
             >
-              Não chegou? Mandar outro código
+              {t.outro}
             </button>
           </form>
         </>
       )}
 
-      <Link to="/login" replace className="mt-6 text-center text-sm font-medium text-content-mid">
-        Voltar pro login
+      <Link to="/login" replace className="mx-auto mt-6 flex min-h-11 items-center px-3 text-sm font-medium text-content-mid">
+        {t.voltarLogin}
       </Link>
     </main>
   )

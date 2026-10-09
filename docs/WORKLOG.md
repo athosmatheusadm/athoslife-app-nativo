@@ -2292,3 +2292,34 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     **Falta**: título/descrição das conquistas vêm do banco só em pt;
     "Baixar meus dados (.json)" usa download do navegador — no APK
     provavelmente não baixa (precisa de @capacitor/filesystem + share).
+  - **Login / Esqueci a senha**: todos os textos e erros em pt/en/es
+    (antes só pt — é a 1ª tela de quem baixa); campos com rótulo de
+    verdade (antes só placeholder); botão de mostrar senha; "Entrar/Criar
+    conta" como abas 48px; "Esqueci a senha" e "Voltar pro login" 44px;
+    erro com `role=alert`; texto 16px nos campos.
+  - **Onboarding / Consentimento**: Voltar do Android volta uma etapa
+    (antes saía do onboarding); "← Voltar" com contraste AA (era 3,98:1)
+    e 48px; chips de unidade/sugestão/remover 44px; títulos em `rem`
+    (crescem com "texto grande"). Paleta própria do HTML de referência
+    mantida (decisão de design).
+  - **Cozinha (telas internas)**: voltar 44px, coração 48px com token,
+    chips do Life-chef 44px, sheet "Registrar receita" fecha no Voltar do
+    Android, textos de 10px -> 12px.
+  - **Varredura final**: nenhum `text-[Npx]` em texto e nenhum texto de
+    leitura em `content-dim` fora do protótipo e da `FoodSearchScreen`
+    (código morto, não usada por nenhuma rota). Nenhum `confirm()` do
+    sistema sobrando. `tsc -b` 0 erros, `vite build` ok.
+  - **Não visto na tela**: Chromium headless falha no WSL (falta
+    `libnspr4`, precisa de `sudo apt install libnspr4 libnss3`) — dono
+    olhar no localhost / APK.
+- **Pendências pra próxima sessão (UI/UX)**:
+  1. Dono olhar as telas no localhost (http://localhost:5173) e no APK:
+     Dieta, Home, Treino, Hábitos, chat, Scanner, Perfil, Login.
+  2. "Baixar meus dados" no APK (download do navegador não funciona no
+     app nativo) -> @capacitor/filesystem + share.
+  3. Traduzir conteúdo que vem do banco/domínio: títulos/descrições das
+     conquistas, alternativas da vontade, nomes de exercícios.
+  4. Apagar `FoodSearchScreen`/`useFoodSearch`? (verificar se o hook segue
+     usado pela busca inline antes).
+  5. Opcional: `sudo apt install libnspr4 libnss3 libasound2t64` no WSL pro
+     Claude conseguir tirar print das telas.

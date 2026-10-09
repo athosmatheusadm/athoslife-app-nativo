@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useI18n } from '@/i18n/I18nProvider'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
 import type { Macros } from '@domain/entities/food'
 import { escalarMacros, refeicaoPeloHorario } from '@domain/rules/cozinha'
 import { itensRefeicaoRepository } from '@data/repositories/itensRefeicaoRepository'
@@ -30,6 +31,7 @@ export function RegistrarReceitaSheet(props: {
   const [qtd, setQtd] = useState(1)
   const [tipo, setTipo] = useState<TipoFixo>(() => refeicaoPeloHorario())
   const [estado, setEstado] = useState<'pronto' | 'salvando' | 'feito' | 'erro'>('pronto')
+  useFecharNoVoltar(true, props.onFechar)
 
   const rotuloQtd = QUANTIDADES.find((q) => q.valor === qtd)?.rotulo ?? String(qtd)
   const macros = escalarMacros(props.macrosPorPorcao, qtd)
