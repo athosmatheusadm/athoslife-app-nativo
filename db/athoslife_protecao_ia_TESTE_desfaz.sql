@@ -339,8 +339,10 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', u1, 'role', 'authenticated')::text, true);
   perform public.check_access_status();
   res := res || jsonb_build_object('3_plano_apos_check', (select plano from public.profiles where id = u1));
-  res := res || jsonb_build_object('4_libera', public.liberar_teste_gratis('aparelho-teste-0001'),
-                                   '4_premium', public.is_premium_like(u1),
+  res := res || jsonb_build_object('4_libera', public.liberar_teste_gratis('aparelho-teste-0001'));
+  -- Em comando separado: is_premium_like é STABLE e, no mesmo comando,
+  -- enxerga o banco de antes da liberação.
+  res := res || jsonb_build_object('4_premium', public.is_premium_like(u1),
                                    '5_de_novo', public.liberar_teste_gratis('aparelho-teste-0001'));
 
   perform set_config('request.jwt.claims', json_build_object('sub', u2, 'role', 'authenticated')::text, true);

@@ -2174,3 +2174,7 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   5. Google Cloud: limite de requisições/dia na chave do Gemini + alerta de
      orçamento (passo a passo a fazer com o dono).
   6. Token novo do Supabase pro Claude (o do MCP venceu) e do GitHub (push).
+- **Teste que se desfaz rodado pelo dono**: 18/19 bateram; `4_premium` deu
+  false por erro do TESTE (is_premium_like é STABLE e, no mesmo comando,
+  vê o banco de antes da liberação) — `12_teto_pago ok` prova que a conta
+  virou premium. Teste corrigido (comando separado). Liberado rodar a migração.
