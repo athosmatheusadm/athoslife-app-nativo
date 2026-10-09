@@ -21,7 +21,7 @@ export function Opcao(props: { onClick: () => void; children: ReactNode; ativa?:
       disabled={props.disabled}
       aria-pressed={props.ativa}
       onClick={props.onClick}
-      className={`rounded-pill border px-3.5 py-2 text-sm font-semibold active:scale-[0.97] disabled:opacity-40 ${
+      className={`min-h-11 rounded-pill border px-4 text-sm font-semibold active:scale-[0.97] disabled:opacity-40 ${
         props.ativa ? 'border-brand bg-brand text-brand-ink' : 'border-brand/60 bg-brand/10 text-brand'
       }`}
     >

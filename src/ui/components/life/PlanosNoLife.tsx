@@ -167,7 +167,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
         <button
           type="button"
           onClick={comecarCheck}
-          className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-brand-ink active:scale-[0.98]"
+          className="mt-3 min-h-12 w-full rounded-xl bg-brand text-sm font-bold text-brand-ink active:scale-[0.98]"
         >
           {t.comecar}
         </button>
@@ -204,7 +204,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
           {respondidas.map((k, i) => (
             <div key={k} className="space-y-3">
               <BalaoLife>
-                <span className="mr-1 text-content-dim">{t.progresso(i + 1, perguntas.length)}</span>
+                <span className="mr-1 text-content-low">{t.progresso(i + 1, perguntas.length)}</span>
                 {t.perguntas[k]}
               </BalaoLife>
               <BalaoPessoa>{respostas[k] ? t.sim : t.nao}</BalaoPessoa>
@@ -216,7 +216,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
       {passo.tipo === 'pergunta' && chaveAtual && (
         <>
           <BalaoLife>
-            <span className="mr-1 text-content-dim">{t.progresso(passo.indice + 1, perguntas.length)}</span>
+            <span className="mr-1 text-content-low">{t.progresso(passo.indice + 1, perguntas.length)}</span>
             {t.perguntas[chaveAtual]}
           </BalaoLife>
           <div className="flex justify-end gap-2">
@@ -237,7 +237,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
                 value={nascimento}
                 max={hoje}
                 onChange={(e) => setNascimento(e.target.value)}
-                className="mt-1.5 block w-full rounded-xl border border-surface-4 bg-surface-1 px-3 py-2.5 text-base text-content-hi"
+                className="mt-1.5 block min-h-12 w-full rounded-xl border border-surface-4 bg-surface-1 px-3 text-base text-content-hi focus:border-brand focus:outline-none"
               />
             </label>
             <label className="flex items-start gap-3">
@@ -245,7 +245,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
                 type="checkbox"
                 checked={declaro}
                 onChange={(e) => setDeclaro(e.target.checked)}
-                className="mt-0.5 h-5 w-5 flex-none accent-[#22c55e]"
+                className="mt-0.5 h-5 w-5 flex-none accent-brand"
               />
               <span className="text-micro leading-relaxed text-content-mid">{t.declaracao}</span>
             </label>
@@ -253,7 +253,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
               type="button"
               disabled={salvando}
               onClick={fechar}
-              className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-brand-ink disabled:opacity-60"
+              className="min-h-12 w-full rounded-xl bg-brand text-sm font-bold text-brand-ink active:scale-[0.98] disabled:opacity-60"
             >
               {t.confirmar}
             </button>
@@ -310,7 +310,7 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
         />
       )}
 
-      {erro && <p className="text-[11px] text-accent-danger">{erro}</p>}
+      {erro && <p className="text-micro text-accent-danger">{erro}</p>}
     </div>
   )
 }
@@ -351,7 +351,7 @@ function Ressalva(props: {
             type="checkbox"
             checked={props.ciente}
             onChange={(e) => props.onCiente(e.target.checked)}
-            className="mt-0.5 h-5 w-5 flex-none accent-[#22c55e]"
+            className="mt-0.5 h-5 w-5 flex-none accent-brand"
           />
           <span className="text-micro leading-relaxed text-content-mid">{t.ciente}</span>
         </label>
@@ -359,7 +359,7 @@ function Ressalva(props: {
           type="button"
           disabled={!props.ciente || props.salvando}
           onClick={props.onQuero}
-          className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-brand-ink disabled:opacity-40"
+          className="min-h-12 w-full rounded-xl bg-brand text-sm font-bold text-brand-ink disabled:opacity-40"
         >
           {t.querMesmoAssim}
         </button>
@@ -367,7 +367,7 @@ function Ressalva(props: {
           type="button"
           disabled={props.salvando}
           onClick={props.onMedico}
-          className="w-full rounded-xl border border-surface-4 py-2.5 text-sm font-semibold text-content-mid disabled:opacity-60"
+          className="min-h-12 w-full rounded-xl border border-surface-4 text-sm font-semibold text-content-mid disabled:opacity-60"
         >
           {t.vouAoMedico}
         </button>

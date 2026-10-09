@@ -130,7 +130,7 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
     }
   }
 
-  if (!catalogo) return erro ? <p className="text-[11px] text-accent-danger">{erro}</p> : <BalaoLife>{m.lifeMontar.montando}</BalaoLife>
+  if (!catalogo) return erro ? <p className="text-micro text-accent-danger">{erro}</p> : <BalaoLife>{m.lifeMontar.montando}</BalaoLife>
 
   const niveis: readonly NivelTreino[] = soIniciante ? ['iniciante'] : ['iniciante', 'intermediario', 'avancado']
   const rotuloLocal = (l: LocalTreino) => (l === 'casa' ? m.onboarding.treino.casa : m.onboarding.treino.academia)
@@ -186,7 +186,7 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
           {soIniciante && <BalaoLife>{t.soIniciante}</BalaoLife>}
           <BalaoLife>
             {t.parametros.dias}
-            <span className="mt-1 block text-micro text-content-dim">{t.parametros.diasDica}</span>
+            <span className="mt-1 block text-micro text-content-low">{t.parametros.diasDica}</span>
           </BalaoLife>
           <Opcoes>
             {DIAS_SEMANA.map((d) => {
@@ -274,8 +274,8 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
           </div>
           <BalaoLife>
             {t.previa.progressao}
-            <span className="mt-2 block text-micro text-content-dim">{t.avisoNaoPrescricao}</span>
-            <span className="mt-2 block text-micro text-content-dim">{t.previa.substituir(rotuloLocal(local).toLowerCase())}</span>
+            <span className="mt-2 block text-micro text-content-low">{t.avisoNaoPrescricao}</span>
+            <span className="mt-2 block text-micro text-content-low">{t.previa.substituir(rotuloLocal(local).toLowerCase())}</span>
           </BalaoLife>
           <Opcoes>
             <Opcao onClick={recomecar}>{t.previa.ajustar}</Opcao>
@@ -286,7 +286,7 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
         </>
       )}
 
-      {erro && <p className="text-[11px] text-accent-danger">{erro}</p>}
+      {erro && <p className="text-micro text-accent-danger">{erro}</p>}
     </div>
   )
 }
@@ -412,7 +412,7 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
   }
 
   if (passo === 'carregando') {
-    return erro ? <p className="text-[11px] text-accent-danger">{erro}</p> : <BalaoLife>{m.lifeMontar.montando}</BalaoLife>
+    return erro ? <p className="text-micro text-accent-danger">{erro}</p> : <BalaoLife>{m.lifeMontar.montando}</BalaoLife>
   }
 
   return (
@@ -454,7 +454,7 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
         <>
           <BalaoLife>
             {t.parametros.ritmo}
-            <span className="mt-1 block text-micro text-content-dim">{t.parametros.ritmoDica}</span>
+            <span className="mt-1 block text-micro text-content-low">{t.parametros.ritmoDica}</span>
           </BalaoLife>
           <Opcoes>
             {(['leve', 'moderado'] as const).map((r) => (
@@ -560,7 +560,7 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
         />
       )}
 
-      {erro && <p className="text-[11px] text-accent-danger">{erro}</p>}
+      {erro && <p className="text-micro text-accent-danger">{erro}</p>}
     </div>
   )
 }
@@ -585,7 +585,7 @@ function PassoEvitar(props: { iniciais: string[]; onPronto: (lista: string[]) =>
     <>
       <BalaoLife>
         {m.lifeMontar.evitar}
-        {props.iniciais.length > 0 && <span className="mt-1 block text-micro text-content-dim">{t.evitarDica}</span>}
+        {props.iniciais.length > 0 && <span className="mt-1 block text-micro text-content-low">{t.evitarDica}</span>}
       </BalaoLife>
       {lista.length > 0 && (
         <div className="flex flex-wrap justify-end gap-2">
@@ -596,7 +596,7 @@ function PassoEvitar(props: { iniciais: string[]; onPronto: (lista: string[]) =>
                 type="button"
                 aria-label={`${m.comum.remover} ${v}`}
                 onClick={() => setLista(lista.filter((x) => x !== v))}
-                className="flex h-5 w-5 items-center justify-center rounded-full"
+                className="-my-2 -mr-1 flex h-9 w-9 items-center justify-center rounded-full active:bg-brand/20"
               >
                 ×
               </button>
@@ -658,9 +658,9 @@ function PreviaDieta(props: {
         <p className="mt-1 text-micro text-content-low">
           {t.previa.proteina} {metas.proteina} g · {t.previa.carboidrato} {metas.carboidrato} g · {t.previa.gordura} {metas.gordura} g
         </p>
-        <p className="mt-1 text-micro text-content-dim">{t.previa.conta(metas.basal, metas.gasto)}</p>
+        <p className="mt-1 text-micro text-content-low">{t.previa.conta(metas.basal, metas.gasto)}</p>
       </div>
-      <p className="px-1 text-micro text-content-dim">{t.previa.cardapioDica}</p>
+      <p className="px-1 text-micro text-content-low">{t.previa.cardapioDica}</p>
       <div className="space-y-2">
         {props.plano.refeicoes.map((r, ri) => (
           <div key={r.tipo} className="rounded-2xl border border-surface-4 bg-surface-2 p-3">
@@ -679,7 +679,7 @@ function PreviaDieta(props: {
                         type="button"
                         aria-label={`${t.previa.trocar} ${a.nome}`}
                         onClick={() => props.onTrocar(ri, ii)}
-                        className="flex-none rounded-lg border border-surface-4 px-2 py-1 text-xs text-content-mid"
+                        className="flex h-11 w-11 flex-none items-center justify-center rounded-lg border border-surface-4 text-base text-content-mid active:bg-white/5"
                       >
                         ⇄
                       </button>
@@ -693,8 +693,8 @@ function PreviaDieta(props: {
       </div>
       <BalaoLife>
         {t.previa.totalCardapio(total.calorias, metas.kcal)}
-        <span className="mt-2 block text-micro text-content-dim">{t.avisoNaoPrescricao}</span>
-        <span className="mt-2 block text-micro text-content-dim">{t.previa.substituir}</span>
+        <span className="mt-2 block text-micro text-content-low">{t.avisoNaoPrescricao}</span>
+        <span className="mt-2 block text-micro text-content-low">{t.previa.substituir}</span>
       </BalaoLife>
       <Opcoes>
         <Opcao onClick={props.onAjustar}>{t.previa.ajustar}</Opcao>

@@ -21,23 +21,25 @@ import {
   retomarLifeHoje,
 } from '@data/lifePausa'
 import { useI18n } from '@/i18n/I18nProvider'
+import type { Mensagens } from '@/i18n/mensagens/tipo'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { LifeMascote, type HumorLife } from '@ui/components/LifeMascote'
 import { PlanosNoLife } from './PlanosNoLife'
 
 /** Texto de erro por tipo — nunca finge que a conversa funcionou. */
-function mensagemDeErro(e: unknown): string {
-  if (!(e instanceof AiProxyError)) return 'O Life não conseguiu responder agora. Tenta de novo daqui a pouco.'
+function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros']): string {
+  if (!(e instanceof AiProxyError)) return t.geral
   switch (e.info.tipo) {
     case 'limit_reached':
-      return `Acabaram as mensagens de hoje. Renova em ${e.info.proximoReset || 'algumas horas'} — o Life te espera.`
+      return e.info.proximoReset ? t.limite(e.info.proximoReset) : t.limiteSemHora
     case 'rate_limited':
-      return 'Calma, muitas mensagens seguidas. Espera um minutinho e manda de novo.'
+      return t.rapido
     case 'indisponivel':
-      return 'O Life está descansando por hoje. Volta amanhã que ele te responde.'
+      return t.indisponivel
     case 'not_authenticated':
-      return 'Sua sessão expirou. Entra de novo pra continuar a conversa.'
+      return t.sessao
     default:
-      return 'O Life não conseguiu responder agora. Tenta de novo daqui a pouco.'
+      return t.geral
   }
 }
 
@@ -56,8 +58,13 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   const foco = props.foco ?? 'home'
   const navigate = useNavigate()
   const { m } = useI18n()
+  const tc = m.lifeChat
+  // Voltar do Android fecha o chat (antes minimizava o app nas telas raiz).
+  useFecharNoVoltar(true, props.onFechar)
   const inputRef = useRef<HTMLInputElement>(null)
   const [historico, setHistorico] = useState<MensagemChat[]>([])
+  // 'carregando' evita o "Oi…" piscar antes do histórico chegar.
+  const [estadoHist, setEstadoHist] = useState<'carregando' | 'ok' | 'erro'>('carregando')
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -77,8 +84,12 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   useEffect(() => {
     let vivo = true
     void carregarHistoricoChat()
-      .then((h) => vivo && setHistorico(h))
-      .catch(() => {})
+      .then((h) => {
+        if (!vivo) return
+        setHistorico(h)
+        setEstadoHist('ok')
+      })
+      .catch(() => vivo && setEstadoHist('erro'))
     void cotaChatHoje().then((c) => vivo && c && setRestantes(Math.max(c.limite - c.usados, 0)))
     const lerPausa = () => void lifePausadoHoje().then((p) => vivo && setPausado(p))
     lerPausa()
@@ -113,7 +124,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     } catch (e) {
       setHistorico((h) => h.slice(0, -1))
       setEscolha({ tipo: 'escolha', id, opcoes: escolha.opcoes })
-      setErro(mensagemDeErro(e))
+      setErro(mensagemDeErro(e, tc.erros))
     } finally {
       setEnviando(false)
     }
@@ -162,7 +173,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       // A mensagem não foi aceita: tira do histórico e devolve pro campo.
       setHistorico((h) => h.slice(0, -1))
       setTexto(mensagem)
-      setErro(mensagemDeErro(e))
+      setErro(mensagemDeErro(e, tc.erros))
       if (e instanceof AiProxyError && e.info.tipo === 'limit_reached') setRestantes(0)
     } finally {
       setEnviando(false)
@@ -177,12 +188,12 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       aria-label={m.lifeChat.titulo[foco]}
     >
       <button
-        aria-label="Fechar"
+        aria-label={tc.fechar}
         onClick={props.onFechar}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm motion-safe:animate-[fadeIn_0.2s_ease]"
       />
 
-      <div className="relative flex h-[85vh] w-full max-w-md flex-col rounded-t-3xl border-t border-surface-4 bg-surface-1 pb-safe-b motion-safe:animate-[slideUp_0.3s_cubic-bezier(0.22,1,0.36,1)]">
+      <div className="relative flex h-[85vh] w-full max-w-md supports-[height:100dvh]:h-[85dvh] flex-col rounded-t-3xl border-t border-surface-4 bg-surface-1 pb-safe-b motion-safe:animate-[slideUp_0.3s_cubic-bezier(0.22,1,0.36,1)]">
         <div className="mx-auto mt-3 h-1 w-10 flex-none rounded-full bg-surface-4" aria-hidden="true" />
 
         <div className="flex flex-none items-center gap-3 px-6 pb-3 pt-3">
@@ -197,7 +208,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             onClick={() => void alternarPausa()}
             disabled={mudandoPausa}
             aria-pressed={pausado}
-            className={`flex-none rounded-full border px-3 py-1.5 text-[11px] font-semibold disabled:opacity-50 ${
+            className={`min-h-11 max-w-[45%] flex-none rounded-full border px-3 text-micro font-semibold leading-tight disabled:opacity-50 ${
               pausado ? 'border-accent-gold/50 bg-accent-gold/10 text-accent-gold' : 'border-surface-4 text-content-low'
             }`}
           >
@@ -205,7 +216,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
           </button>
         </div>
 
-        {pausado && <p className="flex-none px-6 pb-3 text-[11px] leading-relaxed text-content-low">{m.lifeChat.pausadoAviso}</p>}
+        {pausado && <p className="flex-none px-6 pb-3 text-micro leading-relaxed text-content-low">{m.lifeChat.pausadoAviso}</p>}
 
         {/* Atalhos da Dieta (dono, 05/10: Life-chef sem card na tela; 08/10: scanner aqui também). */}
         {foco === 'dieta' && (
@@ -215,12 +226,16 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
           </div>
         )}
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-6">
-          {historico.length === 0 && (
+        <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain px-6" role="log" aria-live="polite">
+          {estadoHist === 'carregando' && (
+            <p className="py-4 text-center text-micro text-content-low">{tc.carregando}</p>
+          )}
+          {estadoHist === 'erro' && (
+            <p className="rounded-xl bg-surface-2 p-3 text-micro text-content-low">{tc.erroHistorico}</p>
+          )}
+          {estadoHist !== 'carregando' && historico.length === 0 && (
             <div className="rounded-2xl border border-surface-4 bg-surface-2 p-4">
-              <p className="text-sm leading-relaxed text-content-mid">
-                Oi. Sobre o que você quer conversar agora?
-              </p>
+              <p className="text-sm leading-relaxed text-content-mid">{tc.oi}</p>
             </div>
           )}
 
@@ -244,7 +259,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                   key={o.valor}
                   type="button"
                   onClick={() => void escolher(o.valor, o.rotulo)}
-                  className={`rounded-full border px-3.5 py-2 text-sm font-semibold active:scale-[0.98] ${
+                  className={`min-h-11 rounded-full border px-4 text-sm font-semibold active:scale-[0.98] ${
                     o.valor === 'cancelar'
                       ? 'border-surface-4 text-content-mid'
                       : 'border-brand/50 bg-brand/10 text-brand'
@@ -269,44 +284,51 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
           )}
 
           {enviando && (
-            <div className="rounded-2xl border border-surface-4 bg-surface-2 p-3.5 text-sm text-content-low">
-              Life está digitando…
+            <div className="flex w-fit items-center gap-2 rounded-2xl border border-surface-4 bg-surface-2 p-3.5 text-sm text-content-low" role="status">
+              <span className="flex gap-1" aria-hidden="true">
+                <span className="h-1.5 w-1.5 rounded-full bg-content-low motion-safe:animate-bounce" />
+                <span className="h-1.5 w-1.5 rounded-full bg-content-low motion-safe:animate-bounce [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-content-low motion-safe:animate-bounce [animation-delay:300ms]" />
+              </span>
+              {tc.digitando}
             </div>
           )}
           <div ref={fimRef} />
         </div>
 
-        {erro && <p className="flex-none px-6 pt-2 text-[11px] text-accent-danger">{erro}</p>}
+        {erro && <p role="alert" className="flex-none px-6 pt-2 text-micro text-accent-danger">{erro}</p>}
         {!erro && restantes !== null && (
-          <p className="flex-none px-6 pt-2 text-[11px] text-content-low">
-            {restantes === 0
-              ? 'Sem mensagens hoje — renova à meia-noite.'
-              : `${restantes} ${restantes === 1 ? 'mensagem restante' : 'mensagens restantes'} hoje`}
+          <p className="flex-none px-6 pt-2 text-micro text-content-low">
+            {restantes === 0 ? tc.semMensagens : tc.restantes(restantes)}
           </p>
         )}
 
-        <div className="flex flex-none items-center gap-2 px-6 py-4">
+        <form
+          className="flex flex-none items-center gap-2 px-6 py-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void enviar()
+          }}
+        >
           <input
             ref={inputRef}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void enviar()
-            }}
-            placeholder="Escreve pro Life…"
+            placeholder={tc.placeholder}
+            aria-label={tc.placeholder}
+            enterKeyHint="send"
             maxLength={800}
             disabled={enviando}
-            className="flex-1 rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm text-content-hi placeholder:text-content-dim focus:border-brand focus:outline-none disabled:opacity-60"
+            className="min-h-12 min-w-0 flex-1 rounded-xl border border-surface-4 bg-surface-2 px-3.5 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none disabled:opacity-60"
           />
           <button
-            type="button"
-            onClick={() => void enviar()}
+            type="submit"
             disabled={enviando || texto.trim().length === 0}
-            className="flex-none rounded-xl bg-brand px-4 py-3 text-sm font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
+            className="min-h-12 flex-none rounded-xl bg-brand px-4 text-sm font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
           >
-            Enviar
+            {tc.enviar}
           </button>
-        </div>
+        </form>
       </div>
 
       <style>{`
@@ -322,7 +344,7 @@ function Atalho(props: { emoji: string; texto: string; onClick: () => void }) {
     <button
       type="button"
       onClick={props.onClick}
-      className="flex w-full items-center gap-2 rounded-2xl border border-brand/40 bg-brand/10 px-4 py-3 text-left text-sm font-bold text-brand active:scale-[0.99]"
+      className="flex min-h-12 w-full items-center gap-2 rounded-2xl border border-brand/40 bg-brand/10 px-4 text-left text-sm font-bold text-brand active:scale-[0.99]"
     >
       <span aria-hidden="true">{props.emoji}</span>
       <span className="flex-1">{props.texto}</span>

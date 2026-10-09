@@ -2263,3 +2263,12 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     vermelho; cores verde/roxo por token; carregando em forma de card;
     todos os textos da tela em pt/en/es. **Falta**: alternativas da
     vontade (`ALTERNATIVAS_POR_CATEGORIA`) ainda só em pt.
+  - **Chat do Life** (vale nas 4 telas): Voltar do Android fecha o chat;
+    não pisca mais o "Oi…" antes do histórico (carregando + aviso se o
+    histórico falhar, em vez de calar); "digitando" com pontinhos (some com
+    reduzir animações) e `role=status`; mensagens em `role=log`; campo 48px
+    com texto 16px, Enter = enviar (`enterKeyHint=send`); botão 🌙 de pausa
+    44px e 12px (era 11px); opções de resposta e botões dos planos 44–48px;
+    altura do chat em `dvh` (teclado não esconde o campo); erros, contador
+    e textos em pt/en/es; planos/check de saúde sem 11px nem cinza
+    apagado; checkbox com cor por token.
