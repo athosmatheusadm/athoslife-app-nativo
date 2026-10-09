@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import { SettingsRow } from '@ui/components/SettingsRow'
+import { useI18n } from '@/i18n/I18nProvider'
 import { Chevron } from '@ui/components/Chevron'
+import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
 import { useSession } from '@app/SessionProvider'
 import { diasRestantesTrial, temAcessoPremium } from '@domain/rules/access'
 
@@ -16,24 +19,27 @@ export function ProfileScreen({
   onSair: () => void
 }) {
   const { profile } = useSession()
+  const { m } = useI18n()
+  const t = m.perfil
+  const l = t.linhas
+  const [confirmandoSair, setConfirmandoSair] = useState(false)
+  useEffect(() => {
+    if (!confirmandoSair) return
+    const id = setTimeout(() => setConfirmandoSair(false), 3000)
+    return () => clearTimeout(id)
+  }, [confirmandoSair])
   if (!profile) return null
 
   const premium = temAcessoPremium(profile)
   const dias = diasRestantesTrial(profile)
 
-  const statusPlano = premium
-    ? profile.plano === 'trial' && dias !== null
-      ? `Teste grátis · ${dias} ${dias === 1 ? 'dia' : 'dias'}`
-      : 'Premium'
-    : 'Grátis'
+  const statusPlano = premium ? (profile.plano === 'trial' && dias !== null ? t.teste(dias) : t.premium) : t.gratis
 
   const inicial = (profile.nome ?? '?').trim().charAt(0).toUpperCase() || '?'
 
   return (
-    <main className="pt-safe-t">
-      <header className="flex items-center gap-4 px-5 pb-2 pt-3">
-        <h1 className="text-xl font-bold text-content-hi">Perfil</h1>
-      </header>
+    <main className="pb-8 pt-safe-t">
+      <CabecalhoSubpagina titulo={t.titulo} />
 
       <section className="flex items-center gap-3.5 px-5 pb-5 pt-2">
         <span className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-2xl font-bold text-brand-ink ring-2 ring-brand/35">
@@ -45,15 +51,15 @@ export function ProfileScreen({
         </span>
         <span className="min-w-0">
           <span className="block text-lg font-bold text-content-hi">
-            {profile.nome ?? 'Você'}
+            {profile.nome ?? t.voce}
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-1.5 text-micro text-content-low">
-            <span className="rounded-pill border border-brand/25 bg-brand/[0.14] px-2.5 py-0.5 font-semibold text-[#6ee7a3]">
+            <span className="rounded-pill border border-brand/25 bg-brand/[0.14] px-2.5 py-0.5 font-semibold text-brand">
               {statusPlano}
             </span>
             {profile.streakAtual > 0 && (
               <span className="font-semibold text-accent-energy">
-                🔥 {profile.streakAtual} {profile.streakAtual === 1 ? 'dia' : 'dias'}
+                🔥 {t.dias(profile.streakAtual)}
               </span>
             )}
           </span>
@@ -63,29 +69,33 @@ export function ProfileScreen({
       <nav>
         <SettingsRow
           icon={<IconConquistas />}
-          title="Conquistas"
-          subtitle="Veja tudo que você já desbloqueou"
+          title={l.conquistas}
+          subtitle={l.conquistasSub}
           trailing={<Chevron />}
           onClick={() => onNavigate('/perfil/conquistas')}
         />
         <div className="mx-5 my-2 h-px bg-surface-4/50" />
-        <SettingsRow icon={<IconConta />} title="Conta" subtitle="Nome, e-mail e foto de perfil" trailing={<Chevron />} onClick={() => onNavigate('/perfil/conta')} />
-        <SettingsRow icon={<IconMetas />} title="Metas" subtitle="Calorias, macros, água e peso alvo" trailing={<Chevron />} onClick={() => onNavigate('/perfil/metas')} />
-        <SettingsRow icon={<IconPlano />} title="Plano" subtitle="Sua assinatura e benefícios" trailing={<><span className="mr-2 text-micro font-semibold text-accent-gold">{premium ? 'Premium' : 'Grátis'}</span><Chevron /></>} onClick={() => onNavigate('/perfil/plano')} />
-        <SettingsRow icon={<IconPriv />} title="Privacidade e dados" subtitle="Consentimento, exportar ou excluir seus dados" trailing={<Chevron />} onClick={() => onNavigate('/perfil/privacidade')} />
-        <SettingsRow icon={<IconNotif />} title="Notificações" subtitle="Lembretes, modo resgate e WhatsApp" trailing={<Chevron />} onClick={() => onNavigate('/perfil/notificacoes')} />
-        <SettingsRow icon={<IconIdioma />} title="Idioma e região" subtitle="Language · Idioma · kg/lb" trailing={<Chevron />} onClick={() => onNavigate('/perfil/idioma')} />
-        <SettingsRow icon={<IconAcess />} title="Acessibilidade" subtitle="Contraste, animações e tamanho do texto" trailing={<Chevron />} onClick={() => onNavigate('/perfil/acessibilidade')} />
-        <SettingsRow icon={<IconSobre />} title="Sobre" subtitle="Termos, política de privacidade e suporte" trailing={<Chevron />} onClick={() => onNavigate('/perfil/sobre')} />
+        <SettingsRow icon={<IconConta />} title={l.conta} subtitle={l.contaSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/conta')} />
+        <SettingsRow icon={<IconMetas />} title={l.metas} subtitle={l.metasSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/metas')} />
+        <SettingsRow icon={<IconPlano />} title={l.plano} subtitle={l.planoSub} trailing={<><span className="mr-2 text-micro font-semibold text-accent-gold">{premium ? t.premium : t.gratis}</span><Chevron /></>} onClick={() => onNavigate('/perfil/plano')} />
+        <SettingsRow icon={<IconPriv />} title={l.privacidade} subtitle={l.privacidadeSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/privacidade')} />
+        {/* Antes prometia "modo resgate e WhatsApp" — WhatsApp ficou pra depois. */}
+        <SettingsRow icon={<IconNotif />} title={l.notificacoes} subtitle={l.notificacoesSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/notificacoes')} />
+        <SettingsRow icon={<IconIdioma />} title={l.idioma} subtitle={l.idiomaSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/idioma')} />
+        <SettingsRow icon={<IconAcess />} title={l.acessibilidade} subtitle={l.acessibilidadeSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/acessibilidade')} />
+        <SettingsRow icon={<IconSobre />} title={l.sobre} subtitle={l.sobreSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/sobre')} />
 
         <div className="mx-5 my-2 h-px bg-surface-4/50" />
 
-        <SettingsRow icon={<IconSair />} title="Sair da conta" danger onClick={onSair} />
+        <SettingsRow
+          icon={<IconSair />}
+          title={confirmandoSair ? l.sairConfirmar : l.sair}
+          danger
+          onClick={() => (confirmandoSair ? onSair() : setConfirmandoSair(true))}
+        />
       </nav>
 
-      <p className="px-5 py-5 text-center text-micro text-content-dim opacity-70">
-        ATHOSlife · versão 1.0
-      </p>
+      <p className="px-5 py-5 text-center text-micro text-content-low">{t.versao}</p>
     </main>
   )
 }

@@ -2278,3 +2278,17 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     de incluir 48px (era 24px), ±10 g 44px (eram 32px), nome editável 44px;
     aviso "N itens adicionados em Almoço" + vibração; macros com as cores
     de token; erros com `role=alert`; todo texto em pt/en/es.
+  - **Perfil e subpáginas**: cabeçalho único `CabecalhoSubpagina` (voltar
+    44px + i18n) em Conquistas, Conta, Metas, Plano, Privacidade,
+    Notificações, Idioma, Acessibilidade e Sobre; Perfil ganhou voltar;
+    "Sair da conta" com 2º toque na própria linha (era confirm() do
+    sistema); **promessas falsas corrigidas**: legenda de Notificações
+    dizia "modo resgate e WhatsApp" (WhatsApp adiado) e o Plano dizia
+    scanner/chat "sem limite diário" (têm limite); Conta/Metas avisam
+    "Salvo ✓" ou erro (antes calavam); conquistas com carregando/erro
+    (antes "0 de 0"); toggles com `role=switch` e alvo 48px; tamanho do
+    texto como `radiogroup`; chips/campos 44–48px; nenhum texto 10–11px
+    nem `content-dim` em leitura; todos os textos em pt/en/es.
+    **Falta**: título/descrição das conquistas vêm do banco só em pt;
+    "Baixar meus dados (.json)" usa download do navegador — no APK
+    provavelmente não baixa (precisa de @capacitor/filesystem + share).

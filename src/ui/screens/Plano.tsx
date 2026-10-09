@@ -1,30 +1,7 @@
-import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { diasRestantesTrial, temAcessoPremium } from '@domain/rules/access'
-
-const NOME_PLANO: Record<string, string> = {
-  trial: 'Teste grátis',
-  free: 'Grátis',
-  premium: 'Premium',
-  fundador: 'Fundador',
-  vitalicio: 'Vitalício',
-  vip: 'VIP',
-}
-
-// Por que o teste grátis não saiu (resposta de liberar_teste_gratis).
-const AVISO_TESTE: Partial<Record<string, string>> = {
-  aparelho_ja_usou: 'Este aparelho já usou o teste grátis em outra conta — aqui você segue no plano grátis.',
-  conta_ja_usou: 'Esta conta já usou o teste grátis.',
-  email_descartavel: 'O teste grátis não vale pra e-mail temporário. Com um e-mail pessoal ele sai na hora.',
-  email_nao_confirmado: 'Confirme seu e-mail pelo link que mandamos e abra o app de novo pra liberar os 7 dias de Premium.',
-}
-
-const BENEFICIOS = [
-  'Scanner de comida por IA sem limite diário',
-  'Chat com a Life sem limite diário',
-  'Cozinha ATHOS completa + Life-chef (receitas com o que você tem em casa)',
-  'Catálogo de treino completo',
-]
+import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
+import { useI18n } from '@/i18n/I18nProvider'
 
 /**
  * Sub-página "Plano" do Perfil — status real (plano atual, contagem do
@@ -33,45 +10,35 @@ const BENEFICIOS = [
  * que não compra nada seria fingir uma feature pronta.
  */
 export function Plano() {
-  const navigate = useNavigate()
   const { profile, statusTeste } = useSession()
+  const t = useI18n().m.perfil.plano
   if (!profile) return null
 
   const premium = temAcessoPremium(profile)
   const dias = diasRestantesTrial(profile)
-  const nomePlano = NOME_PLANO[profile.plano] ?? profile.plano
+  const nomePlano = t.nomes[profile.plano] ?? profile.plano
+  const aviso = statusTeste && statusTeste in t.avisos ? t.avisos[statusTeste as keyof typeof t.avisos] : null
 
   return (
     <main className="pb-24 pt-safe-t">
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <button onClick={() => navigate(-1)} aria-label="Voltar" className="text-content-hi">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-xl font-bold text-content-hi">Plano</h1>
-      </header>
+      <CabecalhoSubpagina titulo={t.titulo} />
 
       <section className="mx-5 mt-2 rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/[0.12] to-transparent p-5">
-        <p className="text-micro font-bold uppercase tracking-wide text-brand">Seu plano</p>
+        <p className="text-micro font-bold uppercase tracking-wide text-brand">{t.seuPlano}</p>
         <p className="mt-1 text-2xl font-extrabold text-content-hi">{nomePlano}</p>
         {profile.plano === 'trial' && dias !== null && (
-          <p className="mt-1 text-sm text-content-low">
-            {dias} {dias === 1 ? 'dia restante' : 'dias restantes'} de acesso completo
-          </p>
+          <p className="mt-1 text-sm text-content-low">{t.diasRestantes(dias)}</p>
         )}
         {!premium && (
-          <p className="mt-1 text-sm text-content-low">
-            Acesso limitado — sem scanner/chat sem limite, receitas e treinos premium bloqueados.
-          </p>
+          <p className="mt-1 text-sm text-content-low">{t.limitado}</p>
         )}
-        {!premium && statusTeste && AVISO_TESTE[statusTeste] && (
-          <p className="mt-3 rounded-xl bg-surface-2 p-3 text-micro text-content-mid">{AVISO_TESTE[statusTeste]}</p>
-        )}
+        {!premium && aviso && <p className="mt-3 rounded-xl bg-surface-2 p-3 text-micro text-content-mid">{aviso}</p>}
       </section>
 
       <section className="mx-5 mt-5">
-        <h2 className="mb-2 text-sm font-bold text-content-hi">O que o Premium inclui</h2>
+        <h2 className="mb-2 text-sm font-bold text-content-hi">{t.inclui}</h2>
         <ul className="space-y-2">
-          {BENEFICIOS.map((b) => (
+          {t.beneficios.map((b) => (
             <li key={b} className="flex items-start gap-2.5 text-sm text-content-mid">
               <span className="mt-0.5 flex-none text-brand">✓</span>
               {b}
@@ -81,9 +48,7 @@ export function Plano() {
       </section>
 
       {!premium && (
-        <p className="mx-5 mt-6 rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-micro text-content-dim">
-          Assinatura pela Play Store chega em breve — ainda não está pronta pra vender de verdade.
-        </p>
+        <p className="mx-5 mt-6 rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-micro text-content-low">{t.emBreve}</p>
       )}
     </main>
   )

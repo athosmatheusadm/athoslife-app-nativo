@@ -50,7 +50,7 @@ export function LembretesDoDia() {
     }
   }, [])
 
-  if (!config) return <p className="mx-5 mt-2 text-micro text-content-dim">…</p>
+  if (!config) return <p className="mx-5 mt-2 text-micro text-content-low">…</p>
 
   // Salva logo e replaneja um pouco depois (o relógio do campo de hora muda a cada giro).
   function mudar(nova: ConfigLembretes) {
@@ -118,7 +118,7 @@ export function LembretesDoDia() {
                     key={min}
                     type="button"
                     onClick={() => mudar({ ...config, agua: { ...config.agua, intervaloMin: min } })}
-                    className={`flex-1 rounded-lg border py-1.5 text-micro font-semibold ${
+                    className={`min-h-11 flex-1 rounded-lg border text-sm font-semibold active:scale-95 ${
                       config.agua.intervaloMin === min ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
                     }`}
                   >
@@ -181,7 +181,7 @@ export function LembretesDoDia() {
                       key={d}
                       type="button"
                       onClick={() => mudar({ ...config, pesagem: { ...config.pesagem, dia: d } })}
-                      className={`flex-1 rounded-lg border py-1.5 text-micro font-semibold ${
+                      className={`min-h-11 flex-1 rounded-lg border text-sm font-semibold active:scale-95 ${
                         config.pesagem.dia === d ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
                       }`}
                     >
@@ -200,7 +200,7 @@ export function LembretesDoDia() {
             )}
           </Cartao>
 
-          <p className="text-micro text-content-dim">{t.teto(MAX_POR_DIA)}</p>
+          <p className="text-micro text-content-low">{t.teto(MAX_POR_DIA)}</p>
         </div>
       )}
     </section>
@@ -231,13 +231,19 @@ export function Chave(props: { ativo: boolean; onMudar: (v: boolean) => void; ro
       aria-checked={props.ativo}
       aria-label={props.rotulo}
       onClick={() => props.onMudar(!props.ativo)}
-      className={`relative h-6 w-11 flex-none rounded-full transition-colors ${props.ativo ? 'bg-brand' : 'bg-surface-4'}`}
+      className="-my-2 -mr-1.5 flex h-12 w-14 flex-none items-center justify-center rounded-full active:bg-white/5"
     >
+      {/* Alvo de 48px; o trilho visível continua 24×44. */}
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-          props.ativo ? 'translate-x-[22px]' : 'translate-x-0.5'
-        }`}
-      />
+        aria-hidden="true"
+        className={`relative h-6 w-11 rounded-full transition-colors ${props.ativo ? 'bg-brand' : 'bg-surface-4'}`}
+      >
+        <span
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+            props.ativo ? 'translate-x-[22px]' : 'translate-x-0.5'
+          }`}
+        />
+      </span>
     </button>
   )
 }
@@ -250,7 +256,7 @@ function CampoHora(props: { rotulo?: string; valor: string; onMudar: (v: string)
         type="time"
         value={props.valor}
         onChange={(e) => e.target.value && props.onMudar(e.target.value)}
-        className="w-full rounded-lg border border-surface-4 bg-surface-3 px-2 py-1.5 text-sm text-content-hi"
+        className="min-h-11 w-full rounded-lg border border-surface-4 bg-surface-3 px-2 text-base text-content-hi"
       />
     </label>
   )

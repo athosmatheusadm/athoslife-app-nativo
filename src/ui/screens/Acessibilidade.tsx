@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
+import { useI18n } from '@/i18n/I18nProvider'
 import {
   definirAltoContraste,
   definirReduzirAnimacoes,
@@ -10,10 +11,10 @@ import {
   type TamanhoTexto,
 } from '@ui/theme/preferenciasAcessibilidade'
 
-const TAMANHOS: readonly { valor: TamanhoTexto; rotulo: string; amostra: string }[] = [
-  { valor: 'normal', rotulo: 'Normal', amostra: 'text-sm' },
-  { valor: 'grande', rotulo: 'Grande', amostra: 'text-base' },
-  { valor: 'extra', rotulo: 'Extra grande', amostra: 'text-lg' },
+const TAMANHOS: readonly { valor: TamanhoTexto; amostra: string }[] = [
+  { valor: 'normal', amostra: 'text-sm' },
+  { valor: 'grande', amostra: 'text-base' },
+  { valor: 'extra', amostra: 'text-lg' },
 ]
 
 /**
@@ -23,37 +24,34 @@ const TAMANHOS: readonly { valor: TamanhoTexto; rotulo: string; amostra: string 
  * de não serem sincronizadas com o banco.
  */
 export function Acessibilidade() {
-  const navigate = useNavigate()
+  const t = useI18n().m.perfil.acessibilidade
   const [tamanho, setTamanho] = useState<TamanhoTexto>(lerTamanhoTexto)
   const [reduzirAnimacoes, setReduzirAnimacoes] = useState(lerReduzirAnimacoes)
   const [altoContraste, setAltoContraste] = useState(lerAltoContraste)
 
   return (
     <main className="pb-24 pt-safe-t">
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <button onClick={() => navigate(-1)} aria-label="Voltar" className="text-content-hi">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-xl font-bold text-content-hi">Acessibilidade</h1>
-      </header>
+      <CabecalhoSubpagina titulo={t.titulo} />
 
       <section className="mx-5 mt-2">
-        <h2 className="mb-2 text-sm font-bold text-content-hi">Tamanho do texto</h2>
-        <div className="flex gap-2">
-          {TAMANHOS.map((t) => (
+        <h2 className="mb-2 text-sm font-bold text-content-hi">{t.tamanho}</h2>
+        <div className="flex gap-2" role="radiogroup" aria-label={t.tamanho}>
+          {TAMANHOS.map((op) => (
             <button
-              key={t.valor}
+              key={op.valor}
               type="button"
+              role="radio"
+              aria-checked={tamanho === op.valor}
               onClick={() => {
-                setTamanho(t.valor)
-                definirTamanhoTexto(t.valor)
+                setTamanho(op.valor)
+                definirTamanhoTexto(op.valor)
               }}
-              className={`flex-1 rounded-xl border py-3 text-sm font-semibold transition-colors ${
-                tamanho === t.valor ? 'border-brand text-brand' : 'border-surface-4 text-content-mid'
+              className={`min-h-16 flex-1 rounded-xl border px-1 text-sm font-semibold transition-colors active:scale-[0.98] ${
+                tamanho === op.valor ? 'border-brand bg-brand/10 text-brand' : 'border-surface-4 text-content-mid'
               }`}
             >
-              <span className={t.amostra}>Aa</span>
-              <span className="mt-1 block text-[10px]">{t.rotulo}</span>
+              <span className={op.amostra} aria-hidden="true">Aa</span>
+              <span className="mt-1 block text-micro">{t.tamanhos[op.valor]}</span>
             </button>
           ))}
         </div>
@@ -61,8 +59,8 @@ export function Acessibilidade() {
 
       <section className="mx-5 mt-6 space-y-1">
         <Toggle
-          titulo="Reduzir animações"
-          subtitulo="Desliga transições e efeitos de movimento no app inteiro"
+          titulo={t.animacoes}
+          subtitulo={t.animacoesSub}
           ativo={reduzirAnimacoes}
           onMudar={(v) => {
             setReduzirAnimacoes(v)
@@ -70,8 +68,8 @@ export function Acessibilidade() {
           }}
         />
         <Toggle
-          titulo="Alto contraste"
-          subtitulo="Clareia os textos mais apagados pra facilitar a leitura"
+          titulo={t.contraste}
+          subtitulo={t.contrasteSub}
           ativo={altoContraste}
           onMudar={(v) => {
             setAltoContraste(v)
@@ -80,10 +78,7 @@ export function Acessibilidade() {
         />
       </section>
 
-      <p className="mx-5 mt-6 text-micro text-content-dim">
-        Essas preferências ficam salvas neste aparelho — se você trocar de celular, precisa ajustar de
-        novo.
-      </p>
+      <p className="mx-5 mt-6 text-micro text-content-low">{t.nota}</p>
     </main>
   )
 }
@@ -97,14 +92,17 @@ function Toggle(props: {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={props.ativo}
       onClick={() => props.onMudar(!props.ativo)}
-      className="flex w-full items-center gap-3 rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-left"
+      className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-left active:bg-surface-3"
     >
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold text-content-hi">{props.titulo}</span>
         <span className="mt-0.5 block text-micro text-content-low">{props.subtitulo}</span>
       </span>
       <span
+        aria-hidden="true"
         className={`relative h-6 w-11 flex-none rounded-full transition-colors ${
           props.ativo ? 'bg-brand' : 'bg-surface-4'
         }`}

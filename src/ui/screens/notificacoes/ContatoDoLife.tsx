@@ -33,7 +33,7 @@ export function ContatoDoLife() {
   }, [t.erroCarregar])
 
   if (!prefs) {
-    return <p className="mx-5 mt-8 text-micro text-content-dim">{erro ?? '…'}</p>
+    return <p className="mx-5 mt-8 text-micro text-content-low">{erro ?? '…'}</p>
   }
 
   async function salvar(nova: PreferenciasContato) {

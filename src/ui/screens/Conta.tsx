@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useSession } from '@app/SessionProvider'
 import { profileRepository } from '@data/repositories/profileRepository'
 import type { Sexo } from '@domain/entities/profile'
+import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
+import { useI18n } from '@/i18n/I18nProvider'
+import { avisar, vibrar } from '@ui/feedback'
 
-const SEXOS: readonly { valor: Sexo; rotulo: string }[] = [
-  { valor: 'feminino', rotulo: 'Feminino' },
-  { valor: 'masculino', rotulo: 'Masculino' },
-  { valor: 'outro', rotulo: 'Outro' },
-  { valor: 'prefiro_nao_dizer', rotulo: 'Prefiro não dizer' },
-]
+const SEXOS: readonly Sexo[] = ['feminino', 'masculino', 'outro', 'prefiro_nao_dizer']
 
 /**
  * Sub-página "Conta" do Perfil — nome, foto, e-mail (só leitura, vem da
@@ -22,11 +19,22 @@ const SEXOS: readonly { valor: Sexo; rotulo: string }[] = [
  * o cabeçalho do Perfil pegarem o dado novo na hora.
  */
 export function Conta() {
-  const navigate = useNavigate()
   const { profile, refresh } = useSession()
   const [email, setEmail] = useState<string | null>(null)
   const [enviandoFoto, setEnviandoFoto] = useState(false)
-  const [erroFoto, setErroFoto] = useState<string | null>(null)
+  const [erroFoto, setErroFoto] = useState(false)
+  const { m } = useI18n()
+  const t = m.perfil.conta
+
+  /** Salva, avisa e recarrega o perfil — antes um erro passava calado. */
+  const salvar = (acao: Promise<unknown>) =>
+    acao
+      .then(() => {
+        vibrar.leve()
+        avisar.ok(m.perfil.salvo)
+        return refresh()
+      })
+      .catch(() => avisar.erro(m.perfil.erroSalvar))
 
   useEffect(() => {
     void profileRepository.emailAtual().then(setEmail)
@@ -35,7 +43,7 @@ export function Conta() {
   if (!profile) return null
 
   async function trocarFoto() {
-    setErroFoto(null)
+    setErroFoto(false)
     try {
       const foto = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -48,10 +56,11 @@ export function Conta() {
       const blob = await (await fetch(foto.dataUrl)).blob()
       await profileRepository.atualizarAvatar(blob)
       await refresh()
+      vibrar.sucesso()
     } catch (e) {
       // Usuário cancelando o seletor de foto também cai aqui (rejeita a promise) — não é erro de verdade.
       const msg = e instanceof Error ? e.message : ''
-      if (!/cancel/i.test(msg)) setErroFoto('Não deu pra trocar a foto agora.')
+      if (!/cancel/i.test(msg)) setErroFoto(true)
     } finally {
       setEnviandoFoto(false)
     }
@@ -59,19 +68,14 @@ export function Conta() {
 
   return (
     <main className="pb-24 pt-safe-t">
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <button onClick={() => navigate(-1)} aria-label="Voltar" className="text-content-hi">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-xl font-bold text-content-hi">Conta</h1>
-      </header>
+      <CabecalhoSubpagina titulo={t.titulo} />
 
       <section className="flex flex-col items-center gap-2 px-5 pb-6 pt-2">
         <button
           type="button"
           onClick={() => void trocarFoto()}
           disabled={enviandoFoto}
-          aria-label="Trocar foto de perfil"
+          aria-label={t.trocarFoto}
           className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-3xl font-bold text-brand-ink ring-2 ring-brand/35 disabled:opacity-60"
         >
           {profile.avatarUrl ? (
@@ -83,45 +87,42 @@ export function Conta() {
             {enviandoFoto ? '...' : '📷'}
           </span>
         </button>
-        {erroFoto && <p className="text-[11px] text-accent-danger">{erroFoto}</p>}
+        {erroFoto && <p role="alert" className="text-micro text-accent-danger">{t.erroFoto}</p>}
       </section>
 
       <div className="space-y-4 px-5">
         <CampoTexto
-          rotulo="Nome"
+          rotulo={t.nome}
           valorInicial={profile.nome ?? ''}
-          placeholder="Seu nome"
-          onSalvar={(v) => profileRepository.atualizarNome(v).then(refresh)}
+          placeholder={t.seuNome}
+          onSalvar={(v) => salvar(profileRepository.atualizarNome(v))}
         />
 
         <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
-            E-mail
-          </label>
-          <p className="rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm text-content-mid">
+          <p className="mb-1 block text-micro font-bold uppercase tracking-wide text-content-low">{t.email}</p>
+          <p className="break-all rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm text-content-mid">
             {email ?? '—'}
           </p>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
-            Sexo
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {SEXOS.map((s) => (
+          <p className="mb-1.5 block text-micro font-bold uppercase tracking-wide text-content-low">{t.sexo}</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label={t.sexo}>
+            {SEXOS.map((sx) => (
               <button
-                key={s.valor}
+                key={sx}
                 type="button"
+                aria-pressed={profile.sexo === sx}
                 onClick={() => {
-                  void profileRepository.atualizarDadosPessoais('sexo', s.valor).then(refresh)
+                  void salvar(profileRepository.atualizarDadosPessoais('sexo', sx))
                 }}
-                className={`rounded-pill px-3.5 py-1.5 text-micro font-bold transition-colors ${
-                  profile.sexo === s.valor
+                className={`min-h-11 rounded-pill px-4 text-sm font-bold transition-colors active:scale-95 ${
+                  profile.sexo === sx
                     ? 'bg-brand text-brand-ink'
                     : 'border border-surface-4 bg-surface-2 text-content-mid'
                 }`}
               >
-                {s.rotulo}
+                {t.sexos[sx]}
               </button>
             ))}
           </div>
@@ -129,20 +130,20 @@ export function Conta() {
 
         <div className="grid grid-cols-3 gap-3">
           <CampoNumero
-            rotulo="Altura (cm)"
+            rotulo={t.altura}
             valorInicial={profile.alturaCm}
-            onSalvar={(v) => profileRepository.atualizarDadosPessoais('altura_cm', v).then(refresh)}
+            onSalvar={(v) => salvar(profileRepository.atualizarDadosPessoais('altura_cm', v))}
           />
           <CampoNumero
-            rotulo="Idade"
+            rotulo={t.idade}
             valorInicial={profile.idade}
-            onSalvar={(v) => profileRepository.atualizarDadosPessoais('idade', v).then(refresh)}
+            onSalvar={(v) => salvar(profileRepository.atualizarDadosPessoais('idade', v))}
           />
           <CampoNumero
-            rotulo="Peso (kg)"
+            rotulo={t.peso}
             valorInicial={profile.pesoAtual}
             decimal
-            onSalvar={(v) => profileRepository.atualizarDadosPessoais('peso_atual', v).then(refresh)}
+            onSalvar={(v) => salvar(profileRepository.atualizarDadosPessoais('peso_atual', v))}
           />
         </div>
       </div>
@@ -154,15 +155,17 @@ function CampoTexto(props: {
   rotulo: string
   valorInicial: string
   placeholder?: string
-  onSalvar: (valor: string) => void
+  onSalvar: (valor: string) => unknown
 }) {
   const [valor, setValor] = useState(props.valorInicial)
+  const id = `conta-${props.rotulo}`
   return (
     <div>
-      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
+      <label htmlFor={id} className="mb-1 block text-micro font-bold uppercase tracking-wide text-content-low">
         {props.rotulo}
       </label>
       <input
+        id={id}
         value={valor}
         onChange={(e) => setValor(e.target.value)}
         onBlur={() => {
@@ -170,7 +173,7 @@ function CampoTexto(props: {
           if (limpo && limpo !== props.valorInicial) props.onSalvar(limpo)
         }}
         placeholder={props.placeholder}
-        className="w-full rounded-xl border border-surface-4 bg-surface-2 px-3.5 py-3 text-sm font-semibold text-content-hi placeholder:font-normal placeholder:text-content-dim focus:border-brand focus:outline-none"
+        className="min-h-12 w-full rounded-xl border border-surface-4 bg-surface-2 px-3.5 text-base font-semibold text-content-hi placeholder:font-normal placeholder:text-content-low focus:border-brand focus:outline-none"
       />
     </div>
   )
@@ -180,15 +183,17 @@ function CampoNumero(props: {
   rotulo: string
   valorInicial: number | null
   decimal?: boolean
-  onSalvar: (valor: number | null) => void
+  onSalvar: (valor: number | null) => unknown
 }) {
   const [valor, setValor] = useState(props.valorInicial?.toString() ?? '')
+  const id = `conta-${props.rotulo}`
   return (
     <div>
-      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-content-dim">
+      <label htmlFor={id} className="mb-1 block text-micro font-bold uppercase tracking-wide text-content-low">
         {props.rotulo}
       </label>
       <input
+        id={id}
         type="number"
         inputMode={props.decimal ? 'decimal' : 'numeric'}
         value={valor}
@@ -198,7 +203,7 @@ function CampoNumero(props: {
           if (numero !== null && (Number.isNaN(numero) || numero <= 0)) return
           if (numero !== props.valorInicial) props.onSalvar(numero)
         }}
-        className="w-full rounded-xl border border-surface-4 bg-surface-2 px-3 py-3 text-center text-sm font-semibold text-content-hi focus:border-brand focus:outline-none"
+        className="min-h-12 w-full rounded-xl border border-surface-4 bg-surface-2 px-2 text-center text-base font-semibold tabular-nums text-content-hi focus:border-brand focus:outline-none"
       />
     </div>
   )

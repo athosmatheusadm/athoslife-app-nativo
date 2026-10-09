@@ -27,6 +27,7 @@ export function SettingsRow(props: {
         className={`flex w-7 flex-none items-center justify-center ${
           danger ? 'text-accent-danger' : 'text-content-low'
         }`}
+        aria-hidden="true"
       >
         {icon}
       </span>
@@ -39,12 +40,12 @@ export function SettingsRow(props: {
           {title}
         </span>
         {subtitle && (
-          <span className="mt-0.5 block text-micro leading-snug text-content-dim">
+          <span className="mt-0.5 block text-micro leading-snug text-content-low">
             {subtitle}
           </span>
         )}
       </span>
-      {trailing && <span className="flex-none text-content-dim">{trailing}</span>}
+      {trailing && <span className="flex-none text-content-low">{trailing}</span>}
     </button>
   )
 }

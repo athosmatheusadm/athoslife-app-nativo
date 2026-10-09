@@ -5,8 +5,9 @@ import { ProfileScreen } from './profile/ProfileScreen'
 export function Perfil() {
   const navigate = useNavigate()
 
+  // A confirmação ("toque de novo pra sair") fica na própria linha do
+  // ProfileScreen — antes era o confirm() do sistema, com título "localhost".
   async function sair() {
-    if (!window.confirm('Sair da sua conta?')) return
     await authRepository.sair()
     navigate('/login', { replace: true })
   }

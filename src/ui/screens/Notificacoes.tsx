@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
+import { useI18n } from '@/i18n/I18nProvider'
+import { vibrar } from '@ui/feedback'
 import { habitosRepository } from '@data/repositories/habitosRepository'
 import { agendarLembrete, buscarLembrete, cancelarLembrete } from '@data/notifications/habitReminders'
 import type { Habito } from '@domain/entities/habito'
@@ -18,7 +20,7 @@ import { ContatoDoLife } from './notificacoes/ContatoDoLife'
  * tela avisa "em breve". WhatsApp ficou pra uma versão futura.
  */
 export function Notificacoes() {
-  const navigate = useNavigate()
+  const t = useI18n().m.perfil.notificacoes
   const [habitosConstruir, setHabitosConstruir] = useState<Habito[] | null>(null)
 
   useEffect(() => {
@@ -34,29 +36,18 @@ export function Notificacoes() {
 
   return (
     <main className="pb-24 pt-safe-t">
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <button onClick={() => navigate(-1)} aria-label="Voltar" className="text-content-hi">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-xl font-bold text-content-hi">Notificações</h1>
-      </header>
+      <CabecalhoSubpagina titulo={t.titulo} />
 
       <LembretesDoDia />
 
       <section className="mx-5 mt-8">
-        <h2 className="mb-1 text-sm font-bold text-content-hi">Lembretes de hábitos</h2>
-        <p className="mb-3 text-micro text-content-low">
-          Um aviso local no seu aparelho, no horário que você escolher — só funciona no app
-          instalado, não aqui no navegador.
-        </p>
+        <h2 className="mb-1 text-sm font-bold text-content-hi">{t.habitosTitulo}</h2>
+        <p className="mb-3 text-micro text-content-low">{t.habitosTexto}</p>
 
-        {habitosConstruir === null && <p className="text-micro text-content-dim">Carregando…</p>}
+        {habitosConstruir === null && <p className="text-micro text-content-low">{t.carregando}</p>}
 
         {habitosConstruir?.length === 0 && (
-          <p className="rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-micro text-content-low">
-            Nenhum hábito do tipo "construir" ainda (ex.: Leitura). Crie um em Hábitos pra ver o
-            lembrete aqui.
-          </p>
+          <p className="rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-micro text-content-low">{t.semHabitos}</p>
         )}
 
         <div className="space-y-2.5">
@@ -76,6 +67,9 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [hora, setHora] = useState('19:00')
+  const { m } = useI18n()
+  const t = m.perfil.notificacoes
+  const tc = m.habitos.card
 
   useEffect(() => {
     let ativo = true
@@ -85,7 +79,7 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
         setLembrete(v)
         if (v) setHora(v)
       })
-      .catch(() => ativo && setErro('Só funciona no app instalado.'))
+      .catch(() => ativo && setErro(t.soApp))
       .finally(() => ativo && setCarregando(false))
     return () => {
       ativo = false
@@ -97,8 +91,9 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
     try {
       await agendarLembrete({ habitoId: habito.id, nomeHabito: habito.nome, horaMinuto: hora })
       setLembrete(hora)
+      vibrar.leve()
     } catch {
-      setErro('Não deu pra agendar — checa a permissão de notificação do app.')
+      setErro(t.erroAgendar)
     }
   }
 
@@ -108,7 +103,7 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
       await cancelarLembrete(habito.id)
       setLembrete(null)
     } catch {
-      setErro('Não deu pra remover agora.')
+      setErro(t.erroRemover)
     }
   }
 
@@ -120,12 +115,12 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
       </div>
 
       {carregando ? (
-        <p className="mt-2 text-micro text-content-dim">Carregando…</p>
+        <p className="mt-2 text-micro text-content-low">{t.carregando}</p>
       ) : lembrete ? (
         <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="text-sm text-content-mid">Todo dia às {lembrete}</span>
-          <button onClick={() => void remover()} className="text-micro font-bold text-accent-danger">
-            Remover
+          <span className="text-sm text-content-mid">{tc.todoDia(lembrete)}</span>
+          <button onClick={() => void remover()} className="-mr-2 min-h-11 px-3 text-sm font-bold text-content-mid active:text-content-hi">
+            {tc.remover}
           </button>
         </div>
       ) : (
@@ -134,17 +129,18 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
             type="time"
             value={hora}
             onChange={(e) => setHora(e.target.value)}
-            className="rounded-lg border border-surface-4 bg-surface-3 px-2 py-1.5 text-sm text-content-hi"
+            aria-label={tc.horaAria}
+            className="min-h-11 rounded-lg border border-surface-4 bg-surface-3 px-2 text-base text-content-hi"
           />
           <button
             onClick={() => void salvar()}
-            className="flex-1 rounded-lg bg-brand py-1.5 text-sm font-bold text-brand-ink"
+            className="min-h-11 flex-1 rounded-lg bg-brand text-sm font-bold text-brand-ink active:scale-[0.98]"
           >
-            Lembrar
+            {tc.lembrar}
           </button>
         </div>
       )}
-      {erro && <p className="mt-1.5 text-[11px] text-accent-danger">{erro}</p>}
+      {erro && <p role="alert" className="mt-1.5 text-micro text-accent-danger">{erro}</p>}
     </div>
   )
 }

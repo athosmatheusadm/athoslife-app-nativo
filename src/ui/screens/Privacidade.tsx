@@ -5,6 +5,9 @@ import { useSession } from '@app/SessionProvider'
 import { authRepository } from '@data/repositories/authRepository'
 import { privacidadeRepository } from '@data/repositories/privacidadeRepository'
 import { profileRepository } from '@data/repositories/profileRepository'
+import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
+import { useI18n } from '@/i18n/I18nProvider'
+import { avisar, vibrar } from '@ui/feedback'
 
 /**
  * Sub-página "Privacidade e dados" do Perfil.
@@ -19,16 +22,18 @@ export function Privacidade() {
   const { profile, refresh } = useSession()
   const [trocandoHabitos, setTrocandoHabitos] = useState(false)
   const [exportando, setExportando] = useState(false)
-  const [erroExport, setErroExport] = useState<string | null>(null)
+  const [erroExport, setErroExport] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
-  const [erroExclusao, setErroExclusao] = useState<string | null>(null)
+  const [erroExclusao, setErroExclusao] = useState(false)
   const [pedidoEnviado, setPedidoEnviado] = useState(false)
+  const { m } = useI18n()
+  const t = m.perfil.privacidade
 
   if (!profile) return null
 
   async function exportar() {
-    setErroExport(null)
+    setErroExport(false)
     setExportando(true)
     try {
       const dados = await privacidadeRepository.exportarMeusDados()
@@ -40,14 +45,14 @@ export function Privacidade() {
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      setErroExport('Não deu pra gerar a exportação agora. Tenta de novo em instantes.')
+      setErroExport(true)
     } finally {
       setExportando(false)
     }
   }
 
   async function confirmarExclusao() {
-    setErroExclusao(null)
+    setErroExclusao(false)
     setExcluindo(true)
     try {
       await privacidadeRepository.solicitarExclusaoConta('Solicitado pela tela de Privacidade')
@@ -55,29 +60,22 @@ export function Privacidade() {
       await authRepository.sair()
       navigate('/login', { replace: true })
     } catch {
-      setErroExclusao('Não deu pra registrar o pedido agora. Tenta de novo.')
+      setErroExclusao(true)
       setExcluindo(false)
     }
   }
 
   return (
     <main className="pb-24 pt-safe-t">
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <button onClick={() => navigate(-1)} aria-label="Voltar" className="text-content-hi">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-xl font-bold text-content-hi">Privacidade e dados</h1>
-      </header>
+      <CabecalhoSubpagina titulo={t.titulo} />
 
       <section className="mx-5 mt-2 rounded-2xl border border-surface-4 bg-surface-2 p-4">
-        <p className="text-sm font-bold text-content-hi">Consentimento</p>
+        <p className="text-sm font-bold text-content-hi">{t.consentimento}</p>
         <p className="mt-1 text-micro text-content-low">
-          {profile.consentimentoAceito ? 'Você aceitou os termos de uso.' : 'Termos ainda não aceitos.'}
+          {profile.consentimentoAceito ? t.termosAceitos : t.termosNao}
         </p>
         <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="text-micro text-content-low">
-            Acompanhamento de hábitos: {profile.consentimentoHabitos ? 'autorizado' : 'não autorizado'}.
-          </p>
+          <p className="text-micro text-content-low">{t.habitos(profile.consentimentoHabitos)}</p>
           <button
             type="button"
             disabled={trocandoHabitos}
@@ -87,79 +85,74 @@ export function Privacidade() {
               setTrocandoHabitos(true)
               void profileRepository
                 .definirConsentimentoHabitos(!profile.consentimentoHabitos)
-                .then(refresh)
-                .catch(() => {})
+                .then(() => {
+                  vibrar.leve()
+                  return refresh()
+                })
+                .catch(() => avisar.erro(m.perfil.erroSalvar))
                 .finally(() => setTrocandoHabitos(false))
             }}
-            className="flex-none rounded-pill border border-surface-4 px-3 py-1 text-micro font-semibold text-content-mid disabled:opacity-50"
+            className="min-h-11 flex-none rounded-pill border border-surface-4 px-4 text-sm font-semibold text-content-mid active:bg-white/5 disabled:opacity-50"
           >
-            {profile.consentimentoHabitos ? 'Retirar' : 'Autorizar'}
+            {profile.consentimentoHabitos ? t.retirar : t.autorizar}
           </button>
         </div>
       </section>
 
       <section className="mx-5 mt-5">
-        <h2 className="mb-1 text-sm font-bold text-content-hi">Exportar meus dados</h2>
-        <p className="mb-3 text-micro text-content-low">
-          Baixa um arquivo com tudo que a ATHOSlife guarda sobre você: refeições, água, peso, treinos,
-          hábitos, conquistas e favoritos.
-        </p>
+        <h2 className="mb-1 text-sm font-bold text-content-hi">{t.exportarTitulo}</h2>
+        <p className="mb-3 text-micro text-content-low">{t.exportarTexto}</p>
         <button
           type="button"
           onClick={() => void exportar()}
           disabled={exportando}
-          className="w-full rounded-2xl border border-brand/60 py-3 text-sm font-bold text-brand transition-colors active:bg-brand/10 disabled:opacity-50"
+          className="min-h-12 w-full rounded-2xl border border-brand/60 text-sm font-bold text-brand transition-colors active:bg-brand/10 disabled:opacity-50"
         >
-          {exportando ? 'Gerando arquivo…' : '⬇ Baixar meus dados (.json)'}
+          {exportando ? t.gerando : t.baixar}
         </button>
-        {erroExport && <p className="mt-2 text-micro text-accent-danger">{erroExport}</p>}
+        {erroExport && <p role="alert" className="mt-2 text-micro text-accent-danger">{t.erroExport}</p>}
       </section>
 
       <section className="mx-5 mt-8">
-        <h2 className="mb-1 text-sm font-bold text-accent-danger">Excluir minha conta</h2>
-        <p className="mb-3 text-micro text-content-low">
-          Registra seu pedido de exclusão e desconecta você. O apagamento definitivo dos dados é feito
-          manualmente por segurança — não é instantâneo.
-        </p>
+        <h2 className="mb-1 text-sm font-bold text-accent-danger">{t.excluirTitulo}</h2>
+        <p className="mb-3 text-micro text-content-low">{t.excluirTexto}</p>
 
         {pedidoEnviado ? (
           <p className="rounded-xl border border-accent-danger/40 bg-accent-danger/10 p-3 text-micro text-accent-danger">
-            Pedido registrado. Você será desconectado.
+            {t.pedidoOk}
           </p>
         ) : !confirmandoExclusao ? (
           <button
             type="button"
             onClick={() => setConfirmandoExclusao(true)}
-            className="w-full rounded-2xl border border-accent-danger/50 py-3 text-sm font-bold text-accent-danger transition-colors active:bg-accent-danger/10"
+            className="min-h-12 w-full rounded-2xl border border-accent-danger/50 text-sm font-bold text-accent-danger transition-colors active:bg-accent-danger/10"
           >
-            Solicitar exclusão de conta
+            {t.solicitar}
           </button>
         ) : (
           <div className="rounded-2xl border border-accent-danger/50 bg-accent-danger/10 p-4">
-            <p className="text-sm font-semibold text-content-hi">Tem certeza?</p>
-            <p className="mt-1 text-micro text-content-low">
-              Isso não pode ser desfeito por você depois de enviado.
-            </p>
+            <p className="text-sm font-semibold text-content-hi">{t.certeza}</p>
+            <p className="mt-1 text-micro text-content-low">{t.semVolta}</p>
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmandoExclusao(false)}
-                className="flex-1 rounded-xl border border-surface-4 py-2.5 text-sm font-semibold text-content-mid"
+                className="min-h-12 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
               >
-                Cancelar
+                {t.cancelar}
               </button>
               <button
                 type="button"
                 onClick={() => void confirmarExclusao()}
                 disabled={excluindo}
-                className="flex-1 rounded-xl bg-accent-danger py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                className="min-h-12 flex-1 rounded-xl bg-accent-danger text-sm font-bold text-white disabled:opacity-50"
               >
-                {excluindo ? 'Enviando…' : 'Sim, excluir'}
+                {excluindo ? t.enviando : t.simExcluir}
               </button>
             </div>
           </div>
         )}
-        {erroExclusao && <p className="mt-2 text-micro text-accent-danger">{erroExclusao}</p>}
+        {erroExclusao && <p role="alert" className="mt-2 text-micro text-accent-danger">{t.erroExclusao}</p>}
       </section>
     </main>
   )

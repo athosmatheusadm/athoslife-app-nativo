@@ -7,22 +7,9 @@ import {
   type Conquista,
 } from '@domain/entities/conquista'
 import { LifeMascote } from '@ui/components/LifeMascote'
+import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
+import { useI18n } from '@/i18n/I18nProvider'
 
-const NOME_NIVEL: Record<Conquista['nivel'], string> = {
-  bronze: 'Bronze',
-  prata: 'Prata',
-  ouro: 'Ouro',
-  diamante: 'Diamante',
-  lendario: 'Lendário',
-}
-
-const NOME_CATEGORIA: Record<CategoriaConquista, string> = {
-  streak: 'Sequência',
-  treino: 'Treino',
-  dieta: 'Dieta',
-  hidratacao: 'Hidratação',
-  peso: 'Peso',
-}
 
 /**
  * Acervo de conquistas — a galeria que abre da gaveta lateral.
@@ -33,12 +20,15 @@ const NOME_CATEGORIA: Record<CategoriaConquista, string> = {
  */
 export function AchievementsGallery({
   conquistas,
+  estado,
   onVoltar,
 }: {
   conquistas: readonly Conquista[]
+  estado: 'carregando' | 'ok' | 'erro'
   onVoltar: () => void
 }) {
   const { desbloqueadas, total } = resumoAcervo(conquistas)
+  const t = useI18n().m.perfil.conquistas
 
   const categorias = Array.from(
     new Set(conquistas.map((c) => c.categoria)),
@@ -46,37 +36,34 @@ export function AchievementsGallery({
 
   return (
     <main className="pb-24 pt-safe-t">
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3">
-        <button onClick={onVoltar} aria-label="Voltar" className="text-content-hi">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-        </button>
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-bold text-content-hi">
-            🏆 Conquistas
-          </h1>
-          <p className="text-micro text-content-low">
-            {desbloqueadas} de {total} desbloqueadas
-          </p>
-        </div>
-        <LifeMascote humor="conquista" className="ml-auto h-20" />
-      </header>
+      <CabecalhoSubpagina
+        titulo={t.titulo}
+        subtitulo={estado === 'ok' ? t.progresso(desbloqueadas, total) : undefined}
+        onVoltar={onVoltar}
+        direita={<LifeMascote humor="conquista" alt="" className="h-20 flex-none" />}
+      />
+
+      {estado === 'carregando' && <p className="py-10 text-center text-micro text-content-low">{t.carregando}</p>}
+      {estado === 'erro' && <p className="mx-4 rounded-xl bg-surface-2 p-4 text-center text-sm text-content-mid">{t.erro}</p>}
 
       {/* Barra de progresso geral */}
-      <div className="mx-4 mb-5 mt-2">
-        <div className="h-2 overflow-hidden rounded-full bg-surface-4">
-          <div
-            className="h-full rounded-full bg-accent-gold transition-all duration-500 ease-athos"
-            style={{ width: `${total ? (desbloqueadas / total) * 100 : 0}%` }}
-          />
+      {estado === 'ok' && (
+        <div className="mx-4 mb-5 mt-2">
+          <div className="h-2 overflow-hidden rounded-full bg-surface-4">
+            <div
+              className="h-full w-full origin-left rounded-full bg-accent-gold transition-transform duration-500 ease-athos"
+              style={{ transform: `scaleX(${total ? desbloqueadas / total : 0})` }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {categorias.map((cat) => {
         const doGrupo = conquistas.filter((c) => c.categoria === cat)
         return (
           <section key={cat} className="mb-5">
-            <h2 className="mb-2 px-4 text-micro font-bold uppercase tracking-wide text-content-dim">
-              {NOME_CATEGORIA[cat]}
+            <h2 className="mb-2 px-4 text-micro font-bold uppercase tracking-wide text-content-low">
+              {t.categorias[cat]}
             </h2>
             <div className="grid grid-cols-3 gap-3 px-4">
               {doGrupo.map((c) => (
@@ -99,13 +86,16 @@ export function AchievementsGallery({
 function ConquistaCell({ conquista: c }: { conquista: Conquista }) {
   const cor = corCategoria(c.categoria)
   const [aberto, setAberto] = useState(false)
+  const { m, idioma } = useI18n()
+  const t = m.perfil.conquistas
 
   return (
     <button
       type="button"
       onClick={() => setAberto((v) => !v)}
       aria-expanded={aberto}
-      className={`relative flex flex-col items-center rounded-2xl border p-3 text-center transition-colors ${
+      aria-label={c.desbloqueada ? c.titulo : `${c.titulo} — ${t.bloqueada}`}
+      className={`relative flex min-h-28 flex-col items-center rounded-2xl border p-3 text-center transition-colors active:scale-[0.98] ${
         c.desbloqueada ? 'border-surface-4 bg-surface-2' : 'border-surface-4/50 bg-surface-1'
       } ${aberto ? 'col-span-3' : ''}`}
     >
@@ -113,21 +103,21 @@ function ConquistaCell({ conquista: c }: { conquista: Conquista }) {
         <span
           className="absolute right-2 top-2 h-2 w-2 rounded-full"
           style={{ backgroundColor: corNivel(c.nivel) }}
-          aria-label={`Nível ${c.nivel}`}
-          title={c.nivel}
+          aria-hidden="true"
         />
       )}
       <span
         className={`flex h-12 w-12 items-center justify-center rounded-full text-2xl ${
           c.desbloqueada ? '' : 'grayscale'
         }`}
-        style={c.desbloqueada ? { backgroundColor: `${cor}22` } : { backgroundColor: '#1a1a1a' }}
+        style={c.desbloqueada ? { backgroundColor: `${cor}22` } : undefined}
+        aria-hidden="true"
       >
         {c.desbloqueada ? c.icone : '🔒'}
       </span>
       <span
-        className={`mt-1.5 text-[11px] font-semibold leading-tight ${
-          c.desbloqueada ? 'text-content-hi' : 'text-content-dim'
+        className={`mt-1.5 text-micro font-semibold leading-tight ${
+          c.desbloqueada ? 'text-content-hi' : 'text-content-low'
         }`}
       >
         {c.titulo}
@@ -142,19 +132,18 @@ function ConquistaCell({ conquista: c }: { conquista: Conquista }) {
         <div className="mt-2 w-full border-t border-surface-4/50 pt-2 text-left">
           <p className="text-micro leading-snug text-content-mid">{c.descricao}</p>
           <p className="mt-1.5 text-micro font-semibold" style={{ color: corNivel(c.nivel) }}>
-            Nível {NOME_NIVEL[c.nivel]}
+            {t.nivel(t.niveis[c.nivel])}
           </p>
           {c.desbloqueada && c.desbloqueadaEm ? (
-            <p className="mt-1 text-micro text-content-dim">
-              Desbloqueada em{' '}
-              {c.desbloqueadaEm.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+            <p className="mt-1 text-micro text-content-low">
+              {t.desbloqueadaEm(c.desbloqueadaEm.toLocaleDateString(idioma, { day: '2-digit', month: 'long', year: 'numeric' }))}
             </p>
           ) : (
             <>
               <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-4">
                 <div className="h-full rounded-full" style={{ width: `${c.progresso}%`, backgroundColor: cor }} />
               </div>
-              <p className="mt-1 text-micro text-content-dim">{c.progresso}% completo</p>
+              <p className="mt-1 text-micro text-content-low">{t.completo(c.progresso)}</p>
             </>
           )}
         </div>

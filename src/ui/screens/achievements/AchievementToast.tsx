@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { Conquista } from '@domain/entities/conquista'
 import { LifeMascote } from '@ui/components/LifeMascote'
+import { useI18n } from '@/i18n/I18nProvider'
 
 /**
  * Celebração de conquista — o Life DOURADO (modo champion).
@@ -17,6 +18,7 @@ export function AchievementToast(props: {
   onFechar: () => void
 }) {
   const { conquista } = props
+  const t = useI18n().m.perfil.conquistas
 
   useEffect(() => {
     const t = setTimeout(props.onFechar, 6000)
@@ -41,9 +43,7 @@ export function AchievementToast(props: {
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block text-micro font-bold uppercase tracking-wide text-accent-gold">
-            Conquista desbloqueada
-          </span>
+          <span className="block text-micro font-bold uppercase tracking-wide text-accent-gold">{t.toast}</span>
           <span className="block truncate text-base font-bold text-content-hi">
             {conquista.titulo}
           </span>
