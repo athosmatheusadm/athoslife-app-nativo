@@ -338,6 +338,25 @@ export const ptBR = {
       alternativaTitulo: 'Tenta uma dessas 👇',
       alternativaSub: (nome: string) => `Pra trocar ${nome} agora.`,
       consegui: 'Consegui, obrigado!',
+      /** Alternativas concretas por categoria do hábito; `padrao` pras demais. */
+      alternativas: {
+        doce: [
+          'Banana com pasta de amendoim — resolve o doce e ainda tem proteína',
+          'Chá de canela com mel — ajuda a segurar a vontade de açúcar',
+          '2 quadradinhos de chocolate 70% — se precisar mesmo, esse não quebra o ritmo',
+        ],
+        fast_food: [
+          'Um lanche rápido em casa — ovo, pão integral, queijo',
+          'Um copo de água antes — parte da fome é sede disfarçada',
+          'Se for sair mesmo, escolhe o item mais leve do cardápio',
+        ],
+        refrigerante: ['Água com gás e limão — o gás sem o açúcar', 'Chá gelado sem açúcar', 'Um suco natural bem diluído'],
+        padrao: [
+          'Bebe um copo de água e espera uns 5 minutos',
+          'Levanta, anda um pouco, muda de ambiente',
+          'Manda mensagem pra alguém de confiança contando que tá difícil agora',
+        ],
+      },
     },
     novoSheet: {
       fechar: 'Fechar',
@@ -650,6 +669,11 @@ export const ptBR = {
   },
   lembretes: {
     titulo: 'Life',
+    habito: (nome: string) => `Hora de ${nome.toLowerCase()} 🌱`,
+    descansoTitulo: 'Descanso acabou 💪',
+    descansoTexto: 'Bora pra próxima série.',
+    cronometroTitulo: 'Tempo! ✅',
+    cronometroTexto: 'Série concluída.',
     textos: {
       agua: [
         'Ei, bora um copo d’água? 💧',
@@ -777,6 +801,7 @@ export const ptBR = {
     porcoes: 'Porções',
     macrosDe: (n: string) => `Valores de ${n} ${n === '½' || n === '1' || n === '1½' ? 'porção' : 'porções'}`,
     rendimentoBase: (n: number, unidade: string) => `Receita original: ${n} ${unidade}`,
+    unidadePorcao: (n: number) => (n === 1 ? 'porção' : 'porções'),
     conteudoVazio: 'Conteúdo dessa receita ainda não foi cadastrado.',
     exclusivo: 'Essa receita é exclusiva pra assinantes ATHOSlife.',
     verPlanos: 'Ver planos',
@@ -852,6 +877,7 @@ export const ptBR = {
     macroLongo: { proteina: 'Proteína', carbo: 'Carboidratos', gordura: 'Gorduras', calorias: 'Calorias' },
     linhaVazia: 'Toque pra registrar',
     novaRefeicao: '+ Nova refeição',
+    nomeNovaRefeicao: 'Nova refeição',
     erroCarregar: 'Não deu pra carregar o dia.',
     tentarDeNovo: 'Tentar de novo',
     erroSalvar: 'Não deu pra salvar. Confere a internet e tenta de novo.',
@@ -901,6 +927,7 @@ export const ptBR = {
       vazio: 'Nenhum alimento salvo ainda. Toque na ☆ ao adicionar um alimento pra guardá-lo aqui.',
     },
     suplemento: {
+      tipos: { whey: 'Whey Protein', creatina: 'Creatina', albumina: 'Albumina', bcaa: 'BCAA', betaAlanina: 'Beta Alanina', maltodextrina: 'Maltodextrina', dextrose: 'Dextrose', palatinose: 'Palatinose', hipercalorico: 'Hipercalórico', glutamina: 'Glutamina', preTreino: 'Pré-treino', multivitaminico: 'Multivitamínico', omega3: 'Ômega 3', colageno: 'Colágeno', zma: 'ZMA', cafeina: 'Cafeína' },
       titulo: 'Registrar suplemento',
       erro: 'Não deu pra carregar os suplementos agora.',
       carregando: 'Carregando…',
@@ -1005,6 +1032,7 @@ export const ptBR = {
   },
 
   scanner: {
+    rotuloSemPorcao: 'Porção do rótulo não informada — ajuste a quantidade.',
     voltar: 'Voltar',
     titulo: '📷 Escanear comida',
     vaiPra: (nome: string) => `Vai pra: ${nome}`,

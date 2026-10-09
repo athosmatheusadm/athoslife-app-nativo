@@ -25,11 +25,16 @@ export interface ReceitaEstruturada {
   readonly extras: readonly { rotulo: string | null; texto: string }[]
 }
 
-const RE_ROTULO_INGREDIENTES = /^INGREDIENTES/i
-const RE_ROTULO_PREPARO = /PREPARO/i
+// Rótulos em pt, en e es (o conteúdo traduzido segue o mesmo formato).
+const RE_ROTULO_INGREDIENTES = /^(INGREDIENTES|INGREDIENTS)/i
+const RE_ROTULO_PREPARO = /(PREPARO|PREPARATION|PREPARACI[OÓ]N)/i
 const RE_ROTULO_DICA = /LIFE/i
-const RE_ROTULO_PORQUE = /^(POR QUE|SOBRE)/i
-const RE_ROTULO_MONTAGEM = /^(MONTAGEM|PRA SERVIR)/i
+const RE_ROTULO_PORQUE = /^(POR QUE|SOBRE|ABOUT)/i
+const RE_ROTULO_MONTAGEM = /^(MONTAGEM|PRA SERVIR|TO SERVE|MONTAJE)/i
+
+/** Unidade "porção" em qualquer dos 3 idiomas — a tela traduz pra pessoa. */
+export const PORCAO = 'porção'
+const SINONIMOS_PORCAO = new Set(['porção', 'serving', 'porción'])
 
 /** Tira o marcador "- " ou "1. " do começo da linha. */
 function semMarcador(linha: string): string {
@@ -49,10 +54,10 @@ function linhas(texto: string): string[] {
  */
 export function lerRendimento(rotulo: string): { porcoes: number; unidade: string } {
   const m = rotulo.match(/\((\d+(?:[.,]\d+)?)\s*([^)]*)\)/)
-  if (!m) return { porcoes: 1, unidade: 'porção' }
+  if (!m) return { porcoes: 1, unidade: PORCAO }
   const n = Number(m[1]!.replace(',', '.'))
-  const unidade = (m[2] ?? '').trim().replace(/ões$/, 'ão').replace(/s$/, '') || 'porção'
-  return { porcoes: n > 0 ? n : 1, unidade }
+  const singular = (m[2] ?? '').trim().replace(/ões$/, 'ão').replace(/iones$/, 'ión').replace(/s$/, '') || PORCAO
+  return { porcoes: n > 0 ? n : 1, unidade: SINONIMOS_PORCAO.has(singular) ? PORCAO : singular }
 }
 
 /** Quebra o `conteudo` da receita curada nas partes que a tela usa. */
@@ -62,7 +67,7 @@ export function estruturarConteudo(conteudo: string): ReceitaEstruturada {
   let ingredientes: string[] = []
   let preparo: string[] = []
   let montagem: string[] = []
-  let rendimento = { porcoes: 1, unidade: 'porção' }
+  let rendimento = { porcoes: 1, unidade: PORCAO }
   const extras: { rotulo: string | null; texto: string }[] = []
 
   for (const bloco of formatarConteudo(conteudo)) {
@@ -101,7 +106,7 @@ export function estruturarGerada(r: ReceitaGerada): ReceitaEstruturada {
   return {
     porque: r.subtitulo || null,
     porcoesBase: n > 0 ? n : 1,
-    unidadePorcao: 'porção',
+    unidadePorcao: PORCAO,
     ingredientes: [...r.ingredientes],
     preparo: [...r.modoPreparo],
     montagem: [],

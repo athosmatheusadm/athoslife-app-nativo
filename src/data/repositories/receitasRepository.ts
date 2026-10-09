@@ -1,6 +1,8 @@
 import { supabase } from '@data/supabase/client'
 import type { CategoriaReceita, Receita } from '@domain/entities/receita'
 import type { Macros } from '@domain/entities/food'
+import { localidadeAtual } from '@data/localidadeAtual'
+import { texto, traducoesDe } from '@data/traducoesConteudo'
 
 /** Linha crua de receitas_cozinha. */
 interface ReceitaRow {
@@ -31,11 +33,11 @@ function macrosDe(row: ReceitaRow): Macros {
  * Converte linha -> domínio. `bloqueada` e `favoritada` são decididos
  * depois, no serviço, porque dependem do perfil e das favoritas.
  */
-function paraDominio(row: ReceitaRow): Omit<Receita, 'bloqueada' | 'favoritada'> {
+function paraDominio(row: ReceitaRow, trad: Record<string, unknown> = {}): Omit<Receita, 'bloqueada' | 'favoritada'> {
   return {
     id: row.id,
-    titulo: row.titulo,
-    subtitulo: row.subtitulo,
+    titulo: texto(trad, 'titulo', row.titulo),
+    subtitulo: texto(trad, 'subtitulo', row.subtitulo),
     categoria: row.categoria as CategoriaReceita,
     macros: macrosDe(row),
     tempoPreparoMin: row.tempo_preparo_min ?? null,
@@ -53,6 +55,19 @@ const COLUNAS_VITRINE =
 
 export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada'>
 
+/**
+ * Modo de preparo liberado pro plano da pessoa, no idioma dela. Se o banco
+ * ainda tem a RPC antiga (sem p_idioma), cai na chamada sem argumento (pt).
+ */
+async function conteudoLiberado() {
+  const { idioma } = localidadeAtual()
+  if (idioma === 'en' || idioma === 'es') {
+    const r = await supabase.rpc('receitas_conteudo_liberado', { p_idioma: idioma })
+    if (!r.error) return r
+  }
+  return supabase.rpc('receitas_conteudo_liberado')
+}
+
 /** Único ponto que conhece receitas_cozinha e receitas_favoritas. */
 export const receitasRepository = {
   /**
@@ -62,20 +77,21 @@ export const receitasRepository = {
    * (db/athoslife_limites_gratis_servidor_migration.sql).
    */
   async listar(): Promise<ReceitaCrua[]> {
-    const [vitrine, liberadas] = await Promise.all([
+    const [vitrine, liberadas, trad] = await Promise.all([
       supabase
         .from('receitas_cozinha')
         .select(COLUNAS_VITRINE)
         .order('ordem')
         .returns<Omit<ReceitaRow, 'conteudo'>[]>(),
-      supabase.rpc('receitas_conteudo_liberado'),
+      conteudoLiberado(),
+      traducoesDe('receitas_cozinha'),
     ])
     if (vitrine.error) throw vitrine.error
     if (liberadas.error) throw liberadas.error
     const linhas = (liberadas.data ?? []) as Array<{ id: string; conteudo: string | null }>
     const conteudoPorId = new Map(linhas.map((r) => [r.id, r.conteudo]))
     return (vitrine.data ?? []).map((row) =>
-      paraDominio({ ...row, conteudo: conteudoPorId.get(row.id) ?? null }),
+      paraDominio({ ...row, conteudo: conteudoPorId.get(row.id) ?? null }, trad(row.id)),
     )
   },
 

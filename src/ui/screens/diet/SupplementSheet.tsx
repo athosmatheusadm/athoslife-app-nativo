@@ -16,35 +16,48 @@ interface Grupo {
  * Agrupa por tipo (Whey, Creatina...) em vez de listar toda marca solta —
  * a base tem ~20 variantes só de Whey (Growth/Max Titanium/Integralmedica/
  * Dux...), listar cada uma como card próprio no carrossel deixava
- * repetitivo. Heurística por palavra-chave (mesma disciplina do
- * emojiGrupo abaixo): sem coluna de "tipo" na tabela `alimentos`, então
- * isso é aproximado — cai no nome inteiro quando não reconhece nada.
+ * repetitivo. Heurística por palavra-chave, nos 3 idiomas (o nome já chega
+ * traduzido do repositório): sem coluna de "tipo" na tabela `alimentos`,
+ * então isso é aproximado — cai no nome inteiro quando não reconhece nada.
  */
-function grupoDe(nome: string): string {
+const TIPOS: readonly { chave: TipoSuplemento; palavras: readonly string[]; emoji: string }[] = [
+  { chave: 'whey', palavras: ['whey'], emoji: '🥛' },
+  { chave: 'creatina', palavras: ['creatin'], emoji: '💊' },
+  { chave: 'albumina', palavras: ['albumin', 'albúmin', 'egg white protein'], emoji: '🥛' },
+  { chave: 'bcaa', palavras: ['bcaa'], emoji: '🧪' },
+  { chave: 'betaAlanina', palavras: ['beta alanin', 'beta-alanin'], emoji: '🧪' },
+  { chave: 'maltodextrina', palavras: ['maltodextrin'], emoji: '⚡' },
+  { chave: 'dextrose', palavras: ['dextros'], emoji: '⚡' },
+  { chave: 'palatinose', palavras: ['palatinos'], emoji: '⚡' },
+  { chave: 'hipercalorico', palavras: ['hipercal', 'mass gainer', 'ganador de peso'], emoji: '🥤' },
+  { chave: 'glutamina', palavras: ['glutamin'], emoji: '💊' },
+  { chave: 'preTreino', palavras: ['pré-treino', 'pre-treino', 'pre-workout', 'preentreno', 'pre-entreno'], emoji: '⚡' },
+  { chave: 'multivitaminico', palavras: ['multivitam'], emoji: '🌡️' },
+  { chave: 'omega3', palavras: ['ômega', 'omega'], emoji: '🐟' },
+  { chave: 'colageno', palavras: ['colágeno', 'colageno', 'collagen'], emoji: '✨' },
+  { chave: 'zma', palavras: ['zma'], emoji: '🌙' },
+  { chave: 'cafeina', palavras: ['cafeína', 'cafeina', 'caffeine'], emoji: '☕' },
+]
+
+type TipoSuplemento =
+  | 'whey' | 'creatina' | 'albumina' | 'bcaa' | 'betaAlanina' | 'maltodextrina' | 'dextrose' | 'palatinose'
+  | 'hipercalorico' | 'glutamina' | 'preTreino' | 'multivitaminico' | 'omega3' | 'colageno' | 'zma' | 'cafeina'
+
+function tipoDe(nome: string) {
   const n = nome.toLowerCase()
-  if (n.startsWith('whey')) return 'Whey Protein'
-  if (n.startsWith('creatina')) return 'Creatina'
-  if (n.startsWith('albumina')) return 'Albumina'
-  if (n.startsWith('bcaa')) return 'BCAA'
-  if (n.startsWith('beta alanina')) return 'Beta Alanina'
-  if (n.startsWith('maltodextrina')) return 'Maltodextrina'
-  if (n.startsWith('dextrose')) return 'Dextrose'
-  if (n.startsWith('palatinose')) return 'Palatinose'
-  if (n.startsWith('hipercal')) return 'Hipercalórico'
-  if (n.startsWith('glutamina')) return 'Glutamina'
-  if (n.startsWith('pré-treino') || n.startsWith('pre-treino')) return 'Pré-treino'
-  if (n.startsWith('multivitamínico') || n.startsWith('multivitaminico')) return 'Multivitamínico'
-  if (n.startsWith('ômega') || n.startsWith('omega')) return 'Ômega 3'
-  if (n.startsWith('colágeno') || n.startsWith('colageno')) return 'Colágeno'
-  if (n.startsWith('zma')) return 'ZMA'
-  if (n.startsWith('cafeína') || n.startsWith('cafeina')) return 'Cafeína'
-  return nome
+  return TIPOS.find((t) => t.palavras.some((p) => n.startsWith(p) || n.includes(` ${p}`)))
 }
 
-function agrupar(lista: readonly AlimentoBase[]): Grupo[] {
+/** Nome do grupo no idioma da pessoa; sem tipo reconhecido, o próprio nome. */
+function grupoDe(nome: string, rotulos: Record<TipoSuplemento, string>): string {
+  const tipo = tipoDe(nome)
+  return tipo ? rotulos[tipo.chave] : nome
+}
+
+function agrupar(lista: readonly AlimentoBase[], rotulos: Record<TipoSuplemento, string>): Grupo[] {
   const mapa = new Map<string, AlimentoBase[]>()
   for (const a of lista) {
-    const chave = grupoDe(a.nome)
+    const chave = grupoDe(a.nome, rotulos)
     const atual = mapa.get(chave) ?? []
     atual.push(a)
     mapa.set(chave, atual)
@@ -92,7 +105,7 @@ export function SupplementSheet(props: {
     }
   }, [])
 
-  const grupos = useMemo(() => (suplementos ? agrupar(suplementos) : []), [suplementos])
+  const grupos = useMemo(() => (suplementos ? agrupar(suplementos, t.tipos) : []), [suplementos, t.tipos])
 
   const gruposFiltrados = useMemo(() => {
     const t = termo.trim().toLowerCase()
@@ -316,7 +329,7 @@ function DoseSuplemento(props: {
       </div>
 
       <div className="mt-2 text-center">
-        <span className="text-5xl">{emojiGrupo(grupoDe(alimento.nome))}</span>
+        <span className="text-5xl">{emojiGrupo(alimento.nome)}</span>
         <p className="mt-2 text-micro font-bold uppercase tracking-wide text-content-low">{t.rotulo}</p>
         <h3 className="mt-1 text-2xl font-extrabold text-content-hi">{alimento.nome}</h3>
       </div>
@@ -356,17 +369,5 @@ function DoseSuplemento(props: {
 
 /** Emoji por palavra-chave do nome do grupo — a base não tem coluna de ícone. */
 function emojiGrupo(nome: string): string {
-  const n = nome.toLowerCase()
-  if (n.includes('whey') || n.includes('albumina')) return '🥛'
-  if (n.includes('creatina') || n.includes('glutamina')) return '💊'
-  if (n.includes('bcaa') || n.includes('alanina')) return '🧪'
-  if (n.includes('hipercal')) return '🥤'
-  if (n.includes('malto') || n.includes('dextrose') || n.includes('palatinose')) return '⚡'
-  if (n.includes('pré-treino') || n.includes('pre-treino')) return '⚡'
-  if (n.includes('multivitamínico') || n.includes('multivitaminico')) return '🌡️'
-  if (n.includes('ômega') || n.includes('omega')) return '🐟'
-  if (n.includes('colágeno') || n.includes('colageno')) return '✨'
-  if (n.includes('zma')) return '🌙'
-  if (n.includes('cafeína') || n.includes('cafeina')) return '☕'
-  return '💊'
+  return tipoDe(nome)?.emoji ?? '💊'
 }

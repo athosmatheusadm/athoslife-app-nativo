@@ -1,7 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Preferences } from '@capacitor/preferences'
-import { localidadeAtual } from '@data/localidadeAtual'
 import { lifePausadoHoje, ultimaConversaComLife } from '@data/lifePausa'
 import { contatoRepository } from '@data/repositories/contatoRepository'
 import { sincronizarLembretesHabito } from './habitReminders'
@@ -23,10 +22,8 @@ import {
   type TipoLembrete,
   type TipoRefeicaoLembrete,
 } from '@domain/rules/lembretesDiarios'
-import { ptBR } from '@/i18n/mensagens/pt-BR'
-import { en } from '@/i18n/mensagens/en'
-import { es } from '@/i18n/mensagens/es'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
+import { mensagensAtuais } from '@/i18n/dicionarios'
 
 /**
  * Agenda no aparelho os lembretes do dia calculados em
@@ -40,8 +37,6 @@ import type { Mensagens } from '@/i18n/mensagens/tipo'
 const CHAVE = 'athoslife:lembretes-diarios'
 const ID_BASE = 920_000
 const ID_FIM = 930_000
-
-const DICIONARIOS: Record<string, Mensagens> = { 'pt-BR': ptBR, en, es }
 
 const ROTA: Record<TipoLembrete, string> = {
   agua: '/home',
@@ -179,7 +174,7 @@ async function replanejarAgora(metaAguaMl: number): Promise<void> {
   })
   if (planejados.length === 0) return
 
-  const m = DICIONARIOS[localidadeAtual().idioma] ?? ptBR
+  const m = mensagensAtuais()
   // Água repete várias vezes no dia: cada horário pega uma frase diferente.
   const contagem = new Map<TipoLembrete, number>()
   await LocalNotifications.schedule({

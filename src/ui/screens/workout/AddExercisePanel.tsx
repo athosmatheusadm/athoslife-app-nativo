@@ -84,7 +84,7 @@ export function AddExercisePanel(props: {
         </div>
       </div>
 
-      <div className="mb-2 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="mb-2 flex gap-2 overflow-x-auto sem-barra px-4 pb-1">
         <Chip rotulo={t.todos} ativo={grupo === 'todos'} onClick={() => setGrupo('todos')} />
         {gruposDisponiveis.map((g) => (
           <Chip key={g} rotulo={rotuloGrupo(g)} ativo={grupo === g} onClick={() => setGrupo(g)} />

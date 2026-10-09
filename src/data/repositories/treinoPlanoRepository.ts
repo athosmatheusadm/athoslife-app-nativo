@@ -1,33 +1,14 @@
 import { supabase } from '@data/supabase/client'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
+import { exercicioParaDominio, type CatalogoRow } from '@data/repositories/exercicioCatalogoRepository'
+import { traducoesDe } from '@data/traducoesConteudo'
 import {
   hojeISO,
   type DiaSemana,
-  type ExercicioCatalogo,
   type ExercicioPlano,
   type LocalTreino,
-  type MedidaSerie,
-  type NivelTreino,
   type SerieDetalhe,
 } from '@domain/entities/treino'
-
-interface CatalogoRow {
-  id: string
-  nome: string
-  grupo_muscular: ExercicioCatalogo['grupoMuscular']
-  musculos_trabalhados: string | null
-  ambientes: LocalTreino[]
-  icone_url: string | null
-  imagem_url: string | null
-  prancha_url: string | null
-  como_executar: string[]
-  series_padrao: number
-  repeticoes_padrao: number
-  medida: MedidaSerie | null
-  segundos_padrao: number | null
-  dica: string | null
-  nivel_minimo?: NivelTreino | null
-}
 
 interface SerieRow {
   reps: number | null
@@ -45,7 +26,7 @@ interface PlanoRow {
   exercicios_catalogo: CatalogoRow
 }
 
-function paraDominio(r: PlanoRow): ExercicioPlano {
+function paraDominio(r: PlanoRow, trad: (id: string) => Record<string, unknown>): ExercicioPlano {
   const c = r.exercicios_catalogo
   return {
     id: r.id,
@@ -54,23 +35,7 @@ function paraDominio(r: PlanoRow): ExercicioPlano {
     series: r.series_detalhe.map((s) => ({ reps: s.reps, cargaKg: s.carga_kg, segundos: s.segundos ?? null })),
     ordem: r.ordem,
     concluidoHoje: r.concluido_em === hojeISO(),
-    exercicio: {
-      id: c.id,
-      nome: c.nome,
-      grupoMuscular: c.grupo_muscular,
-      musculosTrabalhados: c.musculos_trabalhados,
-      ambientes: c.ambientes,
-      iconeUrl: c.icone_url,
-      imagemUrl: c.imagem_url,
-      pranchaUrl: c.prancha_url,
-      comoExecutar: c.como_executar,
-      seriesPadrao: c.series_padrao,
-      repeticoesPadrao: c.repeticoes_padrao,
-      medida: c.medida ?? 'reps',
-      segundosPadrao: c.segundos_padrao,
-      dica: c.dica,
-      nivelMinimo: c.nivel_minimo ?? 'iniciante',
-    },
+    exercicio: exercicioParaDominio(c, trad(c.id)),
   }
 }
 
@@ -93,7 +58,8 @@ export const treinoPlanoRepository = {
       .order('ordem', { ascending: true })
       .returns<PlanoRow[]>()
     if (error) throw error
-    return (data ?? []).map(paraDominio)
+    const trad = await traducoesDe('exercicios_catalogo')
+    return (data ?? []).map((r) => paraDominio(r, trad))
   },
 
   /** Dias da semana que têm pelo menos um exercício na ficha (qualquer local) — lembrete de treino. */
@@ -137,7 +103,7 @@ export const treinoPlanoRepository = {
       .single<PlanoRow>()
     if (error) throw error
     avisarRegistroDoDia()
-    return paraDominio(data)
+    return paraDominio(data, await traducoesDe('exercicios_catalogo'))
   },
 
   async atualizarSeries(id: string, series: readonly SerieDetalhe[]): Promise<void> {

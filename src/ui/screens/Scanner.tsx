@@ -144,7 +144,7 @@ export function Scanner() {
         return
       }
       setImagemProduto(produto.imagemUrl)
-      setRascunho(foodCaptureService.rascunhoDeProduto(produto))
+      setRascunho(foodCaptureService.rascunhoDeProduto(produto, t.rotuloSemPorcao))
       setDigitando(false)
       setCodigoDigitado('')
       setEtapa('revisao')

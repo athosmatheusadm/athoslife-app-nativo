@@ -329,6 +329,24 @@ export const en: Mensagens = {
       alternativaTitulo: 'Try one of these 👇',
       alternativaSub: (nome: string) => `To swap ${nome} right now.`,
       consegui: 'I did it, thanks!',
+      alternativas: {
+        doce: [
+          'Banana with peanut butter — handles the sweet tooth and adds protein',
+          'Cinnamon tea with honey — helps hold off the sugar craving',
+          '2 small squares of 70% dark chocolate — if you really need it, this one won’t break your rhythm',
+        ],
+        fast_food: [
+          'A quick snack at home — egg, whole-grain bread, cheese',
+          'A glass of water first — part of hunger is thirst in disguise',
+          'If you’re going out anyway, pick the lightest item on the menu',
+        ],
+        refrigerante: ['Sparkling water with lemon — the fizz without the sugar', 'Unsweetened iced tea', 'A well-diluted fresh juice'],
+        padrao: [
+          'Drink a glass of water and wait about 5 minutes',
+          'Get up, walk a little, change rooms',
+          'Text someone you trust and tell them it’s hard right now',
+        ],
+      },
     },
     novoSheet: {
       fechar: 'Close',
@@ -641,6 +659,11 @@ export const en: Mensagens = {
   },
   lembretes: {
     titulo: 'Life',
+    habito: (nome: string) => `Time for: ${nome.toLowerCase()} 🌱`,
+    descansoTitulo: 'Rest is over 💪',
+    descansoTexto: 'On to the next set.',
+    cronometroTitulo: 'Time! ✅',
+    cronometroTexto: 'Set done.',
     textos: {
       agua: [
         'Hey, how about a glass of water? 💧',
@@ -768,6 +791,7 @@ export const en: Mensagens = {
     porcoes: 'Servings',
     macrosDe: (n: string) => `Values for ${n} serving${n === '1' || n === '½' ? '' : 's'}`,
     rendimentoBase: (n: number, unidade: string) => `Original recipe: ${n} ${unidade}`,
+    unidadePorcao: (n: number) => (n === 1 ? 'serving' : 'servings'),
     conteudoVazio: "This recipe's content hasn't been added yet.",
     exclusivo: 'This recipe is for ATHOSlife subscribers.',
     verPlanos: 'See plans',
@@ -843,6 +867,7 @@ export const en: Mensagens = {
     macroLongo: { proteina: 'Protein', carbo: 'Carbs', gordura: 'Fat', calorias: 'Calories' },
     linhaVazia: 'Tap to log',
     novaRefeicao: '+ New meal',
+    nomeNovaRefeicao: 'New meal',
     erroCarregar: "Couldn't load this day.",
     tentarDeNovo: 'Try again',
     erroSalvar: "Couldn't save. Check your connection and try again.",
@@ -892,6 +917,7 @@ export const en: Mensagens = {
       vazio: 'No saved foods yet. Tap the ☆ when adding a food to keep it here.',
     },
     suplemento: {
+      tipos: { whey: 'Whey Protein', creatina: 'Creatine', albumina: 'Albumin', bcaa: 'BCAA', betaAlanina: 'Beta-alanine', maltodextrina: 'Maltodextrin', dextrose: 'Dextrose', palatinose: 'Palatinose', hipercalorico: 'Mass gainer', glutamina: 'Glutamine', preTreino: 'Pre-workout', multivitaminico: 'Multivitamin', omega3: 'Omega 3', colageno: 'Collagen', zma: 'ZMA', cafeina: 'Caffeine' },
       titulo: 'Log supplement',
       erro: "Couldn't load supplements right now.",
       carregando: 'Loading…',
@@ -996,6 +1022,7 @@ export const en: Mensagens = {
   },
 
   scanner: {
+    rotuloSemPorcao: 'The label has no serving size — adjust the amount.',
     voltar: 'Back',
     titulo: '📷 Scan food',
     vaiPra: (nome: string) => `Goes to: ${nome}`,

@@ -1,7 +1,8 @@
 import { supabase } from '@data/supabase/client'
+import { lista, texto, traducoesDe } from '@data/traducoesConteudo'
 import type { ExercicioCatalogo, GrupoMuscular, LocalTreino, MedidaSerie, NivelTreino } from '@domain/entities/treino'
 
-interface Row {
+export interface CatalogoRow {
   id: string
   nome: string
   grupo_muscular: GrupoMuscular
@@ -19,22 +20,23 @@ interface Row {
   nivel_minimo?: NivelTreino | null
 }
 
-function paraDominio(r: Row): ExercicioCatalogo {
+export function exercicioParaDominio(r: CatalogoRow, trad: Record<string, unknown> = {}): ExercicioCatalogo {
   return {
     id: r.id,
-    nome: r.nome,
+    nome: texto(trad, 'nome', r.nome),
+    nomeBase: r.nome,
     grupoMuscular: r.grupo_muscular,
-    musculosTrabalhados: r.musculos_trabalhados,
+    musculosTrabalhados: texto(trad, 'musculos_trabalhados', r.musculos_trabalhados),
     ambientes: r.ambientes,
     iconeUrl: r.icone_url,
     imagemUrl: r.imagem_url,
     pranchaUrl: r.prancha_url,
-    comoExecutar: r.como_executar,
+    comoExecutar: lista(trad, 'como_executar', r.como_executar),
     seriesPadrao: r.series_padrao,
     repeticoesPadrao: r.repeticoes_padrao,
     medida: r.medida ?? 'reps',
     segundosPadrao: r.segundos_padrao,
-    dica: r.dica,
+    dica: texto(trad, 'dica', r.dica),
     nivelMinimo: r.nivel_minimo ?? 'iniciante',
   }
 }
@@ -56,8 +58,8 @@ export const exercicioCatalogoRepository = {
 
     if (filtro?.grupoMuscular) query = query.eq('grupo_muscular', filtro.grupoMuscular)
 
-    const { data, error } = await query.returns<Row[]>()
+    const [{ data, error }, trad] = await Promise.all([query.returns<CatalogoRow[]>(), traducoesDe('exercicios_catalogo')])
     if (error) throw error
-    return (data ?? []).map(paraDominio)
+    return (data ?? []).map((r) => exercicioParaDominio(r, trad(r.id)))
   },
 }

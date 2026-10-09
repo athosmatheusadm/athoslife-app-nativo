@@ -329,6 +329,24 @@ export const es: Mensagens = {
       alternativaTitulo: 'Prueba una de estas 👇',
       alternativaSub: (nome: string) => `Para cambiar ${nome} ahora.`,
       consegui: '¡Lo logré, gracias!',
+      alternativas: {
+        doce: [
+          'Plátano con mantequilla de maní — calma el antojo dulce y además aporta proteína',
+          'Té de canela con miel — ayuda a aguantar las ganas de azúcar',
+          '2 cuadritos de chocolate 70% — si de verdad lo necesitas, este no rompe tu ritmo',
+        ],
+        fast_food: [
+          'Un bocadillo rápido en casa — huevo, pan integral, queso',
+          'Un vaso de agua antes — parte del hambre es sed disfrazada',
+          'Si vas a salir igual, elige lo más ligero del menú',
+        ],
+        refrigerante: ['Agua con gas y limón — el gas sin el azúcar', 'Té helado sin azúcar', 'Un jugo natural bien diluido'],
+        padrao: [
+          'Toma un vaso de agua y espera unos 5 minutos',
+          'Levántate, camina un poco, cambia de ambiente',
+          'Escríbele a alguien de confianza y cuéntale que ahora está difícil',
+        ],
+      },
     },
     novoSheet: {
       fechar: 'Cerrar',
@@ -641,6 +659,11 @@ export const es: Mensagens = {
   },
   lembretes: {
     titulo: 'Life',
+    habito: (nome: string) => `Hora de: ${nome.toLowerCase()} 🌱`,
+    descansoTitulo: 'Se acabó el descanso 💪',
+    descansoTexto: 'Vamos a la siguiente serie.',
+    cronometroTitulo: '¡Tiempo! ✅',
+    cronometroTexto: 'Serie completada.',
     textos: {
       agua: [
         'Oye, ¿un vaso de agua? 💧',
@@ -768,6 +791,7 @@ export const es: Mensagens = {
     porcoes: 'Porciones',
     macrosDe: (n: string) => `Valores de ${n} porci${n === '1' || n === '½' ? 'ón' : 'ones'}`,
     rendimentoBase: (n: number, unidade: string) => `Receta original: ${n} ${unidade}`,
+    unidadePorcao: (n: number) => (n === 1 ? 'porción' : 'porciones'),
     conteudoVazio: 'El contenido de esta receta todavía no fue cargado.',
     exclusivo: 'Esta receta es exclusiva para suscriptores de ATHOSlife.',
     verPlanos: 'Ver planes',
@@ -843,6 +867,7 @@ export const es: Mensagens = {
     macroLongo: { proteina: 'Proteína', carbo: 'Carbohidratos', gordura: 'Grasas', calorias: 'Calorías' },
     linhaVazia: 'Toca para registrar',
     novaRefeicao: '+ Nueva comida',
+    nomeNovaRefeicao: 'Nueva comida',
     erroCarregar: 'No se pudo cargar el día.',
     tentarDeNovo: 'Intentar de nuevo',
     erroSalvar: 'No se pudo guardar. Revisa la conexión e intenta de nuevo.',
@@ -892,6 +917,7 @@ export const es: Mensagens = {
       vazio: 'Todavía no guardaste alimentos. Toca la ☆ al agregar uno para tenerlo aquí.',
     },
     suplemento: {
+      tipos: { whey: 'Whey Protein', creatina: 'Creatina', albumina: 'Albúmina', bcaa: 'BCAA', betaAlanina: 'Beta-alanina', maltodextrina: 'Maltodextrina', dextrose: 'Dextrosa', palatinose: 'Palatinosa', hipercalorico: 'Ganador de peso', glutamina: 'Glutamina', preTreino: 'Pre-entreno', multivitaminico: 'Multivitamínico', omega3: 'Omega 3', colageno: 'Colágeno', zma: 'ZMA', cafeina: 'Cafeína' },
       titulo: 'Registrar suplemento',
       erro: 'No se pudieron cargar los suplementos ahora.',
       carregando: 'Cargando…',
@@ -996,6 +1022,7 @@ export const es: Mensagens = {
   },
 
   scanner: {
+    rotuloSemPorcao: 'La etiqueta no indica la porción — ajusta la cantidad.',
     voltar: 'Volver',
     titulo: '📷 Escanear comida',
     vaiPra: (nome: string) => `Va a: ${nome}`,

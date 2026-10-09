@@ -54,7 +54,10 @@ export const GRUPOS_MUSCULARES: ReadonlyArray<{ id: GrupoMuscular; rotulo: strin
 /** Conteúdo curado do catálogo — igual pra todo mundo, não pertence a um usuário. */
 export interface ExercicioCatalogo {
   readonly id: string
+  /** Nome no idioma da pessoa (o que a tela mostra). */
   readonly nome: string
+  /** Nome original em pt — chave estável pras regras (gerador de treino). */
+  readonly nomeBase: string
   readonly grupoMuscular: GrupoMuscular
   readonly musculosTrabalhados: string | null
   readonly ambientes: readonly LocalTreino[]

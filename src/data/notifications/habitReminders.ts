@@ -1,5 +1,6 @@
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Preferences } from '@capacitor/preferences'
+import { mensagensAtuais } from '@/i18n/dicionarios'
 
 /**
  * Camada 1 (regra fixa, "burra, mas nunca falha") do modelo de notificações
@@ -63,7 +64,7 @@ export async function agendarLembrete(params: {
       {
         id,
         title: 'Athos',
-        body: `Hora de ${params.nomeHabito.toLowerCase()} 🌱`,
+        body: mensagensAtuais().lembretes.habito(params.nomeHabito),
         schedule: { on: { hour, minute }, allowWhileIdle: true },
       },
     ],

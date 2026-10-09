@@ -210,7 +210,7 @@ export function DietScreen(props: {
     let ativo = true
     void (async () => {
       try {
-        const nova = await itensRefeicaoRepository.criarExtra(diaSel)
+        const nova = await itensRefeicaoRepository.criarExtra(diaSel, m.dieta.nomeNovaRefeicao)
         if (!ativo) return
         await carregarDia(diaSel)
         setSheetChave(nova.id)
@@ -228,7 +228,7 @@ export function DietScreen(props: {
 
   async function criarExtraInline() {
     try {
-      const nova = await itensRefeicaoRepository.criarExtra(diaSel)
+      const nova = await itensRefeicaoRepository.criarExtra(diaSel, m.dieta.nomeNovaRefeicao)
       await carregarDia(diaSel)
       setSheetChave(nova.id)
     } catch (e) {
@@ -357,7 +357,7 @@ export function DietScreen(props: {
       </div>
 
       {/* TIRA DE DIAS — padrão Hoje */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="-mx-4 flex gap-2 overflow-x-auto sem-barra px-4 pb-1">
         {tira.map((d) => {
           const sel = d.data.toDateString() === diaSel.toDateString()
           return (

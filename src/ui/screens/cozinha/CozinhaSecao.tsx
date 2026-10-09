@@ -84,7 +84,7 @@ export function CozinhaSecao(props: {
           <p className="mb-2 px-1 text-micro text-content-low">
             {t.fechamDiaSub(Math.round(props.restante.calorias), Math.round(props.restante.proteina))}
           </p>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-3 overflow-x-auto sem-barra pb-1">
             {sugestoes.map((r) => (
               <CardReceita key={r.id} receita={r} onAbrir={() => abrir(r.id)} onFavoritar={() => favoritar(r)} />
             ))}
@@ -94,7 +94,7 @@ export function CozinhaSecao(props: {
 
       {receitas && receitas.length > 0 && (
         <div className="space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto sem-barra pb-1">
             <Chip ativo={filtro === 'todos'} onClick={() => setFiltro('todos')}>{t.todas}</Chip>
             {CATEGORIAS_RECEITA.map((cat) => (
               <Chip key={cat} ativo={filtro === cat} cor={CATEGORIA_META[cat].cor} onClick={() => setFiltro(cat)}>
@@ -102,7 +102,7 @@ export function CozinhaSecao(props: {
               </Chip>
             ))}
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-3 overflow-x-auto sem-barra pb-1">
             {filtradas.map((r) => (
               <CardReceita key={r.id} receita={r} onAbrir={() => abrir(r.id)} onFavoritar={() => favoritar(r)} />
             ))}
@@ -113,7 +113,7 @@ export function CozinhaSecao(props: {
       {criacoes.length > 0 && (
         <div>
           <h3 className="mb-2 px-1 text-sm font-bold text-content-hi">{t.minhasCriacoes}</h3>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-3 overflow-x-auto sem-barra pb-1">
             {criacoes.map((c) => (
               <CardCriacao key={c.id} criacao={c} onAbrir={() => navigate(`/dieta/cozinha/criacao/${c.id}`)} />
             ))}

@@ -31,6 +31,7 @@ import {
   type SessaoTreino,
 } from '@domain/entities/sessaoTreino'
 import type { DiaSemana, ExercicioPlano, LocalTreino } from '@domain/entities/treino'
+import { mensagensAtuais } from '@/i18n/dicionarios'
 
 /**
  * Dono da sessão de "treino em andamento" no app inteiro — não da tela.
@@ -91,12 +92,13 @@ async function agendarAviso(s: SessaoTreino | null): Promise<void> {
   if (!s) return
   const fim = s.status === 'descanso' ? s.descansoFimEm : s.status === 'cronometro' ? s.cronometroFimEm : null
   if (fim === null || fim <= Date.now() + 1000) return
+  const m = mensagensAtuais()
   await LocalNotifications.schedule({
     notifications: [
       {
         id: ID_AVISO,
-        title: s.status === 'descanso' ? 'Descanso acabou 💪' : 'Tempo! ✅',
-        body: s.status === 'descanso' ? 'Bora pra próxima série.' : 'Série concluída.',
+        title: s.status === 'descanso' ? m.lembretes.descansoTitulo : m.lembretes.cronometroTitulo,
+        body: s.status === 'descanso' ? m.lembretes.descansoTexto : m.lembretes.cronometroTexto,
         schedule: { at: new Date(fim), allowWhileIdle: true },
       },
     ],

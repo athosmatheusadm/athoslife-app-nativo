@@ -25,21 +25,4 @@ export const HUMORES: ReadonlyArray<{ nivel: NivelHumor; emoji: string }> = [
   { nivel: 5, emoji: '😄' },
 ]
 
-/**
- * Resposta acolhedora conforme o humor. Reconhece o que a pessoa sente
- * sem forçar positividade — dia difícil é acolhido, não "consertado".
- */
-export function respostaHumor(nivel: NivelHumor): string {
-  switch (nivel) {
-    case 1:
-      return 'Anotado. Dias difíceis também fazem parte — tô aqui com você.'
-    case 2:
-      return 'Obrigado por compartilhar. Vamos com calma hoje.'
-    case 3:
-      return 'Anotado! Um dia de cada vez.'
-    case 4:
-      return 'Que bom te ver assim! Bora manter o ritmo.'
-    case 5:
-      return 'Adorei essa energia! Segura essa onda 🔥'
-  }
-}
+// Respostas ao humor moram no i18n: m.home.humor.respostas.

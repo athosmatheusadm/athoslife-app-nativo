@@ -267,7 +267,7 @@ export const itensRefeicaoRepository = {
   },
 
   /** Cria uma refeição extra nova, sempre no fim da lista do dia (maior ordem + 10). */
-  async criarExtra(data: Date): Promise<RefeicaoExtra> {
+  async criarExtra(data: Date, nome: string): Promise<RefeicaoExtra> {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
@@ -286,7 +286,7 @@ export const itensRefeicaoRepository = {
 
     const { data: row, error } = await supabase
       .from('refeicoes_extra')
-      .insert({ user_id: userId, data: dataStr, nome: 'Nova refeição', ordem })
+      .insert({ user_id: userId, data: dataStr, nome, ordem })
       .select('id, nome, ordem, concluida')
       .single<ExtraRow>()
 

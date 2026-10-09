@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Macros } from '@domain/entities/food'
-import { escalarIngrediente, escalarMacros, type ReceitaEstruturada } from '@domain/rules/cozinha'
+import { escalarIngrediente, escalarMacros, PORCAO, type ReceitaEstruturada } from '@domain/rules/cozinha'
 import { RegistrarReceitaSheet } from './RegistrarReceitaSheet'
 
 const OPCOES_PORCOES = [1, 2, 3, 4, 6] as const
@@ -104,8 +104,8 @@ export function ReceitaView(props: {
         </div>
         <p className="mt-2 text-center text-micro text-content-low">
           {t.macrosDe(String(porcoes))}
-          {estrutura.porcoesBase !== 1 || estrutura.unidadePorcao !== 'porção'
-            ? ` · ${t.rendimentoBase(estrutura.porcoesBase, estrutura.unidadePorcao)}`
+          {estrutura.porcoesBase !== 1 || estrutura.unidadePorcao !== PORCAO
+            ? ` · ${t.rendimentoBase(estrutura.porcoesBase, estrutura.unidadePorcao === PORCAO ? t.unidadePorcao(estrutura.porcoesBase) : estrutura.unidadePorcao)}`
             : ''}
           {props.aviso ? ` · ${props.aviso}` : ''}
         </p>

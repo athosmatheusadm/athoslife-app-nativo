@@ -135,7 +135,7 @@ export function ExerciseCard(props: {
       </div>
 
       {mostrarExecucao && exercicio.pranchaUrl && (
-        <div className="mt-3 -mx-1 overflow-x-auto rounded-xl border border-surface-4 px-1">
+        <div className="mt-3 -mx-1 overflow-x-auto sem-barra rounded-xl border border-surface-4 px-1">
           <img src={exercicio.pranchaUrl} alt="" className="h-auto max-w-none" style={{ height: 220 }} />
         </div>
       )}

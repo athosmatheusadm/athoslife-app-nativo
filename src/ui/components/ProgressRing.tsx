@@ -20,6 +20,7 @@ export function ProgressRing(props: {
   pct: number
   tom: TomDisco
   valor: string
+  /** Só pro leitor de tela; dentro do anel vai só o valor (a meta já aparece embaixo). */
   unidade?: string
   label: string
   meta: string
@@ -27,7 +28,7 @@ export function ProgressRing(props: {
   ativo?: boolean
   onClick?: () => void
 }) {
-  const { pct, tom, valor, unidade, label, meta, ativo = false, onClick } = props
+  const { pct, tom, valor, label, meta, ativo = false, onClick } = props
   const clamp = Math.max(0, Math.min(100, pct))
   const circ = 2 * Math.PI * 30
   const offset = circ - (clamp / 100) * circ
@@ -60,7 +61,6 @@ export function ProgressRing(props: {
         </svg>
         <span className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
           <span className={`text-sm font-bold tabular-nums ${ativo ? '' : 'text-content-hi'}`}>{valor}</span>
-          {unidade && <span className="text-micro leading-none tabular-nums text-content-low">{unidade}</span>}
         </span>
       </span>
       <span className="max-w-full truncate text-micro font-semibold uppercase tracking-wide text-content-mid" aria-hidden="true">

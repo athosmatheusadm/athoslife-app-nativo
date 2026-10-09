@@ -206,7 +206,7 @@ export function WorkoutScreen() {
       </div>
 
       {/* Tira de dias da semana */}
-      <div className="mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="mb-4 flex gap-2 overflow-x-auto sem-barra px-4 pb-1">
         {DIAS_SEMANA.map((d) => {
           const ehHoje = d.id === diaSemanaHoje()
           const ativo = d.id === dia

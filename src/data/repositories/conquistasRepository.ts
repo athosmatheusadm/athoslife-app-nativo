@@ -8,6 +8,7 @@ import type {
 import type { Metas, Objetivo } from '@domain/entities/profile'
 import { dataLocalISO } from '@domain/rules/datas'
 import { diasPausados } from '@data/lifePausa'
+import { texto, traducoesDe } from '@data/traducoesConteudo'
 
 interface CatalogoRow {
   id: string
@@ -105,6 +106,7 @@ export const conquistasRepository = {
       pesoAlvo,
       resumoPeso,
       pausados,
+      trad,
     ] = await Promise.all([
       supabase
         .from('conquistas_catalogo')
@@ -124,6 +126,7 @@ export const conquistasRepository = {
       supabase.from('profiles').select('peso_meta, objetivo').eq('id', userId).maybeSingle<{ peso_meta: number | null; objetivo: Objetivo | null }>(),
       pesoRepository.resumo(),
       diasPausados('2000-01-01'),
+      traducoesDe('conquistas_catalogo'),
     ])
 
     if (catalogo.error) throw catalogo.error
@@ -273,8 +276,8 @@ export const conquistasRepository = {
       if (jaTinha) {
         return {
           id: row.id,
-          titulo: row.nome,
-          descricao: row.descricao ?? '',
+          titulo: texto(trad(row.id), 'nome', row.nome),
+          descricao: texto(trad(row.id), 'descricao', row.descricao ?? ''),
           categoria: row.categoria,
           nivel: row.nivel,
           icone: row.icone ?? '🏆',
@@ -289,8 +292,8 @@ export const conquistasRepository = {
 
       return {
         id: row.id,
-        titulo: row.nome,
-        descricao: row.descricao ?? '',
+        titulo: texto(trad(row.id), 'nome', row.nome),
+        descricao: texto(trad(row.id), 'descricao', row.descricao ?? ''),
         categoria: row.categoria,
         nivel: row.nivel,
         icone: row.icone ?? '🏆',

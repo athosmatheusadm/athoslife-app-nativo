@@ -7,12 +7,8 @@ import {
   type Idioma,
   type Localidade,
 } from '@domain/rules/localidade'
-import { ptBR } from './mensagens/pt-BR'
-import { en } from './mensagens/en'
-import { es } from './mensagens/es'
 import type { Mensagens } from './mensagens/tipo'
-
-const DICIONARIOS: Record<Idioma, Mensagens> = { 'pt-BR': ptBR, en, es }
+import { DICIONARIOS } from './dicionarios'
 
 /**
  * Idioma escolhido NESTE aparelho (troca na tela de boas-vindas ou no

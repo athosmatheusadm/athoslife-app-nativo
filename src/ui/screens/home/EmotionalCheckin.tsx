@@ -54,36 +54,32 @@ export function EmotionalCheckin() {
   if (estado.fase === 'carregando' || estado.fase === 'oculto') return null
 
   return (
-    <div className="rounded-2xl border border-surface-4 border-l-[3px] border-l-accent-recaida bg-surface-2 px-3.5 py-2.5">
+    <div className="mx-4 mb-3 flex items-center gap-2.5 rounded-2xl border border-surface-4 border-l-[3px] border-l-accent-recaida bg-surface-2 px-3.5 py-2.5">
       {estado.fase === 'perguntar' ? (
         <>
-          {/* UI/UX (09/10): emojis eram ~28px em fila apertada; agora a
-              pergunta fica em cima e os 5 dividem a largura (≥ 48px cada). */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-content-mid">{t.pergunta}</span>
-            <button
-              onClick={() => setEstado({ fase: 'oculto' })}
-              className="-mr-2 flex h-11 w-11 items-center justify-center text-content-low active:text-content-hi"
-              aria-label={t.dispensar}
-            >
-              ✕
-            </button>
-          </div>
-          <div className="flex justify-between gap-1" role="group" aria-label={t.pergunta}>
+          <span className="flex-1 text-micro font-semibold text-content-mid">{t.pergunta}</span>
+          <span className="flex gap-1.5" role="group" aria-label={t.pergunta}>
             {HUMORES.map((h) => (
               <button
                 key={h.nivel}
                 onClick={() => void escolher(h.nivel)}
-                className="flex h-12 flex-1 items-center justify-center rounded-xl text-2xl transition-transform active:scale-110 active:bg-white/5"
+                className="text-lg transition-transform hover:scale-125 active:scale-110"
                 aria-label={t.aria(h.nivel)}
               >
                 {h.emoji}
               </button>
             ))}
-          </div>
+          </span>
+          <button
+            onClick={() => setEstado({ fase: 'oculto' })}
+            className="px-1 text-content-dim"
+            aria-label={t.dispensar}
+          >
+            ✕
+          </button>
         </>
       ) : (
-        <p role="status" className="py-2 text-sm font-medium text-content-mid">
+        <p role="status" className="flex-1 py-0.5 text-micro font-medium text-content-mid">
           {estado.mensagem}
         </p>
       )}

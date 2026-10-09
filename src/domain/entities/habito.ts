@@ -101,11 +101,6 @@ export function statusHabito(h: Pick<Habito, 'streakAtual'>): StatusHabito {
   return h.streakAtual <= 3 ? 'atencao' : 'firme'
 }
 
-/** Rótulo do selo. "Firme" tem força — palavra de peso, não de fofura. */
-export function rotuloStatus(s: StatusHabito): string {
-  return s === 'firme' ? 'Firme' : 'Momento de atenção'
-}
-
 export function progressoConquista(streak: number, meta: number): number {
   if (meta <= 0) return 0
   return Math.min(100, (streak / meta) * 100)
@@ -115,52 +110,7 @@ export function faltamParaConquista(streak: number, meta: number): number {
   return Math.max(0, meta - streak)
 }
 
-/**
- * Mensagem do assistente no momento da vontade.
- * Peso sem punição: reconhece que é forte (respeita), afirma que passa
- * (esperança concreta), faz um pedido firme (não implora).
- */
-export function mensagemVontade(temHorarioRisco: boolean): string {
-  const abertura = temHorarioRisco
-    ? 'Essa vontade costuma vir nesse horário — e ela é real e forte, eu sei.'
-    : 'Essa vontade é real e é forte, eu sei.'
-  return `${abertura}\n\nMas ela passa. Me dá 10 minutos antes de decidir. Se ainda quiser depois, a gente encara junto.`
-}
-
-/**
- * Alternativas concretas por categoria, pro caminho "Quero uma alternativa".
- * Regra fixa (burra), sem IA — mesma disciplina de mensagemVontade: nada
- * inventado na hora, só conteúdo já pensado com calma.
- */
-const ALTERNATIVAS_POR_CATEGORIA: Record<string, readonly string[]> = {
-  doce: [
-    'Banana com pasta de amendoim — resolve o doce e ainda tem proteína',
-    'Chá de canela com mel — ajuda a segurar a vontade de açúcar',
-    '2 quadradinhos de chocolate 70% — se precisar mesmo, esse não quebra o ritmo',
-  ],
-  fast_food: [
-    'Um lanche rápido em casa — ovo, pão integral, queijo',
-    'Um copo de água antes — parte da fome é sede disfarçada',
-    'Se for sair mesmo, escolhe o item mais leve do cardápio',
-  ],
-  refrigerante: [
-    'Água com gás e limão — o gás sem o açúcar',
-    'Chá gelado sem açúcar',
-    'Um suco natural bem diluído',
-  ],
-}
-
-const ALTERNATIVAS_PADRAO: readonly string[] = [
-  'Bebe um copo de água e espera uns 5 minutos',
-  'Levanta, anda um pouco, muda de ambiente',
-  'Manda mensagem pra alguém de confiança contando que tá difícil agora',
-]
-
-export function alternativasPara(categoria: string | null): readonly string[] {
-  const especifica = categoria ? ALTERNATIVAS_POR_CATEGORIA[categoria] : undefined
-  if (especifica) return especifica
-  return ALTERNATIVAS_PADRAO
-}
+// Textos da vontade (mensagem e alternativas) moram no i18n: m.habitos.vontade.
 
 /**
  * "Termômetro" do Life: nível agregado de bem-estar do usuário nos hábitos,

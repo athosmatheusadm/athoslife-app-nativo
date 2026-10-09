@@ -118,8 +118,8 @@ const PREFERIDOS: Partial<Record<Slot, readonly string[]>> = {
 const BAIXA_PRIORIDADE = new Set(["Farmer's Walk", 'Encolhimento com Halteres', 'Burpee', 'Mountain Climber', 'Remada Alta no Cabo'])
 
 function prioridade(ex: ExercicioCatalogo, slot: Slot, indiceCatalogo: number): number {
-  if (BAIXA_PRIORIDADE.has(ex.nome)) return 10_000 + indiceCatalogo
-  const i = PREFERIDOS[slot]?.indexOf(ex.nome) ?? -1
+  if (BAIXA_PRIORIDADE.has(ex.nomeBase)) return 10_000 + indiceCatalogo
+  const i = PREFERIDOS[slot]?.indexOf(ex.nomeBase) ?? -1
   return i >= 0 ? i : 1_000 + indiceCatalogo
 }
 
@@ -137,7 +137,7 @@ function exerciciosPorTempo(minutos: number, nivel: NivelTreino): number {
 }
 
 function encaixa(ex: ExercicioCatalogo, slot: Slot): boolean {
-  const nome = ex.nome.toLowerCase()
+  const nome = ex.nomeBase.toLowerCase()
   if (slot === 'biceps') return ex.grupoMuscular === 'bracos' && nome.includes('rosca')
   if (slot === 'triceps') return ex.grupoMuscular === 'bracos' && !nome.includes('rosca')
   return ex.grupoMuscular === slot

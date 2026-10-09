@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { alternativasPara, type Habito } from '@domain/entities/habito'
+import type { Habito } from '@domain/entities/habito'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { vibrar } from '@ui/feedback'
@@ -65,7 +65,8 @@ export function CravingAssistant(props: {
   }, [vista, segundosRestantes])
 
   const mensagem = `${habito.horarioRisco !== null ? t.mensagemHorario : t.mensagem}\n\n${t.mensagemFim}`
-  const alternativas = alternativasPara(habito.categoria)
+  const porCategoria = t.alternativas as Record<string, readonly string[] | undefined>
+  const alternativas = (habito.categoria ? porCategoria[habito.categoria] : undefined) ?? t.alternativas.padrao
 
   function abrirEsperar() {
     setSegundosRestantes(DEZ_MINUTOS_SEG)

@@ -50,7 +50,7 @@ export function MealCards(props: {
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto sem-barra pb-1">
         {ORDEM.map((tipo) => {
           const kcal = kcalPorTipo.get(tipo) ?? null
           return (

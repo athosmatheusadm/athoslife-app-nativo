@@ -39,13 +39,13 @@ export const foodCaptureService = {
    * na porção do rótulo (ou 100 g/ml). A mesma revisão da foto ajusta a
    * quantidade antes de salvar. Não usa IA nem cota.
    */
-  rascunhoDeProduto(p: ProdutoRotulo): RefeicaoRascunho {
+  rascunhoDeProduto(p: ProdutoRotulo, avisoSemPorcao: string): RefeicaoRascunho {
     const g = p.porcaoG ?? 100
     const f = g / 100
     return {
       descricao: p.marca ? `${p.nome} · ${p.marca}` : p.nome,
       confianca: 100,
-      observacao: p.porcaoG ? null : 'Porção do rótulo não informada — ajuste a quantidade.',
+      observacao: p.porcaoG ? null : avisoSemPorcao,
       itens: [
         {
           id: `rotulo-${p.codigo}`,

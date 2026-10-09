@@ -2323,3 +2323,43 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      usado pela busca inline antes).
   5. Opcional: `sudo apt install libnspr4 libnss3 libasound2t64` no WSL pro
      Claude conseguir tirar print das telas.
+
+## 2026-10-09 (tarde) — o dono viu a passada no localhost + tudo em pt/en/es
+
+- **Retorno do dono sobre a passada de UI/UX**: não gostou — esperava
+  botões/estética mais bonitos, e a passada mexeu em layout sem precisar.
+  Corrigido o que ele apontou:
+  - **Check-in emocional** voltou ao layout antigo (uma linha, emojis
+    pequenos, ✕); ficou só o texto em pt/en/es.
+  - **Discos da "Atividade de hoje"**: só o valor dentro do anel (o
+    "/meta" embaixo parecia um segundo número; a meta já aparece abaixo).
+  - **Barra de rolagem** some dos 10 carrosséis (classe `.sem-barra` em
+    `globals.css`).
+- **Tudo em pt/en/es** (pedido do dono):
+  - Alternativas da "vontade" (Hábitos), avisos do celular (fim do
+    descanso/cronômetro, lembrete de hábito), nome "Nova refeição", aviso
+    "rótulo sem porção" do scanner, unidade "porção" das receitas, tipos
+    de suplemento (agrupa em qualquer idioma). `src/i18n/dicionarios.ts`
+    dá os textos pra quem não é React (`mensagensAtuais()`).
+  - Termos de uso e Política de privacidade em **espanhol** (antes o es
+    mostrava o inglês).
+  - Removidas funções só-pt mortas (`respostaHumor`, `rotuloStatus`,
+    `mensagemVontade`, `alternativasPara`).
+  - **Conteúdo do banco**: `db/athoslife_traducoes_conteudo_migration.sql`
+    — coluna `traducoes` em conquistas (26), exercícios (100: nome, músculos,
+    passos) e receitas (25: título/subtítulo); `conteudo_traducoes` (modo de
+    preparo, sem GRANT — só pela RPC); `receitas_conteudo_liberado(p_idioma)`;
+    nome_en/nome_es dos 110 suplementos de marca. **Testada com ROLLBACK
+    no banco real (contagens 26/100/25/0) — ainda NÃO aplicada.**
+  - App lê as traduções por `src/data/traducoesConteudo.ts` (busca à
+    parte, tolerante: sem a migração fica em pt, nada quebra). Exercício
+    ganhou `nomeBase` (pt) — o gerador de treino casa por ele.
+  - Leitor das receitas entende rótulos em en/es.
+- **Pendências pra próxima sessão**:
+  1. Dono rodar a migração `db/athoslife_traducoes_conteudo_migration.sql`
+     no SQL Editor do Supabase (auto mode não deixa o Claude escrever no banco).
+  2. Polimento de estética (botões, profundidade, cor) SEM mexer em
+     layout — perguntar antes de mudar estrutura; dono escolhe entre
+     desfazer o visual da passada ou apontar tela por tela.
+  3. Respostas do Life (IA) e avisos do servidor: conferir se seguem o
+     idioma do perfil.

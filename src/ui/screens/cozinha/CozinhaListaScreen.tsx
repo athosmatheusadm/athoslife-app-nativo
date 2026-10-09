@@ -50,7 +50,7 @@ export function CozinhaListaScreen() {
     <main className="min-h-full pb-24 pt-safe-t">
       <CabecalhoCozinha titulo={t.titulo} onVoltar={() => navigate(-1)} />
 
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3">
+      <div className="flex gap-2 overflow-x-auto sem-barra px-4 pb-3">
         <Chip ativo={filtro === 'todos'} onClick={() => setFiltro('todos')}>{t.todas}</Chip>
         <Chip ativo={filtro === 'favoritas'} cor="#f43f5e" onClick={() => setFiltro('favoritas')}>♥ {t.favoritas}</Chip>
         {criacoes.length > 0 && (

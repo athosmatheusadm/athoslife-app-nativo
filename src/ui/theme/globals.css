@@ -61,6 +61,14 @@
 }
 
 @layer components {
+  /* Carrossel horizontal: rola com o dedo, sem barra aparecendo. */
+  .sem-barra {
+    scrollbar-width: none;
+  }
+  .sem-barra::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Aviso de erro (ui/feedback.tsx): mesma caixa, borda de erro. */
   .athos-toast-erro {
     border-color: theme('colors.accent.danger / 50%') !important;

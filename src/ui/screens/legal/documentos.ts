@@ -8,8 +8,6 @@ import type { Idioma } from '@domain/rules/localidade'
  * Mudou o texto de forma relevante? Suba VERSAO_DOCUMENTOS — ela vai pro
  * perfil no aceite (profiles.consentimento_versao) e permite pedir novo
  * aceite depois.
- *
- * Espanhol ainda usa o texto em inglês (tradução jurídica pendente).
  */
 export const VERSAO_DOCUMENTOS = 'v2.2-2026-09-29'
 
@@ -370,5 +368,180 @@ const privacyEn: Documento = {
   ],
 }
 
-export const TERMOS: Record<Idioma, Documento> = { 'pt-BR': termosPt, en: termsEn, es: termsEn }
-export const POLITICA: Record<Idioma, Documento> = { 'pt-BR': politicaPt, en: privacyEn, es: privacyEn }
+const CONTROLADOR_ES = '[RAZÓN SOCIAL], con número de identificación fiscal brasileño (CNPJ) [NÚMERO], con domicilio en [DIRECCIÓN] ("ATHOSlife", "nosotros")'
+
+const terminosEs: Documento = {
+  titulo: 'Términos de uso',
+  atualizado: 'Última actualización: 28 de septiembre de 2026',
+  secoes: [
+    {
+      titulo: '1. Quiénes somos y qué es la app',
+      paragrafos: [
+        `ATHOSlife es una aplicación de seguimiento de alimentación, hidratación, entrenamiento, hábitos y bienestar, ofrecida por ${CONTROLADOR_ES}.`,
+        'Al crear una cuenta o usar la app, aceptas estos Términos y la Política de privacidad. Si no estás de acuerdo, no uses la app.',
+      ],
+    },
+    {
+      titulo: '2. No es consejo médico',
+      paragrafos: [
+        'ATHOSlife y el personaje Life ofrecen información general y herramientas de registro. Nada en la app es diagnóstico, prescripción ni tratamiento, y no sustituye a un nutricionista, médico, psicólogo o profesional de educación física.',
+        'Las metas de calorías, macronutrientes y agua que calcula la app son estimaciones iniciales, que puedes y debes ajustar con un profesional. Busca orientación profesional antes de cambiar tu dieta o entrenamiento, sobre todo si tienes alguna condición de salud, estás embarazada o en período de lactancia.',
+        'En caso de emergencia o de pensamientos de hacerte daño, acude de inmediato al servicio de emergencias de tu país.',
+      ],
+    },
+    {
+      titulo: '3. Quién puede usarla',
+      paragrafos: [
+        'La app está destinada a personas de 16 años o más. Si tienes entre 16 y 18 años, necesitas la autorización de tu representante legal.',
+        'Eres responsable de mantener tu contraseña en secreto y de la actividad realizada en tu cuenta.',
+      ],
+    },
+    {
+      titulo: '4. Inteligencia artificial',
+      paragrafos: [
+        'Algunas funciones usan IA (conversación con Life, análisis de fotos de comidas, sugerencia de recetas). Las respuestas pueden contener errores, incluso en los valores nutricionales estimados. Revísalas antes de confiar en ellas.',
+        'No envíes a Life datos de terceros ni información que no quieras que la IA procese.',
+      ],
+    },
+    {
+      titulo: '5. Plan gratuito, suscripción y cancelación',
+      paragrafos: [
+        'La app tiene un plan gratuito con límites de uso y un plan de pago (Premium) con más funciones. Los límites y funciones de cada plan aparecen en la pantalla de planes de la app.',
+        'La suscripción se vende y se cobra a través de Google Play, al precio y en la moneda que muestra la tienda de tu país. Se renueva automáticamente al final de cada período, salvo que la canceles en Google Play antes de la renovación.',
+        'Si hay un período de prueba gratuito, el cobro empieza al terminar la prueba, salvo que canceles antes. Los reembolsos siguen las reglas de Google Play y la ley de protección al consumidor de tu país.',
+      ],
+    },
+    {
+      titulo: '5-A. Planes de referencia y declaración de veracidad',
+      paragrafos: [
+        'El plan de pago puede armar planes de referencia de entrenamiento y alimentación a partir de tus elecciones y de pautas generales y públicas. Es una sugerencia editable, no una prescripción individual, y no sustituye a un profesional de Educación Física, nutricionista o médico.',
+        'Antes del primer plan respondes un chequeo de salud y declaras que la información es verdadera y completa. Si alguna respuesta indica un punto de atención (por ejemplo, problema cardíaco, embarazo o trastorno alimentario), la app te recomienda consultar a un médico antes de empezar. Si, aun habiendo sido orientado(a), decides recibir el plan, declaras estar al tanto de esa orientación; el plan se arma entonces de forma más conservadora (entrenamiento de nivel principiante; alimentación solo para mantener el peso, según el caso). Las declaraciones quedan registradas con fecha y hora y no pueden modificarse. Los menores de 18 años no reciben plan automático.',
+        'Si omites o informas datos falsos (como edad, embarazo o enfermedad) para obtener un plan, los riesgos y daños que resulten son de tu exclusiva responsabilidad (Código de Defensa del Consumidor de Brasil, art. 14, §3, II). Podemos suspender la función o la cuenta cuando haya indicios de información falsa.',
+        'La carga (peso) de los ejercicios siempre la defines tú. Detén el ejercicio y busca atención si sientes dolor, mareo, falta de aire fuera de lo normal o malestar.',
+      ],
+    },
+    {
+      titulo: '6. Uso aceptable',
+      paragrafos: [
+        'Aceptas no usar la app con fines ilegales, no intentar eludir límites de uso o de plan, no acceder a cuentas de otras personas, no hacer ingeniería inversa del servicio y no enviar contenido ofensivo, ilegal o que viole derechos de terceros.',
+        'Podemos suspender o cerrar cuentas que incumplan estos Términos.',
+      ],
+    },
+    {
+      titulo: '7. Contenido y propiedad intelectual',
+      paragrafos: [
+        'La app, la marca ATHOSlife, el personaje Life, las recetas, ilustraciones y textos pertenecen a ATHOSlife o a sus licenciantes. Recibes una licencia personal, no exclusiva e intransferible para usar la app.',
+        'Los datos que registras siguen siendo tuyos. Nos autorizas a tratarlos solo para prestar el servicio, conforme a la Política de privacidad.',
+      ],
+    },
+    {
+      titulo: '8. Limitación de responsabilidad',
+      paragrafos: [
+        'La app se ofrece "tal cual". En la medida en que la ley lo permita, no somos responsables de decisiones tomadas con base en información de la app, de indisponibilidad temporal ni de pérdida de datos causada por factores ajenos a nuestro control.',
+        'Nada en estos Términos limita los derechos que la ley de tu país garantiza al consumidor y que no pueden excluirse por contrato.',
+      ],
+    },
+    {
+      titulo: '9. Cierre de la cuenta',
+      paragrafos: [
+        'Puedes dejar de usar la app y pedir la eliminación de tu cuenta en cualquier momento en Perfil > Privacidad. Eliminar la cuenta no cancela automáticamente la suscripción en Google Play; cancélala también allí.',
+      ],
+    },
+    {
+      titulo: '10. Cambios y ley aplicable',
+      paragrafos: [
+        'Podemos actualizar estos Términos. Te avisaremos en la app de los cambios relevantes y podremos pedirte una nueva aceptación.',
+        'Estos Términos se rigen por la ley brasileña. Se elige el fuero de [CIUDAD/ESTADO], sin perjuicio del fuero del domicilio del consumidor y de las normas imperativas del país de residencia del usuario.',
+        `Contacto: ${CONTATO}.`,
+      ],
+    },
+  ],
+}
+
+const politicaEs: Documento = {
+  titulo: 'Política de privacidad',
+  atualizado: 'Última actualización: 28 de septiembre de 2026',
+  secoes: [
+    {
+      titulo: '1. Responsable y contacto',
+      paragrafos: [
+        `El responsable de tus datos es ${CONTROLADOR_ES}. Encargado de protección de datos (DPO) y contacto de privacidad: ${CONTATO}.`,
+      ],
+    },
+    {
+      titulo: '2. Datos que recopilamos',
+      paragrafos: [
+        'Cuenta: correo electrónico y contraseña (la contraseña la guarda cifrada nuestro proveedor de autenticación).',
+        'Perfil: nombre, edad, sexo, estatura, peso, objetivo, idioma, país, zona horaria, unidades de medida y respuestas del cuestionario inicial (rutina, sueño, entrenamiento, preferencias alimentarias, alergias, suplementos, consumo de agua y nivel de estrés).',
+        'Datos de salud y bienestar que registras: comidas y alimentos, agua, peso, entrenamientos, pasos, estado de ánimo y check-ins emocionales, y hábitos que sigues, incluidos los que quieres reducir.',
+        'Conversaciones con Life, tu foto de perfil (si la envías) y fotos de comidas enviadas para análisis; estas se analizan y se descartan, no se guardan. Códigos de barras leídos por el lector de la app.',
+        'Datos técnicos mínimos para que la app funcione y sea segura (por ejemplo, registros de uso de la IA, errores y fecha del último acceso). No usamos cookies publicitarias.',
+      ],
+    },
+    {
+      titulo: '3. Para qué los usamos y con qué base legal',
+      paragrafos: [
+        'Ofrecer la app y sus funciones (ejecución del contrato — LGPD art. 7, V; RGPD art. 6(1)(b)).',
+        'Datos de salud: tratados con tu consentimiento específico y destacado, otorgado en la pantalla de consentimiento (LGPD art. 11, I; RGPD art. 9(2)(a)). Puedes retirar ese consentimiento en cualquier momento, pero sin él la app no puede funcionar.',
+        'Seguridad, prevención de abusos y control de los límites de los planes (interés legítimo — LGPD art. 7, IX; RGPD art. 6(1)(f)).',
+        'Cumplir obligaciones legales y fiscales (LGPD art. 7, II; RGPD art. 6(1)(c)).',
+        'No vendemos tus datos. No usamos tus datos de salud para publicidad.',
+      ],
+    },
+    {
+      titulo: '4. Inteligencia artificial',
+      paragrafos: [
+        'Cuando conversas con Life, analizas una foto de un plato o pides una receta, el texto o la imagen y un resumen de tu día (por ejemplo, agua y comidas registradas) se envían a la API Gemini de Google para generar la respuesta. Según la configuración de la API de pago, Google no usa estos datos para entrenar modelos.',
+        'Los mensajes con señales de riesgo para la vida reciben una respuesta fija con contactos de ayuda. En esos casos guardamos solo el término que activó la alerta, nunca el texto completo, por motivos de seguridad.',
+      ],
+    },
+    {
+      titulo: '5. Con quién los compartimos',
+      paragrafos: [
+        'Supabase (base de datos, autenticación y almacenamiento), Google (IA Gemini y, cuando haya suscripción, Google Play para los pagos) y Open Food Facts (recibe solo el número del código de barras leído, sin ningún dato tuyo).',
+        'Estos proveedores tratan los datos en nuestro nombre y siguiendo nuestras instrucciones. También podemos compartir datos cuando la ley o una autoridad lo exija.',
+      ],
+    },
+    {
+      titulo: '6. Transferencia internacional',
+      paragrafos: [
+        'Nuestros proveedores pueden guardar y tratar datos fuera de tu país, incluso en Estados Unidos. En esos casos usamos las garantías previstas por la ley, como las cláusulas contractuales tipo (LGPD art. 33; RGPD art. 46).',
+      ],
+    },
+    {
+      titulo: '7. Cuánto tiempo los guardamos',
+      paragrafos: [
+        'Mientras tu cuenta exista. Al pedir la eliminación, borramos o anonimizamos tus datos en un plazo de 30 días, salvo lo que la ley nos obligue a conservar por más tiempo (por ejemplo, registros fiscales de pagos).',
+      ],
+    },
+    {
+      titulo: '8. Tus derechos',
+      paragrafos: [
+        'Puedes confirmar si tratamos tus datos, acceder a ellos, corregirlos, exportarlos (portabilidad), pedir su eliminación, retirar el consentimiento y oponerte a tratamientos basados en interés legítimo. Exportar y pedir la eliminación están en Perfil > Privacidad; lo demás, a través del contacto indicado arriba.',
+        'También puedes presentar una reclamación ante la autoridad de protección de datos de tu país (en Brasil, la ANPD; en la Unión Europea, la autoridad de tu país de residencia).',
+        'Residentes de California (EE. UU.): tienes los derechos de la CCPA/CPRA a saber, eliminar, corregir y limitar el uso de datos sensibles. No vendemos ni "compartimos" datos personales para publicidad comportamental.',
+      ],
+    },
+    {
+      titulo: '9. Seguridad',
+      paragrafos: [
+        'Usamos conexión cifrada, control de acceso por usuario en la base de datos y acceso restringido del equipo. Ningún sistema es 100% seguro; si ocurre un incidente relevante, te avisaremos a ti y a las autoridades según lo exija la ley.',
+      ],
+    },
+    {
+      titulo: '10. Edad mínima',
+      paragrafos: [
+        'La app no está destinada a menores de 16 años. Si sabemos que hemos recopilado datos de alguien menor de esa edad sin autorización, los eliminaremos.',
+      ],
+    },
+    {
+      titulo: '11. Cambios en esta política',
+      paragrafos: [
+        'Te avisaremos en la app de los cambios relevantes y, cuando la ley lo exija, te pediremos un nuevo consentimiento.',
+      ],
+    },
+  ],
+}
+
+export const TERMOS: Record<Idioma, Documento> = { 'pt-BR': termosPt, en: termsEn, es: terminosEs }
+export const POLITICA: Record<Idioma, Documento> = { 'pt-BR': politicaPt, en: privacyEn, es: politicaEs }
