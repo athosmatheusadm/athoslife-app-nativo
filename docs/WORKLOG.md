@@ -2191,3 +2191,6 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
 - Custo real (ai_audit_logs, 30 dias): só 10 chamadas de chat, média 1.752
   tokens (~US$ 0,00077 ≈ R$ 0,0044/msg); nenhuma foto do scanner registrada
   — custo do scanner segue estimado.
+- **ai-proxy v3.8 publicado pelo dono** — conferido: versão 18, ACTIVE,
+  verify_jwt ligado. Proteção da IA toda no ar.
+- Próximo: dono vai passar skills de UI/UX pra melhorar páginas e botões.
