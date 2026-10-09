@@ -2241,3 +2241,12 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     períodos 44–48px, aviso "Peso registrado"; avatar do topo 44px. Todos
     os textos da Home em pt/en/es; números/horas com Intl. Token
     `brand-ink` no lugar do hex do texto sobre o verde (32 arquivos).
+  - **Treino**: Voltar do Android fecha o painel de adicionar e as janelas
+    Parar/Resumo (antes minimizava o app); ✓ de feito com 48px; tirar
+    exercício com "Desfazer" (volta com as mesmas séries); campos de
+    série/carga 44px com teclado numérico; ✕ de série 44px; "Encerrar" e
+    "Parar" 44px (eram ~28px); dia vazio explica e aponta pro "Montar
+    treino" do Life; carregando em forma de card + erro com "Tentar de
+    novo"; falhas avisam (antes calavam); vibração ao marcar feito e ao
+    salvar treino; aviso "Treino salvo"; dias da semana por Intl; grupos
+    musculares, locais e todo texto do Treino em pt/en/es; cores por token.

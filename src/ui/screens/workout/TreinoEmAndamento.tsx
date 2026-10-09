@@ -7,8 +7,9 @@ import {
   resumirSessao,
   segundosRestantes,
 } from '@domain/entities/sessaoTreino'
-
-const LARANJA = '#FF9159'
+import { useI18n } from '@/i18n/I18nProvider'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { avisar, vibrar } from '@ui/feedback'
 
 /**
  * Faixa de "treino em andamento" no topo da tela de Treino.
@@ -23,7 +24,11 @@ export function TreinoEmAndamento() {
   const [relogio, setRelogio] = useState(() => Date.now())
   const [painel, setPainel] = useState<null | 'resumo' | 'parar'>(null)
   const [salvando, setSalvando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [erro, setErro] = useState(false)
+  const { m, idioma } = useI18n()
+  const tx = m.treino.andamento
+  // Voltar do Android fecha a janela de Parar/Resumo antes de qualquer coisa.
+  useFecharNoVoltar(painel !== null, () => setPainel(null))
 
   useEffect(() => {
     const id = window.setInterval(() => setRelogio(Date.now()), 1000)
@@ -35,26 +40,31 @@ export function TreinoEmAndamento() {
   const ex = exercicioAtual(sessao)
 
   let status: string
-  let cor = '#22c55e'
+  let cor = 'bg-brand'
   if (sessao.status === 'concluida' || !ex) {
-    status = 'Todas as séries feitas 🏆'
+    status = tx.tudoFeito
   } else if (sessao.status === 'descanso') {
-    status = `Descanso ${formatarRelogio(segundosRestantes(sessao.descansoFimEm, t))}`
-    cor = LARANJA
+    status = tx.descanso(formatarRelogio(segundosRestantes(sessao.descansoFimEm, t)))
+    cor = 'bg-accent-energy'
   } else if (sessao.status === 'cronometro') {
     status = `${ex.nome} · ${formatarRelogio(segundosRestantes(sessao.cronometroFimEm, t))}`
   } else {
-    status = `${ex.nome} · série ${indiceSerie(ex) + 1} de ${ex.alvo.length}`
+    status = tx.serieDe(ex.nome, indiceSerie(ex) + 1, ex.alvo.length)
   }
 
   async function salvar() {
     setSalvando(true)
-    setErro(null)
+    setErro(false)
     try {
+      const salvou = r.seriesFeitas > 0
       await finalizar()
       setPainel(null)
+      if (salvou) {
+        vibrar.sucesso()
+        avisar.ok(tx.salvo)
+      }
     } catch {
-      setErro('Não deu pra salvar o treino. Confere a internet e tenta de novo.')
+      setErro(true)
     } finally {
       setSalvando(false)
     }
@@ -67,100 +77,96 @@ export function TreinoEmAndamento() {
     <>
       <div className="mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-brand/40 bg-brand/10 p-3">
         <span className="relative flex h-2.5 w-2.5 flex-none">
-          <span className="absolute inset-0 animate-ping rounded-full opacity-60" style={{ background: cor }} />
-          <span className="relative h-2.5 w-2.5 rounded-full" style={{ background: cor }} />
+          <span className={`absolute inset-0 rounded-full opacity-60 motion-safe:animate-ping ${cor}`} />
+          <span className={`relative h-2.5 w-2.5 rounded-full ${cor}`} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-micro font-bold uppercase tracking-[2px] text-brand">
-            Treino em andamento · {formatarRelogio((t - sessao.iniciadoEm) / 1000)}
+            {tx.titulo(formatarRelogio((t - sessao.iniciadoEm) / 1000))}
           </div>
-          <div className="truncate text-sm text-content-mid">{status}</div>
-          <div className="text-[11px] text-content-dim">Controle pela tela de bloqueio 🔒</div>
+          <div className="truncate text-sm text-content-mid" aria-live="polite">{status}</div>
+          <div className="text-micro text-content-low">{tx.bloqueio}</div>
         </div>
         <div className="flex flex-none flex-col gap-1.5">
           <button
             onClick={() => setPainel('resumo')}
-            className="rounded-pill bg-brand px-3 py-1.5 text-micro font-bold text-brand-ink"
+            className="min-h-11 rounded-pill bg-brand px-4 text-sm font-bold text-brand-ink active:scale-95"
           >
-            Encerrar
+            {tx.encerrar}
           </button>
           <button
             onClick={() => setPainel('parar')}
-            aria-label="Parar treino sem salvar"
-            className="rounded-pill border border-accent-danger/50 px-3 py-1.5 text-micro font-bold text-accent-danger"
+            aria-label={tx.pararAria}
+            className="min-h-11 rounded-pill border border-accent-danger/50 px-4 text-sm font-bold text-accent-danger active:bg-accent-danger/10"
           >
-            Parar
+            {tx.parar}
           </button>
         </div>
       </div>
 
       {painel === 'parar' && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Parar treino">
-          <button aria-label="Fechar" onClick={() => setPainel(null)} className="absolute inset-0 bg-black/70" />
+        <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={tx.pararTitulo}>
+          <button aria-label={tx.continuar} onClick={() => setPainel(null)} className="absolute inset-0 bg-black/70" />
           <div className="relative w-full max-w-md rounded-t-3xl border-t border-surface-4 bg-surface-2 p-5 pb-safe-b animate-rise">
-            <h2 className="text-center text-lg font-extrabold text-content-hi">Parar o treino?</h2>
-            <p className="mt-1 text-center text-sm text-content-low">
-              Ele sai da tela de bloqueio e nada do que foi feito agora é salvo. Sua ficha continua igual.
-            </p>
+            <h2 className="text-center text-lg font-extrabold text-content-hi">{tx.pararTitulo}</h2>
+            <p className="mt-1 text-center text-sm text-content-low">{tx.pararTexto}</p>
             <button
               onClick={() => {
                 descartar()
                 setPainel(null)
               }}
-              className="mt-5 w-full rounded-pill bg-accent-danger py-3.5 text-sm font-bold text-white"
+              className="mt-5 min-h-12 w-full rounded-pill bg-accent-danger text-sm font-bold text-white active:scale-[0.98]"
             >
-              Parar treino
+              {tx.pararConfirmar}
             </button>
-            <button onClick={() => setPainel(null)} className="mt-1 w-full py-3 text-sm font-semibold text-content-mid">
-              Continuar treinando
+            <button onClick={() => setPainel(null)} className="mt-1 min-h-12 w-full text-sm font-semibold text-content-mid">
+              {tx.continuar}
             </button>
           </div>
         </div>
       )}
 
       {(painel === 'resumo' || sessao.status === 'concluida') && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Resumo do treino">
+        <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={tx.resumoAria}>
           <div className="absolute inset-0 bg-black/70" />
           <div className="relative w-full max-w-md rounded-t-3xl border-t border-surface-4 bg-surface-2 p-5 pb-safe-b animate-rise">
             <div className="text-center text-4xl">{r.completo ? '🏆' : '💪'}</div>
             <h2 className="mt-2 text-center text-xl font-extrabold text-content-hi">
-              {nada ? 'Treino sem séries' : r.completo ? 'Treino completo!' : 'Bom treino!'}
+              {nada ? tx.semSeries : r.completo ? tx.completo : tx.bom}
             </h2>
             <p className="mt-1 text-center text-sm text-content-low">
-              {nada
-                ? 'Nenhuma série foi confirmada — nada vai pro histórico.'
-                : 'Isso vai pro seu histórico e pras conquistas.'}
+              {nada ? tx.nadaVai : tx.vaiPro}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {(
                 [
-                  ['Duração', `${r.duracaoMin} min`],
-                  ['Séries', `${r.seriesFeitas}/${r.seriesTotal}`],
-                  ['Exercícios', `${r.exerciciosFeitos}/${r.exerciciosTotal}`],
-                  ['Volume', `${r.volumeKg.toLocaleString('pt-BR')} kg`],
+                  [tx.duracao, `${r.duracaoMin} min`],
+                  [tx.seriesRot, `${r.seriesFeitas}/${r.seriesTotal}`],
+                  [tx.exercicios, `${r.exerciciosFeitos}/${r.exerciciosTotal}`],
+                  [tx.volume, `${r.volumeKg.toLocaleString(idioma)} kg`],
                 ] as const
               ).map(([rotulo, valor]) => (
                 <div key={rotulo} className="rounded-xl bg-surface-3 p-3 text-center">
-                  <div className="text-micro text-content-dim">{rotulo}</div>
+                  <div className="text-micro text-content-low">{rotulo}</div>
                   <div className="font-mono text-base font-semibold text-content-hi">{valor}</div>
                 </div>
               ))}
             </div>
-            {erro && <p className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
+            {erro && <p role="alert" className="mt-3 text-center text-sm font-medium text-accent-danger">{tx.erroSalvar}</p>}
             <button
               onClick={() => void salvar()}
               disabled={salvando}
-              className="mt-4 w-full rounded-pill bg-brand py-3.5 text-sm font-bold text-surface-1 disabled:opacity-60"
+              className="mt-4 min-h-12 w-full rounded-pill bg-brand text-sm font-bold text-surface-1 active:scale-[0.98] disabled:opacity-60"
             >
-              {salvando ? 'Salvando…' : nada ? 'Fechar' : 'Salvar treino'}
+              {salvando ? tx.salvando : nada ? tx.fechar : tx.salvar}
             </button>
             {sessao.status !== 'concluida' && (
               <button
                 onClick={() => setPainel(null)}
                 disabled={salvando}
-                className="mt-1 w-full py-3 text-sm font-semibold text-content-mid"
+                className="mt-1 min-h-12 w-full text-sm font-semibold text-content-mid"
               >
-                Continuar treinando
+                {tx.continuar}
               </button>
             )}
             {!nada && (
@@ -170,9 +176,9 @@ export function TreinoEmAndamento() {
                   setPainel(null)
                 }}
                 disabled={salvando}
-                className="w-full py-2 text-sm font-semibold text-accent-danger"
+                className="min-h-12 w-full text-sm font-semibold text-accent-danger"
               >
-                Descartar treino
+                {tx.descartar}
               </button>
             )}
           </div>

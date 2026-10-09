@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from 'react'
+import { useI18n } from '@/i18n/I18nProvider'
 import {
   iconeDoExercicio,
-  resumoSeries,
   serieVazia,
   type ExercicioPlano,
   type SerieDetalhe,
@@ -39,6 +39,8 @@ export function ExerciseCard(props: {
   const concluido = item.concluidoHoje
   const [mostrarExecucao, setMostrarExecucao] = useState(false)
   const porTempo = exercicio.medida === 'tempo'
+  const { m } = useI18n()
+  const t = m.treino.card
 
   function alternarExecucao(e: MouseEvent) {
     e.stopPropagation()
@@ -65,20 +67,28 @@ export function ExerciseCard(props: {
     >
       <div className="flex w-full items-center gap-3">
         {props.podeMarcarConcluido && (
+          // Alvo de 48px; o círculo visível continua de 28px.
           <button
             onClick={props.onToggleConcluido}
-            aria-label={concluido ? 'Marcar como não concluído' : 'Marcar como concluído'}
-            className={`flex h-7 w-7 flex-none items-center justify-center rounded-full border-2 text-sm font-bold transition-colors ${
-              concluido ? 'border-brand bg-brand text-brand-ink' : 'border-surface-4 text-transparent'
-            }`}
+            role="checkbox"
+            aria-checked={concluido}
+            aria-label={t.marcarFeito(exercicio.nome)}
+            className="-ml-2 -mr-1 flex h-12 w-12 flex-none items-center justify-center rounded-full active:bg-white/5"
           >
-            ✓
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-sm font-bold transition-colors ${
+                concluido ? 'border-brand bg-brand text-brand-ink' : 'border-content-dim text-transparent'
+              }`}
+            >
+              ✓
+            </span>
           </button>
         )}
 
         <button
           onClick={alternarExecucao}
-          aria-label={`Ver execução de ${exercicio.nome}`}
+          aria-label={t.verExecucao(exercicio.nome)}
+          aria-expanded={mostrarExecucao}
           className={`h-14 w-14 flex-none overflow-hidden rounded-xl border-2 transition-colors ${
             mostrarExecucao ? 'border-brand' : 'border-transparent'
           }`}
@@ -96,7 +106,8 @@ export function ExerciseCard(props: {
 
         <button
           onClick={props.onToggleExpandir}
-          className={`flex min-w-0 flex-1 items-center gap-3 text-left ${concluido ? 'opacity-60' : ''}`}
+          aria-expanded={expandido}
+          className={`flex min-h-14 min-w-0 flex-1 items-center gap-3 text-left ${concluido ? 'opacity-60' : ''}`}
         >
           <span className="min-w-0 flex-1">
             <span
@@ -104,7 +115,7 @@ export function ExerciseCard(props: {
             >
               {exercicio.nome}
             </span>
-            <span className="block text-micro text-content-low">{resumoSeries(item.series)}</span>
+            <span className="block text-micro text-content-low">{m.treino.series(item.series.length)}</span>
           </span>
           <svg
             width="18"
@@ -115,7 +126,8 @@ export function ExerciseCard(props: {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={`flex-none text-content-dim transition-transform duration-300 ${expandido ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+            className={`flex-none text-content-low transition-transform duration-300 ${expandido ? 'rotate-180' : ''}`}
           >
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -142,7 +154,7 @@ export function ExerciseCard(props: {
           <div className="mt-3">
             {!exercicio.pranchaUrl && exercicio.comoExecutar.length > 0 && (
               <div className="mt-3">
-                <div className="text-sm font-bold text-content-hi">Como executar</div>
+                <div className="text-sm font-bold text-content-hi">{t.comoExecutar}</div>
                 <ol className="mt-1.5 space-y-1">
                   {exercicio.comoExecutar.map((passo, i) => (
                     <li key={i} className="flex gap-2 text-micro text-content-mid">
@@ -157,48 +169,49 @@ export function ExerciseCard(props: {
             <div className="mt-3.5 space-y-2">
               {item.series.map((serie, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <span className="w-14 flex-none text-micro text-content-dim">Série {index + 1}</span>
+                  <span className="w-14 flex-none text-micro text-content-low">{t.serie(index + 1)}</span>
                   {porTempo ? (
                     <input
                       type="number"
                       inputMode="numeric"
-                      placeholder="Seg"
-                      aria-label={`Segundos da série ${index + 1}`}
+                      placeholder={t.seg}
+                      aria-label={t.segAria(index + 1)}
                       value={serie.segundos ?? exercicio.segundosPadrao ?? ''}
                       onChange={(e) =>
                         atualizarSerie(index, { segundos: e.target.value === '' ? null : Number(e.target.value) })
                       }
-                      className="w-16 rounded-lg border border-surface-4 bg-surface-2 px-2 py-1.5 text-sm text-content-hi"
+                      className="min-h-11 w-16 rounded-lg border border-surface-4 bg-surface-2 px-2 text-center text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
                     />
                   ) : (
                     <input
                       type="number"
                       inputMode="numeric"
-                      placeholder="Reps"
+                      placeholder={t.reps}
+                      aria-label={t.repsAria(index + 1)}
                       value={serie.reps ?? ''}
                       onChange={(e) =>
                         atualizarSerie(index, { reps: e.target.value === '' ? null : Number(e.target.value) })
                       }
-                      className="w-16 rounded-lg border border-surface-4 bg-surface-2 px-2 py-1.5 text-sm text-content-hi"
+                      className="min-h-11 w-16 rounded-lg border border-surface-4 bg-surface-2 px-2 text-center text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
                     />
                   )}
-                  {porTempo && <span className="-ml-1 text-micro text-content-dim">s</span>}
+                  {porTempo && <span className="-ml-1 text-micro text-content-low">s</span>}
                   <input
                     type="number"
                     inputMode="decimal"
-                    placeholder={porTempo ? 'Carga (opcional)' : 'Carga (kg)'}
-                    aria-label={`Carga da série ${index + 1} em kg`}
+                    placeholder={porTempo ? t.cargaOpcional : t.carga}
+                    aria-label={t.cargaAria(index + 1)}
                     value={serie.cargaKg ?? ''}
                     onChange={(e) =>
                       atualizarSerie(index, { cargaKg: e.target.value === '' ? null : Number(e.target.value) })
                     }
-                    className="flex-1 rounded-lg border border-surface-4 bg-surface-2 px-2 py-1.5 text-sm text-content-hi"
+                    className="min-h-11 min-w-0 flex-1 rounded-lg border border-surface-4 bg-surface-2 px-2 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
                   />
                   {item.series.length > 1 && (
                     <button
                       onClick={() => removerSerie(index)}
-                      aria-label="Remover série"
-                      className="flex-none px-1 text-content-dim"
+                      aria-label={t.removerSerie(index + 1)}
+                      className="flex h-11 w-11 flex-none items-center justify-center rounded-lg text-content-low active:bg-white/5 active:text-content-hi"
                     >
                       ✕
                     </button>
@@ -207,13 +220,13 @@ export function ExerciseCard(props: {
               ))}
 
               <div className="flex items-center gap-3 pt-1">
-                <button onClick={adicionarSerie} className="text-sm font-semibold text-brand">
-                  + adicionar série
+                <button onClick={adicionarSerie} className="min-h-11 pr-3 text-sm font-semibold text-brand active:opacity-70">
+                  {t.adicionarSerie}
                 </button>
                 <button
                   onClick={props.onRemover}
-                  aria-label="Excluir exercício"
-                  className="ml-auto flex h-10 w-10 flex-none items-center justify-center rounded-lg border border-accent-danger/40 text-accent-danger"
+                  aria-label={t.excluir(exercicio.nome)}
+                  className="ml-auto flex h-11 w-11 flex-none items-center justify-center rounded-lg border border-accent-danger/40 text-accent-danger active:bg-accent-danger/10"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />

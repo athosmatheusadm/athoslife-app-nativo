@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { exercicioCatalogoRepository } from '@data/repositories/exercicioCatalogoRepository'
+import { useI18n } from '@/i18n/I18nProvider'
 import {
   iconeDoExercicio,
-  rotuloGrupo,
   type ExercicioCatalogo,
   type GrupoMuscular,
 } from '@domain/entities/treino'
@@ -25,6 +25,9 @@ export function AddExercisePanel(props: {
   const [carregando, setCarregando] = useState(true)
   const [termo, setTermo] = useState('')
   const [grupo, setGrupo] = useState<GrupoMuscular | 'todos'>('todos')
+  const { m } = useI18n()
+  const t = m.treino.painel
+  const rotuloGrupo = (g: GrupoMuscular) => m.treino.grupos[g]
 
   useEffect(() => {
     let ativo = true
@@ -56,32 +59,33 @@ export function AddExercisePanel(props: {
   return (
     <main className="fixed inset-0 z-20 flex flex-col overflow-hidden bg-surface-1 pt-safe-t">
       <header className="flex items-center gap-3 px-4 pb-3 pt-3">
-        <button onClick={props.onFechar} aria-label="Fechar" className="text-content-hi">
+        <button onClick={props.onFechar} aria-label={t.fechar} className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-content-hi active:bg-white/5">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>
-        <h1 className="text-lg font-bold text-content-hi">Adicionar exercício</h1>
+        <h1 className="text-lg font-bold text-content-hi">{t.titulo}</h1>
       </header>
 
       <div className="px-4 pb-2">
         <div className="flex items-center gap-2 rounded-card border border-surface-4 bg-surface-2 px-3">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="flex-none text-content-low" aria-hidden="true" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></svg>
           <input
             value={termo}
             onChange={(e) => setTermo(e.target.value)}
-            placeholder="Buscar exercício…"
+            placeholder={t.buscar}
+            aria-label={t.buscar}
             autoFocus
-            className="min-h-11 flex-1 bg-transparent text-content-hi placeholder:text-content-dim focus:outline-none"
+            className="min-h-12 flex-1 bg-transparent text-base text-content-hi placeholder:text-content-low focus:outline-none"
           />
           {termo && (
-            <button onClick={() => setTermo('')} aria-label="Limpar" className="text-content-dim">✕</button>
+            <button onClick={() => setTermo('')} aria-label={t.limpar} className="-mr-2 flex h-11 w-11 items-center justify-center text-content-low active:text-content-hi">✕</button>
           )}
         </div>
       </div>
 
       <div className="mb-2 flex gap-2 overflow-x-auto px-4 pb-1">
-        <Chip rotulo="Todos" ativo={grupo === 'todos'} onClick={() => setGrupo('todos')} />
+        <Chip rotulo={t.todos} ativo={grupo === 'todos'} onClick={() => setGrupo('todos')} />
         {gruposDisponiveis.map((g) => (
           <Chip key={g} rotulo={rotuloGrupo(g)} ativo={grupo === g} onClick={() => setGrupo(g)} />
         ))}
@@ -89,9 +93,9 @@ export function AddExercisePanel(props: {
 
       <div className="flex-1 overflow-y-auto px-4 pb-3">
         {carregando ? (
-          <p className="py-10 text-center text-micro text-content-dim">Carregando…</p>
+          <p className="py-10 text-center text-micro text-content-low">{m.treino.carregando}</p>
         ) : filtrados.length === 0 ? (
-          <p className="py-10 text-center text-micro text-content-low">Nenhum exercício encontrado.</p>
+          <p className="py-10 text-center text-micro text-content-low">{t.nada}</p>
         ) : (
           <ul className="divide-y divide-surface-3">
             {filtrados.map((ex) => {
@@ -100,8 +104,9 @@ export function AddExercisePanel(props: {
                 <li key={ex.id}>
                   <button
                     onClick={() => props.onAlternar(ex)}
-                    aria-label={jaAdicionado ? `Remover ${ex.nome}` : `Adicionar ${ex.nome}`}
-                    className="flex w-full items-center gap-3 py-3 text-left"
+                    aria-label={jaAdicionado ? t.removerEx(ex.nome) : t.adicionarEx(ex.nome)}
+                    aria-pressed={jaAdicionado}
+                    className="flex min-h-16 w-full items-center gap-3 py-2 text-left transition-colors active:bg-white/5"
                   >
                     {iconeDoExercicio(ex) ? (
                       <img
@@ -121,8 +126,9 @@ export function AddExercisePanel(props: {
                       <span className="block text-micro text-content-low">{rotuloGrupo(ex.grupoMuscular)}</span>
                     </span>
                     <span
-                      className={`flex h-8 w-8 flex-none items-center justify-center rounded-full text-lg font-bold ${
-                        jaAdicionado ? 'bg-surface-3 text-content-dim' : 'bg-brand text-brand-ink'
+                      aria-hidden="true"
+                      className={`flex h-9 w-9 flex-none items-center justify-center rounded-full text-lg font-bold ${
+                        jaAdicionado ? 'bg-surface-3 text-brand' : 'bg-brand text-brand-ink'
                       }`}
                     >
                       {jaAdicionado ? '✓' : '+'}
@@ -135,15 +141,13 @@ export function AddExercisePanel(props: {
         )}
       </div>
 
-      <div className="mx-4 mb-1 rounded-xl bg-surface-2 px-3 py-2.5 text-center text-micro text-content-dim">
-        Toque no exercício para adicionar ou remover do seu treino.
-      </div>
+      <div className="mx-4 mb-1 rounded-xl bg-surface-2 px-3 py-2.5 text-center text-micro text-content-low">{t.dica}</div>
       <div className="px-4 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
         <button
           onClick={props.onFechar}
-          className="w-full rounded-card bg-brand py-3.5 font-bold text-brand-ink transition-transform active:scale-[0.98]"
+          className="min-h-12 w-full rounded-card bg-brand font-bold text-brand-ink transition-transform active:scale-[0.98]"
         >
-          Concluir
+          {t.concluir}
         </button>
       </div>
     </main>
@@ -154,7 +158,8 @@ function Chip(props: { rotulo: string; ativo: boolean; onClick: () => void }) {
   return (
     <button
       onClick={props.onClick}
-      className={`flex-none rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+      aria-pressed={props.ativo}
+      className={`min-h-11 flex-none rounded-pill px-4 text-sm font-semibold transition-colors active:scale-95 ${
         props.ativo ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
       }`}
     >

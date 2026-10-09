@@ -44,7 +44,7 @@ export function InlineFoodSearch(props: {
   return (
     <div className="mt-3 border-t border-surface-3 pt-3">
       <div className="flex items-center gap-2 rounded-xl border border-surface-4 bg-surface-3 px-3">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="flex-none text-content-low" aria-hidden="true" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></svg>
         <input
           value={termo}
           onChange={(e) => setTermo(e.target.value)}
