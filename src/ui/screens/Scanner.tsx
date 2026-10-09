@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { AiProxyError, cotaIaHoje } from '@data/ai/aiProxy'
@@ -11,6 +11,10 @@ import { reescalarItem } from '@domain/rules/foodReconciliation'
 import { temAcessoPremium } from '@domain/rules/access'
 import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
 import { LifeMascote } from '@ui/components/LifeMascote'
+import { useI18n } from '@/i18n/I18nProvider'
+import type { Mensagens } from '@/i18n/mensagens/tipo'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { avisar, vibrar } from '@ui/feedback'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
@@ -34,33 +38,33 @@ interface EstadoEntrada {
 
 type Etapa = 'captura' | 'analisando' | 'revisao' | 'salvando'
 
-const FIXAS: ReadonlyArray<{ alvo: RefeicaoAlvo; nome: string; emoji: string }> = [
-  { alvo: { tipo: 'cafe' }, nome: 'Café da manhã', emoji: '☕' },
-  { alvo: { tipo: 'almoco' }, nome: 'Almoço', emoji: '🍽️' },
-  { alvo: { tipo: 'lanche' }, nome: 'Lanche', emoji: '🥪' },
-  { alvo: { tipo: 'jantar' }, nome: 'Jantar', emoji: '🌙' },
-]
+const FIXAS = [
+  { tipo: 'cafe', emoji: '☕' },
+  { tipo: 'almoco', emoji: '🍽️' },
+  { tipo: 'lanche', emoji: '🥪' },
+  { tipo: 'jantar', emoji: '🌙' },
+] as const
 
-function mensagemDeErro(e: unknown): string {
+function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros']): string {
   if (e instanceof AiProxyError) {
     switch (e.info.tipo) {
       case 'premium_required':
-        return 'O scanner é do plano pago. No grátis dá pra buscar e adicionar os alimentos à mão.'
+        return t.premium
       case 'limit_reached':
-        return `Você usou os 5 scans de hoje. Renova em ${e.info.proximoReset || 'algumas horas'}.`
+        return e.info.proximoReset ? t.limite(e.info.proximoReset) : t.limiteSemHora
       case 'rate_limited':
-        return 'Muitas tentativas seguidas. Espera um minutinho.'
+        return t.rapido
       case 'image_too_large':
-        return 'A foto ficou grande demais. Tenta de novo, um pouco mais de longe.'
+        return t.grande
       case 'indisponivel':
-        return 'O scanner está pausado por hoje. Volta amanhã.'
+        return t.pausado
       case 'not_authenticated':
-        return 'Sua sessão expirou. Entra de novo.'
+        return t.sessao
       default:
         break
     }
   }
-  return 'Não consegui analisar essa foto. Tenta de novo com o prato bem iluminado e inteiro na imagem.'
+  return t.foto
 }
 
 export function Scanner() {
@@ -83,11 +87,33 @@ export function Scanner() {
   const [codigoDigitado, setCodigoDigitado] = useState('')
 
   const pago = profile ? temAcessoPremium(profile) : false
+  const { m } = useI18n()
+  const t = m.scanner
+  // Limite vem do servidor (antes o texto dizia "5" fixo).
+  const [limite, setLimite] = useState<number | null>(null)
 
   useEffect(() => {
     if (!pago) return
-    void cotaIaHoje('vision').then((c) => c && setRestantes(Math.max(c.limite - c.usados, 0)))
+    void cotaIaHoje('vision').then((c) => {
+      if (!c) return
+      setRestantes(Math.max(c.limite - c.usados, 0))
+      setLimite(c.limite)
+    })
   }, [pago])
+
+  // Voltar do Android na revisão: 1º toque avisa, 2º descarta (a análise já
+  // gastou um scan da cota — sair sem querer jogava ela fora).
+  const avisouVoltar = useRef(0)
+  useFecharNoVoltar(etapa === 'revisao', () => {
+    if (Date.now() - avisouVoltar.current > 3000) {
+      avisouVoltar.current = Date.now()
+      avisar.ok(t.voltarDescarta)
+      return
+    }
+    setRascunho(null)
+    setFoto(null)
+    setEtapa('captura')
+  })
 
   async function lerCodigo() {
     setErro(null)
@@ -100,11 +126,7 @@ export function Scanner() {
       const codigo = await lerCodigoBarras()
       if (codigo) await buscarProduto(codigo)
     } catch (e) {
-      setErro(
-        String(e).includes('modulo_baixando')
-          ? 'Baixando o leitor do Google pela primeira vez… tenta de novo em alguns segundos.'
-          : 'Não consegui abrir o leitor. Tenta de novo ou digita o número do código.',
-      )
+      setErro(String(e).includes('modulo_baixando') ? t.erros.baixandoLeitor : t.erros.leitor)
       setDigitando(true)
     }
   }
@@ -117,7 +139,7 @@ export function Scanner() {
     try {
       const produto = await produtoCodigoBarrasRepository.buscar(codigo)
       if (!produto) {
-        setErro('Não achei esse produto na base pública. Tenta pela foto ou adiciona pela busca na refeição.')
+        setErro(t.erros.semProduto)
         setEtapa('captura')
         return
       }
@@ -127,7 +149,7 @@ export function Scanner() {
       setCodigoDigitado('')
       setEtapa('revisao')
     } catch {
-      setErro('Não consegui buscar o produto agora. Confere a internet e tenta de novo.')
+      setErro(t.erros.buscaProduto)
       setEtapa('captura')
     }
   }
@@ -143,7 +165,7 @@ export function Scanner() {
     try {
       const r = await foodCaptureService.capturar(f.base64, f.mime)
       if (r.itens.length === 0) {
-        setErro('Não reconheci comida nessa foto. Tenta de novo com o prato mais perto.')
+        setErro(t.erros.semComida)
         setEtapa('captura')
         return
       }
@@ -151,7 +173,7 @@ export function Scanner() {
       setEtapa('revisao')
       setRestantes((n) => (n === null ? n : Math.max(n - 1, 0)))
     } catch (e) {
-      setErro(mensagemDeErro(e))
+      setErro(mensagemDeErro(e, t.erros))
       setEtapa('captura')
     }
   }
@@ -166,9 +188,11 @@ export function Scanner() {
     setErro(null)
     try {
       await foodCaptureService.confirmar({ rascunho, alvo, data, origem })
+      vibrar.sucesso()
+      avisar.ok(t.adicionados(incluidos, nomeRefeicao))
       navigate('/dieta', { replace: true })
     } catch {
-      setErro('Não deu pra salvar. Confere a internet e tenta de novo.')
+      setErro(t.erros.salvar)
       setEtapa('revisao')
     }
   }
@@ -177,9 +201,9 @@ export function Scanner() {
     <div className="mt-2 space-y-2">
       <button
         onClick={() => void lerCodigo()}
-        className="w-full rounded-pill border border-brand/40 py-3 text-sm font-semibold text-brand"
+        className="min-h-12 w-full rounded-pill border border-brand/40 text-sm font-semibold text-brand active:bg-brand/10"
       >
-        ▮▯▮ Ler código de barras
+        {t.lerCodigo}
       </button>
       {digitando && (
         <form
@@ -195,16 +219,17 @@ export function Scanner() {
             autoFocus
             value={codigoDigitado}
             onChange={(e) => setCodigoDigitado(e.target.value.replace(/\D/g, '').slice(0, 14))}
-            placeholder="Número embaixo do código"
-            aria-label="Número do código de barras"
-            className="min-w-0 flex-1 rounded-card border border-surface-4 bg-surface-2 px-3 py-2.5 font-mono text-content-hi placeholder:font-sans placeholder:text-content-dim focus:border-brand focus:outline-none"
+            enterKeyHint="search"
+            placeholder={t.numeroCodigo}
+            aria-label={t.numeroAria}
+            className="min-h-12 min-w-0 flex-1 rounded-card border border-surface-4 bg-surface-2 px-3 font-mono text-base text-content-hi placeholder:font-sans placeholder:text-content-low focus:border-brand focus:outline-none"
           />
           <button
             type="submit"
             disabled={codigoDigitado.length < 8}
-            className="rounded-pill bg-brand px-4 text-sm font-bold text-surface-1 disabled:opacity-50"
+            className="min-h-12 rounded-pill bg-brand px-5 text-sm font-bold text-surface-1 active:scale-95 disabled:opacity-50"
           >
-            Buscar
+            {t.buscar}
           </button>
         </form>
       )}
@@ -219,16 +244,14 @@ export function Scanner() {
       <header className="flex items-center gap-3 py-3">
         <button
           onClick={() => navigate(-1)}
-          aria-label="Voltar"
-          className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-surface-4 text-content-mid"
+          aria-label={t.voltar}
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-surface-4 text-content-mid active:bg-white/5"
         >
           ←
         </button>
         <div className="min-w-0">
-          <h1 className="text-xl font-extrabold text-content-hi">📷 Escanear comida</h1>
-          <p className="truncate text-sm text-content-low">
-            {alvo ? `Vai pra: ${nomeRefeicao}` : 'Escolha a refeição'}
-          </p>
+          <h1 className="text-xl font-extrabold text-content-hi">{t.titulo}</h1>
+          <p className="truncate text-sm text-content-low">{alvo ? t.vaiPra(nomeRefeicao) : t.escolha}</p>
         </div>
       </header>
 
@@ -236,15 +259,15 @@ export function Scanner() {
         <div className="mb-4 grid grid-cols-2 gap-2">
           {FIXAS.map((f) => (
             <button
-              key={f.alvo.tipo}
+              key={f.tipo}
               onClick={() => {
-                setAlvo(f.alvo)
-                setNomeRefeicao(f.nome)
+                setAlvo({ tipo: f.tipo })
+                setNomeRefeicao(m.dieta.refeicoes[f.tipo])
               }}
-              className="rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left"
+              className="rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left transition-colors active:bg-surface-3"
             >
-              <div className="text-2xl">{f.emoji}</div>
-              <div className="mt-1 text-sm font-semibold text-content-hi">{f.nome}</div>
+              <div className="text-2xl" aria-hidden="true">{f.emoji}</div>
+              <div className="mt-1 text-sm font-semibold text-content-hi">{m.dieta.refeicoes[f.tipo]}</div>
             </button>
           ))}
         </div>
@@ -252,24 +275,21 @@ export function Scanner() {
 
       {alvo && !pago && etapa === 'captura' && (
         <section className="rounded-card border border-accent-gold/40 bg-surface-2 p-5 text-center">
-          <div className="text-3xl">🔒</div>
-          <p className="mt-2 font-semibold text-content-hi">Scanner é do plano pago</p>
-          <p className="mt-1 text-sm text-content-low">
-            Tira foto do prato e a IA estima os alimentos e macros — até 5 por dia. No grátis, dá pra
-            buscar e adicionar os alimentos à mão na refeição.
-          </p>
+          <div className="text-3xl" aria-hidden="true">🔒</div>
+          <p className="mt-2 font-semibold text-content-hi">{t.pagoTitulo}</p>
+          <p className="mt-1 text-sm text-content-low">{t.pagoTexto}</p>
           <button
             onClick={() => navigate('/perfil/plano')}
-            className="mt-4 w-full rounded-pill bg-brand py-3 text-sm font-bold text-surface-1"
+            className="mt-4 min-h-12 w-full rounded-pill bg-brand text-sm font-bold text-surface-1 active:scale-[0.98]"
           >
-            Ver planos
+            {t.verPlanos}
           </button>
         </section>
       )}
       {alvo && !pago && etapa === 'captura' && (
         <section className="mt-4">
-          <p className="text-center text-sm text-content-low">Produto embalado? Lê o código de barras — é grátis.</p>
-          {erro && <p className="mt-2 text-center text-sm font-medium text-accent-danger">{erro}</p>}
+          <p className="text-center text-sm text-content-low">{t.codigoGratis}</p>
+          {erro && <p role="alert" className="mt-2 text-center text-sm font-medium text-accent-danger">{erro}</p>}
           {blocoCodigo}
         </section>
       )}
@@ -277,32 +297,30 @@ export function Scanner() {
       {alvo && pago && etapa === 'captura' && (
         <section className="flex flex-1 flex-col">
           <div className="flex flex-1 flex-col items-center justify-center rounded-card border border-dashed border-brand/40 bg-surface-2 p-6 text-center">
-            <div className="text-5xl">🍽️</div>
-            <p className="mt-3 font-semibold text-content-hi">Fotografe o prato inteiro, de cima</p>
-            <p className="mt-1 max-w-xs text-sm text-content-low">
-              Boa luz ajuda. A IA sugere os alimentos e as quantidades — você confere e ajusta antes de salvar.
-            </p>
+            <div className="text-5xl" aria-hidden="true">🍽️</div>
+            <p className="mt-3 font-semibold text-content-hi">{t.dicaTitulo}</p>
+            <p className="mt-1 max-w-xs text-sm text-content-low">{t.dicaTexto}</p>
           </div>
-          {erro && <p className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
+          {erro && <p role="alert" className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
           <div className="mt-4 space-y-2">
             <button
               onClick={() => void fotografar('camera')}
               disabled={restantes === 0}
-              className="w-full rounded-pill bg-brand py-3.5 text-base font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
+              className="min-h-14 w-full rounded-pill bg-brand text-base font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
             >
-              📸 Tirar foto
+              {t.tirarFoto}
             </button>
             <button
               onClick={() => void fotografar('galeria')}
               disabled={restantes === 0}
-              className="w-full rounded-pill border border-surface-4 py-3 text-sm font-semibold text-content-hi disabled:opacity-50"
+              className="min-h-12 w-full rounded-pill border border-surface-4 text-sm font-semibold text-content-hi active:bg-white/5 disabled:opacity-50"
             >
-              Escolher da galeria
+              {t.galeria}
             </button>
             {blocoCodigo}
             {restantes !== null && (
               <p className="text-center text-micro text-content-low">
-                {restantes === 0 ? 'Sem scans hoje — renova à meia-noite.' : `${restantes} de 5 scans restantes hoje`}
+                {restantes === 0 ? t.semScans : t.restantes(restantes, limite ?? restantes)}
               </p>
             )}
           </div>
@@ -316,10 +334,10 @@ export function Scanner() {
           )}
           <LifeMascote humor="chef" className="mb-3 h-28 motion-safe:animate-pulse" />
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-surface-4 border-t-brand" />
-          <p className="mt-4 font-semibold text-content-hi">
-            {origem === 'codigo' ? 'Buscando o produto…' : 'O Life está olhando seu prato…'}
+          <p className="mt-4 font-semibold text-content-hi" role="status">
+            {origem === 'codigo' ? t.buscandoProduto : t.olhando}
           </p>
-          <p className="mt-1 text-sm text-content-low">Leva uns segundinhos.</p>
+          <p className="mt-1 text-sm text-content-low">{t.segundinhos}</p>
         </section>
       )}
 
@@ -334,22 +352,20 @@ export function Scanner() {
               />
             )}
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-content-hi">{rascunho.descricao || 'Seu prato'}</p>
+              <p className="text-sm font-semibold text-content-hi">{rascunho.descricao || t.seuPrato}</p>
               {origem === 'foto' ? (
                 <p className="mt-0.5 text-micro text-content-low">
-                  Confiança da IA: <span className="font-semibold text-content-mid">{Math.round(rascunho.confianca)}%</span>
+                  {t.confianca} <span className="font-semibold text-content-mid">{Math.round(rascunho.confianca)}%</span>
                 </p>
               ) : (
-                <p className="mt-0.5 text-micro text-content-low">Números do rótulo do produto</p>
+                <p className="mt-0.5 text-micro text-content-low">{t.rotulo}</p>
               )}
               {rascunho.observacao && <p className="mt-1 text-micro text-content-low">{rascunho.observacao}</p>}
             </div>
           </div>
 
           <p className="mb-2 mt-4 text-micro text-content-low">
-            {origem === 'codigo'
-              ? 'Ajuste a quantidade que você comeu (g ou ml).'
-              : 'Confira cada item. Desmarque o que a IA errou e ajuste as gramas.'}
+            {origem === 'codigo' ? t.ajusteCodigo : t.ajusteFoto}
           </p>
           <ul className="space-y-2">
             {rascunho.itens.map((item) => (
@@ -360,48 +376,55 @@ export function Scanner() {
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => mudarItem(item.id, (i) => ({ ...i, incluir: !i.incluir }))}
-                    aria-label={item.incluir ? `Tirar ${item.nome}` : `Incluir ${item.nome}`}
-                    className={`flex h-6 w-6 flex-none items-center justify-center rounded-md border-2 text-xs font-bold ${
-                      item.incluir ? 'border-brand bg-brand text-brand-ink' : 'border-surface-4 text-transparent'
-                    }`}
+                    role="checkbox"
+                    aria-checked={item.incluir}
+                    aria-label={item.incluir ? t.tirar(item.nome) : t.incluir(item.nome)}
+                    className="-m-2 flex h-12 w-12 flex-none items-center justify-center rounded-xl active:bg-white/5"
                   >
-                    ✓
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 text-sm font-bold ${
+                        item.incluir ? 'border-brand bg-brand text-brand-ink' : 'border-content-dim text-transparent'
+                      }`}
+                    >
+                      ✓
+                    </span>
                   </button>
                   <input
                     value={item.nome}
                     onChange={(e) => mudarItem(item.id, (i) => ({ ...i, nome: e.target.value }))}
-                    aria-label="Nome do alimento"
-                    className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-content-hi focus:outline-none"
+                    aria-label={t.nomeAria}
+                    className="min-h-11 min-w-0 flex-1 rounded-lg bg-transparent px-1 text-base font-semibold text-content-hi focus:bg-surface-3 focus:outline-none"
                   />
                   <span
-                    className={`flex-none rounded-pill px-2 py-0.5 text-[10px] font-semibold ${
+                    className={`flex-none rounded-pill px-2 py-0.5 text-micro font-semibold ${
                       item.fonte === 'ia' ? 'bg-surface-3 text-content-low' : 'bg-brand/15 text-brand'
                     }`}
                   >
-                    {item.fonte === 'base' ? 'conferido na base' : item.fonte === 'rotulo' ? 'rótulo do produto' : 'estimativa da IA'}
+                    {item.fonte === 'base' ? t.fonteBase : item.fonte === 'rotulo' ? t.fonteRotulo : t.fonteIa}
                   </span>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG - 10))}
-                      aria-label="Menos 10 gramas"
-                      className="h-8 w-8 rounded-full border border-surface-4 text-content-hi"
+                      aria-label={t.menos10}
+                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-white/5"
                     >
                       −
                     </button>
                     <span className="w-16 text-center font-mono text-sm text-content-hi">{item.quantidadeG} g</span>
                     <button
                       onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG + 10))}
-                      aria-label="Mais 10 gramas"
-                      className="h-8 w-8 rounded-full border border-surface-4 text-content-hi"
+                      aria-label={t.mais10}
+                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-white/5"
                     >
                       +
                     </button>
                   </div>
                   <span className="text-right text-micro text-content-low">
-                    <span className="font-semibold text-content-hi">{item.calorias} kcal</span> · P {item.proteina} · C{' '}
-                    {item.carboidrato} · G {item.gordura}
+                    <span className="font-semibold text-content-hi">{item.calorias} kcal</span>{' '}
+                    · <span className="text-macro-proteina">{item.proteina}g</span> · <span className="text-macro-carbo">{item.carboidrato}g</span> ·{' '}
+                    <span className="text-macro-gordura">{item.gordura}g</span>
                   </span>
                 </div>
               </li>
@@ -411,30 +434,28 @@ export function Scanner() {
           <div className="mt-4 grid grid-cols-4 gap-1.5 rounded-card border border-surface-4 bg-surface-2 p-3 text-center">
             {(
               [
-                ['kcal', Math.round(total.calorias)],
-                ['prot', `${Math.round(total.proteina)}g`],
-                ['carb', `${Math.round(total.carboidrato)}g`],
-                ['gord', `${Math.round(total.gordura)}g`],
+                ['kcal', Math.round(total.calorias), 'text-content-hi'],
+                [m.dieta.busca.chipProt, `${Math.round(total.proteina)}g`, 'text-macro-proteina'],
+                [m.dieta.busca.chipCarb, `${Math.round(total.carboidrato)}g`, 'text-macro-carbo'],
+                [m.dieta.busca.chipGord, `${Math.round(total.gordura)}g`, 'text-macro-gordura'],
               ] as const
-            ).map(([r, v]) => (
+            ).map(([r, v, cor]) => (
               <div key={r}>
-                <div className="text-micro text-content-dim">{r}</div>
-                <div className="font-mono text-sm font-bold text-content-hi">{v}</div>
+                <div className="text-micro text-content-low">{r}</div>
+                <div className={`font-mono text-sm font-bold ${cor}`}>{v}</div>
               </div>
             ))}
           </div>
 
-          {erro && <p className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
+          {erro && <p role="alert" className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
 
           <div className="mt-4 space-y-2">
             <button
               onClick={() => void salvar()}
               disabled={incluidos === 0 || etapa === 'salvando'}
-              className="w-full rounded-pill bg-brand py-3.5 text-base font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
+              className="min-h-14 w-full rounded-pill bg-brand px-4 text-base font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
             >
-              {etapa === 'salvando'
-                ? 'Salvando…'
-                : `Adicionar ${incluidos} ${incluidos === 1 ? 'item' : 'itens'} em ${nomeRefeicao}`}
+              {etapa === 'salvando' ? t.salvando : t.adicionarEm(incluidos, nomeRefeicao)}
             </button>
             <button
               onClick={() => {
@@ -443,9 +464,9 @@ export function Scanner() {
                 setEtapa('captura')
               }}
               disabled={etapa === 'salvando'}
-              className="w-full py-2.5 text-sm font-semibold text-content-mid"
+              className="min-h-12 w-full text-sm font-semibold text-content-mid"
             >
-              {origem === 'codigo' ? 'Ler outro código' : 'Tirar outra foto'}
+              {origem === 'codigo' ? t.outroCodigo : t.outraFoto}
             </button>
           </div>
         </section>

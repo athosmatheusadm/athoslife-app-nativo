@@ -2272,3 +2272,9 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
     altura do chat em `dvh` (teclado não esconde o campo); erros, contador
     e textos em pt/en/es; planos/check de saúde sem 11px nem cinza
     apagado; checkbox com cor por token.
+  - **Scanner**: limite de scans lido do servidor (o texto dizia "5" fixo —
+    ia ficar errado quando mudar pra 15); Voltar do Android na revisão
+    pede 2º toque (antes jogava fora a análise que já gastou um scan); ✓
+    de incluir 48px (era 24px), ±10 g 44px (eram 32px), nome editável 44px;
+    aviso "N itens adicionados em Almoço" + vibração; macros com as cores
+    de token; erros com `role=alert`; todo texto em pt/en/es.
