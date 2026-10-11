@@ -2393,3 +2393,38 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      desinstalou) — página simples ou formulário; decidir onde hospedar.
   4. Seguem: Billing, Termos com dados da empresa, suporte, .aab assinado,
      SMTP + template do código.
+
+## 2026-10-10
+
+- `db/athoslife_excluir_conta_migration.sql` **rodada pelo dono** — conferida
+  no banco (`excluir_minha_conta(p_senha, p_so_conferir)`, security definer).
+- ai-proxy no ar segue **v3.8 (versão 18)** — v3.9 (Life estima) não publicado.
+- Dono preocupado com "Life estima" = prescrever. Explicado: só devolve
+  kcal/macros de UM alimento que a pessoa já comeu/vai registrar (tabela
+  TACO/USDA), sem conselho nem quantidade recomendada, marcado
+  "estimativa", pessoa confirma a porção antes de gravar. Dono decide se
+  mantém.
+- Dono **concordou com os limites da IA** (grátis 8 msgs/dia + histórico 12,
+  pago 60/dia, scanner só pago 15/dia, receitas grátis 1/semana e pago
+  10/dia) -> falta SQL em `limite_ia`/`cota_ia_status`, `JANELA_HISTORICO`
+  e textos do paywall.
+- Dono vai testar o Life. Billing: dono estudando.
+- Link web de exclusão de conta: estrutura explicada, aguardando decisão de
+  hospedagem.
+- **Pendências pra próxima sessão**:
+  1. Dono decide o "Life estima": manter (com selo "estimativa" fixo no
+     diário, valores editáveis e aviso "não use pra cálculo de medicação"
+     na tela e nos Termos) ou tirar. Só depois publicar o ai-proxy v3.9.
+  2. Limites da IA aprovados -> Claude prepara SQL (`limite_ia`,
+     `cota_ia_status`) + teste que se desfaz, `JANELA_HISTORICO` = 12 no
+     ai-proxy e textos do paywall com os números.
+  3. Página web de exclusão de conta (exigência da Play): e-mail + senha ->
+     2º toque -> `excluir_minha_conta`; "esqueci a senha"; e-mail de
+     suporte; o que apaga/o que fica anonimizado. Dono responde: domínio
+     próprio ou GitHub Pages, nome do desenvolvedor/empresa, e-mail de
+     suporte. Política de privacidade no mesmo lugar.
+  4. Dono testando o Life (manda print/frase do que estranhar).
+  5. Seguem: Billing (dono estudando), Termos com dados da empresa, .aab
+     assinado, SMTP + template, polimento visual sem mexer em layout,
+     idioma das respostas do Life, "Baixar meus dados" no APK, revogar
+     tokens colados no chat, limite/alerta no Google Cloud.
