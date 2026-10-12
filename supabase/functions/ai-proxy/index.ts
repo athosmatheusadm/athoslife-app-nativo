@@ -39,6 +39,8 @@ const TETO_GLOBAL_TOKENS = Number(env('IA_TETO_TOKENS_DIA', '2000000'))
 const MAX_CORPO = 4_500_000 // ~3 MB de imagem em base64 + folga
 const MAX_MENSAGEM = 800
 const JANELA_HISTORICO = 15
+/** Pausas do Life (dias congelados) em 30 dias — dono 12/10: só o Life oferece, com teto. */
+const MAX_PAUSAS_30_DIAS = 3
 
 // Preço por 1M tokens (USD, entrada/saída) — só pra estimar custo no log.
 const PRECOS: Record<string, [number, number]> = {
@@ -624,8 +626,9 @@ COMO CONVERSAR:
 - Metas e lembretes são apoio, nunca "cobrança" — não use essa palavra.
 
 PAUSA DO DIA:
-- Num momento pesado, ou se a pessoa disser que não quer ser incomodada, você pode oferecer: "Se quiser, eu fico quietinho hoje — sem lembrete nem mensagem minha até amanhã." Oferecer não ativa nada.
-- Chame a ferramenta pausar_life_hoje só quando a pessoa pedir claramente pra parar as mensagens/lembretes hoje ("não me manda mais nada hoje", "pode pausar") ou aceitar a SUA oferta de pausa. "Sim, quero conversar" NÃO é pausa; na dúvida, pergunte.
+- A pausa é cuidado pra um dia difícil, não folga: ela congela sequências e metas. Quem decide oferecer é você, só num momento pesado de verdade (luto, notícia difícil, dia muito ruim, desabafo de esgotamento): "Se quiser, eu fico quietinho hoje — sem lembrete nem mensagem minha até amanhã." Oferecer não ativa nada.
+- Pedido de pausa sem momento pesado ("quero um tempo", "pausa aí", "congela minha sequência", preguiça, viagem, festa): não ofereça nem chame a ferramenta; diga com carinho que tropeçar um dia faz parte e a sequência recomeça sem problema.
+- Chame a ferramenta pausar_life_hoje só quando a pessoa aceitar a SUA oferta de pausa feita nesta conversa. "Sim, quero conversar" NÃO é pausa; na dúvida, pergunte.
 - Se o contexto disser "Life pausado hoje": não puxe assunto nem lembre de registros; só responda o que ela trouxer. A pausa congela sequências e metas — nada se perde.
 
 AÇÕES NO APP (você só executa estas duas, pelas ferramentas):
@@ -714,7 +717,7 @@ ${linhaApoio(loc)}`
  */
 const FOCOS_LIFE: Record<string, string> = {
   home: 'ONDE VOCÊ ESTÁ: na Home. Você é o Life que sabe de tudo do app — comida, treino, água, peso, humor e hábitos — e liga os pontos entre as áreas quando fizer sentido (ex.: dormiu mal e tem treino pesado hoje; vontade de doce à noite num dia sem almoço). Este chat é só conversa, sem botões: montar treino é no Life da tela de Treino; montar dieta, montar receita e analisar alimento são no Life da tela de Dieta.',
-  dieta: 'ONDE VOCÊ ESTÁ: na tela de Dieta — você é o Life da comida (de chef). Você sabe de tudo, mas puxe pra alimentação: refeições do dia, ideias de comida, trocas equivalentes (informando kcal/macros, sem recomendar), porções, rótulos e o plano de referência de dieta. Botões deste chat: "Montar dieta", "Trocar um alimento", "Monte sua receita com o Life" e "Analisar um alimento" (foto do prato ou código de barras). Se a pessoa quiser saber o que tem num prato ou produto, lembre do "Analisar um alimento". Se perguntarem de treino, responda curto e diga que o Life do Treino ajuda melhor nisso.',
+  dieta: 'ONDE VOCÊ ESTÁ: na tela de Dieta — você é o Life da comida (de chef). Você sabe de tudo, mas puxe pra alimentação: refeições do dia, ideias de comida, trocas equivalentes (informando kcal/macros, sem recomendar), porções, rótulos e o plano de referência de dieta. Botões deste chat: "Montar dieta", "Trocar um alimento" e "Monte sua receita com o Life". Se a pessoa quiser saber o que tem num prato ou produto, diga que é no 📷 dentro da refeição, na tela de Dieta. Se perguntarem de treino, responda curto e diga que o Life do Treino ajuda melhor nisso.',
   treino: 'ONDE VOCÊ ESTÁ: na tela de Treino — você é o Life do treino. Você sabe de tudo, mas puxe pro treino: exercícios do plano, execução em linhas gerais, ordem, séries anotadas, descanso, constância e o plano de referência de treino. Carga é sempre a pessoa quem define. Botões deste chat: "Montar treino" e "Trocar um exercício". Se perguntarem de comida, responda curto e diga que o Life da Dieta ajuda melhor nisso.',
   habitos: 'ONDE VOCÊ ESTÁ: na tela de Hábitos — você é o Life dos hábitos. Você sabe de tudo, mas puxe pros hábitos: acolher a vontade, celebrar os dias firmes, ajudar a atravessar o momento difícil (respirar, mudar de lugar, beber água, esperar a onda passar), entender o que dispara a vontade e recomeçar depois de um tropeço — sem julgar e sem sermão. Este chat é só conversa, sem botões de plano: montar treino é no Life da tela de Treino e montar dieta no Life da tela de Dieta.',
 }
@@ -1339,7 +1342,7 @@ const FERRAMENTAS_LIFE = [
       {
         name: 'pausar_life_hoje',
         description:
-          'Pausa o Life até o fim do dia: sem lembretes, check-ins nem mensagens iniciadas pelo Life. Só quando a pessoa pedir claramente ou aceitar a oferta de pausa.',
+          'Pausa o Life até o fim do dia (sem lembretes nem mensagens do Life; congela sequências). Só quando a pessoa aceitar a oferta de pausa que VOCÊ fez num momento pesado.',
       },
     ],
   },
@@ -1406,7 +1409,8 @@ const TXT = {
     expirou: 'Essa pergunta já ficou pra trás. Se ainda quiser, me pede de novo.',
     andamento: 'Tô terminando de registrar — já aparece aí.',
     pausa: 'Combinado. Hoje eu fico quietinho: sem lembrete nem mensagem minha até amanhã. Se quiser falar, é só chamar.',
-    pausaFalhou: 'Não consegui pausar agora. Tenta pelo botão 🌙 aqui em cima.',
+    pausaFalhou: 'Não consegui pausar agora. Tenta de novo daqui a pouco.',
+    pausaLimite: 'Esse mês já teve alguns dias de pausa, então hoje eu fico por aqui sem congelar nada. Se a sequência quebrar, tudo bem — ela recomeça, e eu tô contigo.',
     salvarRestricao: (l: string) => `Quer que eu guarde no seu perfil que você evita ${l}? Assim eu lembro sempre nas ideias e receitas.`,
     restricaoSalva: (l: string) => `Guardei no seu perfil: ${l}. Vou lembrar disso nas ideias e nas receitas 👍`,
     restricaoFalhou: 'Não consegui guardar agora — nada foi alterado. Tenta de novo daqui a pouco.',
@@ -1427,7 +1431,8 @@ const TXT = {
     expirou: 'That question is a bit old now. If you still want it, just ask me again.',
     andamento: "I'm finishing logging it — it'll show up in a sec.",
     pausa: "Got it. I'll stay quiet today: no reminders or messages from me until tomorrow. If you want to talk, just call me.",
-    pausaFalhou: "I couldn't pause right now. Try the 🌙 button up top.",
+    pausaFalhou: "I couldn't pause right now. Try again in a bit.",
+    pausaLimite: "This month already had a few pause days, so today I'll stay around without freezing anything. If the streak breaks, that's okay — it starts again, and I'm with you.",
     salvarRestricao: (l: string) => `Want me to save to your profile that you avoid ${l}? That way I'll always remember it in ideas and recipes.`,
     restricaoSalva: (l: string) => `Saved to your profile: ${l}. I'll keep it in mind for ideas and recipes 👍`,
     restricaoFalhou: "I couldn't save it right now — nothing was changed. Try again in a bit.",
@@ -1448,7 +1453,8 @@ const TXT = {
     expirou: 'Esa pregunta ya quedó atrás. Si todavía quieres, pídemelo de nuevo.',
     andamento: 'Estoy terminando de registrarlo — ya aparece.',
     pausa: 'Hecho. Hoy me quedo calladito: sin recordatorios ni mensajes míos hasta mañana. Si quieres hablar, solo llámame.',
-    pausaFalhou: 'No pude pausar ahora. Prueba con el botón 🌙 de arriba.',
+    pausaFalhou: 'No pude pausar ahora. Intenta de nuevo en un rato.',
+    pausaLimite: 'Este mes ya tuvo algunos días de pausa, así que hoy me quedo por aquí sin congelar nada. Si la racha se corta, está bien — vuelve a empezar, y estoy contigo.',
     salvarRestricao: (l: string) => `¿Quieres que guarde en tu perfil que evitas ${l}? Así lo recuerdo siempre en ideas y recetas.`,
     restricaoSalva: (l: string) => `Guardé en tu perfil: ${l}. Lo voy a tener en cuenta en ideas y recetas 👍`,
     restricaoFalhou: 'No pude guardarlo ahora — no se cambió nada. Intenta de nuevo en un rato.',
@@ -1648,6 +1654,10 @@ async function executarFerramenta(
   const hoje = hojeNoFuso(loc.fuso)
 
   if (chamada.nome === 'pausar_life_hoje') {
+    // Teto: a pausa congela sequências — não pode virar congelamento à vontade.
+    const { count } = await sb.from('life_pausas').select('dia', { count: 'exact', head: true })
+      .eq('user_id', userId).gte('dia', somarDias(hoje, -30)).neq('dia', hoje)
+    if ((count ?? 0) >= MAX_PAUSAS_30_DIAS) return { resposta: t.pausaLimite, acao: null, status: 'pausa_limite' }
     const { error } = await sb.from('life_pausas').upsert({ user_id: userId, dia: hoje }, { onConflict: 'user_id,dia', ignoreDuplicates: true })
     if (error) {
       console.error('[acao] pausa falhou', error.message)

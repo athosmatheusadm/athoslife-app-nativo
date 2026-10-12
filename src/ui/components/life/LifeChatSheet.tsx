@@ -19,7 +19,6 @@ import {
   lifePausadoHoje,
   marcarConversaComLife,
   marcarPausaLocal,
-  pausarLifeHoje,
   retomarLifeHoje,
 } from '@data/lifePausa'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -153,9 +152,9 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     setMudandoPausa(true)
     setErro(null)
     try {
-      if (pausado) await retomarLifeHoje()
-      else await pausarLifeHoje()
-      setPausado(!pausado)
+      if (!pausado) return
+      await retomarLifeHoje()
+      setPausado(false)
     } catch {
       setErro(m.lifeChat.erroPausa)
     } finally {
@@ -220,27 +219,27 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             <h2 className="text-xl font-bold text-content-hi">{m.lifeChat.titulo[foco]}</h2>
             <p className="mt-0.5 text-sm text-content-low">{m.lifeChat.sub[foco]}</p>
           </div>
-          {/* Pausa do dia (Life MVP 08/10): vale pra todos os Lifes e avisos. */}
-          <button
-            type="button"
-            onClick={() => void alternarPausa()}
-            disabled={mudandoPausa}
-            aria-pressed={pausado}
-            className={`min-h-11 max-w-[45%] flex-none rounded-full border px-3 text-micro font-semibold leading-tight disabled:opacity-50 ${
-              pausado ? 'border-accent-gold/50 bg-accent-gold/10 text-accent-gold' : 'border-surface-4 text-content-low'
-            }`}
-          >
-            🌙 {pausado ? `${m.lifeChat.pausado} · ${m.lifeChat.retomar}` : m.lifeChat.pausar}
-          </button>
+          {/* Pausa do dia: quem oferece é o Life, num momento pesado (dono, 12/10 —
+              botão livre deixava qualquer um congelar sequências). Aqui só o Retomar. */}
+          {pausado && (
+            <button
+              type="button"
+              onClick={() => void alternarPausa()}
+              disabled={mudandoPausa}
+              className="min-h-11 max-w-[45%] flex-none rounded-full border border-accent-gold/50 bg-accent-gold/10 px-3 text-micro font-semibold leading-tight text-accent-gold disabled:opacity-50"
+            >
+              🌙 {m.lifeChat.pausado} · {m.lifeChat.retomar}
+            </button>
+          )}
         </div>
 
         {pausado && <p className="flex-none px-6 pb-3 text-micro leading-relaxed text-content-low">{m.lifeChat.pausadoAviso}</p>}
 
-        {/* Atalhos da Dieta (dono, 05/10: Life-chef sem card na tela; 08/10: scanner aqui também). */}
+        {/* Atalho da Dieta (dono, 05/10: Life-chef sem card na tela; 12/10: "Analisar
+            um alimento" saiu daqui — o scanner fica na refeição). */}
         {foco === 'dieta' && (
           <div className="flex-none space-y-2 px-6 pb-3">
             <Atalho emoji="👨‍🍳" texto={m.cozinha.lifeChefTitulo} onClick={() => ir('/dieta/cozinha/life')} />
-            <Atalho emoji="📷" texto={m.cozinha.analisarAlimento} onClick={() => ir('/scanner')} />
           </div>
         )}
 
