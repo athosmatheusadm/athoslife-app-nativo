@@ -172,7 +172,7 @@ export function separarCartoes(texto: string): { texto: string; receitas: string
   return { texto: limpo.trim(), receitas, chef }
 }
 
-export type EscolhaAcao = 'adicionar' | 'substituir' | 'forcar' | 'cancelar'
+export type EscolhaAcao = 'adicionar' | 'substituir' | 'forcar' | 'salvar' | 'cancelar'
 
 /**
  * O que o Life FEZ no app (Life MVP 08/10) — só vem depois que o servidor

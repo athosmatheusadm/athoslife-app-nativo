@@ -731,18 +731,21 @@ type CodigoAlergeno =
   | 'peixe' | 'frutos_mar' | 'gergelim' | 'carne' | 'mel'
 
 // Mesmos códigos de receitas_cozinha.alergenos (db/athoslife_cozinha_alergenos_migration.sql).
-const SINONIMOS_ALERGENO: [RegExp, CodigoAlergeno[]][] = [
-  [/\b(lactose|lactosa|leite|laticinios?|lacteos?|dairy|milk|leche)\b/, ['lactose']],
-  [/\b(gluten|celiac\w*|trigo|wheat)\b/, ['gluten']],
-  [/\b(ovos?|eggs?|huevos?)\b/, ['ovo']],
-  [/\b(amendoim|peanuts?|mani|cacahuetes?)\b/, ['amendoim']],
-  [/\b(castanhas?|nozes|noz|amendoas?|nuts|frutos secos|nueces|almendras?)\b/, ['castanhas']],
-  [/\b(soja|soy|tofu)\b/, ['soja']],
-  [/\b(peixes?|fish|pescados?)\b/, ['peixe']],
-  [/\b(frutos do mar|camarao|crustaceos?|seafood|shellfish|shrimp|mariscos?|camarones?)\b/, ['frutos_mar']],
-  [/\b(gergelim|sesamo|sesame)\b/, ['gergelim']],
-  [/\bvegetarian\w*\b/, ['carne', 'peixe', 'frutos_mar']],
-  [/\bvegan\w*\b/, ['carne', 'peixe', 'frutos_mar', 'ovo', 'lactose', 'mel']],
+// `nome`: como fica salvo em profiles.restricoes quando a pessoa aceita
+// guardar pelo chat (no idioma dela; todos casam de novo com a própria regex).
+const SINONIMOS_ALERGENO: { re: RegExp; codigos: CodigoAlergeno[]; nome: Record<Idioma, string> }[] = [
+  { re: /\b(lactose|lactosa|leite|laticinios?|lacteos?|dairy|milk|leche)\b/, codigos: ['lactose'], nome: { 'pt-BR': 'lactose', en: 'lactose', es: 'lactosa' } },
+  { re: /\b(gluten|celiac\w*|trigo|wheat)\b/, codigos: ['gluten'], nome: { 'pt-BR': 'glúten', en: 'gluten', es: 'gluten' } },
+  { re: /\b(ovos?|eggs?|huevos?)\b/, codigos: ['ovo'], nome: { 'pt-BR': 'ovo', en: 'eggs', es: 'huevo' } },
+  { re: /\b(amendoim|peanuts?|mani|cacahuetes?)\b/, codigos: ['amendoim'], nome: { 'pt-BR': 'amendoim', en: 'peanuts', es: 'maní' } },
+  { re: /\b(castanhas?|nozes|noz|amendoas?|nuts|frutos secos|nueces|almendras?)\b/, codigos: ['castanhas'], nome: { 'pt-BR': 'castanhas', en: 'tree nuts', es: 'frutos secos' } },
+  // "soy" sozinho é soja em inglês, mas "soy alérgica" é "eu sou" em espanhol.
+  { re: /\b(soja|tofu|soy(?! (alergic\w*|intoleran\w*|celiac\w*|vegan\w*|vegetarian\w*|de|muy|una?)\b))\b/, codigos: ['soja'], nome: { 'pt-BR': 'soja', en: 'soy', es: 'soja' } },
+  { re: /\b(peixes?|fish|pescados?)\b/, codigos: ['peixe'], nome: { 'pt-BR': 'peixe', en: 'fish', es: 'pescado' } },
+  { re: /\b(frutos do mar|camarao|crustaceos?|seafood|shellfish|shrimp|mariscos?|camarones?)\b/, codigos: ['frutos_mar'], nome: { 'pt-BR': 'frutos do mar', en: 'seafood', es: 'mariscos' } },
+  { re: /\b(gergelim|sesamo|sesame)\b/, codigos: ['gergelim'], nome: { 'pt-BR': 'gergelim', en: 'sesame', es: 'sésamo' } },
+  { re: /\bvegetarian\w*\b/, codigos: ['carne', 'peixe', 'frutos_mar'], nome: { 'pt-BR': 'vegetariano', en: 'vegetarian', es: 'vegetariano' } },
+  { re: /\bvegan\w*\b/, codigos: ['carne', 'peixe', 'frutos_mar', 'ovo', 'lactose', 'mel'], nome: { 'pt-BR': 'vegano', en: 'vegan', es: 'vegano' } },
 ]
 
 const ROTULO_ALERGENO: Record<CodigoAlergeno, string> = {
@@ -760,7 +763,7 @@ const PEDE_COMIDA =
 
 function codigosAlergeno(texto: string): CodigoAlergeno[] {
   const n = normalizar(texto)
-  return SINONIMOS_ALERGENO.filter(([re]) => re.test(n)).flatMap(([, c]) => c)
+  return SINONIMOS_ALERGENO.filter((g) => g.re.test(n)).flatMap((g) => g.codigos)
 }
 
 interface ReceitaCatalogo {
@@ -847,6 +850,82 @@ const RESPOSTA_RECEITA_NO_CHEF: Record<Idioma, string> = {
   'pt-BR': 'Essa eu monto certinha pra você no "Monte sua receita com o Life" 👨‍🍳 — lá sai com ingredientes, preparo e macros.\n[[CHEF]]',
   en: 'I\'ll put that one together properly in "Build your recipe with Life" 👨‍🍳 — with ingredients, steps and macros.\n[[CHEF]]',
   es: 'Esa te la armo bien en "Arma tu receta con Life" 👨‍🍳 — con ingredientes, preparación y macros.\n[[CHEF]]',
+}
+
+// ---------- guardar no perfil a restrição dita no chat (v3.10) ----------
+// Sem IA: a fala da pessoa ("sou intolerante a lactose") vira uma pergunta
+// com botões no fim da resposta normal — nada é gravado sem o "Salvar".
+// Não pergunta de novo o que já perguntou nos últimos 30 dias.
+const FALA_DE_OUTRA_PESSOA =
+  /\b(meu|minha|meus|minhas|filh\w*|esposa|marido|namorad\w*|mae|pai|amig\w*|my (son|daughter|wife|husband|kid|kids|friend|partner)|mi (hijo|hija|esposa|esposo|novio|novia|amig\w*))\b/
+const NEGACAO_RESTRICAO = /\b(nao (sou|tenho)|(i m|im|i am|i don t have|i do not have) not|no (soy|tengo))\b/
+
+interface ArgsRestricao {
+  codigos: CodigoAlergeno[]
+  nomes: string[]
+}
+
+async function ofertaSalvarRestricao(sb: Sb, userId: string, mensagem: string, idioma: Idioma): Promise<{ pergunta: string; acao: AcaoCliente } | null> {
+  const n = normalizar(mensagem)
+  if (!PISTA_RESTRICAO.test(n) || FALA_DE_OUTRA_PESSOA.test(n) || NEGACAO_RESTRICAO.test(n)) return null
+  let ditos = SINONIMOS_ALERGENO.filter((g) => g.re.test(n))
+  if (!ditos.length) return null
+
+  const desde = new Date(Date.now() - 30 * 86_400_000).toISOString()
+  const [perf, perguntadas] = await Promise.all([
+    sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle(),
+    sb.from('life_acoes').select('args').eq('user_id', userId).eq('tipo', 'salvar_restricao').gte('criado_em', desde).limit(20),
+  ])
+  if (perf.error || perguntadas.error) return null
+  const jaTem = new Set<CodigoAlergeno>()
+  for (const r of (Array.isArray(perf.data?.restricoes) ? perf.data.restricoes : []) as unknown[]) codigosAlergeno(String(r)).forEach((c) => jaTem.add(c))
+  const jaPerguntou = new Set<string>()
+  for (const a of (perguntadas.data ?? []) as { args: Partial<ArgsRestricao> | null }[]) (a.args?.codigos ?? []).forEach((c) => jaPerguntou.add(c))
+
+  ditos = ditos.filter((g) => !g.codigos.every((c) => jaTem.has(c)) && !g.codigos.every((c) => jaPerguntou.has(c)))
+  if (!ditos.length) return null
+
+  const args: ArgsRestricao = { codigos: [...new Set(ditos.flatMap((g) => g.codigos))], nomes: ditos.map((g) => g.nome[idioma]) }
+  const id = crypto.randomUUID()
+  const { error } = await sb.from('life_acoes').insert({
+    id, user_id: userId, tipo: 'salvar_restricao', status: 'pendente', args,
+    expira_em: new Date(Date.now() + 60 * 60_000).toISOString(),
+  })
+  if (error) {
+    // Sem a migração (check do tipo) cai aqui: só não pergunta.
+    console.warn('[restricao] oferta falhou', error.message)
+    return null
+  }
+  return {
+    pergunta: TXT[idioma].salvarRestricao(lista(args.nomes, idioma)),
+    acao: { tipo: 'escolha', id, opcoes: opcoes(idioma, ['salvar', 'cancelar']) },
+  }
+}
+
+/** "a, b e c" / "a, b and c" / "a, b y c". */
+function lista(itens: string[], idioma: Idioma): string {
+  if (itens.length < 2) return itens.join('')
+  const e = idioma === 'en' ? 'and' : idioma === 'es' ? 'y' : 'e'
+  return `${itens.slice(0, -1).join(', ')} ${e} ${itens[itens.length - 1]}`
+}
+
+async function salvarRestricao(sb: Sb, userId: string, idAcao: string, args: ArgsRestricao, idioma: Idioma): Promise<ResultadoAcao> {
+  const t = TXT[idioma]
+  const { data: perfil, error: erroLer } = await sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle()
+  const atuais = (Array.isArray(perfil?.restricoes) ? perfil.restricoes : []) as string[]
+  const vistas = new Set(atuais.map((r) => normalizar(String(r))))
+  const novas = args.nomes.filter((x) => !vistas.has(normalizar(x)))
+  const { error } = erroLer
+    ? { error: erroLer }
+    : novas.length
+      ? await sb.from('profiles').update({ restricoes: [...atuais, ...novas].slice(0, 30) }).eq('id', userId)
+      : { error: null }
+  const r: ResultadoAcao = error
+    ? { resposta: t.restricaoFalhou, acao: null, status: 'restricao_falhou' }
+    : { resposta: t.restricaoSalva(lista(args.nomes, idioma)), acao: null, status: 'restricao_ok' }
+  if (error) console.error('[restricao] salvar falhou', error.message)
+  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r)
+  return r
 }
 
 async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>) {
@@ -984,6 +1063,13 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   } else if (pareceReceitaCompleta(resposta)) {
     resposta = RESPOSTA_RECEITA_NO_CHEF[loc.idioma]
     status = 'receita_no_chat'
+  }
+  if (!feito && status !== 'fora_tema') {
+    const oferta = await ofertaSalvarRestricao(sb, userId, mensagem, loc.idioma)
+    if (oferta) {
+      resposta = `${resposta}\n\n${oferta.pergunta}`
+      acao = oferta.acao
+    }
   }
   if (!feito) resposta = cartoesDaResposta(resposta, catalogo ?? [])
 
@@ -1314,7 +1400,11 @@ const TXT = {
     andamento: 'Tô terminando de registrar — já aparece aí.',
     pausa: 'Combinado. Hoje eu fico quietinho: sem lembrete nem mensagem minha até amanhã. Se quiser falar, é só chamar.',
     pausaFalhou: 'Não consegui pausar agora. Tenta pelo botão 🌙 aqui em cima.',
-    escolha: { adicionar: 'Adicionar junto', substituir: 'Substituir', forcar: 'Copiar mesmo assim', cancelar: 'Deixa como está' },
+    salvarRestricao: (l: string) => `Quer que eu guarde no seu perfil que você evita ${l}? Assim eu lembro sempre nas ideias e receitas.`,
+    restricaoSalva: (l: string) => `Guardei no seu perfil: ${l}. Vou lembrar disso nas ideias e nas receitas 👍`,
+    restricaoFalhou: 'Não consegui guardar agora — nada foi alterado. Tenta de novo daqui a pouco.',
+    restricaoNao: 'Tudo bem, não guardei.',
+    escolha: { adicionar: 'Adicionar junto', substituir: 'Substituir', forcar: 'Copiar mesmo assim', salvar: 'Salvar no perfil', cancelar: 'Deixa como está' },
   },
   en: {
     pronto: (o: string, d: string, n: number, kcal: number) =>
@@ -1331,7 +1421,11 @@ const TXT = {
     andamento: "I'm finishing logging it — it'll show up in a sec.",
     pausa: "Got it. I'll stay quiet today: no reminders or messages from me until tomorrow. If you want to talk, just call me.",
     pausaFalhou: "I couldn't pause right now. Try the 🌙 button up top.",
-    escolha: { adicionar: 'Add to it', substituir: 'Replace', forcar: 'Copy anyway', cancelar: 'Leave it' },
+    salvarRestricao: (l: string) => `Want me to save to your profile that you avoid ${l}? That way I'll always remember it in ideas and recipes.`,
+    restricaoSalva: (l: string) => `Saved to your profile: ${l}. I'll keep it in mind for ideas and recipes 👍`,
+    restricaoFalhou: "I couldn't save it right now — nothing was changed. Try again in a bit.",
+    restricaoNao: "No problem, I didn't save it.",
+    escolha: { adicionar: 'Add to it', substituir: 'Replace', forcar: 'Copy anyway', salvar: 'Save to profile', cancelar: 'Leave it' },
   },
   es: {
     pronto: (o: string, d: string, n: number, kcal: number) =>
@@ -1348,7 +1442,11 @@ const TXT = {
     andamento: 'Estoy terminando de registrarlo — ya aparece.',
     pausa: 'Hecho. Hoy me quedo calladito: sin recordatorios ni mensajes míos hasta mañana. Si quieres hablar, solo llámame.',
     pausaFalhou: 'No pude pausar ahora. Prueba con el botón 🌙 de arriba.',
-    escolha: { adicionar: 'Agregar', substituir: 'Reemplazar', forcar: 'Copiar igual', cancelar: 'Dejarlo así' },
+    salvarRestricao: (l: string) => `¿Quieres que guarde en tu perfil que evitas ${l}? Así lo recuerdo siempre en ideas y recetas.`,
+    restricaoSalva: (l: string) => `Guardé en tu perfil: ${l}. Lo voy a tener en cuenta en ideas y recetas 👍`,
+    restricaoFalhou: 'No pude guardarlo ahora — no se cambió nada. Intenta de nuevo en un rato.',
+    restricaoNao: 'Está bien, no lo guardé.',
+    escolha: { adicionar: 'Agregar', substituir: 'Reemplazar', forcar: 'Copiar igual', salvar: 'Guardar en el perfil', cancelar: 'Dejarlo así' },
   },
 } satisfies Record<Idioma, unknown>
 
@@ -1426,7 +1524,7 @@ function conflitosRestricao(itens: string[], restricoes: string[], idioma: Idiom
 }
 
 // ---------- execução ----------
-type Escolha = 'adicionar' | 'substituir' | 'forcar' | 'cancelar'
+type Escolha = 'adicionar' | 'substituir' | 'forcar' | 'salvar' | 'cancelar'
 type AcaoCliente =
   | { tipo: 'refeicao_atualizada'; data: string }
   | { tipo: 'pausa'; dia: string }
@@ -1601,7 +1699,7 @@ async function executarFerramenta(
 async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>) {
   const id = uuidValido(corpo.id)
   const escolha = corpo.escolha
-  if (!id || !['adicionar', 'substituir', 'forcar', 'cancelar'].includes(String(escolha))) {
+  if (!id || !['adicionar', 'substituir', 'forcar', 'salvar', 'cancelar'].includes(String(escolha))) {
     return json({ error: 'invalid_action' }, 400)
   }
   const loc = await lerLocalidade(sb, userId)
@@ -1609,7 +1707,7 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
   const hoje = hojeNoFuso(loc.fuso)
 
   const { data: pend } = await sb.from('life_acoes')
-    .select('status, args, expira_em, resultado').eq('id', id).eq('user_id', userId).maybeSingle()
+    .select('tipo, status, args, expira_em, resultado').eq('id', id).eq('user_id', userId).maybeSingle()
 
   let r: ResultadoAcao
   if (!pend) {
@@ -1623,8 +1721,15 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
     r = { resposta: t.expirou, acao: null, status: 'acao_expirada' }
     await fecharAcao(sb, id, 'cancelada', r)
   } else if (escolha === 'cancelar') {
-    r = { resposta: t.cancelado, acao: null, status: 'acao_cancelada' }
+    r = { resposta: pend.tipo === 'salvar_restricao' ? t.restricaoNao : t.cancelado, acao: null, status: 'acao_cancelada' }
     await fecharAcao(sb, id, 'cancelada', r)
+  } else if (pend.tipo === 'salvar_restricao' || escolha === 'salvar') {
+    // Botão de outro tipo de ação (ex.: "salvar" numa cópia de refeição): ignora.
+    if (pend.tipo !== 'salvar_restricao' || escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
+    const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
+      .eq('id', id).eq('status', 'pendente').select('id')
+    if (!travou?.length) return json({ resposta: t.andamento, acao: null })
+    r = await salvarRestricao(sb, userId, id, pend.args as ArgsRestricao, loc.idioma)
   } else {
     // Trava a pendência antes de executar (dois toques ao mesmo tempo).
     const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })

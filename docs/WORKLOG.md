@@ -2462,5 +2462,23 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   3. Testar no chat da Dieta: "vontade de doce, sou intolerante a lactose"
      (pago: Sorvete de Banana com Cacau e Amendoim / Panqueca Vegana),
      "me passa a receita completa de brownie" (tem que vir o botão).
-  4. Gravar a restrição que a pessoa disser no chat no perfil (com
-     confirmação) — não feito ainda.
+  4. ~~Gravar a restrição dita no chat no perfil~~ — feito (abaixo).
+
+### 2026-10-12 (cont.) — Life guarda a restrição no perfil, com botão
+
+- Não usa ferramenta da IA (a resposta da ação apagaria a ideia de doce):
+  o servidor lê a fala ("sou intolerante a lactose", "I'm allergic to
+  peanuts", "soy alérgica al maní") e, depois da resposta normal, pergunta
+  "Quer que eu guarde no seu perfil que você evita lactose?" com os botões
+  "Salvar no perfil" / "Deixa como está". Só grava no toque.
+- Não pergunta: quando é de outra pessoa ("meu filho é alérgico"), negação
+  ("não sou intolerante"), já está no perfil ou já perguntou nos últimos 30
+  dias (aceitou ou não). Salva no idioma da pessoa (lactose/lactosa…).
+- Tipo `salvar_restricao` em `life_acoes` — **no MESMO arquivo**
+  `db/athoslife_cozinha_alergenos_migration.sql` (sem ele o Life só não
+  pergunta). Gerador de dieta entende os nomes en/es salvos.
+- Limite conhecido: "soy milk" pergunta soja **e** lactose (por causa de
+  "milk"); a pessoa recusa no botão.
+- **Falta**: não existe tela no Perfil pra VER/TIRAR restrições (só entram
+  pelo onboarding e agora pelo chat). Precisa de um lugar (ex.: Perfil >
+  Metas ou Conta) — perguntar ao dono antes de mexer em tela.

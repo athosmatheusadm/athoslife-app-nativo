@@ -6,6 +6,8 @@
 --     alergenos text[]  — o que a receita CONTÉM, como está escrita
 --     tipo_prato text   — 'doce' | 'salgado' | 'bebida'
 --   e preenche as 25 receitas do catálogo atual.
+--   Libera em life_acoes o tipo 'salvar_restricao': o Life pergunta "quer que
+--   eu guarde no seu perfil que você evita lactose?" e só grava no "Salvar".
 --
 -- POR QUE (dono, 12/10):
 --   "Tô com vontade de doce, mas sou intolerante a lactose": o Life (ai-proxy
@@ -108,6 +110,11 @@ FROM (VALUES
 ) AS v(id, alergenos, tipo)
 WHERE r.id = v.id;
 
+-- Life guarda no perfil a restrição dita no chat (com botão de confirmar).
+ALTER TABLE public.life_acoes DROP CONSTRAINT IF EXISTS life_acoes_tipo_check;
+ALTER TABLE public.life_acoes
+  ADD CONSTRAINT life_acoes_tipo_check CHECK (tipo IN ('repetir_refeicao', 'salvar_restricao'));
+
 -- Conferência: tem que dar 25 marcadas e 0 sem tipo.
 SELECT count(*) FILTER (WHERE tipo_prato IS NOT NULL) AS marcadas,
        count(*) FILTER (WHERE tipo_prato IS NULL)     AS sem_tipo
@@ -116,6 +123,9 @@ FROM public.receitas_cozinha;
 COMMIT;
 
 -- ROLLBACK (desfazer):
+-- DELETE FROM public.life_acoes WHERE tipo = 'salvar_restricao';
+-- ALTER TABLE public.life_acoes DROP CONSTRAINT IF EXISTS life_acoes_tipo_check;
+-- ALTER TABLE public.life_acoes ADD CONSTRAINT life_acoes_tipo_check CHECK (tipo = 'repetir_refeicao');
 -- ALTER TABLE public.receitas_cozinha DROP CONSTRAINT IF EXISTS receitas_cozinha_alergenos_check;
 -- ALTER TABLE public.receitas_cozinha DROP CONSTRAINT IF EXISTS receitas_cozinha_tipo_prato_check;
 -- ALTER TABLE public.receitas_cozinha DROP COLUMN IF EXISTS alergenos;
