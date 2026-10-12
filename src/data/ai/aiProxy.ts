@@ -154,6 +154,24 @@ export interface MensagemChat {
   texto: string
 }
 
+/**
+ * Cards no fim da fala do Life (ai-proxy v3.10): `[[receita:<uuid>]]` é uma
+ * receita da Cozinha que serve pra pessoa; `[[chef]]` é o botão do "Monte
+ * sua receita com o Life". Ficam salvos no texto, então voltam no histórico.
+ */
+const MARCA_CARTAO = /\[\[(receita:[0-9a-f-]{36}|chef)\]\]/g
+
+export function separarCartoes(texto: string): { texto: string; receitas: string[]; chef: boolean } {
+  const receitas: string[] = []
+  let chef = false
+  const limpo = texto.replace(MARCA_CARTAO, (_, m: string) => {
+    if (m === 'chef') chef = true
+    else receitas.push(m.slice('receita:'.length))
+    return ''
+  })
+  return { texto: limpo.trim(), receitas, chef }
+}
+
 export type EscolhaAcao = 'adicionar' | 'substituir' | 'forcar' | 'cancelar'
 
 /**

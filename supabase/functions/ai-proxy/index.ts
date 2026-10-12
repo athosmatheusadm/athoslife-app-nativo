@@ -1,4 +1,4 @@
-// ATHOSlife — ai-proxy (v3.9, 2026-10-09: tipo 'estimar' — Life estima kcal/macros de alimento ou produto que não está na base (busca da Dieta e código de barras não encontrado), gasta 1 mensagem da cota do chat e só devolve números; v3.8, 2026-10-08: proteção contra uso tipo GPT — pedido de tarefa fora do tema (código, redação, tradução...) com resposta fixa sem IA e sem cota, recusa marcada [FORA] pela IA, mensagem repetida devolvida sem IA, sinais de abuso por dia e chat pausado até meia-noite com 10 fora do tema; v3.7, 2026-10-08: Life MVP — histórico de 15, acolhimento, pausa do dia, repetir refeição (fixas + extras) por ferramenta, hábitos completos, filtro de dose só pra suplemento/remédio; v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; 08/10: cada Life no seu assunto, botões de plano só no Treino/Dieta; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
+// ATHOSlife — ai-proxy (v3.10, 2026-10-12: Cozinha no chat — pedido de comida leva o catálogo da Cozinha filtrado por restrição/alergia (perfil + o que a pessoa disse); o Life mostra o card da receita que serve ou dá 2 ideias de uma linha + botão do Life-chef; receita completa nunca sai no chat; v3.9, 2026-10-09: tipo 'estimar' — Life estima kcal/macros de alimento ou produto que não está na base (busca da Dieta e código de barras não encontrado), gasta 1 mensagem da cota do chat e só devolve números; v3.8, 2026-10-08: proteção contra uso tipo GPT — pedido de tarefa fora do tema (código, redação, tradução...) com resposta fixa sem IA e sem cota, recusa marcada [FORA] pela IA, mensagem repetida devolvida sem IA, sinais de abuso por dia e chat pausado até meia-noite com 10 fora do tema; v3.7, 2026-10-08: Life MVP — histórico de 15, acolhimento, pausa do dia, repetir refeição (fixas + extras) por ferramenta, hábitos completos, filtro de dose só pra suplemento/remédio; v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; 08/10: cada Life no seu assunto, botões de plano só no Treino/Dieta; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
 //
 // Único lugar que fala com o Gemini. A chave nunca sai daqui.
 //
@@ -637,7 +637,12 @@ PODE:
 - Conversar sobre o dia, humor, hábitos e consistência; celebrar esforço; acolher dia ruim sem forçar positividade.
 - Dar informação geral de alimentos: calorias, macros e micronutrientes aproximados (cite como aproximado, com a tabela de referência do país da pessoa).
 - Comparar alimentos e sugerir TROCAS equivalentes (ex.: morango x geleia de morango: o que muda de açúcar/fibra e se vale a pena).
-- Dar IDEIAS de comida quando a pessoa pede ("tô com vontade de doce", "o que como no lanche?", "algo sem lactose"): responda já com 1 ou 2 opções caseiras concretas (nome + o que leva, em uma linha), com kcal aproximada se ajudar. Respeite toda restrição/intolerância/alergia que ela disser ou que estiver no contexto — sem lactose = nada de leite, iogurte, queijo, manteiga, whey concentrado ou chocolate ao leite. Isso é sugestão culinária, não dieta: não fale de meta, não diga que "não pode mexer na meta" quando ninguém pediu isso, e não mande a pessoa olhar o plano em vez de responder.
+- Dar IDEIAS de comida quando a pessoa pede ("tô com vontade de doce", "o que como no lanche?", "algo sem lactose"). Respeite toda restrição/intolerância/alergia que ela disser na conversa ou que estiver no contexto — sem lactose = nada de leite, iogurte, queijo, manteiga, whey concentrado ou chocolate ao leite. Isso é sugestão culinária, não dieta: não fale de meta, não diga que "não pode mexer na meta" quando ninguém pediu isso, e não mande a pessoa olhar o plano em vez de responder. A ordem é:
+  1. Se houver CATÁLOGO DA COZINHA no fim destas instruções e alguma receita dele servir (o tipo que ela quer — doce, salgado ou bebida — e nada da coluna "contém" que ela não possa), diga que tem na Cozinha, pelo nome, e coloque o código no FIM da resposta, ex.: [[R15]] — no máximo 2 códigos; o app mostra o card. Não escreva ingredientes, quantidades nem preparo dela: está no card.
+  2. Se nenhuma servir (ou não houver catálogo), dê 1 ou 2 ideias caseiras, cada uma numa frase: nome + do que é feita, sem quantidades nem passo a passo, com kcal aproximada se ajudar. Termine oferecendo montar a receita completa no "Monte sua receita com o Life" e coloque [[CHEF]] no FIM (o app mostra o botão).
+  3. Receita completa (ingredientes com quantidade, modo de preparo, passo a passo) NUNCA sai neste chat, nem se a pessoa pedir ou insistir: diga que no "Monte sua receita com o Life" ela sai certinha, com ingredientes, preparo e macros, e coloque [[CHEF]].
+  4. Se for ALERGIA (não intolerância), lembre em poucas palavras de conferir o rótulo dos ingredientes. Se ela pediu ideia de comida, não falou de restrição e o contexto não tem nenhuma, pergunte uma vez, de leve, se tem alguma alergia ou intolerância.
+  Só use [[R..]] e [[CHEF]] assim; nunca invente código que não está no catálogo.
 - Explicar o que é um suplemento, pra que serve em geral, composição e diferenças entre tipos/marcas — como informação pública.
 - Lembrar de leve registros do app (água, refeições, hábitos) usando o contexto abaixo.
 - Hábito de EVITAR algo (ex.: doce) e a pessoa pede justamente isso: atenda o pedido, sem sermão e sem negar, e reconheça de leve o esforço uma vez (ex.: "Tá firme há 5 dias no doce — se quiser uma versão mais leve: ..."). Use as alternativas que a tela de Hábitos mostra (no contexto) quando couber. Não repita o hábito como advertência a cada mensagem.
@@ -714,6 +719,136 @@ const FOCOS_LIFE: Record<string, string> = {
   habitos: 'ONDE VOCÊ ESTÁ: na tela de Hábitos — você é o Life dos hábitos. Você sabe de tudo, mas puxe pros hábitos: acolher a vontade, celebrar os dias firmes, ajudar a atravessar o momento difícil (respirar, mudar de lugar, beber água, esperar a onda passar), entender o que dispara a vontade e recomeçar depois de um tropeço — sem julgar e sem sermão. Este chat é só conversa, sem botões de plano: montar treino é no Life da tela de Treino e montar dieta no Life da tela de Dieta.',
 }
 
+// ================================================================
+// COZINHA NO CHAT (v3.10, dono 12/10) — "vontade de doce, mas sou
+// intolerante a lactose": o Life procura na Cozinha uma receita que sirva e
+// o app mostra o card; se não tiver, ideias de uma linha + botão do
+// "Monte sua receita com o Life". Receita completa nunca sai no chat — senão
+// o chat vira atalho pra Cozinha (paga) e pra cota do Life-chef.
+// ================================================================
+type CodigoAlergeno =
+  | 'lactose' | 'gluten' | 'ovo' | 'amendoim' | 'castanhas' | 'soja'
+  | 'peixe' | 'frutos_mar' | 'gergelim' | 'carne' | 'mel'
+
+// Mesmos códigos de receitas_cozinha.alergenos (db/athoslife_cozinha_alergenos_migration.sql).
+const SINONIMOS_ALERGENO: [RegExp, CodigoAlergeno[]][] = [
+  [/\b(lactose|lactosa|leite|laticinios?|lacteos?|dairy|milk|leche)\b/, ['lactose']],
+  [/\b(gluten|celiac\w*|trigo|wheat)\b/, ['gluten']],
+  [/\b(ovos?|eggs?|huevos?)\b/, ['ovo']],
+  [/\b(amendoim|peanuts?|mani|cacahuetes?)\b/, ['amendoim']],
+  [/\b(castanhas?|nozes|noz|amendoas?|nuts|frutos secos|nueces|almendras?)\b/, ['castanhas']],
+  [/\b(soja|soy|tofu)\b/, ['soja']],
+  [/\b(peixes?|fish|pescados?)\b/, ['peixe']],
+  [/\b(frutos do mar|camarao|crustaceos?|seafood|shellfish|shrimp|mariscos?|camarones?)\b/, ['frutos_mar']],
+  [/\b(gergelim|sesamo|sesame)\b/, ['gergelim']],
+  [/\bvegetarian\w*\b/, ['carne', 'peixe', 'frutos_mar']],
+  [/\bvegan\w*\b/, ['carne', 'peixe', 'frutos_mar', 'ovo', 'lactose', 'mel']],
+]
+
+const ROTULO_ALERGENO: Record<CodigoAlergeno, string> = {
+  lactose: 'lactose', gluten: 'glúten', ovo: 'ovo', amendoim: 'amendoim', castanhas: 'castanhas',
+  soja: 'soja', peixe: 'peixe', frutos_mar: 'frutos do mar', gergelim: 'gergelim', carne: 'carne/frango', mel: 'mel',
+}
+
+/** Na mensagem, "leite" só conta como restrição se vier com "sem", "intolerante", "alergia"... */
+const PISTA_RESTRICAO =
+  /\b(sem|intoleran\w*|alergi\w*|alergic\w*|nao (posso|como|tomo|bebo)|evito|celiac\w*|vegan\w*|vegetarian\w*|free|without|allerg\w*|can t|cannot|sin|no puedo|no como)\b/
+
+/** Pedido de ideia de comida: só aí o catálogo entra no prompt (economiza token). */
+const PEDE_COMIDA =
+  /\b(vontade|doces?|docinho|sobremesas?|lanches?|lanchinho|receitas?|ideias?|sugest\w*|comer|comida|fome|beliscar|cozinh\w*|janta|jantar|almoco|cafe|snacks?|sweets?|desserts?|craving|recipes?|ideas?|eat|hungry|cook\w*|antojo|postres?|merienda|recetas?|hambre|cocin\w*|cena)\b/
+
+function codigosAlergeno(texto: string): CodigoAlergeno[] {
+  const n = normalizar(texto)
+  return SINONIMOS_ALERGENO.filter(([re]) => re.test(n)).flatMap(([, c]) => c)
+}
+
+interface ReceitaCatalogo {
+  codigo: string
+  id: string
+  nome: string
+  tipo: string
+  contem: CodigoAlergeno[]
+}
+
+/**
+ * Receitas que a pessoa pode abrir (grátis: só as não premium, igual à RPC
+ * receitas_conteudo_liberado), sem as que batem com as restrições do perfil
+ * ou com o que ela disse agora. Sem a migração (coluna não existe), lista
+ * vazia: o Life segue só com ideias.
+ */
+async function catalogoCozinha(sb: Sb, userId: string, idioma: Idioma, pago: boolean, falaDaPessoa: string): Promise<ReceitaCatalogo[]> {
+  const [rec, perf] = await Promise.all([
+    sb.from('receitas_cozinha')
+      .select('id, titulo, traducoes, premium, alergenos, tipo_prato')
+      .not('tipo_prato', 'is', null)
+      .order('ordem'),
+    sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle(),
+  ])
+  if (rec.error) return []
+  const evitar = new Set<CodigoAlergeno>()
+  const restricoes = Array.isArray(perf.data?.restricoes) ? (perf.data.restricoes as unknown[]) : []
+  for (const r of restricoes) codigosAlergeno(String(r)).forEach((c) => evitar.add(c))
+  if (PISTA_RESTRICAO.test(normalizar(falaDaPessoa))) codigosAlergeno(falaDaPessoa).forEach((c) => evitar.add(c))
+
+  type Linha = { id: string; titulo: string; traducoes: Record<string, { titulo?: string }> | null; premium: boolean | null; alergenos: CodigoAlergeno[] | null; tipo_prato: string }
+  return ((rec.data ?? []) as Linha[])
+    .map((r, i) => ({ r, codigo: `R${i + 1}` }))
+    .filter(({ r }) => (pago || !r.premium) && !(r.alergenos ?? []).some((a) => evitar.has(a)))
+    .map(({ r, codigo }) => ({
+      codigo,
+      id: r.id,
+      nome: (idioma !== 'pt-BR' && texto(r.traducoes?.[idioma]?.titulo, 80)) || r.titulo,
+      tipo: r.tipo_prato,
+      contem: r.alergenos ?? [],
+    }))
+}
+
+function blocoCatalogo(cat: ReceitaCatalogo[]): string {
+  if (!cat.length) return '\n\nCATÁLOGO DA COZINHA: nenhuma receita da Cozinha serve pra esta pessoa agora — vá direto pras ideias (passo 2).'
+  const linhas = cat.map((r) => `${r.codigo} | ${r.nome} | ${r.tipo} | ${r.contem.map((c) => ROTULO_ALERGENO[c]).join(', ') || 'nada da lista'}`)
+  return `\n\nCATÁLOGO DA COZINHA (receitas que esta pessoa pode abrir; as que batem com as restrições dela já saíram). código | nome | tipo | contém:\n${linhas.join('\n')}`
+}
+
+// Marcas que a IA escreve ([[R15]], [[CHEF]]) e como ficam salvas na conversa
+// ([[receita:<uuid>]], [[chef]]) — o app troca as salvas por card/botão.
+const MARCA_CARTAO_IA = /\[\[\s*(R\d{1,3}|CHEF)\s*\]\]/gi
+const MARCA_CARTAO_SALVA = /\[\[(receita:[0-9a-f-]{36}|chef)\]\]/g
+
+function cartoesDaResposta(resposta: string, cat: ReceitaCatalogo[]): string {
+  const ids: string[] = []
+  let chef = false
+  const limpo = resposta
+    .replace(MARCA_CARTAO_IA, (_, c: string) => {
+      const k = c.toUpperCase()
+      if (k === 'CHEF') chef = true
+      else {
+        const r = cat.find((x) => x.codigo === k)
+        if (r && !ids.includes(r.id) && ids.length < 2) ids.push(r.id)
+      }
+      return ''
+    })
+    .replace(MARCA_CARTAO_SALVA, '')
+    .replace(/[ \t]+(\n|$)/g, '$1')
+    .trim()
+  const marcas = [...ids.map((id) => `[[receita:${id}]]`), ...(chef ? ['[[chef]]'] : [])].join('')
+  return marcas ? `${limpo}\n${marcas}` : limpo
+}
+
+/** Receita completa no chat: 3+ quantidades, 3+ passos numerados ou cabeçalho de receita. */
+function pareceReceitaCompleta(t: string): boolean {
+  const n = t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  const qtd = (n.match(/\b\d+([.,]\d+)?\s?(g|gr|kg|ml|l|xicaras?|colher(es)?|cups?|tbsp|tsp|oz|tazas?|cucharadas?|cucharaditas?)\b/g) ?? []).length
+  const passos = (n.match(/(^|\n)\s*\d+\s*[.)-]\s/g) ?? []).length
+  return qtd >= 3 || passos >= 3 || /\b(modo de preparo|ingredientes|ingredients|instructions|preparacion|modo de preparacion)\s*:/.test(n)
+}
+
+const RESPOSTA_RECEITA_NO_CHEF: Record<Idioma, string> = {
+  'pt-BR': 'Essa eu monto certinha pra você no "Monte sua receita com o Life" 👨‍🍳 — lá sai com ingredientes, preparo e macros.\n[[CHEF]]',
+  en: 'I\'ll put that one together properly in "Build your recipe with Life" 👨‍🍳 — with ingredients, steps and macros.\n[[CHEF]]',
+  es: 'Esa te la armo bien en "Arma tu receta con Life" 👨‍🍳 — con ingredientes, preparación y macros.\n[[CHEF]]',
+}
+
 async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>) {
   const mensagem = texto(corpo.mensagem, MAX_MENSAGEM + 1).trim()
   if (!mensagem) return json({ error: 'invalid_message' }, 400)
@@ -775,6 +910,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const conteudos: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
   for (const m of [...historico, { autor: 'usuario', texto: mensagem }]) {
     const role = m.autor === 'life' ? 'model' : 'user'
+    // Card/botão salvo é coisa do app — a IA não vê (nem copia) o uuid.
+    m.texto = m.texto.replace(MARCA_CARTAO_SALVA, '').trim()
     const ultimo = conteudos[conteudos.length - 1]
     if (ultimo?.role === role) ultimo.parts[0].text += `\n${m.texto}`
     else conteudos.push({ role, parts: [{ text: m.texto }] })
@@ -792,8 +929,15 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     ? '\n\nCOZINHA ATHOS: esta pessoa tem todas as receitas da Cozinha (na tela de Dieta) e pode montar receitas com você pelo atalho "Monte sua receita com o Life", no chat da Dieta. Depois de dar a ideia, pode lembrar disso de leve, no máximo uma vez.'
     : '\n\nCOZINHA ATHOS: esta pessoa (plano grátis) tem algumas receitas da Cozinha (na tela de Dieta) e 1 receita por semana pelo atalho "Monte sua receita com o Life", no chat da Dieta. Depois de dar a ideia, pode lembrar disso de leve, no máximo uma vez. Não fale de plano pago nem de preço.'
   const foco = FOCOS_LIFE[String(corpo.foco)] ?? FOCOS_LIFE.home
+  // Catálogo só quando a conversa é de comida; a restrição dita nas últimas
+  // falas ("sou intolerante a lactose" e depois "e um doce?") também filtra.
+  const falaDaPessoa = [...historico.filter((m) => m.autor === 'usuario').slice(-2).map((m) => m.texto), mensagem].join('\n')
+  const catalogo = PEDE_COMIDA.test(normalizar(mensagem))
+    ? await catalogoCozinha(sb, userId, loc.idioma, pago, falaDaPessoa)
+    : null
   const sistema =
     `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
+    (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Acolha com calma, pergunte como a pessoa está e lembre da linha de apoio do país e de um profissional, sem alarmar.'
       : '')
@@ -837,7 +981,11 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   } else if (violaPrescricao(resposta)) {
     resposta = RESPOSTA_SEM_PRESCRICAO[loc.idioma]
     status = 'filtrado'
+  } else if (pareceReceitaCompleta(resposta)) {
+    resposta = RESPOSTA_RECEITA_NO_CHEF[loc.idioma]
+    status = 'receita_no_chat'
   }
+  if (!feito) resposta = cartoesDaResposta(resposta, catalogo ?? [])
 
   await sb.from('life_chat_mensagens').insert([
     { user_id: userId, autor: 'usuario', texto: mensagem },

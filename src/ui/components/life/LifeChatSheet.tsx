@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AiProxyError,
@@ -6,12 +6,14 @@ import {
   cotaChatHoje,
   enviarMensagemChat,
   responderAcaoLife,
+  separarCartoes,
   type AcaoLife,
   type EscolhaAcao,
   type FocoLife,
   type MensagemChat,
 } from '@data/ai/aiProxy'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
+import { receitasRepository, type ReceitaCrua } from '@data/repositories/receitasRepository'
 import {
   aoMudarPausa,
   lifePausadoHoje,
@@ -75,6 +77,9 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   // Mensagem que falhou: reenviar o mesmo texto usa o mesmo id (sem ação em dobro).
   const falhaRef = useRef<{ texto: string; id: string } | null>(null)
   const fimRef = useRef<HTMLDivElement>(null)
+  // Cards de receita da Cozinha que o Life mostrou (ai-proxy v3.10).
+  const [receitas, setReceitas] = useState<Map<string, ReceitaCrua> | null>(null)
+  const buscouReceitasRef = useRef(false)
 
   // Sempre mostra a última fala (ao abrir, ao enviar e quando o Life responde).
   useEffect(() => {
@@ -99,6 +104,19 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       tirar()
     }
   }, [])
+
+  // Busca a vitrine só quando aparece o primeiro card (a maioria das conversas não tem).
+  useEffect(() => {
+    if (buscouReceitasRef.current) return
+    if (!historico.some((h) => h.autor === 'life' && separarCartoes(h.texto).receitas.length > 0)) return
+    buscouReceitasRef.current = true
+    void receitasRepository
+      .listar()
+      .then((lista) => setReceitas(new Map(lista.map((r) => [r.id, r]))))
+      .catch(() => {
+        buscouReceitasRef.current = false
+      })
+  }, [historico])
 
   /** O que o Life fez no app — só chega depois que o servidor gravou. */
   function aplicarAcao(acao: AcaoLife | null) {
@@ -239,18 +257,33 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             </div>
           )}
 
-          {historico.map((m, i) => (
-            <div
-              key={i}
-              className={`max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed ${
-                m.autor === 'usuario'
-                  ? 'ml-auto bg-brand text-brand-ink'
-                  : 'border border-surface-4 bg-surface-2 text-content-mid'
-              }`}
-            >
-              {m.texto}
-            </div>
-          ))}
+          {historico.map((msg, i) => {
+            const c = msg.autor === 'life' ? separarCartoes(msg.texto) : { texto: msg.texto, receitas: [], chef: false }
+            return (
+              <Fragment key={i}>
+                {c.texto && (
+                  <div
+                    className={`max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed ${
+                      msg.autor === 'usuario'
+                        ? 'ml-auto bg-brand text-brand-ink'
+                        : 'border border-surface-4 bg-surface-2 text-content-mid'
+                    }`}
+                  >
+                    {c.texto}
+                  </div>
+                )}
+                {c.receitas.map((id) => {
+                  const r = receitas?.get(id)
+                  return r ? <CartaoReceita key={id} receita={r} onClick={() => ir(`/dieta/cozinha/${id}`)} /> : null
+                })}
+                {c.chef && (
+                  <div className="max-w-[85%]">
+                    <Atalho emoji="👨‍🍳" texto={m.cozinha.lifeChefTitulo} onClick={() => ir('/dieta/cozinha/life')} />
+                  </div>
+                )}
+              </Fragment>
+            )
+          })}
 
           {escolha && !enviando && (
             <div className="flex flex-wrap justify-end gap-2">
@@ -349,6 +382,27 @@ function Atalho(props: { emoji: string; texto: string; onClick: () => void }) {
       <span aria-hidden="true">{props.emoji}</span>
       <span className="flex-1">{props.texto}</span>
       <span aria-hidden="true">›</span>
+    </button>
+  )
+}
+
+/** Receita da Cozinha sugerida pelo Life — abre a receita (o cadeado é da própria tela). */
+function CartaoReceita(props: { receita: ReceitaCrua; onClick: () => void }) {
+  const r = props.receita
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className="flex min-h-14 w-full max-w-[85%] items-center gap-3 rounded-2xl border border-surface-4 bg-surface-2 p-3 text-left active:scale-[0.99]"
+    >
+      <span aria-hidden="true" className="h-10 w-1.5 flex-none rounded-full" style={{ background: r.corTema }} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold text-content-hi">{r.titulo}</span>
+        <span className="block text-micro text-content-low">
+          {Math.round(r.macros.calorias)} kcal{r.tempoPreparoMin ? ` · ${r.tempoPreparoMin} min` : ''}
+        </span>
+      </span>
+      <span aria-hidden="true" className="text-content-low">›</span>
     </button>
   )
 }

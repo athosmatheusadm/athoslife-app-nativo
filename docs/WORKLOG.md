@@ -2428,3 +2428,39 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
      assinado, SMTP + template, polimento visual sem mexer em layout,
      idioma das respostas do Life, "Baixar meus dados" no APK, revogar
      tokens colados no chat, limite/alerta no Google Cloud.
+
+## 2026-10-12 — Life acha receita da Cozinha que serve (alergia/intolerância)
+
+- Dono perguntou se o Life entende "tô com vontade de doce, mas sou
+  intolerante a lactose", olha a Cozinha e, se não tiver, dá 2 ideias fit.
+  Antes: dava ideias respeitando a restrição, mas não via a Cozinha e as
+  receitas não tinham marcação de alergênico. Dono escolheu ideias "da
+  cabeça da IA" (sem busca no Google, sem custo extra) e pediu: **receita
+  completa nunca no chat**, só pelo "Monte sua receita com o Life" — senão
+  vira atalho pra Cozinha e pra cota do Life-chef.
+- `db/athoslife_cozinha_alergenos_migration.sql`: `alergenos text[]` e
+  `tipo_prato` (doce/salgado/bebida) nas 25 receitas, por id. Critério
+  conservador: whey/"leite ou bebida vegetal" = lactose, aveia = glúten,
+  shoyu = soja+glúten. **Ainda NÃO aplicada.**
+- **ai-proxy v3.10**: quando a mensagem é de comida, o prompt ganha o
+  CATÁLOGO DA COZINHA já sem o que bate com as restrições do perfil e com
+  o que a pessoa disse nas últimas falas ("sem/intolerante/alergia…").
+  Grátis só vê as receitas que pode abrir (as 3 não premium). O Life cita
+  até 2 receitas ([[R15]] -> card) ou dá 2 ideias de uma linha + botão
+  [[CHEF]]. Receita completa (3+ quantidades, 3+ passos ou "Ingredientes:")
+  vira resposta fixa com o botão do Life-chef. Alergia: lembra de conferir
+  o rótulo; sem restrição no perfil, pergunta uma vez.
+- App: `separarCartoes` (aiProxy.ts) e `CartaoReceita` no LifeChatSheet —
+  marcas ficam salvas no texto, então os cards voltam no histórico.
+- Testes das funções novas (13 casos) ok; `deno check` e `tsc -b` ok.
+- **Pendências**:
+  1. Rodar `db/athoslife_cozinha_alergenos_migration.sql` (sem ela o Life
+     só dá ideias, nada quebra).
+  2. Publicar o ai-proxy (leva junto o "Life estima" da v3.9 — dono ainda
+     não decidiu se mantém): `! npx supabase functions deploy ai-proxy
+     --project-ref gsdwsxwbmxcvutpvpkyi --use-api`.
+  3. Testar no chat da Dieta: "vontade de doce, sou intolerante a lactose"
+     (pago: Sorvete de Banana com Cacau e Amendoim / Panqueca Vegana),
+     "me passa a receita completa de brownie" (tem que vir o botão).
+  4. Gravar a restrição que a pessoa disser no chat no perfil (com
+     confirmação) — não feito ainda.
