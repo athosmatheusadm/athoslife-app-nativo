@@ -2496,3 +2496,20 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
   e falha com "Entrypoint path does not exist".
 - **Perfil > Metas** ganhou "Alergias e restrições" no fim (mesmo estilo dos
   campos; × tira, sugestões e campo adicionam, salva na hora com aviso).
+
+### 2026-10-12 — e-mail de "esqueci a senha" e contas de teste
+
+- Causa do código que não chega: projeto **sem SMTP próprio** — o serviço
+  padrão do Supabase só entrega pra e-mails da equipe (2/hora). E o modelo
+  "Reset Password" mandava LINK (o app pede o código).
+- **Aplicado pelo Claude (dono autorizou)**: modelo "Reset Password" com
+  `{{ .Token }}` em pt/en/es (`docs/email/recuperar-senha.html`), assunto
+  "Seu código ATHOSlife · Your code · Tu código".
+- **Contas apagadas a pedido do dono**: matheusbarretonunesknt, teste0107,
+  tester0107, kaue.coutto17 (logs anonimizados, evento 'conta_excluida').
+  Ficaram matheusbarretonunes.mb e matheusecomerc. Sem fotos órfãs.
+- **SMTP: dono escolheu Brevo por agora** (sem domínio; Resend depois com
+  domínio próprio). Falta o dono criar a conta e passar login SMTP + chave.
+- Atenção: confirmação de cadastro manda LINK pro `site_url`
+  (`http://localhost:3000`) — não funciona no celular. Decidir: desligar
+  "Confirm email" ou confirmação por código no app.
