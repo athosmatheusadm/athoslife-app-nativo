@@ -1161,6 +1161,10 @@ export const ptBR = {
       agua: 'Água',
       passos: 'Passos',
       passosDia: 'passos/dia',
+      restricoesTitulo: 'Alergias e restrições',
+      restricoesLead: 'O Life evita isso nas ideias, nas receitas e no plano de dieta.',
+      restricoesPlaceholder: 'Ex.: lactose, amendoim',
+      restricoesSugestoes: ['lactose', 'glúten', 'amendoim', 'ovo', 'frutos do mar', 'vegetariano'],
     },
     conta: {
       titulo: 'Conta',

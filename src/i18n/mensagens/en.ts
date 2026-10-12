@@ -1151,6 +1151,10 @@ export const en: Mensagens = {
       agua: 'Water',
       passos: 'Steps',
       passosDia: 'steps/day',
+      restricoesTitulo: 'Allergies and restrictions',
+      restricoesLead: 'Life avoids these in ideas, recipes and your diet plan.',
+      restricoesPlaceholder: 'E.g.: lactose, peanuts',
+      restricoesSugestoes: ['lactose', 'gluten', 'peanuts', 'eggs', 'seafood', 'vegetarian'],
     },
     conta: {
       titulo: 'Account',

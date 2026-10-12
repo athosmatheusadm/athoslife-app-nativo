@@ -271,6 +271,26 @@ export const profileRepository = {
     if (error) throw error
   },
 
+  /** Alergias/restrições (onboarding, chat do Life e Perfil > Metas). */
+  async restricoes(): Promise<string[]> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('restricoes')
+      .eq('id', userId)
+      .single<{ restricoes: string[] | null }>()
+    if (error) throw error
+    return data.restricoes ?? []
+  },
+
+  async atualizarRestricoes(restricoes: readonly string[]): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const { error } = await supabase.from('profiles').update({ restricoes }).eq('id', userId)
+    if (error) throw error
+  },
+
   /** Metas diárias — tela de Metas do Perfil (kcal/proteína/carbo/gordura/passos; água usa atualizarMetaAgua). */
   async atualizarMeta(
     campo: 'kcal_meta' | 'prot_meta' | 'carbo_meta' | 'gord_meta' | 'passos_meta',

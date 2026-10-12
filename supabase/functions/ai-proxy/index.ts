@@ -838,12 +838,19 @@ function cartoesDaResposta(resposta: string, cat: ReceitaCatalogo[]): string {
   return marcas ? `${limpo}\n${marcas}` : limpo
 }
 
-/** Receita completa no chat: 3+ quantidades, 3+ passos numerados ou cabeçalho de receita. */
+/**
+ * Receita completa no chat: 3+ passos numerados, cabeçalho de receita, ou
+ * 3+ quantidades de ingrediente junto com verbo de preparo. Gramas de macro
+ * ("31g de proteína") não contam — informar macros o Life pode.
+ */
 function pareceReceitaCompleta(t: string): boolean {
   const n = t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  const qtd = (n.match(/\b\d+([.,]\d+)?\s?(g|gr|kg|ml|l|xicaras?|colher(es)?|cups?|tbsp|tsp|oz|tazas?|cucharadas?|cucharaditas?)\b/g) ?? []).length
+  const MACRO = /^\s*(de\s+|of\s+)?(proteinas?|carbo\w*|gorduras?|grasas?|fibras?|fibers?|acucar\w*|azucar\w*|sugars?|fat|carbs?|sodio|sodium|kcal|calorias?|calories)/
+  const qtd = [...n.matchAll(/\b\d+([.,]\d+)?\s?(g|gr|kg|ml|l|xicaras?|colher(es)?|cups?|tbsp|tsp|oz|tazas?|cucharadas?|cucharaditas?)\b/g)]
+    .filter((m) => !MACRO.test(n.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 20))).length
+  const preparo = /\b(bat\w*|mistur\w*|ass\w+ por|leve ao|forno|cozinh\w*|refog\w*|liquidific\w*|mix|blend|bake|oven|cook|stir|mezcl\w*|horne\w*|licu\w*|cocin\w*)\b/.test(n)
   const passos = (n.match(/(^|\n)\s*\d+\s*[.)-]\s/g) ?? []).length
-  return qtd >= 3 || passos >= 3 || /\b(modo de preparo|ingredientes|ingredients|instructions|preparacion|modo de preparacion)\s*:/.test(n)
+  return passos >= 3 || (qtd >= 3 && preparo) || /\b(modo de preparo|ingredientes|ingredients|instructions|preparacion|modo de preparacion)\s*:/.test(n)
 }
 
 const RESPOSTA_RECEITA_NO_CHEF: Record<Idioma, string> = {
@@ -858,7 +865,7 @@ const RESPOSTA_RECEITA_NO_CHEF: Record<Idioma, string> = {
 // Não pergunta de novo o que já perguntou nos últimos 30 dias.
 const FALA_DE_OUTRA_PESSOA =
   /\b(meu|minha|meus|minhas|filh\w*|esposa|marido|namorad\w*|mae|pai|amig\w*|my (son|daughter|wife|husband|kid|kids|friend|partner)|mi (hijo|hija|esposa|esposo|novio|novia|amig\w*))\b/
-const NEGACAO_RESTRICAO = /\b(nao (sou|tenho)|(i m|im|i am|i don t have|i do not have) not|no (soy|tengo))\b/
+const NEGACAO_RESTRICAO = /\b(nao (sou|tenho)|(i m|im|i am) not|i don t have any|i have no|no (soy|tengo))\b/
 
 interface ArgsRestricao {
   codigos: CodigoAlergeno[]

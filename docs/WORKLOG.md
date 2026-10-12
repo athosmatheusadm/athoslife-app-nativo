@@ -2482,3 +2482,17 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
 - **Falta**: não existe tela no Perfil pra VER/TIRAR restrições (só entram
   pelo onboarding e agora pelo chat). Precisa de um lugar (ex.: Perfil >
   Metas ou Conta) — perguntar ao dono antes de mexer em tela.
+
+### 2026-10-12 (madrugada) — no ar + revisão + tela de restrições
+
+- Dono rodou `db/athoslife_cozinha_alergenos_migration.sql` (conferido: 25
+  marcadas, 0 sem tipo, `salvar_restricao` no check) e publicou a v19.
+- Revisão achou: o detector de "receita completa" barrava resposta de
+  MACROS ("100g de frango tem 31g de proteína e 3,6g de gordura"). Agora só
+  conta grama de ingrediente (não de macro) e exige verbo de preparo; 16
+  testes ok. Negação em inglês ("I can not") não bloqueia mais a oferta.
+- **ai-proxy v3.10 publicado pelo Claude (versão 20)**. Atenção: rodar o
+  deploy com `--workdir .` — sem isso a CLI acha `C:\Users\Auto Clima\supabase\config.toml`
+  e falha com "Entrypoint path does not exist".
+- **Perfil > Metas** ganhou "Alergias e restrições" no fim (mesmo estilo dos
+  campos; × tira, sugestões e campo adicionam, salva na hora com aviso).
