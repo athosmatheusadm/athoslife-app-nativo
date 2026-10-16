@@ -13,6 +13,7 @@ import {
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useI18n } from '@/i18n/I18nProvider'
 import { MealAccordion } from './MealAccordion'
 import { MealSheet } from './MealSheet'
@@ -69,7 +70,7 @@ function paraAlvo(r: Refeicao): RefeicaoAlvo {
 export function DietScreen(props: {
   profile: Pick<Profile, 'metas' | 'plano' | 'trialExpira'>
   /** Refeição fixa que deve chegar já aberta (ex.: veio do Home tocando em "Almoço"). */
-  abrirRefeicao?: TipoFixo | null
+  abrirRefeicao?: string | null
   /** Veio do "+" da Home: cria uma refeição extra nova assim que a tela monta. */
   criarNovaAoAbrir?: boolean
   /** Avisa o pai (Dieta.tsx) que já pode limpar o `?novaExtra=1` da URL. */
@@ -126,6 +127,7 @@ export function DietScreen(props: {
         tipo: 'extra' as TipoRefeicao,
         nome: e.nome,
         emoji: '➕',
+        icone: e.icone ?? 'tigela',
         ordem: e.ordem,
         itens: itensExtras.get(e.id) ?? [],
         concluida: e.concluida,
@@ -342,7 +344,7 @@ export function DietScreen(props: {
     <main className="space-y-4 px-4 pb-28 pt-safe-t">
       <header className="flex items-center justify-between pt-3">
         <div className="flex items-center gap-2">
-          <span className="text-2xl" aria-hidden="true">🥗</span>
+          <ActivityIcon icone="salada" tile={false} className="h-7 w-7" />
           <h1 className="text-xl font-bold text-content-hi">{m.dieta.titulo}</h1>
         </div>
         <ProfileAvatar />
@@ -491,7 +493,14 @@ export function DietScreen(props: {
             }
             onAbrirSuplemento={() => setSuplementoChave(r.chave)}
             {...(r.tipo === 'extra'
-              ? { onRenomear: (nome: string) => void renomearExtra(r, nome), erroRenomear: erroExtra }
+              ? {
+                onRenomear: (nome: string) => void renomearExtra(r, nome), erroRenomear: erroExtra,
+                onMudarIcone: async (icone: string) => {
+                  if (!r.id) return
+                  await itensRefeicaoRepository.definirIconeExtra(r.id, icone)
+                  setRefeicoes((atuais) => atuais.map((x) => x.chave === r.chave ? { ...x, icone } : x))
+                },
+              }
               : {})}
           />
         )

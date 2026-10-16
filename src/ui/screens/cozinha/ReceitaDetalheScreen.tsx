@@ -1,7 +1,8 @@
 import { useI18n } from '@/i18n/I18nProvider'
-import { CATEGORIA_META, type Receita } from '@domain/entities/receita'
+import type { Receita } from '@domain/entities/receita'
 import { estruturarConteudo } from '@domain/rules/cozinha'
 import { FotoReceita } from './CardReceita'
+import { CategoryIcon } from './CategoryIcon'
 import { ReceitaView } from './ReceitaView'
 import { CabecalhoCozinha } from './CabecalhoCozinha'
 
@@ -74,7 +75,7 @@ export function ReceitaDetalheScreen(props: {
               className="rounded-pill px-3 py-1 text-micro font-bold"
               style={{ backgroundColor: `${receita.corTema}22`, color: receita.corTema }}
             >
-              {CATEGORIA_META[receita.categoria].emoji} {t.categorias[receita.categoria]}
+              <span className="inline-flex items-center gap-2"><CategoryIcon categoria={receita.categoria} />{t.categorias[receita.categoria]}</span>
             </span>
           }
           macrosPorPorcao={receita.macros}

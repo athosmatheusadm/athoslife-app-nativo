@@ -1,3 +1,4 @@
+import { ActivityIcon, ActivityIconPicker, HABIT_ICONS } from '@ui/components/ActivityIcon'
 import { useState } from 'react'
 import { habitoNomeProibido, tipoDaCategoria, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -11,17 +12,17 @@ import { useFecharNoVoltar } from '@app/voltarAndroid'
  */
 type ChaveCategoria = 'doce' | 'fast_food' | 'refrigerante' | 'leitura' | 'outro'
 
-const CATEGORIAS_EVITAR: readonly { valor: string | null; emoji: string; chave: ChaveCategoria }[] = [
-  { valor: 'doce', emoji: '🍫', chave: 'doce' },
-  { valor: 'fast_food', emoji: '🍟', chave: 'fast_food' },
-  { valor: 'refrigerante', emoji: '🥤', chave: 'refrigerante' },
-  { valor: null, emoji: '🎯', chave: 'outro' },
+const CATEGORIAS_EVITAR: readonly { valor: string | null; chave: ChaveCategoria }[] = [
+  { valor: 'doce', chave: 'doce' },
+  { valor: 'fast_food', chave: 'fast_food' },
+  { valor: 'refrigerante', chave: 'refrigerante' },
+  { valor: null, chave: 'outro' },
 ]
 
 /** Categorias aqui precisam bater com CATEGORIAS_CONSTRUIR em domain/entities/habito.ts. */
-const CATEGORIAS_CONSTRUIR: readonly { valor: string | null; emoji: string; chave: ChaveCategoria }[] = [
-  { valor: 'leitura', emoji: '📚', chave: 'leitura' },
-  { valor: null, emoji: '🎯', chave: 'outro' },
+const CATEGORIAS_CONSTRUIR: readonly { valor: string | null; chave: ChaveCategoria }[] = [
+  { valor: 'leitura', chave: 'leitura' },
+  { valor: null, chave: 'outro' },
 ]
 
 const INTENSIDADES: readonly IntensidadeHabito[] = ['leve', 'medio', 'forte']
@@ -43,11 +44,13 @@ export function AddHabitSheet(props: {
     nome: string
     categoria: string | null
     intensidade: IntensidadeHabito
+    icone: string
   }) => Promise<void>
   onFechar: () => void
 }) {
   const [tipo, setTipo] = useState<TipoHabito>('evitar')
   const [nome, setNome] = useState('')
+  const [icone, setIcone] = useState('doce')
   const [categoria, setCategoria] = useState<string | null>('doce')
   const [intensidade, setIntensidade] = useState<IntensidadeHabito>('medio')
   const [salvando, setSalvando] = useState(false)
@@ -61,6 +64,7 @@ export function AddHabitSheet(props: {
 
   function trocarTipo(t: TipoHabito) {
     setTipo(t)
+    setIcone(t === 'construir' ? 'leitura' : 'doce')
     setCategoria(t === 'construir' ? 'leitura' : 'doce')
   }
 
@@ -68,7 +72,7 @@ export function AddHabitSheet(props: {
     setSalvando(true)
     setErro(null)
     try {
-      await props.onSalvar({ nome: nome.trim(), categoria, intensidade })
+      await props.onSalvar({ nome: nome.trim(), categoria, intensidade, icone })
       // Sucesso: o pai fecha o painel (desmonta), sem precisar zerar `salvando` aqui.
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
@@ -145,20 +149,21 @@ export function AddHabitSheet(props: {
             <button
               key={c.chave}
               type="button"
-              onClick={() => setCategoria(c.valor)}
+              onClick={() => { setCategoria(c.valor); setIcone(c.valor ?? 'outro') }}
               aria-pressed={categoria === c.valor}
               className={`min-h-11 rounded-pill px-4 text-sm font-bold transition-colors active:scale-95 ${
                 categoria === c.valor
-                  ? 'bg-brand text-brand-ink'
+                  ? 'border border-brand bg-brand/10 text-brand'
                   : 'border border-surface-4 bg-surface-2 text-content-mid'
               }`}
             >
-              {c.emoji} {t.categorias[c.chave]}
+              <span className="inline-flex items-center gap-2"><ActivityIcon icone={c.valor} className="h-6 w-6" tile={false} />{t.categorias[c.chave]}</span>
             </button>
           ))}
         </div>
+        <ActivityIconPicker valor={icone} opcoes={HABIT_ICONS} onChange={setIcone} disabled={salvando} />
         {tipoDaCategoria(categoria) !== tipo && (
-          <p className="mt-1.5 text-micro text-content-low">ℹ️ {t.avisoOutro}</p>
+          <p className="mt-1.5 text-micro text-content-low">{t.avisoOutro}</p>
         )}
 
         <p className="mt-4 block text-micro font-bold uppercase tracking-wide text-content-low">{t.intensidade}</p>

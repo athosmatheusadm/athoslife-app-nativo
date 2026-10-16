@@ -6,11 +6,10 @@ import { useSession } from './SessionProvider'
 import { widgetAgua } from '@data/native/widgetAgua'
 import { aguaRepository } from '@data/repositories/aguaRepository'
 import { dataLocalISO } from '@domain/rules/datas'
+import { sincronizarCoposWidget, rotaDoWidget } from '@data/native/sincronizarCoposWidget'
 
 /** Disparado quando a água muda por fora da tela (widget) — useAgua recarrega. */
 export const EVENTO_AGUA_MUDOU = 'athos:agua-mudou'
-
-const ROTAS_LINK = new Set(['/home', '/scanner', '/dieta', '/treinos', '/habitos'])
 
 /**
  * Liga o app às peças nativas que vivem fora dele (sem UI própria):
@@ -19,40 +18,54 @@ const ROTAS_LINK = new Set(['/home', '/scanner', '/dieta', '/treinos', '/habitos
  *  - Links `athoslife://abrir/<rota>` (câmera/Life do widget) -> navega.
  */
 export function IntegracoesNativas() {
-  const { session, profile } = useSession()
+  const { session, profile, loading } = useSession()
   const navigate = useNavigate()
   const metaMl = profile?.metas.aguaMl ?? 2500
-  const sincronizando = useRef(false)
+  const filaSync = useRef<Promise<void>>(Promise.resolve())
+  const usuario = session?.user.id ?? ''
+  const usuarioAtual = useRef(usuario)
+  usuarioAtual.current = usuario
 
   const sincronizarWidget = useCallback(async () => {
-    if (!session || sincronizando.current) return
-    sincronizando.current = true
+    if (loading) return
+    const executar = async () => {
+    if (usuarioAtual.current !== usuario) return
     try {
-      const copos = await widgetAgua.copinhosPendentes()
-      for (const c of copos) {
-        // Copo de outro dia (tocado ontem, app aberto hoje) não entra em hoje.
-        if (c.ml > 0 && c.data === dataLocalISO()) await aguaRepository.adicionar(c.ml).catch(() => {})
-      }
+      await widgetAgua.configurarUsuario(usuario)
+      if (!usuario) return
+      await sincronizarCoposWidget({
+        listar: () => widgetAgua.copinhosPendentes(usuario),
+        gravar: (c) => aguaRepository.adicionarDoWidget(c, usuario),
+        confirmar: (ids) => widgetAgua.confirmarCopos(usuario, ids),
+      })
       const hoje = await aguaRepository.aguaDoDia(metaMl)
-      await widgetAgua.atualizar({ data: dataLocalISO(), totalMl: hoje.totalMl, metaMl })
-      if (copos.length > 0) window.dispatchEvent(new Event(EVENTO_AGUA_MUDOU))
+      if (usuarioAtual.current === usuario) await widgetAgua.atualizar({ data: dataLocalISO(), totalMl: hoje.totalMl, idsRegistrados: hoje.registros.map((r) => r.id), metaMl, usuario })
     } catch {
-      /* sem rede: tenta de novo na próxima abertura */
+      /* Fila não confirmada continua no Android, com ids estáveis para reenvio. */
     } finally {
-      sincronizando.current = false
+      if (usuario && usuarioAtual.current === usuario) window.dispatchEvent(new Event(EVENTO_AGUA_MUDOU))
     }
-  }, [session, metaMl])
+    }
+    // Cada toque durante uma sincronização ganha uma nova passagem pela fila.
+    filaSync.current = filaSync.current.catch(() => {}).then(executar)
+    await filaSync.current
+  }, [usuario, loading, metaMl])
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return
     void sincronizarWidget()
     let tirarCopo: (() => void) | null = null
     let tirarApp: (() => void) | null = null
-    void widgetAgua.aoTocarCopo(() => void sincronizarWidget()).then((f) => (tirarCopo = f))
+    let encerrado = false
+    const aoConectar = () => void sincronizarWidget()
+    window.addEventListener('online', aoConectar)
+    void widgetAgua.aoTocarCopo(aoConectar).then((f) => { if (encerrado) f(); else tirarCopo = f }).catch(() => {})
     void CapApp.addListener('appStateChange', ({ isActive }) => {
       if (isActive) void sincronizarWidget()
-    }).then((h) => (tirarApp = () => void h.remove()))
+    }).then((h) => { if (encerrado) void h.remove(); else tirarApp = () => void h.remove() })
     return () => {
+      encerrado = true
+      window.removeEventListener('online', aoConectar)
       tirarCopo?.()
       tirarApp?.()
     }
@@ -63,8 +76,8 @@ export function IntegracoesNativas() {
     if (!Capacitor.isNativePlatform()) return
     const ir = (url: string) => {
       try {
-        const rota = new URL(url).pathname
-        if (ROTAS_LINK.has(rota)) navigate(rota)
+        const rota = rotaDoWidget(url)
+        if (rota) navigate(rota)
       } catch {
         /* link malformado: ignora */
       }

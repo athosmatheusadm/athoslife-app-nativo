@@ -5,6 +5,7 @@ import { IntegracoesNativas } from './IntegracoesNativas'
 import { LembretesDoLife } from './LembretesDoLife'
 import { Avisos } from '@ui/feedback'
 import { OnboardingConversa } from '@ui/screens/prototipo/OnboardingConversa'
+import { OnboardingEssencial } from '@ui/screens/prototipo/OnboardingEssencial'
 import { AppShell } from './AppShell'
 import { Login } from '@ui/screens/Login'
 import { RecuperarSenha } from '@ui/screens/RecuperarSenha'
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
       { path: '/politica-de-privacidade', element: <DocumentoLegal tipo="politica" /> },
       // PROTÓTIPO (2026-10-01): onboarding em conversa, público e sem salvar nada.
       { path: '/prototipo/onboarding', element: <OnboardingConversa /> },
+      { path: '/prototipo/onboarding-essencial', element: <OnboardingEssencial /> },
       {
         element: <RequireAuth><Outlet /></RequireAuth>,
         children: [

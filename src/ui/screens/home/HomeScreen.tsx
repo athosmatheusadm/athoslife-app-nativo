@@ -47,6 +47,7 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
 
       <MealCards
         onAbrir={(tipo: TipoRefeicao) => onNavigate(`/dieta?refeicao=${tipo}`)}
+        onAbrirExtra={(id) => onNavigate(`/dieta?refeicao=${encodeURIComponent(id)}`)}
         onCriarNovaRefeicao={() => onNavigate('/dieta?novaExtra=1')}
         onVerTodas={() => onNavigate('/dieta')}
       />

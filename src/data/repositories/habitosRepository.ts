@@ -10,6 +10,7 @@ import { dataLocalISO } from '@domain/rules/datas'
 import { diasPausados } from '@data/lifePausa'
 
 interface HabitoRow {
+  icone?: string | null
   id: string
   nome: string
   categoria: string | null
@@ -53,6 +54,7 @@ function paraDominio(r: HabitoRow, pausados: ReadonlySet<string>): Habito {
     id: r.id,
     nome: r.nome,
     emoji: emojiPorCategoria(r.categoria),
+    icone: r.icone ?? r.categoria,
     categoria: r.categoria,
     tipo,
     gatilhos: r.gatilhos ?? [],
@@ -161,6 +163,7 @@ export const habitosRepository = {
   },
 
   async criar(params: {
+    icone?: string
     nome: string
     categoria: string | null
     intensidade: IntensidadeHabito
@@ -168,12 +171,18 @@ export const habitosRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const { error } = await supabase.from('vicios_user').insert({
+    const linha: Record<string, unknown> = {
       user_id: userId,
       nome: params.nome,
       categoria: params.categoria,
       intensidade: params.intensidade,
-    })
+    }
+    let { error } = await supabase.from('vicios_user').insert(params.icone ? { ...linha, icone: params.icone } : linha)
+    // Banco sem a coluna `icone` (migração dos ícones ainda não aplicada):
+    // grava sem ela — o card cai no ícone da categoria — em vez de travar o cadastro.
+    if (params.icone && error && (error.code === 'PGRST204' || error.code === '42703') && error.message.includes('icone')) {
+      ({ error } = await supabase.from('vicios_user').insert(linha))
+    }
     // Triggers do banco: validar_habito (proibidos + consentimento) e
     // limitar_habitos_gratis (no grátis, só 1 hábito ativo).
     if (error?.message.includes('habito_nao_permitido')) throw new Error('habito_nao_permitido')

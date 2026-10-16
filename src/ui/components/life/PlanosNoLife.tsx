@@ -1,3 +1,4 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
@@ -414,10 +415,10 @@ function Pronto(props: {
           <Opcao onClick={props.onQueroMesmoAssim}>{t.querMesmoAssim}</Opcao>
         ) : (
           props.area === 'treino'
-            ? <Opcao onClick={props.onMontarTreino}>🏋️ {t.montarTreino}</Opcao>
-            : <Opcao onClick={props.onMontarDieta}>🥗 {t.montarDieta}</Opcao>
+            ? <Opcao onClick={props.onMontarTreino}><ActivityIcon icone="pos_treino" tile={false} cor="inherit" className="mr-2 h-5 w-5 align-middle" />{t.montarTreino}</Opcao>
+            : <Opcao onClick={props.onMontarDieta}><ActivityIcon icone="salada" tile={false} cor="inherit" className="mr-2 h-5 w-5 align-middle" />{t.montarDieta}</Opcao>
         )}
-        <Opcao onClick={props.onTrocar}>🔄 {t.trocarNoPlano[props.area]}</Opcao>
+        <Opcao onClick={props.onTrocar}>{t.trocarNoPlano[props.area]}</Opcao>
       </div>
     </>
   )

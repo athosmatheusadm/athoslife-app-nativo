@@ -1,3 +1,4 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
 import {
   faltamParaConquista,
@@ -144,7 +145,7 @@ export function HabitCard(props: {
         aria-expanded={aberto}
         className="flex min-h-16 w-full items-center gap-3 p-4 text-left active:bg-white/5"
       >
-        <span className="text-2xl" aria-hidden="true">{habito.emoji}</span>
+        <ActivityIcon icone={habito.icone ?? habito.categoria} />
 
         <span className="min-w-0 flex-1 truncate font-bold text-content-hi">{habito.nome}</span>
 

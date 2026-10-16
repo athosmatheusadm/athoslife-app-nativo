@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useI18n } from '@/i18n/I18nProvider'
-import { CATEGORIA_META, type Receita } from '@domain/entities/receita'
+import type { Receita } from '@domain/entities/receita'
+import { CategoryIcon } from './CategoryIcon'
 import { slugReceita } from '@domain/rules/cozinha'
 
 /**
  * Foto da receita curada. As imagens moram no app em
  * `public/receitas/<slug-do-título>.webp` (ex.: salada-que-mata-a-fome.webp).
- * Enquanto a foto não existe, cai no emoji da categoria sobre o degradê.
+ * Enquanto a foto não existe, mostra o duotone da categoria sobre o degradê.
  */
 export function FotoReceita(props: { receita: Pick<Receita, 'titulo' | 'categoria' | 'corTema'>; className: string; emojiClassName?: string }) {
   const [falhou, setFalhou] = useState(false)
@@ -25,9 +26,7 @@ export function FotoReceita(props: { receita: Pick<Receita, 'titulo' | 'categori
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
-        <span className={props.emojiClassName ?? 'text-4xl'} aria-hidden="true">
-          {CATEGORIA_META[receita.categoria].emoji}
-        </span>
+        <CategoryIcon categoria={receita.categoria} grande />
       )}
     </div>
   )

@@ -25,6 +25,7 @@ export interface Refeicao {
   readonly tipo: TipoRefeicao
   readonly nome: string
   readonly emoji: string
+  readonly icone?: string
   readonly ordem: number
   readonly itens: readonly ItemRefeicao[]
   readonly concluida: boolean

@@ -1,3 +1,5 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
+import { ActivityIconPicker, MEAL_ICONS } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { macrosRefeicao, type ItemRefeicao, type Refeicao } from '@domain/entities/meal'
@@ -35,14 +37,17 @@ export function MealSheet(props: {
   onAbrirSuplemento: () => void
   /** Só definido para refeições extras, que não têm nome fixo. */
   onRenomear?: (novoNome: string) => void
+  onMudarIcone?: (icone: string) => Promise<void>
   erroRenomear?: string | null
 }) {
   const { refeicao } = props
   const [modo, setModo] = useState<Modo>('menu')
+  const [salvandoIcone, setSalvandoIcone] = useState(false)
+  const [erroIcone, setErroIcone] = useState(false)
   const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(null)
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false)
   const macros = macrosRefeicao(refeicao.itens)
-  const { m } = useI18n()
+  const { m, idioma } = useI18n()
   const t = m.dieta.sheet
   const sugestoes = props.sugestoesPlano ?? []
 
@@ -76,7 +81,7 @@ export function MealSheet(props: {
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5 pt-3">
           <div className="flex items-center gap-3">
-            <span className="text-2xl" aria-hidden="true">{refeicao.emoji}</span>
+            <ActivityIcon icone={refeicao.icone ?? refeicao.tipo} />
             <span className="min-w-0 flex-1 truncate text-xl font-bold text-content-hi">{refeicao.nome}</span>
             <span className="text-sm font-bold tabular-nums text-brand">{macros.calorias} kcal</span>
             <button
@@ -107,6 +112,14 @@ export function MealSheet(props: {
               erro={props.erroRenomear ? t.erroNome : null}
             />
           )}
+
+          {props.onMudarIcone && <ActivityIconPicker valor={refeicao.icone ?? 'tigela'} opcoes={MEAL_ICONS} disabled={salvandoIcone}
+            onChange={(icone) => {
+              setSalvandoIcone(true)
+              setErroIcone(false)
+              void props.onMudarIcone!(icone).catch(() => setErroIcone(true)).finally(() => setSalvandoIcone(false))
+            }} />}
+          {erroIcone && <p role="alert" className="mt-2 text-sm text-accent-danger">{idioma === 'en' ? "Couldn't save the icon. Try again." : idioma === 'es' ? 'No se pudo guardar el icono. Inténtalo de nuevo.' : 'Não deu para salvar o ícone. Tente novamente.'}</p>}
 
           {/* Itens já registrados — toca pra selecionar, ⧉ copia, 🗑 exclui (com Desfazer) */}
           <ul className="mt-3 border-t border-surface-3 pt-1">

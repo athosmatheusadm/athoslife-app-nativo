@@ -17,6 +17,7 @@ interface ItemRow {
 }
 
 export interface RefeicaoExtra {
+  readonly icone?: string
   readonly id: string
   readonly nome: string
   readonly ordem: number
@@ -29,6 +30,7 @@ export type RefeicaoAlvo =
   | { readonly tipo: 'extra'; readonly extraId: string }
 
 interface ExtraRow {
+  icone?: string
   id: string
   nome: string
   ordem: number
@@ -256,7 +258,7 @@ export const itensRefeicaoRepository = {
 
     const { data: rows, error } = await supabase
       .from('refeicoes_extra')
-      .select('id, nome, ordem, concluida')
+      .select('*')
       .eq('user_id', userId)
       .eq('data', paraDataStr(data))
       .order('ordem', { ascending: true })
@@ -287,11 +289,17 @@ export const itensRefeicaoRepository = {
     const { data: row, error } = await supabase
       .from('refeicoes_extra')
       .insert({ user_id: userId, data: dataStr, nome, ordem })
-      .select('id, nome, ordem, concluida')
+      .select('*')
       .single<ExtraRow>()
 
     if (error) throw error
     return row
+  },
+
+  /** Troca o ícone de uma refeição extra (precisa da coluna `icone` no banco). */
+  async definirIconeExtra(extraId: string, icone: string): Promise<void> {
+    const { error } = await supabase.from('refeicoes_extra').update({ icone }).eq('id', extraId)
+    if (error) throw error
   },
 
   /** Renomeia uma refeição extra específica. */

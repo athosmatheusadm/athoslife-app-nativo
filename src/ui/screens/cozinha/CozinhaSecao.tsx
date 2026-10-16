@@ -7,6 +7,7 @@ import { CATEGORIAS_RECEITA, CATEGORIA_META, type CategoriaReceita, type Receita
 import type { Macros } from '@domain/entities/food'
 import type { Profile } from '@domain/entities/profile'
 import { CardReceita } from './CardReceita'
+import { CategoryIcon } from './CategoryIcon'
 
 /** Alterna o favorito no servidor e devolve a lista atualizada. */
 export async function alternarFavorito(lista: Receita[], r: Receita): Promise<Receita[]> {
@@ -98,7 +99,7 @@ export function CozinhaSecao(props: {
             <Chip ativo={filtro === 'todos'} onClick={() => setFiltro('todos')}>{t.todas}</Chip>
             {CATEGORIAS_RECEITA.map((cat) => (
               <Chip key={cat} ativo={filtro === cat} cor={CATEGORIA_META[cat].cor} onClick={() => setFiltro(cat)}>
-                {CATEGORIA_META[cat].emoji} {t.categorias[cat]}
+                <span className="inline-flex items-center gap-2"><CategoryIcon categoria={cat} />{t.categorias[cat]}</span>
               </Chip>
             ))}
           </div>

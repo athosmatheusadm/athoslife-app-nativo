@@ -10,6 +10,9 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.HashSet;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Estado do widget de água (contrato HydrationWidgetState do HTML), no aparelho.
@@ -51,25 +54,35 @@ final class WidgetAguaEstado {
         return new WidgetAguaEstado(hoje(), total, p.getInt("meta", 2500), p.getInt("copo", 500));
     }
 
-    static void salvarDoApp(Context ctx, String data, int totalMl, int metaMl) {
+    static synchronized void salvarDoApp(Context ctx, String data, int totalMl, int metaMl, JSONArray idsRegistrados) {
+        HashSet<String> registrados = new HashSet<>();
+        for (int i = 0; i < idsRegistrados.length(); i++) registrados.add(idsRegistrados.optString(i));
+        int pendente = 0;
+        JSONArray fila = lerFila(ctx);
+        for (int i = 0; i < fila.length(); i++) {
+            JSONObject item = fila.optJSONObject(i);
+            if (item != null && data.equals(item.optString("data")) && !registrados.contains(item.optString("id"))) pendente += item.optInt("ml", 0);
+        }
         prefs(ctx).edit()
                 .putString("data", data)
-                .putInt("total", Math.max(0, totalMl))
+                .putInt("total", Math.max(0, totalMl) + pendente)
                 .putInt("meta", metaMl > 0 ? metaMl : 2500)
                 .apply();
     }
 
     static synchronized void somarCopo(Context ctx) {
+        if (prefs(ctx).getString("usuario", "").isEmpty()) return;
         WidgetAguaEstado e = carregar(ctx);
-        prefs(ctx).edit().putString("data", e.data).putInt("total", e.totalMl + e.copoMl).apply();
         try {
             JSONArray fila = new JSONArray(prefs(ctx).getString("fila", "[]"));
             JSONObject item = new JSONObject();
+            item.put("id", UUID.randomUUID().toString());
             item.put("ml", e.copoMl);
             item.put("data", e.data);
             item.put("em", System.currentTimeMillis());
             fila.put(item);
-            prefs(ctx).edit().putString("fila", fila.toString()).apply();
+            prefs(ctx).edit().putString("fila", fila.toString())
+                    .putString("data", e.data).putInt("total", e.totalMl + e.copoMl).apply();
         } catch (JSONException ignored) {
         }
     }
@@ -86,15 +99,68 @@ final class WidgetAguaEstado {
         prefs(ctx).edit().putInt("copo", proximo).apply();
     }
 
-    static synchronized JSONArray drenarFila(Context ctx) {
+    static synchronized JSONArray lerFila(Context ctx) {
         JSONArray fila;
         try {
             fila = new JSONArray(prefs(ctx).getString("fila", "[]"));
         } catch (JSONException e) {
             fila = new JSONArray();
         }
-        prefs(ctx).edit().remove("fila").apply();
+        // Migra entradas antigas para ids estáveis, sem apagar a fila ao ler.
+        for (int i = 0; i < fila.length(); i++) {
+            JSONObject item = fila.optJSONObject(i);
+            if (item == null || item.has("id")) continue;
+            try {
+                String chave = item.optString("data") + ":" + item.optLong("em") + ":" + item.optInt("ml") + ":" + i;
+                item.put("id", UUID.nameUUIDFromBytes(chave.getBytes(StandardCharsets.UTF_8)).toString());
+            } catch (JSONException e) { throw new IllegalStateException(e); }
+        }
+        prefs(ctx).edit().putString("fila", fila.toString()).apply();
         return fila;
+    }
+
+    static synchronized void confirmar(Context ctx, JSONArray ids) {
+        HashSet<String> confirmados = new HashSet<>();
+        for (int i = 0; i < ids.length(); i++) confirmados.add(ids.optString(i));
+        JSONArray restante = new JSONArray();
+        JSONArray fila = lerFila(ctx);
+        for (int i = 0; i < fila.length(); i++) {
+            JSONObject item = fila.optJSONObject(i);
+            if (item != null && !confirmados.contains(item.optString("id"))) restante.put(item);
+        }
+        prefs(ctx).edit().putString("fila", restante.toString()).apply();
+    }
+
+    static synchronized void configurarUsuario(Context ctx, String usuario) {
+        SharedPreferences p = prefs(ctx);
+        String anterior = p.getString("usuario", "");
+        if (usuario.equals(anterior)) return;
+        SharedPreferences.Editor editor = p.edit().putString("usuario", usuario);
+        // Arquiva por conta antes de sair/trocar: água offline não é transferida
+        // nem perdida. Ao voltar à mesma conta, sua fila é restaurada.
+        if (!anterior.isEmpty()) {
+            editor.putString("fila_" + anterior, p.getString("fila", "[]"))
+                    .putString("data_" + anterior, p.getString("data", ""))
+                    .putInt("total_" + anterior, p.getInt("total", 0))
+                    .putInt("meta_" + anterior, p.getInt("meta", 2500));
+        }
+        if (usuario.isEmpty()) {
+            editor.remove("fila").remove("data").remove("total").remove("meta");
+        } else if (!anterior.isEmpty() || p.contains("fila_" + usuario)) {
+            editor.putString("fila", p.getString("fila_" + usuario, "[]"))
+                    .putString("data", p.getString("data_" + usuario, ""))
+                    .putInt("total", p.getInt("total_" + usuario, 0))
+                    .putInt("meta", p.getInt("meta_" + usuario, 2500));
+        }
+        editor.apply();
+    }
+
+    static boolean temUsuario(Context ctx) {
+        return !prefs(ctx).getString("usuario", "").isEmpty();
+    }
+
+    static boolean pertenceAoUsuario(Context ctx, String usuario) {
+        return !usuario.isEmpty() && usuario.equals(prefs(ctx).getString("usuario", ""));
     }
 
     /** hydrated | dry (< 40% da meta) | empty — mesmo corte do HTML. */

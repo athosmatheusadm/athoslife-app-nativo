@@ -1,5 +1,7 @@
 # ATHOSlife — Status do projeto
 
+> Revisão de 12/10/2026: esta página contém avaliações históricas já superadas. Para as pendências consolidadas, consulte [PENDENCIAS_ATUAIS.md](PENDENCIAS_ATUAIS.md); o registro cronológico continua em [WORKLOG.md](WORKLOG.md).
+
 Placar honesto do que existe. Três colunas: **Decidido** (pensado e desenhado),
 **Codado** (existe compilando, strict 0 erros), **Falta**.
 

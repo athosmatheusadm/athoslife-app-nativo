@@ -27,6 +27,19 @@ function hojeISO(): string {
  * repositório de água não lê profiles, mantém a responsabilidade única.
  */
 export const aguaRepository = {
+  /** UUID gerado no Android torna reenvios seguros, inclusive depois de uma
+   * resposta de rede perdida. Mantém a data e horário originais do toque. */
+  async adicionarDoWidget(copo: { id: string; ml: number; data: string; em: number }, usuarioEsperado: string): Promise<void> {
+    if (!Number.isInteger(copo.ml) || copo.ml <= 0 || !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(copo.id) || !/^\d{4}-\d{2}-\d{2}$/.test(copo.data) || !Number.isFinite(copo.em) || copo.em <= 0) throw new Error('copo_widget_invalido')
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId || userId !== usuarioEsperado) throw new Error('widget_sessao_alterada')
+    const { error } = await supabase.from('registros_agua').upsert({
+      id: copo.id, user_id: userId, quantidade_ml: copo.ml,
+      data: copo.data, created_at: new Date(copo.em).toISOString(),
+    }, { onConflict: 'id', ignoreDuplicates: true })
+    if (error) throw error
+    avisarRegistroDoDia()
+  },
   /** Registros de hoje (para montar o AguaDoDia com histórico). */
   async registrosDeHoje(): Promise<RegistroAgua[]> {
     const userId = (await supabase.auth.getUser()).data.user?.id

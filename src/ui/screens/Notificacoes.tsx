@@ -1,3 +1,4 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
 import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -110,7 +111,7 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
   return (
     <div className="rounded-xl border border-surface-4 bg-surface-2 p-3.5">
       <div className="flex items-center gap-2">
-        <span className="text-xl" aria-hidden="true">{habito.emoji}</span>
+        <ActivityIcon icone={habito.icone ?? habito.categoria} />
         <span className="flex-1 truncate text-sm font-semibold text-content-hi">{habito.nome}</span>
       </div>
 

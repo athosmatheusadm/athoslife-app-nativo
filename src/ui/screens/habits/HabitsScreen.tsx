@@ -1,3 +1,4 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useState } from 'react'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { HabitCard } from './HabitCard'
@@ -33,6 +34,7 @@ export function HabitsScreen(props: {
   onRegistrarCheckin: (habitoId: string) => void
   onExcluirHabito: (habitoId: string) => Promise<void>
   onCriarHabito: (params: {
+    icone: string
     nome: string
     categoria: string | null
     intensidade: IntensidadeHabito
@@ -55,7 +57,7 @@ export function HabitsScreen(props: {
         <div>
           <div className="text-micro font-bold uppercase tracking-[3px] text-brand">{t.marca}</div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl" aria-hidden="true">🌱</span>
+            <ActivityIcon icone="outro" tile={false} className="h-7 w-7" />
             <h1 className="text-2xl font-extrabold text-content-hi">{t.titulo}</h1>
           </div>
           {maiorStreak > 0 && (

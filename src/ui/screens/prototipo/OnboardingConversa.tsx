@@ -634,17 +634,19 @@ function ControleDaEntrada(props: { passo: Passo; r: Respostas; onResponder: (v:
 }
 
 /** Roda de rolar (altura, peso, ritmo) — o valor do meio é o escolhido. */
-function Regua(props: {
+export function Regua(props: {
   entrada: Extract<Entrada, { tipo: 'regua' }>
   r: Respostas
   onConfirmar: (v: number) => void
+  onChange?: (v: number) => void
+  rotuloConfirmar?: string
 }) {
   const { min, max, passo, unidade } = props.entrada
   const valores = useRef<number[]>([])
   if (valores.current.length === 0) {
     for (let v = min; v <= max + 1e-9; v += passo) valores.current.push(Math.round(v * 100) / 100)
   }
-  const inicial = Math.min(max, Math.max(min, props.entrada.inicial(props.r)))
+  const inicial = useRef(Math.min(max, Math.max(min, props.entrada.inicial(props.r)))).current
   const [valor, setValor] = useState(inicial)
   const caixa = useRef<HTMLDivElement>(null)
   const ALTURA = 44
@@ -655,22 +657,37 @@ function Regua(props: {
   }, [inicial, passo])
 
   const casas = passo < 0.1 ? 2 : passo < 1 ? 1 : 0
+  const primeiroVisivel = Math.max(0, Math.round((valor - min) / passo) - 5)
+  const ultimoVisivel = Math.min(valores.current.length, primeiroVisivel + 13)
   return (
     <>
       <div className="relative mx-auto h-[132px] w-48">
         <div className="pointer-events-none absolute inset-x-0 top-[44px] h-[44px] rounded-xl border border-brand/60 bg-brand/10" />
         <div
           ref={caixa}
+          tabIndex={0}
+          role="spinbutton"
+          aria-label={`Valor em ${unidade}`}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={valor}
+          onKeyDown={(ev) => {
+            if (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') return
+            ev.preventDefault()
+            const indiceAtual = Math.round((valor - min) / passo)
+            const proximo = Math.min(valores.current.length - 1, Math.max(0, indiceAtual + (ev.key === 'ArrowDown' ? 1 : -1)))
+            ev.currentTarget.scrollTop = proximo * ALTURA
+          }}
           onScroll={(ev) => {
             const i = Math.round(ev.currentTarget.scrollTop / ALTURA)
             const v = valores.current[Math.min(valores.current.length - 1, Math.max(0, i))]
-            if (v !== undefined) setValor(v)
+            if (v !== undefined) { setValor(v); props.onChange?.(v) }
           }}
           className="h-full snap-y snap-mandatory overflow-y-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ maskImage: 'linear-gradient(transparent, black 35%, black 65%, transparent)' }}
+          style={{ maskImage: 'linear-gradient(transparent, black 35%, black 65%, transparent)', overflowAnchor: 'none' }}
         >
-          <div style={{ height: ALTURA }} />
-          {valores.current.map((v) => (
+          <div style={{ height: ALTURA + primeiroVisivel * ALTURA }} />
+          {valores.current.slice(primeiroVisivel, ultimoVisivel).map((v) => (
             <div
               key={v}
               style={{ height: ALTURA }}
@@ -681,21 +698,26 @@ function Regua(props: {
               {v.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}
             </div>
           ))}
-          <div style={{ height: ALTURA }} />
+          <div style={{ height: ALTURA + (valores.current.length - ultimoVisivel) * ALTURA }} />
         </div>
         <span className="pointer-events-none absolute right-2 top-[44px] grid h-[44px] place-items-center text-sm text-content-low">
           {unidade}
         </span>
       </div>
-      <BotaoPrincipal onClick={() => props.onConfirmar(valor)}>Confirmar</BotaoPrincipal>
+      <BotaoPrincipal onClick={() => props.onConfirmar(valor)}>{props.rotuloConfirmar ?? 'Confirmar'}</BotaoPrincipal>
     </>
   )
 }
 
 /** Boneco frente/costas: toca no músculo pra marcar (até 3). */
-function EscolherMusculos(props: { onConfirmar: (v: string[]) => void }) {
-  const [sel, setSel] = useState<string[]>([])
-  const alternar = (m: string) => setSel((s) => (s.includes(m) ? s.filter((x) => x !== m) : s.length >= 3 ? s : [...s, m]))
+export function EscolherMusculos(props: { onConfirmar: (v: string[]) => void; valorInicial?: string[]; valor?: string[]; onChange?: (v: string[]) => void; ocultarConfirmacao?: boolean }) {
+  const [selInterna, setSel] = useState<string[]>(props.valorInicial ?? [])
+  const sel = props.valor ?? selInterna
+  const alternar = (m: string) => {
+    const nova = sel.includes(m) ? sel.filter((x) => x !== m) : sel.length >= 3 ? sel : [...sel, m]
+    setSel(nova)
+    props.onChange?.(nova)
+  }
   const cor = (m: string) => (sel.includes(m) ? '#22c55e' : '#3a3a3a')
 
   // Função (não componente): um componente criado dentro do render remontaria a cada toque.
@@ -744,7 +766,7 @@ function EscolherMusculos(props: { onConfirmar: (v: string[]) => void }) {
       <p className="mt-1 text-center text-micro text-content-low">
         {sel.length === 0 ? 'Nenhum marcado = corpo todo' : sel.map((m) => ROTULO_MUSCULO[m]).join(' · ')}
       </p>
-      <BotaoPrincipal onClick={() => props.onConfirmar(sel)}>{sel.length === 0 ? 'Corpo todo' : 'Pronto'}</BotaoPrincipal>
+      {!props.ocultarConfirmacao && <BotaoPrincipal onClick={() => props.onConfirmar(sel)}>{sel.length === 0 ? 'Corpo todo' : 'Pronto'}</BotaoPrincipal>}
     </>
   )
 }

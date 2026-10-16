@@ -1,18 +1,9 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
+import { itensRefeicaoRepository, type RefeicaoExtra } from '@data/repositories/itensRefeicaoRepository'
 import { useEffect, useState } from 'react'
 import { refeicoesRepository, type TipoRefeicao } from '@data/repositories/refeicoesRepository'
-import cafeImg from '@/assets/refeicoes/refeicao-cafe.png'
-import almocoImg from '@/assets/refeicoes/refeicao-almoco.png'
-import lancheImg from '@/assets/refeicoes/refeicao-lanche.png'
-import jantarImg from '@/assets/refeicoes/refeicao-jantar.png'
 import { useI18n } from '@/i18n/I18nProvider'
 
-/**
- * Cards de refeição no visual da arte, agora com FOTO real do prato
- * (imagem fixa por tipo, PNG transparente). A foto não vem do usuário:
- * cada tipo tem sua imagem fixa, decisão de produto.
- */
-
-const IMG = { cafe: cafeImg, almoco: almocoImg, lanche: lancheImg, jantar: jantarImg } as const
 
 const ORDEM = ['cafe', 'almoco', 'lanche', 'jantar'] as const
 
@@ -20,12 +11,16 @@ export function MealCards(props: {
   onAbrir: (tipo: TipoRefeicao) => void
   /** "+" — cria uma refeição extra nova (Colação, Ceia, Pós-treino...) e leva pra Dieta já nela. */
   onCriarNovaRefeicao: () => void
+  onAbrirExtra: (id: string) => void
   /** "Ver todas" — abre a Dieta (antes era um texto que parecia botão e não fazia nada). */
   onVerTodas: () => void
 }) {
   const { m } = useI18n()
   const t = m.home.refeicoes
   const [kcalPorTipo, setKcalPorTipo] = useState<Map<TipoRefeicao, number>>(new Map())
+
+  const [extras, setExtras] = useState<RefeicaoExtra[]>([])
+  const [kcalExtras, setKcalExtras] = useState<Map<string, number>>(new Map())
 
   useEffect(() => {
     let ativo = true
@@ -36,6 +31,12 @@ export function MealCards(props: {
         setKcalPorTipo(new Map(resumo.map((r) => [r.tipo, r.kcal])))
       })
       .catch(() => {})
+    void Promise.all([itensRefeicaoRepository.listarExtras(new Date()), itensRefeicaoRepository.doDia(new Date())])
+      .then(([lista, itens]) => {
+        if (!ativo) return
+        setExtras(lista)
+        setKcalExtras(new Map([...itens.extras].map(([id, alimentos]) => [id, alimentos.reduce((soma, i) => soma + i.calorias, 0)])))
+      }).catch(() => {})
     return () => {
       ativo = false
     }
@@ -60,7 +61,7 @@ export function MealCards(props: {
               className="flex w-[84px] flex-none flex-col items-center gap-1.5 rounded-2xl pb-1 transition-transform active:scale-95"
             >
               <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-surface-4 bg-surface-3">
-                <img src={IMG[tipo]} alt="" className="h-full w-full object-contain" loading="lazy" />
+                <ActivityIcon icone={tipo} className="h-20 w-20" />
               </span>
               <span className="text-micro font-medium text-content-hi">{m.dieta.refeicoes[tipo]}</span>
               <span className={`text-micro font-semibold tabular-nums ${kcal ? 'text-brand' : 'text-content-low'}`}>
@@ -69,6 +70,13 @@ export function MealCards(props: {
             </button>
           )
         })}
+
+        {extras.map((extra) => <button key={extra.id} type="button" onClick={() => props.onAbrirExtra(extra.id)}
+          className="flex w-[84px] flex-none flex-col items-center gap-1.5 rounded-2xl pb-1 transition-transform active:scale-95">
+          <ActivityIcon icone={extra.icone ?? 'tigela'} className="h-20 w-20" />
+          <span className="w-full truncate text-micro font-medium text-content-hi">{extra.nome}</span>
+          <span className="text-micro font-semibold tabular-nums text-brand">{kcalExtras.get(extra.id) ? `${kcalExtras.get(extra.id)} kcal` : t.registrar}</span>
+        </button>)}
 
         {/* Cria uma refeição extra nova (nome livre) e já leva pra ela na Dieta. */}
         <button

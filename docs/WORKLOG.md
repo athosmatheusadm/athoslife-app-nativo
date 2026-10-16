@@ -2513,3 +2513,75 @@ registrar; retomada à tarde. Arquivos conferidos (nenhum truncado).
 - Atenção: confirmação de cadastro manda LINK pro `site_url`
   (`http://localhost:3000`) — não funciona no celular. Decidir: desligar
   "Confirm email" ou confirmação por código no app.
+
+### 2026-10-12 — continuidade: ícones, opção B
+
+- Dono confirmou a opção B da comparação em localhost:5180: Phosphor duotone verde.
+- 27 SVGs extraídos da própria comparação, locais e sem dependência de CDN.
+- Refeições na Dieta, painel da refeição, Home, hábitos e lembretes usam esse padrão.
+- Extras aparecem na Home e abrem por id. O painel da extra permite escolher/trocar o ícone; novo hábito permite escolher ícone sem mudar a categoria.
+- PENDENTE: aplicar db/athoslife_icones_duotone_migration.sql no Supabase antes de usar a gravação dos ícones. Nenhuma migração remota foi executada nesta sessão.
+- TypeScript passou. Build inicialmente bloqueado por dependência opcional nativa ausente do Rollup no ambiente Windows.
+
+### 2026-10-12 — opção B também em Meu Plano e Cozinha
+
+- A pedido do dono, salada do título Meu Plano e categorias da Cozinha passaram para Phosphor duotone.
+- Ganho de massa usa halter; Emagrecimento salada; Vegano verduras; Hábitos doce; Shakes copo; Chás xícara.
+- Aplicado na seção, lista completa, selo do detalhe e imagem alternativa quando a foto da receita não carrega. Ícones dos filtros acompanham a cor do texto para manter contraste na seleção.
+- Não requer migração de banco.
+
+### 2026-10-12 — Home, ícones do Life/Hábitos e revisão das pendências
+
+- Removida da Home a dica “Toque num disco” (renderização removida para todos os idiomas).
+- Padronizados Life-chef (incluindo atalho nas respostas), pausa do chat, montar treino/dieta e cabeçalho de Hábitos. Removidos os emojis antigos sem uso das opções de hábitos. Símbolos de sexo preservados como conteúdo do formulário.
+- Criado docs/PENDENCIAS_ATUAIS.md a partir do diário e código, com indicação do que não foi consultado remotamente. STATUS ganhou link para essa revisão porque contém informações antigas.
+- Pendências principais: SMTP/confirmar cadastro, limites aprovados da IA, Billing, página web de exclusão, FCM/Health Connect, exportação nativa e validações no APK, migração dos ícones e ampliação real das categorias de hábitos.
+- As migrações de traduções, exclusão de conta e alergênicos, o template de recuperação e o deploy v3.10 constam como concluídos no histórico; não repetidos nesta sessão.
+
+### 2026-10-12 — terceira proposta de onboarding (Essencial)
+
+- Feedback do dono: prefere estrutura em telas da referência de 10 telas e fluidez/controles da conversa. Não quer cópia do Fitfolio.
+- Criada rota pública /prototipo/onboarding-essencial, preservando as duas referências e o onboarding real.
+- Retirados questionários de rotina, horas de sono, local das refeições e estresse. Treino/dieta opcionais e independentes.
+- Dias disponíveis e duração POR SESSÃO são perguntas distintas. Peso/altura reutilizam a roda numérica; foco usa corpo frente/costas com opções textuais acessíveis.
+- Alimentação separa preferências de alergias/intolerâncias. Suplementos em card expansível, sem recomendar uso.
+- Resumo com edição por etapa e encerramento com Life e escolhas reais. Sem falso processamento nem plano inventado.
+- Protótipo só em pt-BR, estado em memória. NÃO grava no perfil, não gera metas/planos, não substitui a triagem de saúde do fluxo de produção. A triagem permanece necessária antes da geração real.
+- Aguardando revisão visual do dono; integração real só depois de fechar o desenho.
+- Validação desta proposta: TypeScript --noEmit passou; URL nova respondeu HTTP 200 e foi aberta no navegador. Build completo no WSL foi interrompido após permanecer sem concluir; não registrado como aprovado. Visual ainda depende da avaliação do dono.
+
+### 2026-10-12 — onboarding Essencial aprovado; fluidez e controle
+
+- Dono aprovou a terceira proposta e pediu fluxo leve, simples, prático e sob controle do usuário.
+- Progresso agrupado em quatro partes estáveis, sem contagem de páginas que aumenta ao optar por treino.
+- Caminho “Quero só conhecer o app por enquanto” pula as preferências opcionais e leva ao resumo, sem planos. Voltar segue o histórico realmente percorrido.
+- Alimentação/restrições podem ficar para depois. Controles de peso/altura avançam com Continuar, sem confirmação intermediária.
+- Escolhas únicas não desmarcam ao tocar novamente. Foco corporal preservado a cada toque; nomes e desenho sincronizados. Medidas preservadas mesmo ao voltar antes de confirmar.
+- Botão Voltar do Android percorre as etapas. Quando falta resposta essencial, Continuar explica o necessário em vez de ficar desabilitado sem motivo.
+- Ainda é protótipo; aprovação visual registrada, integração real e traduções seguem pendentes.
+
+### 2026-10-12 — revisão após teste: conversa guiada e hidratação restaurada
+
+- Dono achou Essencial mais travado e apontou ausência do Life da água. Direção corrigida: fluidez de conversa com densidade do modelo original, sem blocos de formulário.
+- Mesma rota /prototipo/onboarding-essencial agora usa uma pergunta por vez; respostas únicas avançam direto, sem botão extra ou espera artificial de digitação. Controles de texto, múltiplas escolhas, medidas e foco continuam com ação explícita.
+- Mantidos: perfil, objetivo, peso/altura, treino/dieta opcionais separados, dias/tempo/local/experiência/foco, refeições, gosta/não gosta, alergias/intolerâncias, suplementos expansíveis e resumo editável.
+- Restaurada pergunta aproximada de hidratação com Life azul (hidratado) e adicionados interesses de hábitos opcionais. Rotina, horas de sono, local das refeições e estresse continuam fora, conforme pedido anterior.
+- Respostas recentes ficam acessíveis para editar, Voltar preserva o histórico real, resumo mostra dados informados e final reúne Life de treino/chef/água.
+- Otimização da roda numérica compartilhada: no máximo 13 linhas montadas em vez de centenas, mantendo altura total de rolagem. Sem repintar centenas de linhas por movimento.
+- Aprovação anterior era do desenho-base; esta revisão ainda depende da avaliação do dono. Mantida como protótipo, sem persistência ou geração de planos reais.
+
+## 12/10/2026 — revisão funcional do widget Android
+
+Corrigida leitura destrutiva da fila: copos só são removidos depois de persistidos, com UUID estável e upsert para reenvio sem duplicação. Mantidos data e horário originais, inclusive copos de ontem. Sincronizações serializadas; nova tentativa ao abrir, retomar, reconectar e tocar no widget. Fila isolada e arquivada por conta no logout. Contador soma pendências que ainda não aparecem nos IDs retornados pelo banco. Sem sessão, copos abrem o aplicativo. Life, cápsula e contador abrem Home; câmera abre /scanner com validação do deep link.
+
+Validação: 10 testes de lógica passaram (`node --test scripts/testar-widget.mjs`), cobrindo offline, falha parcial, reenvio, mudança de dia, novos toques e rotas. Estes testes não acessam Supabase nem executam Android. ADB não encontrou aparelho/emulador conectado. Compilação Android não executada: JDK/JAVA_HOME ausentes. Necessário gerar e instalar novo APK: a ponte nativa ganhou métodos e o JavaScript novo não deve ser publicado sozinho sobre APK antigo.
+
+Pendente: em Android real, conferir widget com app aberto/fechado, rede ligada/desligada, retomada, troca de conta, volume, virada do dia, total no banco e Home, abertura fria/quente e scanner até captura. Nenhuma garantia de funcionamento integral em aparelho foi feita. Registro offline só chega ao banco quando o app executa a sincronização; não há worker de envio em segundo plano.
+
+### 2026-10-15 — revisão do que foi feito em 12/10 e correções
+
+- Revisado todo o diff (widget, ícones duotone, onboarding Essencial). TypeScript, 10 testes do widget e `vite build` passaram.
+- Conferido no Supabase: coluna `icone` ainda NÃO existe em `vicios_user`/`refeicoes_extra` (migração não aplicada).
+- Corrigido: criar hábito quebrava sem a coluna. Agora, se o banco recusar `icone`, grava sem ele (card usa o ícone da categoria).
+- Trocar ícone de refeição extra continua dependendo da migração (mostra erro amigável até lá).
+- PENDENTE: rodar db/athoslife_icones_duotone_migration.sql; gerar APK novo (ponte do widget mudou) e testar no aparelho.

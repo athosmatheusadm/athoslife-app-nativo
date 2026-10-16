@@ -1,3 +1,4 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
 import { macrosRefeicao, resumoRefeicao, type Refeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -51,7 +52,7 @@ export function MealAccordion(props: {
         onClick={props.onAbrir}
         className={`flex min-h-16 min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors active:bg-white/5 ${props.dragHandleProps ? 'pl-1' : 'pl-4'}`}
       >
-        <span className="text-2xl" aria-hidden="true">{refeicao.emoji}</span>
+        <ActivityIcon icone={refeicao.icone ?? refeicao.tipo} />
 
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-content-hi">{refeicao.nome}</span>

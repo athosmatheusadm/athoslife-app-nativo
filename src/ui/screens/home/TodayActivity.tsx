@@ -122,7 +122,6 @@ export function TodayActivity({ metas }: { metas: Metas }) {
     <section className="rounded-card border border-surface-4 bg-surface-2 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-content-hi">{t.atividade.titulo}</h2>
-        <span className="text-micro font-semibold text-content-low">{t.atividade.dica}</span>
       </div>
 
       <div className="flex gap-1">

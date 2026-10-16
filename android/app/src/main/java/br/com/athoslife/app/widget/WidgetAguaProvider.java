@@ -84,7 +84,7 @@ public class WidgetAguaProvider extends AppWidgetProvider {
             double nivel = Math.max(0, Math.min(1, e.totalMl / porCopo - i));
             int idx = (int) Math.round(nivel * 4);
             v.setImageViewResource(COPOS[i], NIVEIS[idx]);
-            v.setOnClickPendingIntent(COPOS[i], broadcast(ctx, ACAO_COPO, 10 + i));
+            v.setOnClickPendingIntent(COPOS[i], WidgetAguaEstado.temUsuario(ctx) ? broadcast(ctx, ACAO_COPO, 10 + i) : abrirApp(ctx, "athoslife://abrir/home", 30));
         }
 
         v.setTextViewText(R.id.wg_volume, e.copoMl >= 1000 ? "1 L" : e.copoMl + "\nml");
@@ -102,6 +102,8 @@ public class WidgetAguaProvider extends AppWidgetProvider {
         }
 
         v.setOnClickPendingIntent(R.id.wg_life, abrirApp(ctx, "athoslife://abrir/home", 30));
+        v.setOnClickPendingIntent(R.id.wg_capsula, abrirApp(ctx, "athoslife://abrir/home", 30));
+        v.setOnClickPendingIntent(R.id.wg_contador, abrirApp(ctx, "athoslife://abrir/home", 30));
         v.setOnClickPendingIntent(R.id.wg_camera, abrirApp(ctx, "athoslife://abrir/scanner", 31));
         return v;
     }

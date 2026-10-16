@@ -32,6 +32,7 @@ export interface Habito {
   /** Nome limpo, sem peso: "Chocolate", "Fast Food". */
   readonly nome: string
   readonly emoji: string
+  readonly icone?: string | null
   readonly categoria: string | null
   readonly tipo: TipoHabito
   readonly gatilhos: readonly string[]

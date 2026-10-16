@@ -1,3 +1,4 @@
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -228,7 +229,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
               disabled={mudandoPausa}
               className="min-h-11 max-w-[45%] flex-none rounded-full border border-accent-gold/50 bg-accent-gold/10 px-3 text-micro font-semibold leading-tight text-accent-gold disabled:opacity-50"
             >
-              🌙 {m.lifeChat.pausado} · {m.lifeChat.retomar}
+              <ActivityIcon icone="ceia" tile={false} cor="inherit" className="mr-1 inline-flex h-4 w-4 align-middle" /> {m.lifeChat.pausado} · {m.lifeChat.retomar}
             </button>
           )}
         </div>
@@ -239,7 +240,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             um alimento" saiu daqui — o scanner fica na refeição). */}
         {foco === 'dieta' && (
           <div className="flex-none space-y-2 px-6 pb-3">
-            <Atalho emoji="👨‍🍳" texto={m.cozinha.lifeChefTitulo} onClick={() => ir('/dieta/cozinha/life')} />
+            <Atalho texto={m.cozinha.lifeChefTitulo} onClick={() => ir('/dieta/cozinha/life')} />
           </div>
         )}
 
@@ -277,7 +278,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                 })}
                 {c.chef && (
                   <div className="max-w-[85%]">
-                    <Atalho emoji="👨‍🍳" texto={m.cozinha.lifeChefTitulo} onClick={() => ir('/dieta/cozinha/life')} />
+                    <Atalho texto={m.cozinha.lifeChefTitulo} onClick={() => ir('/dieta/cozinha/life')} />
                   </div>
                 )}
               </Fragment>
@@ -371,14 +372,14 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   )
 }
 
-function Atalho(props: { emoji: string; texto: string; onClick: () => void }) {
+function Atalho(props: { texto: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={props.onClick}
       className="flex min-h-12 w-full items-center gap-2 rounded-2xl border border-brand/40 bg-brand/10 px-4 text-left text-sm font-bold text-brand active:scale-[0.99]"
     >
-      <span aria-hidden="true">{props.emoji}</span>
+      <ActivityIcon icone="jantar" tile={false} className="h-6 w-6" />
       <span className="flex-1">{props.texto}</span>
       <span aria-hidden="true">›</span>
     </button>

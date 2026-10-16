@@ -6,6 +6,7 @@ import { cozinhaService } from '@domain/services/cozinhaService'
 import { CATEGORIAS_RECEITA, CATEGORIA_META, type CategoriaReceita, type Receita, type ReceitaCriada } from '@domain/entities/receita'
 import { CabecalhoCozinha } from './CabecalhoCozinha'
 import { CardReceita } from './CardReceita'
+import { CategoryIcon } from './CategoryIcon'
 import { CardCriacao, Chip, alternarFavorito } from './CozinhaSecao'
 
 type Filtro = CategoriaReceita | 'todos' | 'favoritas' | 'criacoes'
@@ -58,7 +59,7 @@ export function CozinhaListaScreen() {
         )}
         {CATEGORIAS_RECEITA.map((cat) => (
           <Chip key={cat} ativo={filtro === cat} cor={CATEGORIA_META[cat].cor} onClick={() => setFiltro(cat)}>
-            {CATEGORIA_META[cat].emoji} {t.categorias[cat]}
+            <span className="inline-flex items-center gap-2"><CategoryIcon categoria={cat} />{t.categorias[cat]}</span>
           </Chip>
         ))}
       </div>

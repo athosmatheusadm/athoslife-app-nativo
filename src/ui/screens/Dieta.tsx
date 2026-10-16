@@ -13,8 +13,8 @@ export function Dieta() {
   // refeição. Sem o parâmetro (entrada normal pela aba Dieta), não abre
   // nada sozinho — o sheet só sobe quando o usuário toca numa refeição.
   const refeicaoNaUrl = searchParams.get('refeicao')
-  const abrirRefeicao = TIPOS_VALIDOS.includes(refeicaoNaUrl as TipoFixo)
-    ? (refeicaoNaUrl as TipoFixo)
+  const abrirRefeicao = TIPOS_VALIDOS.includes(refeicaoNaUrl as TipoFixo) || /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(refeicaoNaUrl ?? '')
+    ? refeicaoNaUrl
     : null
 
   // Vindo do "+" da Home: cria uma refeição extra nova assim que abre.

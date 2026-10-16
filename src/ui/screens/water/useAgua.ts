@@ -4,6 +4,7 @@ import { widgetAgua } from '@data/native/widgetAgua'
 import { dataLocalISO } from '@domain/rules/datas'
 import { EVENTO_AGUA_MUDOU } from '@app/IntegracoesNativas'
 import type { AguaDoDia } from '@domain/entities/water'
+import { useSession } from '@app/SessionProvider'
 
 interface UseAguaResult {
   readonly estado: AguaDoDia | null
@@ -23,6 +24,8 @@ interface UseAguaResult {
  * toque, senão parece travado.
  */
 export function useAgua(metaMl: number): UseAguaResult {
+  const { session } = useSession()
+  const usuario = session?.user.id ?? ''
   const [estado, setEstado] = useState<AguaDoDia | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
@@ -33,13 +36,13 @@ export function useAgua(metaMl: number): UseAguaResult {
       const dia = await aguaRepository.aguaDoDia(metaMl)
       setEstado(dia)
       // Widget da tela inicial sempre com o mesmo número do app.
-      void widgetAgua.atualizar({ data: dataLocalISO(), totalMl: dia.totalMl, metaMl })
+      void widgetAgua.atualizar({ data: dataLocalISO(), totalMl: dia.totalMl, idsRegistrados: dia.registros.map((r) => r.id), metaMl, usuario })
     } catch {
       setErro('Não consegui carregar sua hidratação agora.')
     } finally {
       setCarregando(false)
     }
-  }, [metaMl])
+  }, [metaMl, usuario])
 
   useEffect(() => {
     void recarregar()
