@@ -171,18 +171,13 @@ export const habitosRepository = {
     const userId = (await supabase.auth.getUser()).data.user?.id
     if (!userId) throw new Error('not_authenticated')
 
-    const linha: Record<string, unknown> = {
+    const { error } = await supabase.from('vicios_user').insert({
       user_id: userId,
       nome: params.nome,
       categoria: params.categoria,
       intensidade: params.intensidade,
-    }
-    let { error } = await supabase.from('vicios_user').insert(params.icone ? { ...linha, icone: params.icone } : linha)
-    // Banco sem a coluna `icone` (migração dos ícones ainda não aplicada):
-    // grava sem ela — o card cai no ícone da categoria — em vez de travar o cadastro.
-    if (params.icone && error && (error.code === 'PGRST204' || error.code === '42703') && error.message.includes('icone')) {
-      ({ error } = await supabase.from('vicios_user').insert(linha))
-    }
+      ...(params.icone ? { icone: params.icone } : {}),
+    })
     // Triggers do banco: validar_habito (proibidos + consentimento) e
     // limitar_habitos_gratis (no grátis, só 1 hábito ativo).
     if (error?.message.includes('habito_nao_permitido')) throw new Error('habito_nao_permitido')

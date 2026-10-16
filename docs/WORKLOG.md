@@ -2582,6 +2582,6 @@ Pendente: em Android real, conferir widget com app aberto/fechado, rede ligada/d
 
 - Revisado todo o diff (widget, ícones duotone, onboarding Essencial). TypeScript, 10 testes do widget e `vite build` passaram.
 - Conferido no Supabase: coluna `icone` ainda NÃO existe em `vicios_user`/`refeicoes_extra` (migração não aplicada).
-- Corrigido: criar hábito quebrava sem a coluna. Agora, se o banco recusar `icone`, grava sem ele (card usa o ícone da categoria).
+- Dono recusou contorno no código: hábito deve gravar o ícone de verdade. Fallback removido; a migração é obrigatória antes de publicar este JS.
 - Trocar ícone de refeição extra continua dependendo da migração (mostra erro amigável até lá).
 - PENDENTE: rodar db/athoslife_icones_duotone_migration.sql; gerar APK novo (ponte do widget mudou) e testar no aparelho.
