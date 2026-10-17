@@ -6,7 +6,8 @@ import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { TodayActivity } from './TodayActivity'
 import { StreakCard } from './StreakCard'
 import { MealCards } from './MealCards'
-import { EmotionalCheckin } from './EmotionalCheckin'
+import { AberturaLife } from './AberturaLife'
+import { CheckinLife } from './CheckinLife'
 import { LifeSaudacao } from './LifeSaudacao'
 import { WeightCard } from '@ui/screens/weight/WeightCard'
 import { EnergiaPesoCard } from './EnergiaPesoCard'
@@ -40,7 +41,10 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
 
       {lifeNoTopo && <LifeSaudacao />}
 
-      <EmotionalCheckin />
+      {/* O Life puxa assunto (máx. 1 por dia) e, uns segundos depois, o check-in. */}
+      <AberturaLife />
+
+      <CheckinLife />
 
       <TodayActivity metas={profile.metas} />
 

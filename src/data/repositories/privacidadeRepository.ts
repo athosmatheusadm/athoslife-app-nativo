@@ -16,6 +16,8 @@ const TABELAS_EXPORTAVEIS = [
   'receitas_favoritas',
   'alimentos_favoritos',
   'life_chat_mensagens',
+  'life_memorias',
+  'life_checkins',
   'ia_uso_diario',
   'treinos_historico',
   'triagens_saude',

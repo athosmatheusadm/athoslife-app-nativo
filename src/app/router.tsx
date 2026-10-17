@@ -22,6 +22,7 @@ import { Conta } from '@ui/screens/Conta'
 import { Metas } from '@ui/screens/Metas'
 import { Plano } from '@ui/screens/Plano'
 import { Privacidade } from '@ui/screens/Privacidade'
+import { MemoriaLife } from '@ui/screens/MemoriaLife'
 import { Notificacoes } from '@ui/screens/Notificacoes'
 import { Acessibilidade } from '@ui/screens/Acessibilidade'
 import { Sobre } from '@ui/screens/Sobre'
@@ -83,6 +84,7 @@ export const router = createBrowserRouter([
           { path: '/perfil/metas', element: <Metas /> },
           { path: '/perfil/plano', element: <Plano /> },
           { path: '/perfil/privacidade', element: <Privacidade /> },
+          { path: '/perfil/privacidade/life', element: <MemoriaLife /> },
           { path: '/perfil/notificacoes', element: <Notificacoes /> },
           { path: '/perfil/acessibilidade', element: <Acessibilidade /> },
           { path: '/perfil/sobre', element: <Sobre /> },

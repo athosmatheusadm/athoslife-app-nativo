@@ -54,7 +54,7 @@ interface RespostaVisaoCrua {
 }
 
 export async function chamar<T>(
-  tipo: 'vision' | 'chat' | 'recipe' | 'acao' | 'estimar',
+  tipo: 'vision' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura',
   payload: Record<string, unknown>,
 ): Promise<T> {
   const { data: sessao } = await supabase.auth.getSession()
@@ -188,6 +188,8 @@ export interface RespostaChat {
   /** Mensagens que ainda restam hoje; null quando a resposta não gastou cota. */
   restantes: number | null
   acao: AcaoLife | null
+  /** A pessoa contou algo que valia lembrar e ainda não decidiu sobre a memória (v4.0). */
+  sugerirMemoria: boolean
 }
 
 /**
@@ -208,12 +210,37 @@ export async function enviarMensagemChat(
   foco: FocoLife = 'home',
   idEnvio: string = crypto.randomUUID(),
 ): Promise<RespostaChat> {
-  const cru = await chamar<{ resposta: string; restantes: number | null; acao?: AcaoLife }>('chat', {
+  const cru = await chamar<{ resposta: string; restantes: number | null; acao?: AcaoLife; sugerir_memoria?: boolean }>('chat', {
     mensagem,
     foco,
     id_envio: idEnvio,
   })
-  return { resposta: cru.resposta, restantes: cru.restantes, acao: cru.acao ?? null }
+  return { resposta: cru.resposta, restantes: cru.restantes, acao: cru.acao ?? null, sugerirMemoria: cru.sugerir_memoria === true }
+}
+
+/** Check-in v3 (ai-proxy v4.0): o servidor grava e o Life responde numa frase. Sem cota do chat. */
+export async function enviarCheckin(c: {
+  palavra: string
+  etiquetas: readonly string[]
+  nota: string | null
+  momento: 'manha' | 'tarde' | 'noite'
+}): Promise<{ resposta: string; conviteConversa: boolean }> {
+  const cru = await chamar<{ resposta: string; convite_conversa: boolean }>('checkin', {
+    palavra: c.palavra,
+    etiquetas: c.etiquetas,
+    nota: c.nota ?? undefined,
+    momento: c.momento,
+  })
+  return { resposta: cru.resposta, conviteConversa: cru.convite_conversa }
+}
+
+/**
+ * O Life puxa assunto (máx. 1 por dia, regras fixas, sem IA). O servidor
+ * entrega a mensagem uma vez só e ela já fica no histórico do chat.
+ */
+export async function buscarAberturaLife(): Promise<string | null> {
+  const cru = await chamar<{ mensagem: string | null }>('abertura', {})
+  return cru.mensagem ?? null
 }
 
 /** Resposta a um botão de escolha do Life. Não usa IA nem gasta mensagem. */

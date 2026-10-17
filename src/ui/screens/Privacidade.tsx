@@ -105,6 +105,19 @@ export function Privacidade() {
         </div>
       </section>
 
+      {/* Memória do Life (consentimento próprio): ver, fixar e apagar o que ele lembra. */}
+      <button
+        type="button"
+        onClick={() => navigate('/perfil/privacidade/life')}
+        className="mx-5 mt-3 flex min-h-16 w-[calc(100%-2.5rem)] items-center gap-3 rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left active:bg-white/5"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-content-hi">{m.perfil.memoriaLife.titulo}</span>
+          <span className="mt-0.5 block text-micro text-content-low">{m.perfil.memoriaLife.linha}</span>
+        </span>
+        <span aria-hidden="true" className="text-content-low">›</span>
+      </button>
+
       <section className="mx-5 mt-5">
         <h2 className="mb-1 text-sm font-bold text-content-hi">{t.exportarTitulo}</h2>
         <p className="mb-3 text-micro text-content-low">{t.exportarTexto}</p>

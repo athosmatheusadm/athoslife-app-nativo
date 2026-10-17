@@ -2645,3 +2645,41 @@ Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
    `VITE_RC_GOOGLE_KEY` no .env antes do APK.
 5. Dono ver o card Energia e peso; decidir o check-in.
 6. APK novo (widget + RevenueCat) e teste no aparelho.
+
+### 2026-10-17 — Life adaptativo (pacote do dono) levado pro app atual
+
+- O pacote `ATHOS_Life_Adaptativo.zip` partiu da ai-proxy de `aa5b2e2` e
+  desfaria 2 decisões de 12/10 (teto de 3 pausas/30 dias e Dieta sem
+  "Analisar alimento"). Dono pediu pra contornar: junção de 3 vias
+  (`git merge-file`) só com o que é novo, 0 conflitos, as duas regras ficam.
+- **Banco (aplicado e conferido):** `db/athoslife_life_adaptativo_migration.sql`
+  — `life_memorias`, `life_checkins`, `life_iniciativas`, consentimento de
+  memória no perfil, `tipo` no chat, funções de memória e de padrões.
+  Acrescentado: o log da IA (`ai_audit_logs`) só aceitava vision/chat/barcode,
+  então acao/estimar/recipe falhavam sem erro; agora aceita esses + checkin
+  (o teto de 3 respostas de IA por dia no check-in conta por esse log).
+- **ai-proxy v4.0** (`index.ts` + `life.ts` + `life.test.ts`): 12 testes
+  Deno passam, tipos ok. Resumo do check-in no chat agora sai no idioma da
+  pessoa. **Ainda não publicada** (auto mode nega deploy).
+- **App:**
+  - Home: `CheckinLife` (v2+v3: chega 3 s depois ou no 1º registro do
+    dia, 5 palavras + mapa de 16, motivo e nota opcionais, × até o próximo
+    momento, "Hoje: … · editar") no lugar do card de emojis; `AberturaLife`
+    (o Life puxa assunto, máx. 1/dia, guardado no dia até fechar).
+  - Chat: convite da memória quando a ai-proxy manda `sugerir_memoria`.
+  - Perfil › Privacidade e dados › "O que o Life lembra"
+    (`/perfil/privacidade/life`): liga/desliga, fixa, apaga com Desfazer,
+    apaga tudo com confirmação, conta algo ao Life.
+  - Exportar dados inclui `life_memorias` e `life_checkins`.
+  - Tudo em pt/en/es, tokens do app, gênero pelo `sexo` (neutro em
+    "outro"/"prefiro não dizer").
+- Validação: tsc, vite build, deno check, deno test.
+
+**Pendências**
+1. Publicar: `npx supabase functions deploy ai-proxy`, `rc-sync` e
+   `rc-webhook --no-verify-jwt` (`--project-ref gsdwsxwbmxcvutpvpkyi`).
+   Sem a ai-proxy nova, check-in e abertura do app novo dão erro/nada.
+2. Testar o Gemini numa conta de teste: marca [[LEMBRAR]] na hora certa?
+3. Dono ver no aparelho: check-in, abertura, tela de memórias.
+4. Scanner (`ATHOSlife_Scanner_Especificacao_Tecnica_v1.1.md`): começar
+   pela etapa 1 (medir o atual) quando o dono quiser.

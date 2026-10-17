@@ -1,4 +1,4 @@
-// ATHOSlife — ai-proxy (v3.10, 2026-10-12: Cozinha no chat — pedido de comida leva o catálogo da Cozinha filtrado por restrição/alergia (perfil + o que a pessoa disse); o Life mostra o card da receita que serve ou dá 2 ideias de uma linha + botão do Life-chef; receita completa nunca sai no chat; v3.9, 2026-10-09: tipo 'estimar' — Life estima kcal/macros de alimento ou produto que não está na base (busca da Dieta e código de barras não encontrado), gasta 1 mensagem da cota do chat e só devolve números; v3.8, 2026-10-08: proteção contra uso tipo GPT — pedido de tarefa fora do tema (código, redação, tradução...) com resposta fixa sem IA e sem cota, recusa marcada [FORA] pela IA, mensagem repetida devolvida sem IA, sinais de abuso por dia e chat pausado até meia-noite com 10 fora do tema; v3.7, 2026-10-08: Life MVP — histórico de 15, acolhimento, pausa do dia, repetir refeição (fixas + extras) por ferramenta, hábitos completos, filtro de dose só pra suplemento/remédio; v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; 08/10: cada Life no seu assunto, botões de plano só no Treino/Dieta; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
+// ATHOSlife — ai-proxy (v4.0, 2026-10-16: Life adaptativo — memória com consentimento ([[LEMBRAR]]/[[ESQUECER]], a pessoa vê e apaga), padrões dos últimos 28 dias, jeito de falar da pessoa, tipo 'checkin' (check-in v3 com resposta curta do Life) e tipo 'abertura' (no máx. 1 mensagem do Life por dia, sem IA); v3.10, 2026-10-12: Cozinha no chat — pedido de comida leva o catálogo da Cozinha filtrado por restrição/alergia (perfil + o que a pessoa disse); o Life mostra o card da receita que serve ou dá 2 ideias de uma linha + botão do Life-chef; receita completa nunca sai no chat; v3.9, 2026-10-09: tipo 'estimar' — Life estima kcal/macros de alimento ou produto que não está na base (busca da Dieta e código de barras não encontrado), gasta 1 mensagem da cota do chat e só devolve números; v3.8, 2026-10-08: proteção contra uso tipo GPT — pedido de tarefa fora do tema (código, redação, tradução...) com resposta fixa sem IA e sem cota, recusa marcada [FORA] pela IA, mensagem repetida devolvida sem IA, sinais de abuso por dia e chat pausado até meia-noite com 10 fora do tema; v3.7, 2026-10-08: Life MVP — histórico de 15, acolhimento, pausa do dia, repetir refeição (fixas + extras) por ferramenta, hábitos completos, filtro de dose só pra suplemento/remédio; v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; 08/10: cada Life no seu assunto, botões de plano só no Treino/Dieta; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
 //
 // Único lugar que fala com o Gemini. A chave nunca sai daqui.
 //
@@ -10,6 +10,10 @@
 //                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
 //   { tipo: 'vision', image: base64, mime_type? }         -> ResultadoVisao cru
 //   { tipo: 'recipe', contexto: {...} }                   -> ReceitaGerada crua
+//   { tipo: 'checkin', palavra, etiquetas?, nota?, momento? } -> { resposta, convite_conversa, checkin }
+//                     palavra do vocabulário fixo (life.ts); sem cota; IA no máx. 3x por dia
+//   { tipo: 'abertura' }                                -> { mensagem: string | null, motivo? }  (sem IA, sem cota)
+//   Chat também devolve sugerir_memoria: true quando valeria lembrar algo e a pessoa ainda não decidiu.
 //   { tipo: 'estimar', nome: string }                     -> { reconhecido, nome, porcao_g, calorias, proteina, carboidrato, gordura, confianca }
 //                     macros POR PORÇÃO; gasta 1 da cota do chat
 //
@@ -25,6 +29,11 @@
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
+import {
+  aplicarMarcasMemoria, blocoMemoria, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
+  lerConsentimentoMemoria, linhaCheckinsHoje, memoriasParaContexto, mensagensDaPessoa, padroesDaPessoa, promptCheckin,
+  REGRAS_CHECKIN, REGRAS_MEMORIA, respostaCheckinPadrao, resumoCheckin, validarCheckin,
+} from './life.ts'
 
 const env = (k: string, padrao = '') => Deno.env.get(k) ?? padrao
 
@@ -601,6 +610,10 @@ async function rotear(req: Request): Promise<Response> {
         return await handleAcao(sb, user.id, corpo)
       case 'estimar':
         return await handleEstimar(sb, user.id, corpo)
+      case 'checkin':
+        return await handleCheckin(sb, user.id, corpo)
+      case 'abertura':
+        return await handleAbertura(sb, user.id)
       default:
         return json({ error: 'invalid_type' }, 400)
     }
@@ -996,6 +1009,18 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const pago = pagoRes.data === true
   const historico = ((histRes.data ?? []) as { autor: string; texto: string }[]).reverse()
 
+  // 3b. Life adaptativo: memória (com consentimento), padrões, jeito de falar e check-in de hoje.
+  const hojeLocal = hojeNoFuso(loc.fuso)
+  const consentimento = await lerConsentimentoMemoria(sb, userId)
+  const [memorias, padroes, falas, checkinsHoje] = await Promise.all([
+    consentimento === true ? memoriasParaContexto(sb, userId, mensagem, hojeLocal) : Promise.resolve([]),
+    padroesDaPessoa(sb, userId, hojeLocal),
+    mensagensDaPessoa(sb, userId),
+    linhaCheckinsHoje(sb, userId, hojeLocal),
+  ])
+  const adaptativo = blocoMemoria(memorias, consentimento) + (consentimento !== false ? REGRAS_MEMORIA : '') +
+    blocoPadroes(padroes) + (estiloDaPessoa([...falas, mensagem]) ?? '')
+
   const conteudos: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
   for (const m of [...historico, { autor: 'usuario', texto: mensagem }]) {
     const role = m.autor === 'life' ? 'model' : 'user'
@@ -1025,7 +1050,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     ? await catalogoCozinha(sb, userId, loc.idioma, pago, falaDaPessoa)
     : null
   const sistema =
-    `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
+    `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
+    adaptativo +
     (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Acolha com calma, pergunte como a pessoa está e lembre da linha de apoio do país e de um profissional, sem alarmar.'
@@ -1048,7 +1074,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 
   // 5. Ação pedida pelo modelo (o texto dele é ignorado: quem diz "pronto"
   //    é o servidor, depois de gravar) ou filtro de saída na resposta.
-  let resposta = g.texto.trim()
+  const marcas = extrairMarcasMemoria(g.texto.trim())
+  let resposta = marcas.texto
   let status = 'ok'
   let acao: AcaoCliente | null = null
   const foraDoTema = /^\s*\[\s*fora\s*\]/i.test(resposta)
@@ -1082,6 +1109,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     }
   }
   if (!feito) resposta = cartoesDaResposta(resposta, catalogo ?? [])
+  const memoria = !feito && status !== 'fora_tema' ? await aplicarMarcasMemoria(sb, userId, consentimento, marcas) : null
 
   await sb.from('life_chat_mensagens').insert([
     { user_id: userId, autor: 'usuario', texto: mensagem },
@@ -1089,7 +1117,12 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   ])
   await auditar(sb, userId, 'chat', status, g)
 
-  return json({ resposta, restantes: Math.max(cota.limite - cota.usados, 0), ...(acao ? { acao } : {}) })
+  return json({
+    resposta,
+    restantes: Math.max(cota.limite - cota.usados, 0),
+    ...(acao ? { acao } : {}),
+    ...(memoria?.sugerirMemoria ? { sugerir_memoria: true } : {}),
+  })
 }
 
 /** Contexto compacto (poucas linhas = poucos tokens). Tolera falha parcial. */
@@ -1958,4 +1991,103 @@ Responda só JSON:
     dica_life: violaPrescricao(texto(cru.dica_life, 300)) ? '' : texto(cru.dica_life, 300),
     respeita_restricoes: lista(cru.respeita_restricoes, 10),
   })
+}
+
+// ================================================================
+// CHECK-IN v3 (v4.0) — palavra de sentimento + etiquetas + nota.
+// Grava pelo servidor (vocabulário fixo) e o Life responde numa frase.
+// Sem cota do chat; IA no máximo 3 vezes por dia, depois resposta pronta.
+// ================================================================
+async function handleCheckin(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+  const loc = await lerLocalidade(sb, userId)
+  const hora = Number(new Intl.DateTimeFormat('en-US', { timeZone: loc.fuso, hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
+  const c = validarCheckin(corpo, hora)
+  if (!c) return json({ error: 'invalid_checkin' }, 400)
+  const hoje = hojeNoFuso(loc.fuso)
+
+  // Risco na nota: resposta fixa de crise. A nota não é guardada (só o termo, em eventos_seguranca).
+  const crise = c.nota ? acharTermo(c.nota, TERMOS_CRISE) : null
+  if (crise) {
+    await sb.from('eventos_seguranca').insert({ user_id: userId, tipo: 'palavra_risco', contexto: crise })
+    c.nota = null
+  }
+  const sensivel = c.nota ? acharTermo(c.nota, TERMOS_SENSIVEIS) : null
+  if (sensivel) await sb.from('eventos_seguranca').insert({ user_id: userId, tipo: 'sinal_sensivel', contexto: sensivel })
+
+  const { error: erroGravar } = await sb.from('life_checkins').upsert({
+    user_id: userId, data: hoje, momento: c.momento, palavra: c.palavra, energia: c.energia, agradavel: c.agradavel,
+    etiquetas: c.etiquetas, nota: c.nota, atualizado_em: new Date().toISOString(),
+  }, { onConflict: 'user_id,data,momento' })
+  if (erroGravar) {
+    console.error('[checkin] gravar falhou', erroGravar.message)
+    return json({ error: 'checkin_falhou' }, 500)
+  }
+
+  let resposta: string
+  let status = 'ok'
+  if (crise) {
+    resposta = respostaCrise(loc)
+    status = 'crise'
+  } else {
+    const [pausa, usos] = await Promise.all([
+      sb.from('life_pausas').select('dia').eq('user_id', userId).eq('dia', hoje).maybeSingle(),
+      sb.from('ai_audit_logs').select('id', { count: 'exact', head: true })
+        .eq('user_id', userId).eq('tipo_chamada', 'checkin').gte('data', new Date(Date.now() - 20 * 3600_000).toISOString()),
+    ])
+    if (pausa.data || (usos.count ?? 0) >= 3) {
+      resposta = respostaCheckinPadrao(c, loc.idioma)
+      status = 'padrao'
+    } else {
+      const [contexto, consentimento] = await Promise.all([montarContexto(sb, userId, loc.fuso), lerConsentimentoMemoria(sb, userId)])
+      const memorias = consentimento === true
+        ? await memoriasParaContexto(sb, userId, [c.palavra, ...c.etiquetas, c.nota ?? ''].join(' '), hoje, 6)
+        : []
+      const sistema = `${PROMPT_LIFE}${blocoCultura(loc)}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
+        blocoMemoria(memorias, consentimento) + REGRAS_CHECKIN +
+        (sensivel ? '\n\nATENÇÃO: a nota tem sinal de sofrimento. Acolha com calma, sem alarmar.' : '')
+      const g = await chamarGemini({
+        systemInstruction: { parts: [{ text: sistema }] },
+        contents: [{ role: 'user', parts: [{ text: promptCheckin(c) }] }],
+        generationConfig: configGeracao(160, 0.7),
+      }, 15_000)
+      let txt = g.ok ? extrairMarcasMemoria(g.texto.trim()).texto.replace(MARCA_FORA, '').trim() : ''
+      if (!txt || txt.length > 300 || violaPrescricao(txt)) {
+        txt = respostaCheckinPadrao(c, loc.idioma)
+        status = g.ok ? 'filtrado' : 'padrao'
+      }
+      resposta = txt
+      await auditar(sb, userId, 'checkin', status, g)
+    }
+    if (sensivel) resposta = `${resposta}\n\n${linhaApoio(loc)}`
+  }
+
+  await sb.from('life_checkins').update({ resposta_life: resposta.slice(0, 2000) })
+    .eq('user_id', userId).eq('data', hoje).eq('momento', c.momento)
+  await sb.from('life_chat_mensagens').insert([
+    { user_id: userId, autor: 'usuario', texto: resumoCheckin(c, loc.idioma), tipo: 'checkin' },
+    { user_id: userId, autor: 'life', texto: resposta.slice(0, 2000), tipo: 'checkin' },
+  ])
+  return json({
+    resposta,
+    convite_conversa: c.agradavel <= 2 || !!sensivel || !!crise,
+    seguranca: !!crise,
+    checkin: { palavra: c.palavra, energia: c.energia, agradavel: c.agradavel, momento: c.momento, etiquetas: c.etiquetas },
+  })
+}
+
+// ================================================================
+// ABERTURA (v4.0) — o Life puxa assunto no máximo 1 vez por dia, com
+// regras fixas (evento lembrado, "como foi?", marco de hábito, dias
+// pesados, sumiço). Respeita pausa e "Life pode puxar conversa". Sem IA.
+// ================================================================
+async function handleAbertura(sb: Sb, userId: string) {
+  const loc = await lerLocalidade(sb, userId)
+  const hoje = hojeNoFuso(loc.fuso)
+  const escolha = escolherAbertura(await dadosAbertura(sb, userId, hoje, loc.idioma))
+  if (!escolha) return json({ mensagem: null })
+  // Chave (user_id, dia): se outro aparelho já registrou hoje, não repete.
+  const { error } = await sb.from('life_iniciativas').insert({ user_id: userId, dia: hoje, motivo: escolha.motivo, texto: escolha.texto })
+  if (error) return json({ mensagem: null })
+  await sb.from('life_chat_mensagens').insert({ user_id: userId, autor: 'life', texto: escolha.texto, tipo: 'iniciativa' })
+  return json({ mensagem: escolha.texto, motivo: escolha.motivo.split(':')[0] })
 }

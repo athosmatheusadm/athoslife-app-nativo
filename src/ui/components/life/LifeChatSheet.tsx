@@ -14,6 +14,7 @@ import {
   type MensagemChat,
 } from '@data/ai/aiProxy'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
+import { lifeMemoriaRepository } from '@data/repositories/lifeMemoriaRepository'
 import { receitasRepository, type ReceitaCrua } from '@data/repositories/receitasRepository'
 import {
   aoMudarPausa,
@@ -25,6 +26,7 @@ import {
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { vibrar } from '@ui/feedback'
 import { LifeMascote, type HumorLife } from '@ui/components/LifeMascote'
 import { PlanosNoLife } from './PlanosNoLife'
 
@@ -80,6 +82,9 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   // Cards de receita da Cozinha que o Life mostrou (ai-proxy v3.10).
   const [receitas, setReceitas] = useState<Map<string, ReceitaCrua> | null>(null)
   const buscouReceitasRef = useRef(false)
+  // Convite da memória (ai-proxy v4.0): aparece quando o Life acha que vale lembrar algo.
+  const [conviteMemoria, setConviteMemoria] = useState<'mostrar' | 'salvando' | 'aceito' | 'recusado' | null>(null)
+  const [erroMemoria, setErroMemoria] = useState(false)
 
   // Sempre mostra a última fala (ao abrir, ao enviar e quando o Life responde).
   useEffect(() => {
@@ -163,6 +168,19 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     }
   }
 
+  async function decidirMemoria(aceitou: boolean) {
+    setConviteMemoria('salvando')
+    setErroMemoria(false)
+    try {
+      await lifeMemoriaRepository.definirConsentimento(aceitou)
+      vibrar.leve()
+      setConviteMemoria(aceitou ? 'aceito' : 'recusado')
+    } catch {
+      setErroMemoria(true)
+      setConviteMemoria('mostrar')
+    }
+  }
+
   function ir(rota: string) {
     props.onFechar()
     navigate(rota)
@@ -186,6 +204,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
       if (r.restantes !== null) setRestantes(r.restantes)
       aplicarAcao(r.acao)
+      if (r.sugerirMemoria) setConviteMemoria((c) => c ?? 'mostrar')
     } catch (e) {
       falhaRef.current = { texto: mensagem, id }
       // A mensagem não foi aceita: tira do histórico e devolve pro campo.
@@ -302,6 +321,35 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                 </button>
               ))}
             </div>
+          )}
+
+          {(conviteMemoria === 'mostrar' || conviteMemoria === 'salvando') && (
+            <div className="max-w-[85%] rounded-2xl border border-brand/40 bg-surface-2 p-3.5">
+              <p className="text-sm leading-relaxed text-content-mid">{tc.memoria.convite}</p>
+              <p className="mt-1.5 text-micro text-content-low">{tc.memoria.nunca}</p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  disabled={conviteMemoria === 'salvando'}
+                  onClick={() => void decidirMemoria(false)}
+                  className="min-h-11 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5 disabled:opacity-50"
+                >
+                  {tc.memoria.agoraNao}
+                </button>
+                <button
+                  type="button"
+                  disabled={conviteMemoria === 'salvando'}
+                  onClick={() => void decidirMemoria(true)}
+                  className="min-h-11 flex-1 rounded-xl bg-brand text-sm font-bold text-brand-ink active:scale-[0.98] disabled:opacity-50"
+                >
+                  {tc.memoria.pode}
+                </button>
+              </div>
+              {erroMemoria && <p role="alert" className="mt-2 text-micro text-accent-danger">{tc.memoria.erro}</p>}
+            </div>
+          )}
+          {(conviteMemoria === 'aceito' || conviteMemoria === 'recusado') && (
+            <p className="text-micro text-content-low">{conviteMemoria === 'aceito' ? tc.memoria.aceito : tc.memoria.recusado}</p>
           )}
 
           {(foco === 'treino' || foco === 'dieta') && (
