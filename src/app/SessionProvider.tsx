@@ -11,6 +11,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@data/supabase/client'
 import { profileRepository, type StatusTesteGratis } from '@data/repositories/profileRepository'
 import { idDoAparelho } from '@data/native/aparelho'
+import { encerrarAssinaturas, iniciarAssinaturas } from '@data/assinatura/revenuecat'
 import type { Profile } from '@domain/entities/profile'
 
 interface SessionState {
@@ -31,6 +32,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [statusTeste, setStatusTeste] = useState<StatusTesteGratis | null>(null)
   // Um pedido de teste por conta por abertura do app.
   const testePedido = useRef<string | null>(null)
+  // Uma sincronização com a loja por conta por abertura do app; mudanças
+  // depois disso chegam pelo ouvinte do RevenueCat e pelo webhook.
+  const lojaIniciada = useRef<string | null>(null)
 
   async function loadProfile(userId: string): Promise<void> {
     // Ordem importa e é regra de negócio:
@@ -41,6 +45,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await profileRepository.registrarAbertura()
     const perfil = await profileRepository.buscar(userId)
     setProfile(perfil)
+
+    // Assinatura da Play Store (RevenueCat). Não segura a abertura; se o
+    // servidor mudou o plano, relê o perfil. No-op fora do Android/sem chave.
+    if (lojaIniciada.current !== userId) {
+      lojaIniciada.current = userId
+      void iniciarAssinaturas(userId).then(async (r) => {
+        if (r && r.direito.plano !== perfil?.plano) setProfile(await profileRepository.buscar(userId))
+      })
+    }
 
     // 4) Conta nova nasce sem dias de teste: o app pede os 7 dias com o id
     //    do aparelho e o servidor decide (db/athoslife_protecao_ia_migration.sql).
@@ -76,6 +89,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setProfile(null)
           setStatusTeste(null)
           testePedido.current = null
+          lojaIniciada.current = null
+          void encerrarAssinaturas()
           return
         }
         void loadProfile(novaSessao.user.id)

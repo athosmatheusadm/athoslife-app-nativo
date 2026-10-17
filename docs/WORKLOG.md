@@ -2594,3 +2594,54 @@ Pendente: em Android real, conferir widget com app aberto/fechado, rede ligada/d
   ícone gravado, que caem no ícone da categoria até a pessoa escolher.
 - O JS de 15/10 (hábito grava ícone) já pode ser publicado.
 - Pendente: APK novo (ponte do widget mudou) e teste no aparelho.
+
+### 2026-10-17 — pacotes do dono: segurança, RevenueCat e Energia e peso
+
+Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
+
+- **Segurança** (`db/athoslife_seguranca_dados_migration.sql`): fecha
+  funções de gatilho/Stripe abertas pela API, `is_premium_like` e
+  `registrar_checkin_habito` só com login, `search_path` fixo, regras do
+  bucket `progress-photos`. **Tirada a troca da view `macros_diarios`**: o
+  app soma a view + `itens_refeicao` (macrosRepository.ts), então Home e
+  Dieta mostrariam calorias em dobro. `scan_historico` NÃO está sem uso
+  (o scanner grava nela).
+- **Assinatura: dono escolheu RevenueCat** (pagamento continua sendo o
+  Google Play Billing; o RevenueCat só confere e avisa o servidor). O pacote
+  Play direto foi descartado (os dois criam as mesmas tabelas).
+  - `db/athoslife_assinaturas_revenuecat_migration.sql`: `billing_config`,
+    `rc_assinaturas`, `rc_eventos`, `fundadores` (300 vagas, só anual,
+    reembolso devolve a vaga), `aplicar_cliente_rc`, `vagas_fundador_disponiveis`
+    nova, `is_premium_like` com vencimento. Banco hoje: só 2 VIP, ninguém perde acesso.
+  - Edge Functions `rc-sync` (com JWT) e `rc-webhook` (sem JWT, confere o
+    Authorization). 7 testes Deno passaram; tipos conferidos.
+  - App: `src/data/assinatura/revenuecat.ts` (no-op sem `VITE_RC_GOOGLE_KEY`
+    ou fora do Android), sincroniza 1x por conta ao abrir, `logOut` no
+    logout. Tela Plano mostra Mensal/Anual, vagas de Fundador, Restaurar e
+    Gerenciar SÓ quando a loja devolve preços; sem isso fica o "em breve".
+    Textos pt/en/es. Plugin `@revenuecat/purchases-capacitor` 13.7.4 + `cap sync`.
+- **Card Energia e peso** na Home, abaixo do "Meu peso": calorias por dia e
+  peso no mesmo eixo (14/30 dias) + frase que compara com o objetivo. Sem o
+  bloco "Hoje" do pacote (repetia os discos da Home). Tokens do app
+  (calorias = accent-energy, peso = brand), pt/en/es, recarrega com
+  `avisarRegistroDoDia`. Cálculos em `src/domain/rules/energiaPeso.ts`,
+  6 testes (`node --test scripts/testar-energia-peso.ts`). **Dono ainda não viu.**
+- Check-in emocional (v2/v3/24-09): não mexido. Sugestão: momento da v2
+  (faixa depois de abrir, × até amanhã, sem sensores) + palavras/mapa da v3
+  (precisa de colunas novas em `checkins_emocionais`). Esperando o dono.
+- Validação: tsc, vite build, testes Deno e node ok. Auto mode negou
+  aplicar SQL e deploy de função.
+
+**Pendências pra próxima sessão**
+1. Dono rodar no SQL Editor: `db/athoslife_seguranca_dados_migration.sql`
+   e `db/athoslife_assinaturas_revenuecat_migration.sql`.
+2. Deploy: `npx supabase login` (token local expirou) e depois
+   `npx supabase functions deploy rc-sync --workdir .` e
+   `npx supabase functions deploy rc-webhook --no-verify-jwt --workdir .`.
+3. Painel: ligar "Leaked password protection" (Auth > Password security).
+4. RevenueCat/Play Console (LEIA-ME do pacote): assinatura `athos_premium`
+   com base plans `mensal`/`anual`, entitlement `premium`, offering
+   `default`, webhook, segredos `RC_SECRET_KEY` e `RC_WEBHOOK_AUTH`,
+   `VITE_RC_GOOGLE_KEY` no .env antes do APK.
+5. Dono ver o card Energia e peso; decidir o check-in.
+6. APK novo (widget + RevenueCat) e teste no aparelho.

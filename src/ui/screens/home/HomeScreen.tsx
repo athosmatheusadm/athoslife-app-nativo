@@ -9,6 +9,7 @@ import { MealCards } from './MealCards'
 import { EmotionalCheckin } from './EmotionalCheckin'
 import { LifeSaudacao } from './LifeSaudacao'
 import { WeightCard } from '@ui/screens/weight/WeightCard'
+import { EnergiaPesoCard } from './EnergiaPesoCard'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
 
@@ -53,6 +54,8 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
       />
 
       <WeightCard />
+
+      <EnergiaPesoCard />
 
       {/* O Life da Home junta tudo; fora do 1º acesso do dia, fica no canto.
           No 1º acesso ele está grande no topo e só vem pro canto depois que
