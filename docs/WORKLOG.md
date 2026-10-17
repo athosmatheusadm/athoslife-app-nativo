@@ -2683,3 +2683,27 @@ Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
 3. Dono ver no aparelho: check-in, abertura, tela de memórias.
 4. Scanner (`ATHOSlife_Scanner_Especificacao_Tecnica_v1.1.md`): começar
    pela etapa 1 (medir o atual) quando o dono quiser.
+
+### 2026-10-17 (noite) — Edge Functions publicadas
+
+- Conferido no banco: migrações de segurança, RevenueCat e Life adaptativo
+  já estão aplicadas.
+- Publicadas por Claude (dono autorizou): `ai-proxy` v4.0 (versão 21,
+  com `life.ts`), `rc-sync` (com JWT) e `rc-webhook` (sem JWT). As três
+  ACTIVE; chamada sem login devolve 401, como esperado.
+- Como publicar daqui (WSL, pasta com espaços): o deploy padrão não acha o
+  arquivo; funciona com
+  `SUPABASE_ACCESS_TOKEN=$(cat ~/.supabase/access-token) npx supabase functions deploy <nome> --project-ref gsdwsxwbmxcvutpvpkyi --use-api --workdir .`
+  (`rc-webhook` com `--no-verify-jwt`). `supabase login` não funciona
+  aqui (pede navegador/TTY).
+- Funções antigas ainda lá: `send-welome-whatsapp`, `relogio-athos`,
+  `stripe_webhook`, `create-checkout` (conferir se o app usa antes de apagar).
+
+**Pendências**
+1. Segredos `RC_SECRET_KEY` e `RC_WEBHOOK_AUTH` + webhook no RevenueCat
+   (`.../functions/v1/rc-webhook`); `VITE_RC_GOOGLE_KEY` no .env antes do APK.
+2. Ligar "Leaked password protection" no painel.
+3. Testar o Gemini numa conta de teste ([[LEMBRAR]]); dono ver check-in,
+   abertura do Life, memórias e card Energia e peso no aparelho.
+4. APK novo (widget + RevenueCat).
+5. GitHub: 40+ commits só locais; criar AGENTS.md pra dividir com o GPT.
