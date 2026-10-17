@@ -2585,3 +2585,12 @@ Pendente: em Android real, conferir widget com app aberto/fechado, rede ligada/d
 - Dono recusou contorno no código: hábito deve gravar o ícone de verdade. Fallback removido; a migração é obrigatória antes de publicar este JS.
 - Trocar ícone de refeição extra continua dependendo da migração (mostra erro amigável até lá).
 - PENDENTE: rodar db/athoslife_icones_duotone_migration.sql; gerar APK novo (ponte do widget mudou) e testar no aparelho.
+
+### 2026-10-17 — migração dos ícones conferida
+
+- Dono rodou `db/athoslife_icones_duotone_migration.sql`. Conferido no Supabase:
+  `refeicoes_extra.icone` (text, not null, default 'tigela') e
+  `vicios_user.icone` (text, nulo). 6 extras com 'tigela'; 3 hábitos sem
+  ícone gravado, que caem no ícone da categoria até a pessoa escolher.
+- O JS de 15/10 (hábito grava ícone) já pode ser publicado.
+- Pendente: APK novo (ponte do widget mudou) e teste no aparelho.
