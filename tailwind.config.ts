@@ -6,56 +6,61 @@ import type { Config } from 'tailwindcss'
  * Nomes são semânticos (surface-1..4), não literais, para permitir
  * evolução visual sem caçar hex espalhado pelo código.
  */
+const v = (nome: string) => `rgb(var(--c-${nome}) / <alpha-value>)`
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Cores em variáveis (ui/theme/globals.css): escuro ou claro conforme o
+      // modo do celular. `<alpha-value>` mantém o bg-brand/10 etc. funcionando.
       colors: {
         brand: {
-          DEFAULT: '#22c55e',
-          dark: '#16a34a',
-          glow: '#0f1f0f',
+          DEFAULT: v('brand'),
+          dark: v('brand-dark'),
+          glow: v('brand-glow'),
           /** Texto/ícone em cima do verde da marca (botão primário). */
-          ink: '#04120a',
+          ink: v('brand-ink'),
         },
         surface: {
-          1: '#161616', // fundo do app
-          2: '#1a1a1a', // cards
-          3: '#1f1f1f', // cards elevados
-          4: '#2a2a2a', // bordas / inputs
+          1: v('surface-1'), // fundo do app
+          2: v('surface-2'), // cards
+          3: v('surface-3'), // cards elevados
+          4: v('surface-4'), // bordas / inputs
+          nav: v('surface-nav'), // barra de baixo
         },
         content: {
-          hi: '#ffffff',
-          mid: '#d1d5db',
-          low: '#9ca3af',
-          dim: '#6b7280',
+          hi: v('content-hi'),
+          mid: v('content-mid'),
+          low: v('content-low'),
+          dim: v('content-dim'),
         },
         accent: {
-          energy: '#f97316', // treino / calorias
-          water: '#3b82f6', // hidratação
-          gold: '#fbbf24', // conquistas
+          energy: v('accent-energy'), // treino / calorias
+          water: v('accent-water'), // hidratação
+          gold: v('accent-gold'), // conquistas
           /**
            * Recaída é ROXO, nunca vermelho/rosa.
            * Não é decisão estética: vermelho é a cor de alarme e de erro,
            * e leria como punição. A regra de negócio diz que recaída
            * nunca pune. O roxo acolhe sem julgar — a cor obedece à regra.
            */
-          recaida: '#8b5cf6',
-          recaidaSoft: '#a78bfa',
+          recaida: v('accent-recaida'),
+          recaidaSoft: v('accent-recaida-soft'),
           /** Só erro real e ação destrutiva. Nunca para recaída. */
-          danger: '#f43f5e',
+          danger: v('accent-danger'),
           /** Coração de favorito (convenção de mercado). Não é erro. */
-          favorito: '#fb7185',
+          favorito: v('accent-favorito'),
         },
         /**
          * Uma cor por macro, a mesma em todo o app (antes a proteína era
          * vermelha num lugar e azul no outro). Nenhuma é vermelho: macro não
-         * é erro. Contraste ≥ 6,8:1 sobre surface-1/2 (WCAG AA).
+         * é erro. Contraste ≥ 4,5:1 sobre o fundo nos dois modos (WCAG AA).
          */
         macro: {
-          proteina: '#60a5fa',
-          carbo: '#fb923c',
-          gordura: '#facc15',
+          proteina: v('macro-proteina'),
+          carbo: v('macro-carbo'),
+          gordura: v('macro-gordura'),
         },
       },
       fontFamily: {

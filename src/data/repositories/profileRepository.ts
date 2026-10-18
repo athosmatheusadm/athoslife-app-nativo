@@ -55,6 +55,8 @@ export interface DadosOnboarding {
   readonly sexo: Sexo | null
   readonly alturaCm: number
   readonly pesoKg: number
+  /** Opcional no onboarding; vira a linha-guia do gráfico de peso. */
+  readonly pesoMeta: number | null
   readonly objetivo: Objetivo
   readonly localTreino: 'casa' | 'academia' | 'ambos' | null
   readonly diasTreino: number | null
@@ -186,6 +188,7 @@ export const profileRepository = {
         altura_cm: d.alturaCm,
         peso_atual: d.pesoKg,
         peso_inicial: d.pesoKg,
+        peso_meta: d.pesoMeta,
         objetivo: d.objetivo,
         local_treino: d.localTreino,
         dias_treino: d.diasTreino,

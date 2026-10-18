@@ -5,7 +5,8 @@
 // Contrato (o app manda JSON plano, com o JWT do usuário no Authorization):
 //   { tipo: 'chat',   mensagem: string, foco?, id_envio? } -> { resposta, restantes, acao? }
 //                     id_envio: uuid por mensagem (reenvio não repete a ação)
-//                     acao: refeicao_atualizada | pausa | escolha (botões)
+//                     acao: refeicao_atualizada | pausa | escolha (botões) | peso_atualizado
+//                     v4.1: peso pelo chat ("pesei 80", "minha meta é 75", histórico) — peso.ts, sem IA e sem cota
 //   { tipo: 'acao',   id, escolha }                       -> { resposta, acao? }  (sem IA, sem cota)
 //                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
 //   { tipo: 'vision', image: base64, mime_type? }         -> ResultadoVisao cru
@@ -28,6 +29,7 @@
 // (cliente não forja falas do Life); palavras de risco tratadas antes da IA;
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
+import { executarComandoPeso, lerComandoPeso } from './peso.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
   aplicarMarcasMemoria, blocoMemoria, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
@@ -990,6 +992,18 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   if (repetida) {
     await registrarSinal(sb, userId, 'repetida')
     return json({ resposta: repetida, restantes: null })
+  }
+
+  // 1d. Peso pelo chat (registrar, meta, histórico): o card "Meu peso" não
+  //     tem botões, então é resposta fixa, sem IA e sem cota (peso.ts).
+  const cmdPeso = lerComandoPeso(mensagem)
+  if (cmdPeso) {
+    const r = await executarComandoPeso(sb, userId, cmdPeso, loc.idioma, hojeNoFuso(loc.fuso))
+    await sb.from('life_chat_mensagens').insert([
+      { user_id: userId, autor: 'usuario', texto: mensagem },
+      { user_id: userId, autor: 'life', texto: r.resposta },
+    ])
+    return json({ resposta: r.resposta, restantes: null, acao: r.mudou ? { tipo: 'peso_atualizado' } : null })
   }
 
   // 2. Cota do plano.

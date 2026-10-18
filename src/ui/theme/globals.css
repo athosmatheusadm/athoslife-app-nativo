@@ -3,16 +3,79 @@
 @tailwind utilities;
 
 @layer base {
+  /* Escuro (padrão). Valores "R G B" pra o Tailwind aplicar opacidade. */
   :root {
     color-scheme: dark;
+    --c-brand: 34 197 94;
+    --c-brand-dark: 22 163 74;
+    --c-brand-glow: 15 31 15;
+    --c-brand-ink: 4 18 10;
+    --c-surface-1: 22 22 22;
+    --c-surface-2: 26 26 26;
+    --c-surface-3: 31 31 31;
+    --c-surface-4: 42 42 42;
+    --c-surface-nav: 10 10 10;
+    --c-content-hi: 255 255 255;
+    --c-content-mid: 209 213 219;
+    --c-content-low: 156 163 175;
+    --c-content-dim: 107 114 128;
+    --c-accent-energy: 249 115 22;
+    --c-accent-water: 59 130 246;
+    --c-accent-gold: 251 191 36;
+    --c-accent-recaida: 139 92 246;
+    --c-accent-recaida-soft: 167 139 250;
+    --c-accent-danger: 244 63 94;
+    --c-accent-favorito: 251 113 133;
+    --c-macro-proteina: 96 165 250;
+    --c-macro-carbo: 251 146 60;
+    --c-macro-gordura: 250 204 21;
+  }
+
+  /* Claro: segue o modo do celular. Fundo branco + ondas verdes (abaixo).
+     Verde e acentos um tom mais escuros pra ler bem sobre o branco. */
+  @media (prefers-color-scheme: light) {
+    :root {
+      color-scheme: light;
+      --c-brand: 22 163 74;
+      --c-brand-dark: 21 128 61;
+      --c-brand-glow: 232 246 236;
+      --c-surface-1: 255 255 255;
+      --c-surface-2: 246 248 246;
+      --c-surface-3: 238 242 239;
+      --c-surface-4: 220 226 221;
+      --c-surface-nav: 255 255 255;
+      --c-content-hi: 17 24 20;
+      --c-content-mid: 55 65 81;
+      --c-content-low: 87 96 108;
+      --c-content-dim: 136 144 153;
+      --c-accent-energy: 234 88 12;
+      --c-accent-water: 37 99 235;
+      --c-accent-gold: 202 138 4;
+      --c-accent-recaida: 124 58 237;
+      --c-accent-recaida-soft: 139 92 246;
+      --c-accent-danger: 225 29 72;
+      --c-accent-favorito: 244 63 94;
+      --c-macro-proteina: 37 99 235;
+      --c-macro-carbo: 234 88 12;
+      --c-macro-gordura: 161 98 7;
+    }
+
+    html {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 800' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%2316a34a' stroke-linecap='round'%3E%3Cpath d='M-20 610 C 60 570 140 650 220 610 S 360 560 420 600' stroke-width='2.5' opacity='.28'/%3E%3Cpath d='M-20 660 C 70 620 150 700 240 655 S 370 610 420 650' stroke-width='2' opacity='.2'/%3E%3Cpath d='M-20 710 C 80 675 160 745 250 705 S 375 665 420 700' stroke-width='1.5' opacity='.14'/%3E%3Cpath d='M220 90 C 280 60 330 120 420 80' stroke-width='2' opacity='.14'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 100% 100%;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+    }
   }
 
   html,
   body,
   #root {
     height: 100%;
-    background-color: theme('colors.surface.1');
     color: theme('colors.content.hi');
+  }
+  html {
+    background-color: theme('colors.surface.1');
   }
 
   body {
@@ -48,15 +111,17 @@
     transition-duration: 0.01ms !important;
   }
 
-  /* Alto contraste: clareia os dois tokens de texto mais apagados
-     (content-low/content-dim) — não redesenha o app inteiro (as cores são
-     fixas no tailwind.config, não variáveis de runtime), mas resolve o
-     caso real de "texto cinza claro demais pra ler". */
-  .alto-contraste .text-content-low {
-    color: #d1d5db !important; /* content.mid */
+  /* Alto contraste: sobe um degrau os dois tokens de texto mais apagados
+     (low vira mid, dim vira low) — resolve o "texto cinza claro demais". */
+  .alto-contraste {
+    --c-content-low: 209 213 219;
+    --c-content-dim: 156 163 175;
   }
-  .alto-contraste .text-content-dim {
-    color: #9ca3af !important; /* content.low */
+  @media (prefers-color-scheme: light) {
+    .alto-contraste {
+      --c-content-low: 55 65 81;
+      --c-content-dim: 87 96 108;
+    }
   }
 }
 

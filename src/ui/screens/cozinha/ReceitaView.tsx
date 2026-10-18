@@ -126,7 +126,7 @@ export function ReceitaView(props: {
               const feito = marcados.has(i)
               return (
                 <li key={i}>
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1.5 active:bg-white/5">
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl px-1 py-1.5 active:bg-content-hi/5">
                     <input
                       type="checkbox"
                       checked={feito}

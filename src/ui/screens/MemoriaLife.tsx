@@ -272,7 +272,7 @@ export function MemoriaLife() {
                 <button
                   type="button"
                   onClick={() => setConfirmarTudo(false)}
-                  className="min-h-12 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
+                  className="min-h-12 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-content-hi/5"
                 >
                   {t.cancelar}
                 </button>

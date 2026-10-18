@@ -11,6 +11,7 @@ import { reescalarItem } from '@domain/rules/foodReconciliation'
 import { temAcessoPremium } from '@domain/rules/access'
 import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
 import { LifeMascote } from '@ui/components/LifeMascote'
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
@@ -40,10 +41,10 @@ interface EstadoEntrada {
 type Etapa = 'captura' | 'analisando' | 'revisao' | 'salvando'
 
 const FIXAS = [
-  { tipo: 'cafe', emoji: '☕' },
-  { tipo: 'almoco', emoji: '🍽️' },
-  { tipo: 'lanche', emoji: '🥪' },
-  { tipo: 'jantar', emoji: '🌙' },
+  { tipo: 'cafe' },
+  { tipo: 'almoco' },
+  { tipo: 'lanche' },
+  { tipo: 'jantar' },
 ] as const
 
 function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros']): string {
@@ -324,7 +325,7 @@ export function Scanner() {
         <button
           onClick={() => navigate(-1)}
           aria-label={t.voltar}
-          className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-surface-4 text-content-mid active:bg-white/5"
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-surface-4 text-content-mid active:bg-content-hi/5"
         >
           ←
         </button>
@@ -345,7 +346,7 @@ export function Scanner() {
               }}
               className="rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left transition-colors active:bg-surface-3"
             >
-              <div className="text-2xl" aria-hidden="true">{f.emoji}</div>
+              <ActivityIcon icone={f.tipo} className="h-10 w-10" />
               <div className="mt-1 text-sm font-semibold text-content-hi">{m.dieta.refeicoes[f.tipo]}</div>
             </button>
           ))}
@@ -354,7 +355,7 @@ export function Scanner() {
 
       {alvo && !pago && etapa === 'captura' && (
         <section className="rounded-card border border-accent-gold/40 bg-surface-2 p-5 text-center">
-          <div className="text-3xl" aria-hidden="true">🔒</div>
+          <ActivityIcon icone="cadeado" tile={false} cor="inherit" className="mx-auto h-9 w-9 text-accent-gold" />
           <p className="mt-2 font-semibold text-content-hi">{t.pagoTitulo}</p>
           <p className="mt-1 text-sm text-content-low">{t.pagoTexto}</p>
           <button
@@ -376,7 +377,7 @@ export function Scanner() {
       {alvo && pago && etapa === 'captura' && (
         <section className="flex flex-1 flex-col">
           <div className="flex flex-1 flex-col items-center justify-center rounded-card border border-dashed border-brand/40 bg-surface-2 p-6 text-center">
-            <div className="text-5xl" aria-hidden="true">🍽️</div>
+            <ActivityIcon icone="almoco" className="h-16 w-16" />
             <p className="mt-3 font-semibold text-content-hi">{t.dicaTitulo}</p>
             <p className="mt-1 max-w-xs text-sm text-content-low">{t.dicaTexto}</p>
           </div>
@@ -392,7 +393,7 @@ export function Scanner() {
             <button
               onClick={() => void fotografar('galeria')}
               disabled={restantes === 0}
-              className="min-h-12 w-full rounded-pill border border-surface-4 text-sm font-semibold text-content-hi active:bg-white/5 disabled:opacity-50"
+              className="min-h-12 w-full rounded-pill border border-surface-4 text-sm font-semibold text-content-hi active:bg-content-hi/5 disabled:opacity-50"
             >
               {t.galeria}
             </button>
@@ -458,7 +459,7 @@ export function Scanner() {
                     role="checkbox"
                     aria-checked={item.incluir}
                     aria-label={item.incluir ? t.tirar(item.nome) : t.incluir(item.nome)}
-                    className="-m-2 flex h-12 w-12 flex-none items-center justify-center rounded-xl active:bg-white/5"
+                    className="-m-2 flex h-12 w-12 flex-none items-center justify-center rounded-xl active:bg-content-hi/5"
                   >
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 text-sm font-bold ${
@@ -487,7 +488,7 @@ export function Scanner() {
                     <button
                       onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG - 10))}
                       aria-label={t.menos10}
-                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-white/5"
+                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
                     >
                       −
                     </button>
@@ -495,7 +496,7 @@ export function Scanner() {
                     <button
                       onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG + 10))}
                       aria-label={t.mais10}
-                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-white/5"
+                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
                     >
                       +
                     </button>

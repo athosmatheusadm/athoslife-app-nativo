@@ -679,7 +679,7 @@ function PreviaDieta(props: {
                         type="button"
                         aria-label={`${t.previa.trocar} ${a.nome}`}
                         onClick={() => props.onTrocar(ri, ii)}
-                        className="flex h-11 w-11 flex-none items-center justify-center rounded-lg border border-surface-4 text-base text-content-mid active:bg-white/5"
+                        className="flex h-11 w-11 flex-none items-center justify-center rounded-lg border border-surface-4 text-base text-content-mid active:bg-content-hi/5"
                       >
                         ⇄
                       </button>

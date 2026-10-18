@@ -98,7 +98,7 @@ export function Privacidade() {
                 .catch(() => avisar.erro(m.perfil.erroSalvar))
                 .finally(() => setTrocandoHabitos(false))
             }}
-            className="min-h-11 flex-none rounded-pill border border-surface-4 px-4 text-sm font-semibold text-content-mid active:bg-white/5 disabled:opacity-50"
+            className="min-h-11 flex-none rounded-pill border border-surface-4 px-4 text-sm font-semibold text-content-mid active:bg-content-hi/5 disabled:opacity-50"
           >
             {profile.consentimentoHabitos ? t.retirar : t.autorizar}
           </button>
@@ -109,7 +109,7 @@ export function Privacidade() {
       <button
         type="button"
         onClick={() => navigate('/perfil/privacidade/life')}
-        className="mx-5 mt-3 flex min-h-16 w-[calc(100%-2.5rem)] items-center gap-3 rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left active:bg-white/5"
+        className="mx-5 mt-3 flex min-h-16 w-[calc(100%-2.5rem)] items-center gap-3 rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left active:bg-content-hi/5"
       >
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold text-content-hi">{m.perfil.memoriaLife.titulo}</span>
@@ -171,7 +171,7 @@ export function Privacidade() {
                   setSenha('')
                   setErroExclusao(null)
                 }}
-                className="min-h-12 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
+                className="min-h-12 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-content-hi/5"
               >
                 {t.cancelar}
               </button>

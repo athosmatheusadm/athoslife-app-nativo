@@ -369,7 +369,7 @@ export function DietScreen(props: {
               onClick={() => setDiaSel(d.data)}
               aria-pressed={sel}
               className={`min-h-12 min-w-14 flex-none rounded-xl px-3 py-1.5 text-center transition-colors active:scale-95 ${
-                sel ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid active:bg-white/5'
+                sel ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid active:bg-content-hi/5'
               }`}
             >
               <span className="block text-sm font-bold capitalize">{d.ehHoje ? m.dieta.hoje : diaSemanaCurto.format(d.data).replace('.', '')}</span>
@@ -381,7 +381,7 @@ export function DietScreen(props: {
 
       {/* Cabeçalho do dia */}
       <div className="flex items-center gap-2 px-1">
-        <span aria-hidden="true">📅</span>
+        <ActivityIcon icone="calendario" tile={false} className="h-5 w-5" />
         <div>
           <div className="font-semibold capitalize text-content-hi">{tituloDoDia}</div>
           <div className="text-micro tabular-nums text-content-low">{m.dieta.kcalRegistradas(consumido.kcal)}</div>
@@ -446,7 +446,7 @@ export function DietScreen(props: {
         <button
           type="button"
           onClick={() => void criarExtraInline()}
-          className="min-h-14 w-full rounded-2xl border border-dashed border-surface-4 text-sm font-semibold text-content-mid transition-colors active:bg-white/5"
+          className="min-h-14 w-full rounded-2xl border border-dashed border-surface-4 text-sm font-semibold text-content-mid transition-colors active:bg-content-hi/5"
         >
           {m.dieta.novaRefeicao}
         </button>

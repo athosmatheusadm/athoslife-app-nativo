@@ -39,7 +39,7 @@ export function ProgressRing(props: {
       onClick={onClick}
       aria-pressed={ativo}
       aria-label={props.ariaLabel}
-      className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl border py-2 transition-colors active:bg-white/5 ${
+      className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl border py-2 transition-colors active:bg-content-hi/5 ${
         ativo ? 'border-surface-4 bg-surface-3' : 'border-transparent'
       }`}
     >

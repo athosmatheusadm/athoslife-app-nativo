@@ -61,10 +61,10 @@ export const PERIODOS_PESO: ReadonlyArray<{ id: PeriodoPeso; rotulo: string; dia
  */
 export function filtrarPeriodo(
   registros: readonly RegistroPeso[],
-  periodo: PeriodoPeso,
+  periodo: PeriodoPeso | number, // número = últimos N dias (card com 14/30)
   agora: Date = new Date(),
 ): RegistroPeso[] {
-  const dias = PERIODOS_PESO.find((p) => p.id === periodo)?.dias ?? null
+  const dias = typeof periodo === 'number' ? periodo : PERIODOS_PESO.find((p) => p.id === periodo)?.dias ?? null
   if (dias === null) return [...registros]
   const corte = new Date(agora)
   corte.setHours(0, 0, 0, 0)

@@ -6,6 +6,7 @@ import type { AlimentoBase } from '@domain/entities/food'
 import type { ItemRefeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { ActivityIcon, type ActivityIconKey, type UiIconKey } from '@ui/components/ActivityIcon'
 
 interface Grupo {
   nome: string
@@ -20,23 +21,23 @@ interface Grupo {
  * traduzido do repositório): sem coluna de "tipo" na tabela `alimentos`,
  * então isso é aproximado — cai no nome inteiro quando não reconhece nada.
  */
-const TIPOS: readonly { chave: TipoSuplemento; palavras: readonly string[]; emoji: string }[] = [
-  { chave: 'whey', palavras: ['whey'], emoji: '🥛' },
-  { chave: 'creatina', palavras: ['creatin'], emoji: '💊' },
-  { chave: 'albumina', palavras: ['albumin', 'albúmin', 'egg white protein'], emoji: '🥛' },
-  { chave: 'bcaa', palavras: ['bcaa'], emoji: '🧪' },
-  { chave: 'betaAlanina', palavras: ['beta alanin', 'beta-alanin'], emoji: '🧪' },
-  { chave: 'maltodextrina', palavras: ['maltodextrin'], emoji: '⚡' },
-  { chave: 'dextrose', palavras: ['dextros'], emoji: '⚡' },
-  { chave: 'palatinose', palavras: ['palatinos'], emoji: '⚡' },
-  { chave: 'hipercalorico', palavras: ['hipercal', 'mass gainer', 'ganador de peso'], emoji: '🥤' },
-  { chave: 'glutamina', palavras: ['glutamin'], emoji: '💊' },
-  { chave: 'preTreino', palavras: ['pré-treino', 'pre-treino', 'pre-workout', 'preentreno', 'pre-entreno'], emoji: '⚡' },
-  { chave: 'multivitaminico', palavras: ['multivitam'], emoji: '🌡️' },
-  { chave: 'omega3', palavras: ['ômega', 'omega'], emoji: '🐟' },
-  { chave: 'colageno', palavras: ['colágeno', 'colageno', 'collagen'], emoji: '✨' },
-  { chave: 'zma', palavras: ['zma'], emoji: '🌙' },
-  { chave: 'cafeina', palavras: ['cafeína', 'cafeina', 'caffeine'], emoji: '☕' },
+const TIPOS: readonly { chave: TipoSuplemento; palavras: readonly string[]; icone: ActivityIconKey | UiIconKey }[] = [
+  { chave: 'whey', palavras: ['whey'], icone: 'shake' },
+  { chave: 'creatina', palavras: ['creatin'], icone: 'pilula' },
+  { chave: 'albumina', palavras: ['albumin', 'albúmin', 'egg white protein'], icone: 'shake' },
+  { chave: 'bcaa', palavras: ['bcaa'], icone: 'frasco' },
+  { chave: 'betaAlanina', palavras: ['beta alanin', 'beta-alanin'], icone: 'frasco' },
+  { chave: 'maltodextrina', palavras: ['maltodextrin'], icone: 'pre_treino' },
+  { chave: 'dextrose', palavras: ['dextros'], icone: 'pre_treino' },
+  { chave: 'palatinose', palavras: ['palatinos'], icone: 'pre_treino' },
+  { chave: 'hipercalorico', palavras: ['hipercal', 'mass gainer', 'ganador de peso'], icone: 'shake' },
+  { chave: 'glutamina', palavras: ['glutamin'], icone: 'pilula' },
+  { chave: 'preTreino', palavras: ['pré-treino', 'pre-treino', 'pre-workout', 'preentreno', 'pre-entreno'], icone: 'pre_treino' },
+  { chave: 'multivitaminico', palavras: ['multivitam'], icone: 'pilula' },
+  { chave: 'omega3', palavras: ['ômega', 'omega'], icone: 'peixe' },
+  { chave: 'colageno', palavras: ['colágeno', 'colageno', 'collagen'], icone: 'brilho' },
+  { chave: 'zma', palavras: ['zma'], icone: 'ceia' },
+  { chave: 'cafeina', palavras: ['cafeína', 'cafeina', 'caffeine'], icone: 'cafe' },
 ]
 
 type TipoSuplemento =
@@ -188,7 +189,7 @@ export function SupplementSheet(props: {
             <li key={a.id}>
               <button
                 onClick={() => setEscolhido(a)}
-                className="flex min-h-14 w-full items-center justify-between gap-3 border-t border-surface-3 py-2 text-left transition-colors first:border-t-0 active:bg-white/5"
+                className="flex min-h-14 w-full items-center justify-between gap-3 border-t border-surface-3 py-2 text-left transition-colors first:border-t-0 active:bg-content-hi/5"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm text-content-hi">{a.nome}</span>
@@ -238,12 +239,12 @@ export function SupplementSheet(props: {
               onClick={() => trocar(-1)}
               aria-label={t.anterior}
               disabled={gruposFiltrados.length <= 1}
-              className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi active:bg-white/5 disabled:opacity-30"
+              className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi active:bg-content-hi/5 disabled:opacity-30"
             >
               ‹
             </button>
             <div className="min-w-0 flex-1 text-center">
-              <span className="text-5xl">{emojiGrupo(grupoAtual.nome)}</span>
+              <ActivityIcon icone={iconeGrupo(grupoAtual.nome)} className="mx-auto h-16 w-16" />
               <h3 className="mt-2 truncate text-lg font-extrabold text-content-hi">{grupoAtual.nome}</h3>
             </div>
             <button
@@ -251,7 +252,7 @@ export function SupplementSheet(props: {
               onClick={() => trocar(1)}
               aria-label={t.proximo}
               disabled={gruposFiltrados.length <= 1}
-              className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi active:bg-white/5 disabled:opacity-30"
+              className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-surface-4 text-2xl text-content-hi active:bg-content-hi/5 disabled:opacity-30"
             >
               ›
             </button>
@@ -329,7 +330,7 @@ function DoseSuplemento(props: {
       </div>
 
       <div className="mt-2 text-center">
-        <span className="text-5xl">{emojiGrupo(alimento.nome)}</span>
+        <ActivityIcon icone={iconeGrupo(alimento.nome)} className="mx-auto h-16 w-16" />
         <p className="mt-2 text-micro font-bold uppercase tracking-wide text-content-low">{t.rotulo}</p>
         <h3 className="mt-1 text-2xl font-extrabold text-content-hi">{alimento.nome}</h3>
       </div>
@@ -367,7 +368,7 @@ function DoseSuplemento(props: {
   )
 }
 
-/** Emoji por palavra-chave do nome do grupo — a base não tem coluna de ícone. */
-function emojiGrupo(nome: string): string {
-  return tipoDe(nome)?.emoji ?? '💊'
+/** Ícone por palavra-chave do nome do grupo — a base não tem coluna de ícone. */
+function iconeGrupo(nome: string): ActivityIconKey | UiIconKey {
+  return tipoDe(nome)?.icone ?? 'pilula'
 }

@@ -15,6 +15,7 @@ import {
   limparProgresso,
   metasDoEstado,
   paraDadosOnboarding,
+  pedeMetaDePeso,
   salvarProgresso,
   TOTAL_ETAPAS,
   validarEtapa,
@@ -151,7 +152,9 @@ export function Onboarding() {
           ? o.corpo.erroMedidas
           : erro === 'objetivo'
             ? o.corpo.erroObjetivo
-            : null
+            : erro === 'meta'
+              ? o.corpo.erroMeta
+              : null
 
   const rodape = (textoCta: string, acao: () => void = avancar) => (
     <div className="mt-auto pt-6">
@@ -312,6 +315,23 @@ export function Onboarding() {
               {o.corpo.outro}
             </Opcao>
           </Opcoes>
+          {pedeMetaDePeso(e) && (
+            <div className="mt-3">
+              <Medida rotulo={o.corpo.pesoMeta}>
+                <div className="flex items-baseline gap-1">
+                  <input
+                    value={e.pesoMeta ?? ''}
+                    onChange={(ev) => mudar({ pesoMeta: ev.target.value.replace(/[^\d.,]/g, '').slice(0, 5) })}
+                    inputMode="decimal"
+                    placeholder={o.corpo.pesoMetaOpcional}
+                    className="w-full bg-transparent text-base text-[#f4f8f4] outline-none"
+                  />
+                  <span className="text-micro text-[#65756a]">{e.unidades === 'imperial' ? 'lb' : 'kg'}</span>
+                </div>
+              </Medida>
+              <p className="mt-1.5 text-micro text-[#65756a]">{o.corpo.pesoMetaDica}</p>
+            </div>
+          )}
           {rodape(m.comum.continuar)}
         </>
       )

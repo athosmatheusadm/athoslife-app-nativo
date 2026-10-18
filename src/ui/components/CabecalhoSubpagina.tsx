@@ -16,7 +16,7 @@ export function CabecalhoSubpagina(props: { titulo: ReactNode; subtitulo?: React
         type="button"
         onClick={props.onVoltar ?? (() => navigate(-1))}
         aria-label={m.perfil.voltar}
-        className="flex h-11 w-11 flex-none items-center justify-center rounded-full text-content-hi active:bg-white/5"
+        className="flex h-11 w-11 flex-none items-center justify-center rounded-full text-content-hi active:bg-content-hi/5"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
       </button>

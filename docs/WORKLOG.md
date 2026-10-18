@@ -2707,3 +2707,42 @@ Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
    abertura do Life, memórias e card Energia e peso no aparelho.
 4. APK novo (widget + RevenueCat).
 5. GitHub: 40+ commits só locais; criar AGENTS.md pra dividir com o GPT.
+
+### 2026-10-17 (noite, cont.) — ícones, modo claro, um gráfico só e peso pelo chat
+
+- **GitHub:** push liberado; `AGENTS.md` criado (regras pra Claude e GPT
+  dividirem o repo). Token não fica salvo no PC.
+- **Ícones:** emojis da Dieta (suplementos, ações da refeição, ✨, 📅) e do
+  Scanner viraram Phosphor duotone (`DESENHOS_UI` em phosphorDuotone.tsx:
+  pilula, frasco, peixe, brilho, camera, lupa, estrela, copiar, lixeira,
+  calendario, cadeado). Ainda com emoji: Onboarding, Life Chef, Cozinha,
+  BottomNav.
+- **Modo claro:** cores viraram variáveis (`--c-*` em globals.css,
+  `rgb(var(--c-x) / <alpha-value>)` no tailwind). Segue o modo do celular;
+  claro = fundo branco + ondas verdes (SVG fixo no `html`). `bg-white/5` →
+  `bg-content-hi/5`. Barra de status acompanha (`ui/theme/modoClaroEscuro.ts`).
+  Onboarding e Consentimento continuam escuros (cores fixas) — pendente.
+- **Um gráfico só:** "Energia e peso" entrou DENTRO do "Meu peso" no lugar
+  da linha antiga; card separado saiu da Home. Período 14/30 dias manda em
+  tudo (abre em 30). Linha-guia dourada da meta no gráfico (presa na borda
+  com seta quando a meta está a mais de 3 kg das pesagens).
+- **Peso pelo chat (dono pediu, sem botões):** card sem Registrar/Meta/
+  Histórico, só a dica. ai-proxy **v4.1** (`peso.ts` + 6 testes):
+  "pesei 80,5", "minha meta é 75", "histórico de peso" em pt/en/es → resposta
+  fixa, **sem IA e sem cota**, acao `peso_atualizado` (app recarrega card e
+  perfil). Ambíguo/outro assunto vai pra IA. **Publicada.**
+- **Onboarding:** campo opcional "Peso que você quer chegar" quando o
+  objetivo é perder gordura/ganhar massa → `profiles.peso_meta`.
+- **Dados de teste** na conta matheusecomerc@gmail.com (30 dias): itens
+  `[teste] ...` e pesos com `created_at = 2000-01-01`. Apagar quando o dono
+  terminar de testar.
+- Validação: tsc, vite build, 16 testes node, 18 testes Deno.
+
+**Pendências**
+1. Apagar os dados de teste do gráfico (pedir ao dono).
+2. Modo claro: Onboarding/Consentimento; conferir as telas logadas e o Life
+   sobre fundo branco.
+3. Peso pelo chat: falta "apagar pesagem de um dia" (o ✕ do histórico saiu).
+4. Emojis restantes (Onboarding, Life Chef, Cozinha, BottomNav).
+5. Segredos/webhook do RevenueCat; "Leaked password protection".
+6. APK novo (widget + RevenueCat + modo claro) e teste no aparelho.

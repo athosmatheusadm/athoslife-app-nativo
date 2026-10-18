@@ -66,7 +66,7 @@ export function SavedFoodsList(props: {
           <li key={a.id}>
             <button
               onClick={() => setEscolhido(a)}
-              className="flex min-h-14 w-full items-center justify-between gap-3 border-t border-surface-3 py-2 text-left transition-colors first:border-t-0 active:bg-white/5"
+              className="flex min-h-14 w-full items-center justify-between gap-3 border-t border-surface-3 py-2 text-left transition-colors first:border-t-0 active:bg-content-hi/5"
             >
               <span className="min-w-0">
                 <span className="block truncate text-sm text-content-hi">{a.nome}</span>

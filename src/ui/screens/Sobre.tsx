@@ -36,7 +36,7 @@ export function Sobre() {
 
 function LinhaLink({ titulo, onClick }: { titulo: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="flex min-h-14 w-full items-center justify-between px-4 text-left active:bg-white/5">
+    <button type="button" onClick={onClick} className="flex min-h-14 w-full items-center justify-between px-4 text-left active:bg-content-hi/5">
       <span className="text-sm text-content-mid">{titulo}</span>
       <Chevron />
     </button>

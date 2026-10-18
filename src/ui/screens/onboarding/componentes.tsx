@@ -138,7 +138,7 @@ export function ListaTags(props: {
               key={s}
               type="button"
               onClick={() => adicionar(s)}
-              className="min-h-11 rounded-lg border border-dashed border-[#31533e] px-3 text-sm text-[#8f9f94] active:bg-white/5"
+              className="min-h-11 rounded-lg border border-dashed border-[#31533e] px-3 text-sm text-[#8f9f94] active:bg-content-hi/5"
             >
               + {s}
             </button>

@@ -73,7 +73,7 @@ export function ExerciseCard(props: {
             role="checkbox"
             aria-checked={concluido}
             aria-label={t.marcarFeito(exercicio.nome)}
-            className="-ml-2 -mr-1 flex h-12 w-12 flex-none items-center justify-center rounded-full active:bg-white/5"
+            className="-ml-2 -mr-1 flex h-12 w-12 flex-none items-center justify-center rounded-full active:bg-content-hi/5"
           >
             <span
               className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-sm font-bold transition-colors ${
@@ -211,7 +211,7 @@ export function ExerciseCard(props: {
                     <button
                       onClick={() => removerSerie(index)}
                       aria-label={t.removerSerie(index + 1)}
-                      className="flex h-11 w-11 flex-none items-center justify-center rounded-lg text-content-low active:bg-white/5 active:text-content-hi"
+                      className="flex h-11 w-11 flex-none items-center justify-center rounded-lg text-content-low active:bg-content-hi/5 active:text-content-hi"
                     >
                       ✕
                     </button>

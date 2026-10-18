@@ -1,6 +1,7 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSession } from '@app/SessionProvider'
 import {
   AiProxyError,
   carregarHistoricoChat,
@@ -61,6 +62,7 @@ function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros']): string {
 export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; humor?: HumorLife }) {
   const foco = props.foco ?? 'home'
   const navigate = useNavigate()
+  const { refresh: recarregarPerfil } = useSession()
   const { m } = useI18n()
   const tc = m.lifeChat
   // Voltar do Android fecha o chat (antes minimizava o app nas telas raiz).
@@ -127,6 +129,10 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   function aplicarAcao(acao: AcaoLife | null) {
     setEscolha(acao?.tipo === 'escolha' ? acao : null)
     if (acao?.tipo === 'refeicao_atualizada') avisarRegistroDoDia()
+    if (acao?.tipo === 'peso_atualizado') {
+      avisarRegistroDoDia()
+      void recarregarPerfil() // meta/objetivo novos pro card e pra linha-guia
+    }
     if (acao?.tipo === 'pausa') {
       setPausado(true)
       void marcarPausaLocal()
@@ -332,7 +338,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                   type="button"
                   disabled={conviteMemoria === 'salvando'}
                   onClick={() => void decidirMemoria(false)}
-                  className="min-h-11 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5 disabled:opacity-50"
+                  className="min-h-11 flex-1 rounded-xl border border-surface-4 text-sm font-semibold text-content-mid active:bg-content-hi/5 disabled:opacity-50"
                 >
                   {tc.memoria.agoraNao}
                 </button>

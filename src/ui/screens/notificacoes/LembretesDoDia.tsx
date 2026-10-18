@@ -231,7 +231,7 @@ export function Chave(props: { ativo: boolean; onMudar: (v: boolean) => void; ro
       aria-checked={props.ativo}
       aria-label={props.rotulo}
       onClick={() => props.onMudar(!props.ativo)}
-      className="-my-2 -mr-1.5 flex h-12 w-14 flex-none items-center justify-center rounded-full active:bg-white/5"
+      className="-my-2 -mr-1.5 flex h-12 w-14 flex-none items-center justify-center rounded-full active:bg-content-hi/5"
     >
       {/* Alvo de 48px; o trilho visível continua 24×44. */}
       <span

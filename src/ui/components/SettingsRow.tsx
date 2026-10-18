@@ -21,7 +21,7 @@ export function SettingsRow(props: {
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-16 w-full items-center gap-[18px] px-5 py-3.5 text-left transition-colors hover:bg-white/[0.04] active:bg-white/[0.07]"
+      className="flex min-h-16 w-full items-center gap-[18px] px-5 py-3.5 text-left transition-colors hover:bg-content-hi/[0.04] active:bg-content-hi/[0.07]"
     >
       <span
         className={`flex w-7 flex-none items-center justify-center ${

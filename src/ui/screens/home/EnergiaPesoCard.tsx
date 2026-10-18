@@ -16,17 +16,18 @@ import { numero } from '@/i18n/formatos'
 import { useI18n } from '@/i18n/I18nProvider'
 
 /**
- * Card "Energia e peso" da Home — calorias por dia e peso no MESMO eixo de
- * dias, com uma frase que compara os dois com o objetivo. As calorias de
- * hoje e o card "Meu peso" já existem na Home; aqui fica só a comparação.
+ * Gráfico "Energia e peso" — calorias por dia e peso no MESMO eixo de dias,
+ * com uma frase que compara os dois com o objetivo. Fica DENTRO do card
+ * "Meu peso" (WeightCard), no lugar da linha de peso antiga; o período
+ * (14/30 dias) é do card, que usa o mesmo pra variação e início/atual/meta.
  *
  * Recarrega quando algo do dia é registrado (avisarRegistroDoDia) e quando
  * o app volta pra frente.
  */
 
 const BUSCA_DIAS = 30
-const PERIODOS = [14, 30] as const
-type Periodo = (typeof PERIODOS)[number]
+export const PERIODOS_ENERGIA_PESO = [14, 30] as const
+export type PeriodoEnergiaPeso = (typeof PERIODOS_ENERGIA_PESO)[number]
 const M = { esq: 8, dir: 46, topo: 22, base: 6 }
 
 type Estado =
@@ -99,15 +100,16 @@ function alvoFoco(e: PointerEvent<SVGSVGElement>, total: number, largura: number
   return Math.max(0, Math.min(total - 1, Math.floor(((x - M.esq) / area) * total)))
 }
 
-export function EnergiaPesoCard() {
+export function EnergiaPesoGrafico({ periodo, onPeriodo }: {
+  periodo: PeriodoEnergiaPeso
+  onPeriodo: (p: PeriodoEnergiaPeso) => void
+}) {
   const { profile } = useSession()
   const { idioma, m } = useI18n()
   const t = m.home.energiaPeso
   const { estado, recarregar } = useDados()
-  const [periodo, setPeriodo] = useState<Periodo>(14)
   const [foco, setFoco] = useState<number | null>(null)
   const [ref, largura] = useLargura<HTMLDivElement>()
-  const idTitulo = useId()
 
   const resumo = useMemo<ResumoEnergiaPeso | null>(
     () =>
@@ -137,15 +139,15 @@ export function EnergiaPesoCard() {
   }
 
   return (
-    <section className="rounded-card border border-surface-4 bg-surface-2 p-5" aria-labelledby={idTitulo}>
+    <div className="mt-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 id={idTitulo} className="text-micro font-semibold text-content-low">{t.titulo}</h2>
+        <h3 className="text-micro font-semibold text-content-low">{t.titulo}</h3>
         <div className="flex gap-1.5" role="group" aria-label={t.ariaPeriodo}>
-          {PERIODOS.map((p) => (
+          {PERIODOS_ENERGIA_PESO.map((p) => (
             <button
               key={p}
               type="button"
-              onClick={() => setPeriodo(p)}
+              onClick={() => onPeriodo(p)}
               aria-pressed={periodo === p}
               className={`min-h-11 rounded-pill px-4 text-sm font-semibold active:scale-95 ${
                 periodo === p ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
@@ -171,7 +173,7 @@ export function EnergiaPesoCard() {
         <>
           <div ref={ref} className="relative mt-3 touch-pan-y" onPointerLeave={() => setFoco(null)}>
             <GraficoKcal resumo={resumo} largura={largura} foco={foco} setFoco={setFoco} fmt={fmt} />
-            <GraficoPeso resumo={resumo} largura={largura} foco={foco} setFoco={setFoco} fmt={fmt} />
+            <GraficoPeso resumo={resumo} largura={largura} foco={foco} setFoco={setFoco} fmt={fmt} meta={profile?.pesoMeta ?? null} />
             {foco !== null && <Dica resumo={resumo} indice={foco} largura={largura} fmt={fmt} />}
           </div>
           <p
@@ -184,7 +186,7 @@ export function EnergiaPesoCard() {
           <TabelaDados resumo={resumo} fmt={fmt} />
         </>
       )}
-    </section>
+    </div>
   )
 }
 
@@ -309,20 +311,28 @@ function GraficoKcal({ resumo, largura, foco, setFoco, fmt }: GraficoProps) {
   )
 }
 
-function GraficoPeso({ resumo, largura, foco, setFoco, fmt }: GraficoProps) {
-  const t = useI18n().m.home.energiaPeso
+function GraficoPeso({ resumo, largura, foco, setFoco, fmt, meta }: GraficoProps & { readonly meta: number | null }) {
+  const { m } = useI18n()
+  const t = m.home.energiaPeso
   const H = 112
   const { dias, pesos, tendencia } = resumo
   const total = dias.length
-  const valores = [...pesos.map((p) => p.peso), ...(tendencia ? [tendencia.inicio, tendencia.fim] : [])]
+  const valoresPeso = [...pesos.map((p) => p.peso), ...(tendencia ? [tendencia.inicio, tendencia.fim] : [])]
   const ultimo = pesos[pesos.length - 1]
   const temDados = ultimo !== undefined
+  // Meta perto (até 3 kg além das pesagens) entra na escala; longe, a linha
+  // fica presa na borda com seta, pra não achatar a curva do peso.
+  const metaPerto =
+    meta !== null && temDados && meta >= Math.min(...valoresPeso) - 3 && meta <= Math.max(...valoresPeso) + 3
+  const valores = metaPerto ? [...valoresPeso, meta] : valoresPeso
   const minV = temDados ? Math.min(...valores) : 0
   const maxV = temDados ? Math.max(...valores) : 1
   const folga = Math.max(0.6, (maxV - minV) * 0.25)
   const lo = minV - folga
   const hi = maxV + folga
   const y = (v: number) => M.topo + (H - M.topo - 22) * (1 - (v - lo) / (hi - lo))
+  const yMeta = meta === null || !temDados ? null : metaPerto ? y(meta) : meta > maxV ? M.topo - 6 : H - 26
+  const setaMeta = meta === null || metaPerto ? '' : meta > maxV ? ' ↑' : ' ↓'
   const marcas = total <= 14 ? [0, Math.floor(total / 2), total - 1] : [0, 10, 20, total - 1]
 
   return (
@@ -341,6 +351,24 @@ function GraficoPeso({ resumo, largura, foco, setFoco, fmt }: GraficoProps) {
           <text x={largura / 2} y={H / 2} textAnchor="middle" className="fill-content-low text-micro">
             {t.semPesagem(total)}
           </text>
+        )}
+        {/* Linha-guia da meta: o alvo que a curva do peso deve ir buscando. */}
+        {yMeta !== null && meta !== null && (
+          <g className="text-accent-gold">
+            <line
+              x1={M.esq}
+              x2={largura - M.dir}
+              y1={yMeta}
+              y2={yMeta}
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeDasharray="2 5"
+              strokeLinecap="round"
+            />
+            <text x={M.esq} y={yMeta - 5} className="fill-current text-micro font-semibold tabular-nums">
+              {m.home.peso.linhaMeta(`${fmt(meta, 1)} kg`) + setaMeta}
+            </text>
+          </g>
         )}
         {tendencia && (
           <line

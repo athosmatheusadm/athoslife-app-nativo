@@ -38,6 +38,8 @@ export interface EstadoOnboarding {
   alturaPol: string
   /** Na unidade escolhida (kg ou lb). */
   peso: string
+  /** Peso que quer chegar, na unidade escolhida; opcional, só pra perder/ganhar. */
+  pesoMeta: string
   objetivos: ObjetivoOnb[]
   rotina: RotinaOnb[]
   sono: SonoOnb | null
@@ -69,6 +71,7 @@ export function estadoInicial(unidades: Unidades, nome: string | null): EstadoOn
     alturaPes: '',
     alturaPol: '',
     peso: '',
+    pesoMeta: '',
     objetivos: [],
     rotina: [],
     sono: null,
@@ -145,6 +148,19 @@ export function pesoEmKg(e: EstadoOnboarding): number | null {
   return kg >= 30 && kg <= 350 ? Math.round(kg * 10) / 10 : null
 }
 
+/** Meta de peso em kg; null se vazia, inválida ou se o objetivo não pede meta. */
+export function pesoMetaEmKg(e: EstadoOnboarding): number | null {
+  if (!pedeMetaDePeso(e)) return null
+  const n = lerNumero(e.pesoMeta ?? '') // progresso salvo antes do campo existir
+  if (n === null) return null
+  const kg = e.unidades === 'imperial' ? lbParaKg(n) : n
+  return kg >= 30 && kg <= 350 ? Math.round(kg * 10) / 10 : null
+}
+
+export function pedeMetaDePeso(e: EstadoOnboarding): boolean {
+  return e.objetivos.includes('perder_gordura') || e.objetivos.includes('ganhar_massa')
+}
+
 /** Objetivo principal no formato do banco (profiles.objetivo). */
 export function objetivoPrincipal(e: EstadoOnboarding): Objetivo {
   if (e.objetivos.includes('perder_gordura')) return 'emagrecer'
@@ -174,7 +190,7 @@ export function metasDoEstado(e: EstadoOnboarding) {
 }
 
 /** Erro que impede avançar da etapa (null = pode seguir). Obrigatório só o que as metas precisam. */
-export type ErroEtapa = 'nome' | 'idade' | 'medidas' | 'objetivo' | null
+export type ErroEtapa = 'nome' | 'idade' | 'medidas' | 'objetivo' | 'meta' | null
 
 export function validarEtapa(e: EstadoOnboarding): ErroEtapa {
   if (e.etapa === 1) {
@@ -184,6 +200,7 @@ export function validarEtapa(e: EstadoOnboarding): ErroEtapa {
   if (e.etapa === 2) {
     if (alturaEmCm(e) === null || pesoEmKg(e) === null) return 'medidas'
     if (e.objetivos.length === 0) return 'objetivo'
+    if (pedeMetaDePeso(e) && (e.pesoMeta ?? '').trim() !== '' && pesoMetaEmKg(e) === null) return 'meta'
   }
   return null
 }
@@ -207,6 +224,7 @@ export function paraDadosOnboarding(e: EstadoOnboarding, localidade: Localidade)
     sexo: sexoDominio(e.sexo),
     alturaCm,
     pesoKg,
+    pesoMeta: pesoMetaEmKg(e),
     objetivo: objetivoPrincipal(e),
     localTreino,
     diasTreino: e.frequencia ? DIAS_POR_FREQUENCIA[e.frequencia] : null,

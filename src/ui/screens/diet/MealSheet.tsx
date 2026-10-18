@@ -1,5 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
-import { ActivityIconPicker, MEAL_ICONS } from '@ui/components/ActivityIcon'
+import { ActivityIconPicker, MEAL_ICONS, type UiIconKey } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { macrosRefeicao, type ItemRefeicao, type Refeicao } from '@domain/entities/meal'
@@ -90,7 +90,7 @@ export function MealSheet(props: {
               aria-checked={refeicao.concluida}
               aria-label={m.dieta.marcarFeita(refeicao.nome)}
               onClick={props.onToggleConcluida}
-              className="-mr-2 flex h-12 w-12 flex-none items-center justify-center rounded-xl active:bg-white/5"
+              className="-mr-2 flex h-12 w-12 flex-none items-center justify-center rounded-xl active:bg-content-hi/5"
             >
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 transition-colors ${
@@ -131,7 +131,7 @@ export function MealSheet(props: {
                     type="button"
                     aria-expanded={selecionado}
                     onClick={() => setItemSelecionadoId((atual) => (atual === item.id ? null : item.id))}
-                    className={`flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-lg px-1 text-left transition-colors active:bg-white/5 ${selecionado ? 'bg-white/5' : ''}`}
+                    className={`flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-lg px-1 text-left transition-colors active:bg-content-hi/5 ${selecionado ? 'bg-content-hi/5' : ''}`}
                   >
                     <span className="min-w-0 flex-1 truncate text-content-hi">{item.nome}</span>
                     <span className="flex-none text-content-low">{item.quantidade}</span>
@@ -148,9 +148,9 @@ export function MealSheet(props: {
                           setItemSelecionadoId(null)
                         }}
                         aria-label={t.copiar(item.nome)}
-                        className="flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-surface-4 text-base text-content-hi active:bg-white/5"
+                        className="flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-surface-4 text-base text-content-hi active:bg-content-hi/5"
                       >
-                        ⧉
+                        <ActivityIcon icone="copiar" tile={false} cor="inherit" className="h-5 w-5" />
                       </button>
                       <button
                         type="button"
@@ -161,7 +161,7 @@ export function MealSheet(props: {
                         aria-label={t.excluir(item.nome)}
                         className="flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-accent-danger/40 text-lg text-accent-danger active:bg-accent-danger/10"
                       >
-                        🗑
+                        <ActivityIcon icone="lixeira" tile={false} cor="inherit" className="h-5 w-5" />
                       </button>
                     </>
                   )}
@@ -180,7 +180,7 @@ export function MealSheet(props: {
           {sugestoes.length > 0 && props.onAdicionarPlano && (
             <div className="mt-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-micro font-semibold text-brand">✨ {m.planoDieta.card.doPlano}</span>
+                <span className="text-micro font-semibold text-brand"><ActivityIcon icone="brilho" tile={false} cor="inherit" className="mr-1 inline-flex h-3.5 w-3.5 align-[-2px]" />{m.planoDieta.card.doPlano}</span>
                 {sugestoes.length > 1 && (
                   <button type="button" onClick={() => props.onAdicionarPlano!(sugestoes)} className="min-h-11 px-2 text-micro font-semibold text-brand active:opacity-70">
                     {m.planoDieta.card.adicionarTudo}
@@ -226,12 +226,12 @@ export function MealSheet(props: {
           ) : (
             <>
               <div className="mt-3 space-y-1">
-                <AcaoBotao emoji="📷" titulo={t.escanear} onClick={props.onEscanear} />
-                <AcaoBotao emoji="🔍" titulo={t.pesquisar} onClick={() => setModo('busca')} />
-                <AcaoBotao emoji="💊" titulo={t.suplemento} onClick={props.onAbrirSuplemento} />
-                <AcaoBotao emoji="⭐" titulo={t.salvos} onClick={() => setModo('salvos')} />
+                <AcaoBotao icone="camera" titulo={t.escanear} onClick={props.onEscanear} />
+                <AcaoBotao icone="lupa" titulo={t.pesquisar} onClick={() => setModo('busca')} />
+                <AcaoBotao icone="pilula" titulo={t.suplemento} onClick={props.onAbrirSuplemento} />
+                <AcaoBotao icone="estrela" titulo={t.salvos} onClick={() => setModo('salvos')} />
                 {props.clipboard && (
-                  <AcaoBotao emoji="⧉" titulo={t.colar(props.clipboard.nome)} onClick={props.onColar} />
+                  <AcaoBotao icone="copiar" titulo={t.colar(props.clipboard.nome)} onClick={props.onColar} />
                 )}
               </div>
 
@@ -248,7 +248,7 @@ export function MealSheet(props: {
                     : 'border-surface-4 text-accent-danger active:bg-accent-danger/10'
                 }`}
               >
-                🗑 {confirmandoExcluir ? t.confirmarExcluir : t.excluirRefeicao}
+                <ActivityIcon icone="lixeira" tile={false} cor="inherit" className="mr-1.5 inline-flex h-4 w-4 align-[-2px]" />{confirmandoExcluir ? t.confirmarExcluir : t.excluirRefeicao}
               </button>
             </>
           )}
@@ -263,15 +263,15 @@ export function MealSheet(props: {
   )
 }
 
-function AcaoBotao(props: { emoji: string; titulo: string; onClick: () => void }) {
+function AcaoBotao(props: { icone: UiIconKey; titulo: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={props.onClick}
-      className="flex min-h-14 w-full items-center gap-3.5 rounded-2xl p-2 text-left transition-colors active:bg-white/5"
+      className="flex min-h-14 w-full items-center gap-3.5 rounded-2xl p-2 text-left transition-colors active:bg-content-hi/5"
     >
-      <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-surface-3 text-2xl">
-        {props.emoji}
+      <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-surface-3">
+        <ActivityIcon icone={props.icone} tile={false} className="h-6 w-6" />
       </span>
       <span className="flex-1 truncate text-base font-bold text-content-hi">{props.titulo}</span>
     </button>

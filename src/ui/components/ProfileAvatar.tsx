@@ -20,7 +20,7 @@ export function ProfileAvatar() {
       type="button"
       onClick={() => navigate('/perfil')}
       aria-label={m.home.abrirPerfil}
-      className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-brand-ink ring-1 ring-white/10 transition-transform active:scale-95"
+      className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-brand-ink ring-1 ring-content-hi/10 transition-transform active:scale-95"
     >
       {profile?.avatarUrl ? (
         <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />

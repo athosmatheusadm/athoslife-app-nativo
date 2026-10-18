@@ -59,7 +59,7 @@ export function AddExercisePanel(props: {
   return (
     <main className="fixed inset-0 z-20 flex flex-col overflow-hidden bg-surface-1 pt-safe-t">
       <header className="flex items-center gap-3 px-4 pb-3 pt-3">
-        <button onClick={props.onFechar} aria-label={t.fechar} className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-content-hi active:bg-white/5">
+        <button onClick={props.onFechar} aria-label={t.fechar} className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-content-hi active:bg-content-hi/5">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
@@ -106,7 +106,7 @@ export function AddExercisePanel(props: {
                     onClick={() => props.onAlternar(ex)}
                     aria-label={jaAdicionado ? t.removerEx(ex.nome) : t.adicionarEx(ex.nome)}
                     aria-pressed={jaAdicionado}
-                    className="flex min-h-16 w-full items-center gap-3 py-2 text-left transition-colors active:bg-white/5"
+                    className="flex min-h-16 w-full items-center gap-3 py-2 text-left transition-colors active:bg-content-hi/5"
                   >
                     {iconeDoExercicio(ex) ? (
                       <img

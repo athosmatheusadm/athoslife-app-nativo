@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { SplashScreen } from '@capacitor/splash-screen'
 import App from './App'
 import '@ui/theme/globals.css'
+import { acompanharModoDoCelular } from '@ui/theme/modoClaroEscuro'
+
+acompanharModoDoCelular()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('Elemento #root não encontrado')

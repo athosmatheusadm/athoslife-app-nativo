@@ -30,7 +30,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label={m.nav.rotulo}
-      className="fixed inset-x-0 bottom-0 z-10 flex items-stretch border-t border-surface-1 bg-[rgba(10,10,10,0.97)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-10 flex items-stretch border-t border-surface-1 bg-surface-nav/[0.97] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
     >
       {ITENS.map((item) => (
         <NavLink

@@ -87,7 +87,7 @@ export function HabitsScreen(props: {
       {/* Adicionar novo hábito */}
       <button
         onClick={() => setMostrarAdicionar(true)}
-        className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-dashed border-brand/40 p-4 text-left transition-colors active:bg-white/5"
+        className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-dashed border-brand/40 p-4 text-left transition-colors active:bg-content-hi/5"
       >
         <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-surface-3 text-2xl text-brand" aria-hidden="true">+</span>
         <span>

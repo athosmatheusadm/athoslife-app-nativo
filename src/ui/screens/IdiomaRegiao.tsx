@@ -44,7 +44,7 @@ export function IdiomaRegiao() {
               }}
               role="radio"
               aria-checked={idioma === i}
-              className="flex min-h-14 w-full items-center justify-between border-b border-surface-4/50 px-4 text-left last:border-b-0 active:bg-white/5"
+              className="flex min-h-14 w-full items-center justify-between border-b border-surface-4/50 px-4 text-left last:border-b-0 active:bg-content-hi/5"
             >
               <span className="text-sm text-content-hi">{NOMES_IDIOMA[i]}</span>
               {idioma === i && <span className="text-brand" aria-hidden="true">✓</span>}
@@ -66,7 +66,7 @@ export function IdiomaRegiao() {
               }}
               role="radio"
               aria-checked={unidades === u}
-              className="flex min-h-14 w-full items-center justify-between border-b border-surface-4/50 px-4 text-left last:border-b-0 active:bg-white/5"
+              className="flex min-h-14 w-full items-center justify-between border-b border-surface-4/50 px-4 text-left last:border-b-0 active:bg-content-hi/5"
             >
               <span className="text-sm text-content-hi">{u === 'metrico' ? m.idioma.metrico : m.idioma.imperial}</span>
               {unidades === u && <span className="text-brand" aria-hidden="true">✓</span>}

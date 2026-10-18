@@ -115,21 +115,21 @@ export function CravingAssistant(props: {
               <button
                 type="button"
                 onClick={() => setVista('alternativa')}
-                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-content-hi/5"
               >
                 {t.alternativa}
               </button>
               <button
                 type="button"
                 onClick={props.onConversar}
-                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-content-hi/5"
               >
                 {t.conversar}
               </button>
               <button
                 type="button"
                 onClick={props.onFechar}
-                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+                className="min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-content-hi/5"
               >
                 {t.passou}
               </button>
@@ -173,7 +173,7 @@ export function CravingAssistant(props: {
             <button
               type="button"
               onClick={props.onFechar}
-              className="mt-5 min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-white/5"
+              className="mt-5 min-h-14 w-full rounded-2xl border border-surface-4 font-semibold text-content-mid transition-colors active:bg-content-hi/5"
             >
               {t.passou}
             </button>

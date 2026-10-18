@@ -295,7 +295,7 @@ export function WorkoutScreen() {
 
         <button
           onClick={() => setPainelAberto(true)}
-          className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-dashed border-brand/40 p-3.5 text-left transition-colors active:bg-white/5"
+          className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-dashed border-brand/40 p-3.5 text-left transition-colors active:bg-content-hi/5"
         >
           <span className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-surface-3 text-xl text-brand" aria-hidden="true">
             +

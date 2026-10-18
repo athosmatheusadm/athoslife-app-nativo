@@ -41,7 +41,7 @@ export function MealAccordion(props: {
           {...props.dragHandleProps.attributes}
           {...props.dragHandleProps.listeners}
           aria-label={m.dieta.arrastar(refeicao.nome)}
-          className="flex w-9 flex-none touch-none items-center justify-center text-content-low active:bg-white/5"
+          className="flex w-9 flex-none touch-none items-center justify-center text-content-low active:bg-content-hi/5"
         >
           ⋮⋮
         </span>
@@ -50,14 +50,14 @@ export function MealAccordion(props: {
       <button
         type="button"
         onClick={props.onAbrir}
-        className={`flex min-h-16 min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors active:bg-white/5 ${props.dragHandleProps ? 'pl-1' : 'pl-4'}`}
+        className={`flex min-h-16 min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors active:bg-content-hi/5 ${props.dragHandleProps ? 'pl-1' : 'pl-4'}`}
       >
         <ActivityIcon icone={refeicao.icone ?? refeicao.tipo} />
 
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-content-hi">{refeicao.nome}</span>
           {props.sugestaoPlano ? (
-            <span className="block truncate text-micro italic text-content-low">✨ {props.sugestaoPlano.resumo}</span>
+            <span className="block truncate text-micro italic text-content-low"><ActivityIcon icone="brilho" tile={false} cor="inherit" className="mr-1 inline-flex h-3.5 w-3.5 align-[-2px]" />{props.sugestaoPlano.resumo}</span>
           ) : (
             <span className="block truncate text-micro text-content-low">{refeicao.itens.length ? resumoRefeicao(refeicao.itens) : m.dieta.linhaVazia}</span>
           )}
@@ -76,7 +76,7 @@ export function MealAccordion(props: {
         aria-checked={refeicao.concluida}
         aria-label={m.dieta.marcarFeita(refeicao.nome)}
         onClick={props.onToggleConcluida}
-        className="flex w-14 flex-none items-center justify-center active:bg-white/5"
+        className="flex w-14 flex-none items-center justify-center active:bg-content-hi/5"
       >
         <span
           className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 transition-colors ${

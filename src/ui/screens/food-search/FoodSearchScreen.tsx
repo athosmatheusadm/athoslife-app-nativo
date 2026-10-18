@@ -92,7 +92,7 @@ export function FoodSearchScreen(props: {
             <li key={a.id}>
               <button
                 onClick={() => setSelecionado(a)}
-                className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition-colors active:bg-white/[0.05]"
+                className="flex w-full items-center justify-between gap-3 py-3.5 text-left transition-colors active:bg-content-hi/[0.05]"
               >
                 <span className="min-w-0">
                   <span className="block truncate font-medium text-content-hi">{a.nome}</span>

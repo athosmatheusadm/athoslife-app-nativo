@@ -1,9 +1,11 @@
-import { DESENHOS } from './phosphorDuotone'
+import { DESENHOS, DESENHOS_UI } from './phosphorDuotone'
 import { useI18n } from '@/i18n/I18nProvider'
 
 export type ActivityIconKey = keyof typeof DESENHOS
-export function activityIconKey(valor?: string | null): ActivityIconKey {
-  return valor && Object.prototype.hasOwnProperty.call(DESENHOS, valor) ? valor as ActivityIconKey : 'outro'
+export type UiIconKey = keyof typeof DESENHOS_UI
+const TODOS = { ...DESENHOS, ...DESENHOS_UI }
+export function activityIconKey(valor?: string | null): ActivityIconKey | UiIconKey {
+  return valor && Object.prototype.hasOwnProperty.call(TODOS, valor) ? valor as ActivityIconKey | UiIconKey : 'outro'
 }
 
 export function ActivityIcon({ icone, className = 'h-12 w-12', tile = true, cor = 'brand' }: {
@@ -13,7 +15,7 @@ export function ActivityIcon({ icone, className = 'h-12 w-12', tile = true, cor 
   cor?: 'brand' | 'inherit'
 }) {
   return <span aria-hidden="true" className={`inline-flex flex-none items-center justify-center ${cor === 'brand' ? 'text-brand' : ''} ${tile ? 'rounded-xl bg-brand/10 p-2.5' : ''} ${className}`}>
-    {DESENHOS[activityIconKey(icone)]}
+    {TODOS[activityIconKey(icone)]}
   </span>
 }
 

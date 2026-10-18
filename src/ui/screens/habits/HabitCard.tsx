@@ -111,7 +111,7 @@ export function HabitCard(props: {
           <button
             type="button"
             onClick={() => setConfirmandoTropeco(false)}
-            className="min-h-11 flex-1 rounded-lg border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
+            className="min-h-11 flex-1 rounded-lg border border-surface-4 text-sm font-semibold text-content-mid active:bg-content-hi/5"
           >
             {m.comum.cancelar}
           </button>
@@ -143,7 +143,7 @@ export function HabitCard(props: {
         type="button"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
-        className="flex min-h-16 w-full items-center gap-3 p-4 text-left active:bg-white/5"
+        className="flex min-h-16 w-full items-center gap-3 p-4 text-left active:bg-content-hi/5"
       >
         <ActivityIcon icone={habito.icone ?? habito.categoria} />
 
@@ -263,7 +263,7 @@ export function HabitCard(props: {
                     type="button"
                     disabled={excluindo}
                     onClick={() => setConfirmarExclusao(false)}
-                    className="min-h-11 flex-1 rounded-lg border border-surface-4 text-sm font-semibold text-content-mid active:bg-white/5"
+                    className="min-h-11 flex-1 rounded-lg border border-surface-4 text-sm font-semibold text-content-mid active:bg-content-hi/5"
                   >
                     {m.comum.cancelar}
                   </button>

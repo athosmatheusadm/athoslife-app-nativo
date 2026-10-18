@@ -182,6 +182,8 @@ export type AcaoLife =
   | { tipo: 'refeicao_atualizada'; data: string }
   | { tipo: 'pausa'; dia: string }
   | { tipo: 'escolha'; id: string; opcoes: { valor: EscolhaAcao; rotulo: string }[] }
+  /** Pesagem ou meta gravada pelo chat (sem IA, sem cota) — recarrega o card "Meu peso". */
+  | { tipo: 'peso_atualizado' }
 
 export interface RespostaChat {
   resposta: string
