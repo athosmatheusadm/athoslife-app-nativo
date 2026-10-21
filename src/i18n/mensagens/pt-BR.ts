@@ -58,7 +58,7 @@ export const ptBR = {
       feminino: 'Feminino',
       prefiroNaoDizer: 'Prefiro não dizer',
       erroNome: 'Me diz como posso te chamar.',
-      erroIdade: 'Idade entre 16 e 100 anos.',
+      erroIdade: 'O ATHOSlife é para maiores de 18 anos (idade entre 18 e 100).',
     },
     corpo: {
       eyebrow: 'Seu corpo',

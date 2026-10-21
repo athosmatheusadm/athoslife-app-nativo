@@ -2920,3 +2920,8 @@ pediu pra levar ao app.
 2. Política: incluir RevenueCat; preencher razão social/CNPJ/DPO; publicar na web
    + página de exclusão de conta (exigência da Play).
 3. Migração do scanner + deploy ai-proxy + `SCANNER_V2=true`; push (token GitHub).
+- **Decisão do dono: continua o Gemini e o app passa a ser 18+.** Onboarding
+  só aceita 18–100 (`onboarding/estado.ts`, aviso em pt/en/es); Termos e
+  Política dizem 18+ (sem a regra de responsável legal);
+  `VERSAO_DOCUMENTOS` = v2.3-2026-10-21. Obs.: editar a idade em Perfil →
+  Conta não valida o mínimo (o plano já bloqueia menor de idade na triagem).

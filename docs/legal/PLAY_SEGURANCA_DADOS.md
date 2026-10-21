@@ -66,7 +66,7 @@ identificadores de publicidade.
 - **Declaração de apps de saúde:** a Play pede para apps de saúde/fitness.
   Marcar nutrição, condicionamento físico e bem-estar; **não** marcar recursos
   médicos/clínicos.
-- **Público-alvo:** depende da decisão sobre a idade mínima (16 ou 18). Ver o
-  WORKLOG de 2026-10-21 (termos do Gemini).
+- **Público-alvo:** só **18 anos ou mais** (decidido em 2026-10-21 por causa dos
+  termos do Gemini). Não marcar nenhuma faixa abaixo de 18.
 - **Permissões:** CÂMERA (scanner de prato e de código de barras). Não exige
   declaração especial.

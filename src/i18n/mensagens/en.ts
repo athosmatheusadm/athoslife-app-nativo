@@ -49,7 +49,7 @@ export const en: Mensagens = {
       feminino: 'Female',
       prefiroNaoDizer: "I'd rather not say",
       erroNome: 'Tell me what I should call you.',
-      erroIdade: 'Age between 16 and 100.',
+      erroIdade: 'ATHOSlife is for adults 18 and over (age between 18 and 100).',
     },
     corpo: {
       eyebrow: 'Your body',
