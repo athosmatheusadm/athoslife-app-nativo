@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import type { EntradaStory } from '@domain/entities/story'
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
   exercicioAtual,
   formatarRelogio,
+  grupoPrincipal,
   indiceSerie,
   resumirSessao,
   segundosRestantes,
@@ -27,6 +31,7 @@ export function TreinoEmAndamento() {
   const [erro, setErro] = useState(false)
   const { m, idioma } = useI18n()
   const tx = m.treino.andamento
+  const navigate = useNavigate()
   // Voltar do Android fecha a janela de Parar/Resumo antes de qualquer coisa.
   useFecharNoVoltar(painel !== null, () => setPainel(null))
 
@@ -52,9 +57,11 @@ export function TreinoEmAndamento() {
     status = tx.serieDe(ex.nome, indiceSerie(ex) + 1, ex.alvo.length)
   }
 
-  async function salvar() {
+  async function salvar(story = false) {
     setSalvando(true)
     setErro(false)
+    // O resumo some depois de finalizar (a sessão vira null): monta o Story antes.
+    const entrada = story && sessao ? entradaStory() : null
     try {
       const salvou = r.seriesFeitas > 0
       await finalizar()
@@ -63,10 +70,26 @@ export function TreinoEmAndamento() {
         vibrar.sucesso()
         avisar.ok(tx.salvo)
       }
+      if (entrada) navigate('/story', { state: entrada })
     } catch {
       setErro(true)
     } finally {
       setSalvando(false)
+    }
+  }
+
+  function entradaStory(): EntradaStory {
+    const ts = m.story.gym
+    const grupo = sessao ? grupoPrincipal(sessao) : null
+    return {
+      modo: 'gym',
+      titulo: { rotulo: ts.treinoDeHoje, valor: grupo ? m.treino.grupos[grupo] : ts.treino },
+      metricas: [
+        { id: 'volume', rotulo: ts.volume, valor: r.volumeKg.toLocaleString(idioma), unidade: 'kg', ligada: r.volumeKg > 0 },
+        { id: 'series', rotulo: ts.series, valor: String(r.seriesFeitas), ligada: true },
+        { id: 'duracao', rotulo: ts.duracao, valor: String(r.duracaoMin), unidade: 'min', ligada: true },
+        { id: 'exercicios', rotulo: ts.exercicios, valor: String(r.exerciciosFeitos), ligada: false },
+      ],
     }
   }
 
@@ -160,6 +183,16 @@ export function TreinoEmAndamento() {
             >
               {salvando ? tx.salvando : nada ? tx.fechar : tx.salvar}
             </button>
+            {!nada && (
+              <button
+                onClick={() => void salvar(true)}
+                disabled={salvando}
+                className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-pill border border-surface-4 text-sm font-semibold text-content-hi active:bg-content-hi/5 disabled:opacity-60"
+              >
+                <ActivityIcon icone="camera" tile={false} cor="inherit" className="h-5 w-5" />
+                {m.story.postar}
+              </button>
+            )}
             {sessao.status !== 'concluida' && (
               <button
                 onClick={() => setPainel(null)}

@@ -33,6 +33,7 @@ import { LifeChefScreen } from '@ui/screens/cozinha/LifeChefScreen'
 import { CriacaoScreen } from '@ui/screens/cozinha/CriacaoScreen'
 import { DocumentoLegal } from '@ui/screens/legal/DocumentoLegal'
 import { Licencas } from '@ui/screens/legal/Licencas'
+import { StoryScreen } from '@ui/screens/story/StoryScreen'
 
 /** Casca do app: liga o botão Voltar dentro do contexto do roteador. */
 function Shell() {
@@ -90,6 +91,7 @@ export const router = createBrowserRouter([
           { path: '/perfil/acessibilidade', element: <Acessibilidade /> },
           { path: '/perfil/sobre', element: <Sobre /> },
           { path: '/perfil/sobre/licencas', element: <Licencas /> },
+          { path: '/story', element: <StoryScreen /> },
           { path: '/perfil/idioma', element: <IdiomaRegiao /> },
           { path: '/dieta/cozinha', element: <CozinhaListaScreen /> },
           { path: '/dieta/cozinha/life', element: <LifeChefScreen /> },

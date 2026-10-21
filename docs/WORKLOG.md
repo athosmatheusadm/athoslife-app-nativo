@@ -2969,3 +2969,33 @@ pediu pra levar ao app.
   saiu: reordenar = segurar o card ~0,35 s e arrastar (PointerSensor com
   delay); toque curto abre a refeição. Testar no aparelho se o arraste por
   toque longo não abre o sheet ao soltar. pt/en/es.
+
+### 2026-10-21 (madrugada, cont.) — Story Studio dentro do app — branch `story-studio`
+
+Dono aprovou a prévia (https://claude.ai/artifact/Fbq4t5GNHWFSdEbGmWUjfL).
+Escopo: Alimentação + Musculação (Corrida/Jiu-Jitsu depois).
+
+- Tela `/story` (`ui/screens/story/StoryScreen.tsx`): foto da pessoa 9:16 em
+  tela cheia, números arrastáveis, toque = tamanho/cor/ocultar, painéis
+  Dados/Modelos (um por vez), desfazer, faixas do Instagram ao arrastar.
+  Modelo em `domain/entities/story.ts` (posições em %, tamanhos em fração da
+  largura → tela usa `cqw`, export usa ×1080). `exportarStory.ts` desenha o
+  JPEG 1080×1920.
+- Entradas (símbolo = câmera pequena, pedido do dono): cabeçalho da refeição
+  na Dieta (com itens) e "Postar no Story" no resumo do fim do treino (salva
+  e abre o editor com volume/séries/duração/exercícios + grupo principal).
+- Android: `story/AthosInstagramPlugin.java` (do zip V3, pacote
+  `br.com.athoslife.app.story`), **1 linha** no MainActivity (Live Activity e
+  widget continuam), `<queries>` do Instagram no Manifest,
+  `plugins.AthosInstagram.facebookAppId: ''` no capacitor.config.ts.
+  Sem App ID (hoje) "Postar nos Stories" abre o menu de compartilhar.
+  No navegador: menu do navegador ou baixa o arquivo.
+- Textos pt/en/es (`story`). Validação: tsc e vite build. **Não testado no
+  aparelho** (plugin nativo, exportação no WebView).
+
+**Pendências**
+1. Dono: Facebook App ID (junto com o webhook do RevenueCat) → preencher
+   `facebookAppId` e testar o Instagram direto.
+2. APK pra testar arrastar, foto da galeria, exportação e compartilhar.
+3. Recorde pessoal no Story de treino (precisa histórico por exercício).
+4. Dono quer alinhar algo da Live Activity antes de fechar.

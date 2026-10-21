@@ -72,4 +72,8 @@
     <!-- Exigida pelo plugin de código de barras (o leitor do Google não pede na tela). -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Android 11+: sem isso o app não "enxerga" o Instagram pro Story. -->
+    <queries>
+        <package android:name="com.instagram.android" />
+    </queries>
 </manifest>

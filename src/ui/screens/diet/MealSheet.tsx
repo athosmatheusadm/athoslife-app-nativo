@@ -1,6 +1,8 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { ActivityIconPicker, MEAL_ICONS, type UiIconKey } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import type { EntradaStory } from '@domain/entities/story'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { macrosRefeicao, type ItemRefeicao, type Refeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -49,6 +51,23 @@ export function MealSheet(props: {
   const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(null)
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false)
   const macros = macrosRefeicao(refeicao.itens)
+  const navigate = useNavigate()
+
+  function abrirStory() {
+    const ts = m.story.food
+    const nomes = refeicao.itens.map((i) => i.nome).join(' · ')
+    const entrada: EntradaStory = {
+      modo: 'food',
+      titulo: { rotulo: refeicao.nome, valor: nomes.length > 34 ? `${nomes.slice(0, 33)}…` : nomes },
+      metricas: [
+        { id: 'kcal', rotulo: ts.calorias, valor: String(macros.calorias), unidade: 'kcal', ligada: true },
+        { id: 'prot', rotulo: ts.proteina, valor: String(macros.proteina), unidade: 'g', ligada: true },
+        { id: 'carb', rotulo: ts.carbo, valor: String(macros.carboidrato), unidade: 'g', ligada: false },
+        { id: 'gord', rotulo: ts.gordura, valor: String(macros.gordura), unidade: 'g', ligada: false },
+      ],
+    }
+    navigate('/story', { state: entrada })
+  }
   const { m, idioma } = useI18n()
   const t = m.dieta.sheet
   const sugestoes = props.sugestoesPlano ?? []
@@ -86,6 +105,16 @@ export function MealSheet(props: {
             <ActivityIcon icone={refeicao.icone ?? refeicao.tipo} />
             <span className="min-w-0 flex-1 truncate text-xl font-bold text-content-hi">{refeicao.nome}</span>
             <span className="text-sm font-bold tabular-nums text-brand">{macros.calorias} kcal</span>
+            {refeicao.itens.length > 0 && (
+              <button
+                type="button"
+                onClick={abrirStory}
+                aria-label={m.story.postar}
+                className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-surface-4 text-content-mid active:bg-content-hi/5"
+              >
+                <ActivityIcon icone="camera" tile={false} cor="inherit" className="h-5 w-5" />
+              </button>
+            )}
             <button
               type="button"
               role="checkbox"

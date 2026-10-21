@@ -25,6 +25,12 @@ const config: CapacitorConfig = {
       style: 'DARK',
       backgroundColor: '#161616',
     },
+    // Story → Instagram (android/.../story/AthosInstagramPlugin.java). Sem o
+    // ID do app da Meta (developers.facebook.com), "Postar nos Stories" abre o
+    // menu de compartilhar do sistema em vez do editor do Instagram.
+    AthosInstagram: {
+      facebookAppId: '',
+    },
     LocalNotifications: {
       // Sem `smallIcon` de propósito: não existe um ícone de status bar
       // dedicado em android/res ainda (só os ic_launcher coloridos, que não
