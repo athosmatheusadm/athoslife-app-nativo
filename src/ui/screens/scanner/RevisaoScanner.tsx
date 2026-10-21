@@ -186,7 +186,7 @@ export function RevisaoScanner(p: Props) {
                       </div>
                     )}
                     <ExtrasScan item={item} onMudar={(novo) => p.onMudarItem(item.id, () => novo)} />
-                    {item.fonte === 'rotulo' && <p className="text-micro opacity-70">{t.rotulo}</p>}
+                    {item.fonte === 'rotulo' && <p className="text-micro text-brand/75">{t.rotulo}</p>}
                   </div>
                 )}
               </li>

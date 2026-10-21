@@ -2893,3 +2893,30 @@ pediu pra levar ao app.
    no claro e no escuro.
 2. Migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
 3. Token do GitHub → push da `main` e da `scanner-v1-1` (abrir PR).
+
+### 2026-10-21 (noite, cont.) — créditos, licenças, formulário da Play, idade mínima
+
+- **Créditos** (dono pediu letra miúda, verde claro, sem negrito): Sobre →
+  "Dados nutricionais: Tabela TACO (NEPA/UNICAMP) e Open Food Facts (licença
+  ODbL)"; na revisão do código de barras, "Rótulo via Open Food Facts". pt/en/es.
+- **Licenças de código aberto:** Perfil → Sobre → nova tela
+  (`legal/Licencas.tsx`). Lista gerada por `node scripts/gerar-licencas.mjs`
+  (40 pacotes de produção: 38 MIT, 1 Apache-2.0, 1 0BSD) → rodar de novo
+  quando mudar `package.json`. Obs.: o tailwind cita "Inter", mas a fonte
+  não é empacotada; no Android o app usa a fonte do sistema.
+- **Formulário de segurança de dados da Play:** `docs/legal/PLAY_SEGURANCA_DADOS.md`.
+- **Idade mínima × Gemini (pesquisado):** os termos do Gemini API (vigentes
+  desde 23/03/2026) e os do Vertex AI (Google Cloud, "Age Restrictions")
+  proíbem usar a IA em app "directed towards or likely to be accessed by
+  individuals under the age of 18". O app aceita 16+ → conflito. Dono decide:
+  18+ ou trocar o provedor da IA. A chave do Gemini está no plano grátis
+  (Google pode treinar com os dados); a Política diz o contrário → passar
+  pro pago antes do lançamento ou ajustar o texto.
+- Bloqueado pelo auto mode: migração do scanner, deploy da ai-proxy e
+  `SCANNER_V2` (comando pronto no chat de 21/10).
+
+**Pendências**
+1. Dono: idade mínima / provedor de IA; chave Gemini paga antes do lançamento.
+2. Política: incluir RevenueCat; preencher razão social/CNPJ/DPO; publicar na web
+   + página de exclusão de conta (exigência da Play).
+3. Migração do scanner + deploy ai-proxy + `SCANNER_V2=true`; push (token GitHub).
