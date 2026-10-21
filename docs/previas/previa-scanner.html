@@ -128,6 +128,34 @@ ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .fundo-cb { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, #3f7fd8, transparent 70%), radial-gradient(80% 60% at 50% 35%, #e9eef5, #1d2a3d 75%); filter: blur(6px); transform: scale(1.1); }
 .pote { position: absolute; z-index: 1; left: 50%; top: 22%; transform: translateX(-50%); width: 46%; aspect-ratio: 1; border-radius: 28px; background: #fff; display: grid; place-items: center; box-shadow: 0 20px 50px rgb(0 0 0 / .35); }
 .pote span { width: 46%; height: 64%; border-radius: 12px 12px 20px 20px; background: linear-gradient(#f2f2f2 0 22%, #3f7fd8 22% 62%, #f2f2f2 62%); border: 1px solid #ddd; }
+
+.ler-cb { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 12px 14px 12px 12px; border-radius: 18px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); text-align: left; }
+.ler-cb:active { background: rgb(var(--s3)); }
+.ler-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgb(var(--brand) / .14); color: rgb(var(--brand)); }
+.ler-txt { display: grid; gap: 2px; min-width: 0; }
+.ler-txt b { font-size: 15px; font-weight: 700; }
+.ler-txt small { font-size: 12px; color: rgb(var(--low)); }
+.gratis { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); }
+.digitar { width: 100%; min-height: 40px; margin-top: 4px; font-size: 13px; font-weight: 600; color: rgb(var(--low)); text-decoration: underline; text-underline-offset: 3px; }
+
+.cam { margin-top: 0; }
+.cam-fundo { position: absolute; inset: 0; background: radial-gradient(70% 50% at 50% 45%, #6b6156, #2a2622 80%); display: grid; place-items: center; }
+.emb { width: 72%; padding: 18px 16px 12px; border-radius: 10px; background: #f4f1ea; transform: rotate(-3deg); box-shadow: 0 10px 30px rgb(0 0 0 / .4); display: grid; gap: 6px; justify-items: center; filter: blur(.4px); }
+.barras { width: 100%; height: 70px; background: repeating-linear-gradient(90deg, #111 0 2px, transparent 2px 4px, #111 4px 5px, transparent 5px 8px, #111 8px 11px, transparent 11px 12px); }
+.emb span { font-family: var(--mono); font-size: 13px; letter-spacing: .2em; color: #111; }
+.mira-cb { position: absolute; z-index: 1; left: 12%; right: 12%; top: 36%; height: 20%; box-shadow: 0 0 0 999px rgb(0 0 0 / .45); border-radius: 18px; }
+.mira-cb i { position: absolute; width: 28px; height: 28px; border: 3px solid rgb(var(--brand)); }
+.mira-cb i:nth-child(1) { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 18px; }
+.mira-cb i:nth-child(2) { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-top-right-radius: 18px; }
+.mira-cb i:nth-child(3) { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-bottom-left-radius: 18px; }
+.mira-cb i:nth-child(4) { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 18px; }
+.laser { position: absolute; left: 8%; right: 8%; top: 50%; height: 2px; border-radius: 2px; background: rgb(var(--brand)); box-shadow: 0 0 12px rgb(var(--brand)); animation: laser 1.8s ease-in-out infinite alternate; }
+@keyframes laser { from { top: 18%; } to { top: 82%; } }
+.cam-rodape { position: absolute; z-index: 2; left: 14px; right: 14px; bottom: 18px; display: grid; gap: 10px; justify-items: center; }
+.cam-dica { margin: 0; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.cam-digitar { width: 100%; min-height: 48px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+#lanterna[aria-pressed="true"] { background: rgb(var(--gold) / .9); color: #1a1406; }
+@media (prefers-reduced-motion: reduce) { .laser { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .item { transition: none; } }
 </style>
 
@@ -163,17 +191,36 @@ ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 <div id="v-codigo" hidden>
 <div class="topo">
   <h1>Código de barras no estilo novo</h1>
-  <p>É grátis (não usa IA). O app abre o leitor pronto do Google, lê o código e busca o rótulo no Open Food Facts. Na revisão, a foto do produto vai pro fundo e fica uma linha de vidro só, igual ao scanner do prato. Produto de exemplo; os números são ilustrativos.</p>
+  <p>É grátis (não usa IA). A câmera abre numa tela nossa, lê o código e busca o rótulo no Open Food Facts. Na revisão, a foto do produto vai pro fundo e fica uma linha de vidro só, igual ao scanner do prato. Produto de exemplo; os números são ilustrativos.</p>
 </div>
 <section class="app" aria-label="Código de barras no app hoje">
   <div class="cab"><button class="volta" aria-label="Voltar">←</button><div><h2>📷 Escanear comida</h2><p class="sub">Vai pra: Lanche</p></div></div>
 
   <p class="etapa-rot">1 · Na tela do scanner</p>
-  <button class="contorno">▮▯▮ Ler código de barras</button>
-  <p class="mic" style="text-align:center;margin-top:6px">No navegador (sem câmera) aparece um campo pra digitar o número.</p>
+  <button class="ler-cb">
+    <span class="ler-ic"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13.5 8v8M17 8v8" stroke-width="1.6"/></svg></span>
+    <span class="ler-txt"><b>Ler código de barras</b><small>Produto embalado · números do rótulo</small></span>
+    <span class="gratis">Grátis</span>
+  </button>
+  <button class="digitar">Prefere digitar o número?</button>
 
-  <p class="etapa-rot">2 · Leitor do Google (tela do sistema, não é nossa)</p>
-  <div class="google"><div class="mira">7 891000 100103</div><p>Aponte para o código. Fecha sozinho ao ler.</p></div>
+  <p class="etapa-rot">2 · Câmera do código (nossa, no visual do app)</p>
+  <div class="tela cam" aria-label="Leitor de código de barras">
+    <div class="cam-fundo" aria-hidden="true"><div class="emb"><div class="barras"></div><span>7 891000 100103</span></div></div>
+    <div class="barra">
+      <button class="redondo vidro" aria-label="Fechar">✕</button>
+      <span class="destino vidro">Lanche</span>
+      <button class="redondo vidro" id="lanterna" aria-label="Lanterna" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 5 13h6l-1 9 8-11h-6l1-9Z"/></svg>
+      </button>
+    </div>
+    <div class="mira-cb" aria-hidden="true"><i></i><i></i><i></i><i></i><span class="laser"></span></div>
+    <div class="cam-rodape">
+      <p class="cam-dica vidro">Aponte pro código de barras</p>
+      <button class="cam-digitar vidro">Digitar o número</button>
+    </div>
+  </div>
+  <p class="mic" style="text-align:center;margin-top:8px">Leu o código: vibra, a mira fica verde e já abre a revisão.</p>
 
   <p class="etapa-rot">3 · Revisão (estilo novo, igual ao da foto)</p>
   <div class="tela tela-cb" aria-label="Revisão do produto">
@@ -333,4 +380,6 @@ for (const c of document.querySelectorAll('.tela-cb .chip')) c.addEventListener(
 document.getElementById('cb-menos').addEventListener('click', () => { gCb = Math.max(0, gCb - 10); renderCb() })
 document.getElementById('cb-mais').addEventListener('click', () => { gCb += 10; renderCb() })
 renderCb()
+const lan = document.getElementById('lanterna')
+lan.addEventListener('click', () => lan.setAttribute('aria-pressed', String(lan.getAttribute('aria-pressed') !== 'true')))
 </script>
