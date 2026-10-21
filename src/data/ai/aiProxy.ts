@@ -1,5 +1,5 @@
 import { supabase } from '@data/supabase/client'
-import type { ResultadoVisao } from '@domain/entities/food'
+import type { BaseScan, ResultadoVisao, VarianteOleo } from '@domain/entities/food'
 
 /**
  * Cliente do Edge Function `ai-proxy`.
@@ -54,7 +54,7 @@ interface RespostaVisaoCrua {
 }
 
 export async function chamar<T>(
-  tipo: 'vision' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura',
+  tipo: 'vision' | 'scan' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura',
   payload: Record<string, unknown>,
 ): Promise<T> {
   const { data: sessao } = await supabase.auth.getSession()
@@ -108,6 +108,79 @@ export async function analisarFoto(base64: string, mime = 'image/jpeg'): Promise
       gordura: i.gordura,
     })),
   }
+}
+
+// ---------------------------------------------------------------- scanner v1.1
+
+/** Item como a ai-proxy devolve (`tipo: 'scan'`). Nutrientes já arredondados. */
+export interface ItemScanCru {
+  itemId: string
+  nomeVisto: string
+  resolucao: 'matched' | 'needs_choice' | 'unresolved'
+  base: BaseScan | null
+  candidatos: BaseScan[]
+  gramas: number | null
+  faixa: { min: number; max: number } | null
+  variante: VarianteOleo | null
+  varianteOrigem: 'padrao' | 'visual' | null
+  nutrientes: { kcal: number | null; proteina: number | null; carboidrato: number | null; gordura: number | null } | null
+  motivos: string[]
+  incluir: boolean
+}
+
+export interface RespostaScan {
+  scan_id: string
+  revisao: number
+  status: 'ready' | 'needs_review' | 'committed' | 'processing'
+  titulo?: string
+  parcial?: boolean
+  itens?: ItemScanCru[]
+}
+
+const espera = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Foto -> resultado editável. O mesmo `requestId` com a mesma foto devolve
+ * o resultado já pronto sem gastar outro scan — então dá pra repetir com
+ * segurança se a internet cair no meio. Se ainda estiver processando,
+ * consulta o status por até ~25 s.
+ */
+export async function analisarScan(base64: string, mime: string, requestId: string): Promise<RespostaScan> {
+  const enviar = () => chamar<RespostaScan>('scan', { op: 'analisar', request_id: requestId, image: base64, mime_type: mime })
+  let r: RespostaScan
+  try {
+    r = await enviar()
+  } catch (e) {
+    if (e instanceof AiProxyError) throw e
+    await espera(1500) // queda de rede: tenta uma vez com o mesmo pedido
+    r = await enviar()
+  }
+  for (let i = 0; r.status === 'processing' && i < 10; i++) {
+    await espera(2500)
+    r = await chamar<RespostaScan>('scan', { op: 'status', scan_id: r.scan_id })
+  }
+  if (r.status === 'processing') throw new AiProxyError({ tipo: 'proxy_error', detalhe: 'analysis_timeout' })
+  return r
+}
+
+export async function confirmarScan(params: {
+  scanId: string
+  revisao: number
+  commitKey: string
+  data: string
+  alvo: { tipo: string; extraId?: string }
+  itens: { itemId: string; alimentoId: string | null; gramas: number; variante: VarianteOleo | null; incluir: boolean }[]
+}): Promise<number> {
+  const r = await chamar<{ ok: boolean; itens: number }>('scan', {
+    op: 'confirmar',
+    scan_id: params.scanId,
+    revisao: params.revisao,
+    commit_key: params.commitKey,
+    data: params.data,
+    alvo: { tipo: params.alvo.tipo, extra_id: params.alvo.extraId },
+    itens: params.itens.map((i) => ({ item_id: i.itemId, alimento_id: i.alimentoId, gramas: i.gramas, variante: i.variante, incluir: i.incluir })),
+  })
+  return r.itens
 }
 
 /** Alimento estimado pelo Life (fora da base). Macros POR PORÇÃO. */

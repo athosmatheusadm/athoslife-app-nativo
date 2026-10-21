@@ -1,11 +1,57 @@
-import { analisarFoto } from '@data/ai/aiProxy'
+import { AiProxyError, analisarFoto, analisarScan, confirmarScan, type ItemScanCru, type RespostaScan } from '@data/ai/aiProxy'
 import { alimentosRepository } from '@data/repositories/alimentosRepository'
 import { itensRefeicaoRepository, type RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
 import { refeicoesRepository } from '@data/repositories/refeicoesRepository'
 import { montarRascunho } from '@domain/rules/foodReconciliation'
 import { dataLocalISO } from '@domain/rules/datas'
-import { somarMacros, type Macros, type RefeicaoRascunho } from '@domain/entities/food'
+import { somarMacros, type ItemRascunho, type Macros, type RefeicaoRascunho } from '@domain/entities/food'
 import type { ProdutoRotulo } from '@data/repositories/produtoCodigoBarrasRepository'
+
+// Scanner v1.1 (Gemini só reconhece, nutriente vem da base/TACO). Enquanto o
+// servidor responder `scanner_v2_off`, a sessão fica no scanner antigo.
+let scannerV2 = true
+
+function deItemScan(i: ItemScanCru): ItemRascunho {
+  const n = i.nutrientes
+  const semNumeros = !i.base || !n || i.gramas === null
+  return {
+    id: i.itemId,
+    nome: i.base?.nome ?? i.nomeVisto,
+    quantidadeG: i.gramas ?? 0,
+    alimentoBaseId: i.base?.alimentoId ?? null,
+    fonte: 'base',
+    incluir: i.incluir,
+    calorias: n?.kcal ?? 0,
+    proteina: n?.proteina ?? 0,
+    carboidrato: n?.carboidrato ?? 0,
+    gordura: n?.gordura ?? 0,
+    scan: {
+      itemId: i.itemId,
+      nomeVisto: i.nomeVisto,
+      resolucao: i.resolucao,
+      base: i.base,
+      candidatos: i.candidatos,
+      variante: i.variante,
+      varianteOrigem: i.varianteOrigem,
+      faixa: i.faixa,
+      motivos: i.motivos,
+      semNumeros,
+    },
+  }
+}
+
+function deRespostaScan(r: RespostaScan): RefeicaoRascunho {
+  const itens = (r.itens ?? []).map(deItemScan)
+  const casados = itens.filter((i) => i.scan?.resolucao === 'matched').length
+  return {
+    descricao: r.titulo ?? '',
+    // Não é "confiança da IA": é quantos itens casaram sozinhos com a base.
+    confianca: itens.length ? Math.round((100 * casados) / itens.length) : 0,
+    observacao: null,
+    itens,
+    scan: { scanId: r.scan_id, revisao: r.revisao, commitKey: crypto.randomUUID(), parcial: Boolean(r.parcial) },
+  }
+}
 
 /**
  * Serviço de captura de comida — a fachada do "scanner".
@@ -26,6 +72,15 @@ export const foodCaptureService = {
    * um rascunho pronto para a tela de revisão. Não persiste nada.
    */
   async capturar(base64: string, mime?: string): Promise<RefeicaoRascunho> {
+    if (scannerV2) {
+      try {
+        return deRespostaScan(await analisarScan(base64, mime ?? 'image/jpeg', crypto.randomUUID()))
+      } catch (e) {
+        const desligado = e instanceof AiProxyError && e.info.tipo === 'proxy_error' && e.info.detalhe === 'scanner_v2_off'
+        if (!desligado) throw e
+        scannerV2 = false
+      }
+    }
     const [visao, base] = await Promise.all([
       analisarFoto(base64, mime),
       alimentosRepository.carregarTodos(),
@@ -80,6 +135,25 @@ export const foodCaptureService = {
     /** Código de barras não entra no histórico de scans da IA. */
     origem?: 'foto' | 'codigo'
   }): Promise<number> {
+    const scan = params.rascunho.scan
+    if (scan) {
+      // Servidor recalcula cada item pela base e grava tudo numa transação;
+      // o mesmo commitKey em dois toques não duplica.
+      return confirmarScan({
+        scanId: scan.scanId,
+        revisao: scan.revisao,
+        commitKey: scan.commitKey,
+        data: dataLocalISO(params.data),
+        alvo: params.alvo.tipo === 'extra' ? { tipo: 'extra', extraId: params.alvo.extraId } : { tipo: params.alvo.tipo },
+        itens: params.rascunho.itens.map((i) => ({
+          itemId: i.scan?.itemId ?? i.id,
+          alimentoId: i.scan?.base?.alimentoId ?? null,
+          gramas: i.quantidadeG,
+          variante: i.scan?.variante ?? null,
+          incluir: i.incluir,
+        })),
+      })
+    }
     const incluidos = params.rascunho.itens.filter((i) => i.incluir && i.nome.trim() !== '')
     if (incluidos.length === 0) throw new Error('nenhum_item_selecionado')
     for (const item of incluidos) {

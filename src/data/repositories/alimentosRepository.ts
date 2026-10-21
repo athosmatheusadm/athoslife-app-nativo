@@ -16,6 +16,8 @@ interface AlimentoRow {
   nome_en?: string | null
   nome_es?: string | null
   regioes?: string[] | null
+  gordura_preparo_pct?: number | null
+  taco_id?: number | null
 }
 
 /** Nome no idioma em uso (sem tradução, fica o pt-BR). */
@@ -43,6 +45,8 @@ function paraDominio(row: AlimentoRow): AlimentoBase {
     carboidrato: row.carboidrato ?? 0,
     gordura: row.gordura ?? 0,
     categoria: (row.categoria as CategoriaAlimento | null) ?? null,
+    gorduraPreparoPct: row.gordura_preparo_pct == null ? null : Number(row.gordura_preparo_pct),
+    tacoId: row.taco_id ?? null,
   }
 }
 

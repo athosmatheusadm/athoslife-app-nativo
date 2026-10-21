@@ -1190,6 +1190,23 @@ export const ptBR = {
     outroCodigo: 'Ler outro código',
     outraFoto: 'Tirar outra foto',
     voltarDescarta: 'Toque voltar de novo pra descartar essa análise',
+    v2: {
+      fonteTaco: 'TACO',
+      qualE: 'Qual é?',
+      naoAchei: 'Não achei na base. Busque o alimento ou tire o item.',
+      buscarBase: 'Buscar na base',
+      nenhumResultado: 'Nada com esse nome na base.',
+      preparo: { sem_oleo: 'Sem óleo', caseiro: 'Caseiro', bastante_oleo: 'Bastante óleo' },
+      preparoAria: 'Preparo',
+      premissaPadrao: 'Considerei preparo caseiro comum (com óleo).',
+      premissaVisual: 'Vi brilho de óleo ou fritura.',
+      conferirPorcao: (min: number | null, max: number | null) =>
+        min !== null && max !== null ? `Porção difícil de ver — confira (≈ ${min}–${max} g).` : 'Porção difícil de ver — confira.',
+      conversaoEstimada: 'Peso por unidade estimado — confira.',
+      duplicado: 'Parece parte do prato acima — desmarquei pra não contar duas vezes.',
+      parcial: 'Total parcial: falta escolher alguns itens.',
+      resolverAntes: 'Escolha ou tire os itens marcados antes de salvar.',
+    },
     erros: {
       premium: 'O scanner é do plano pago. No grátis dá pra buscar e adicionar os alimentos à mão.',
       limite: (quando: string) => `Você usou os scans de hoje. Renova em ${quando}.`,

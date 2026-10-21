@@ -1176,6 +1176,23 @@ export const es: Mensagens = {
     outroCodigo: 'Escanear otro código',
     outraFoto: 'Sacar otra foto',
     voltarDescarta: 'Toca volver de nuevo para descartar este análisis',
+    v2: {
+      fonteTaco: 'TACO',
+      qualE: '¿Cuál es?',
+      naoAchei: 'No está en la base. Busca el alimento o quita el ítem.',
+      buscarBase: 'Buscar en la base',
+      nenhumResultado: 'Nada con ese nombre en la base.',
+      preparo: { sem_oleo: 'Sin aceite', caseiro: 'Casero', bastante_oleo: 'Mucho aceite' },
+      preparoAria: 'Preparación',
+      premissaPadrao: 'Consideré preparación casera común (con aceite).',
+      premissaVisual: 'Vi brillo de aceite o fritura.',
+      conferirPorcao: (min: number | null, max: number | null) =>
+        min !== null && max !== null ? `Porción difícil de ver — revísala (≈ ${min}–${max} g).` : 'Porción difícil de ver — revísala.',
+      conversaoEstimada: 'Peso por unidad estimado — revísalo.',
+      duplicado: 'Parece parte del plato de arriba — lo desmarqué para no contarlo dos veces.',
+      parcial: 'Total parcial: faltan elegir algunos ítems.',
+      resolverAntes: 'Elige o quita los ítems marcados antes de guardar.',
+    },
     erros: {
       premium: 'El escáner es del plan pago. En el gratis puedes buscar y agregar los alimentos a mano.',
       limite: (quando: string) => `Ya usaste los escaneos de hoy. Se renuevan en ${quando}.`,

@@ -7,6 +7,7 @@
 //                     id_envio: uuid por mensagem (reenvio não repete a ação)
 //                     acao: refeicao_atualizada | pausa | escolha (botões) | peso_atualizado
 //                     v4.1: peso pelo chat ("pesei 80", "minha meta é 75", histórico) — peso.ts, sem IA e sem cota
+//                     v4.3: scanner v1.1 ({tipo:'scan'}) — scanner/, liga com SCANNER_V2=true
 //                     v4.2: corrigir/apagar a última pesagem pelo chat ("corrige pra 80,2", "apaga a última pesagem")
 //   { tipo: 'acao',   id, escolha }                       -> { resposta, acao? }  (sem IA, sem cota)
 //                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
@@ -31,6 +32,8 @@
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
+import { handleScan } from './scanner/analisar.ts'
+import { repoSupabase } from './scanner/repositorio.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
   aplicarMarcasMemoria, blocoMemoria, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
@@ -607,6 +610,8 @@ async function rotear(req: Request): Promise<Response> {
         return await handleChat(sb, user.id, corpo)
       case 'vision':
         return await handleVision(sb, user.id, corpo)
+      case 'scan':
+        return await handleScanV2(sb, user.id, corpo)
       case 'recipe':
         return await handleRecipe(sb, user.id, corpo)
       case 'acao':
@@ -1813,6 +1818,42 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
   ])
   await auditar(sb, userId, 'acao', r.status)
   return json({ resposta: r.resposta, acao: r.acao })
+}
+
+// ================================================================
+// SCAN v1.1 — o Gemini só reconhece; nutriente vem do catálogo (TACO).
+// Desligado até SCANNER_V2=true: o app cai no `vision` antigo.
+// ================================================================
+const SCANNER_V2 = env('SCANNER_V2') === 'true'
+
+async function handleScanV2(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+  if (!SCANNER_V2) return json({ error: 'scanner_v2_off' }, 404)
+  const loc = await lerLocalidade(sb, userId)
+  return handleScan({
+    repo: repoSupabase(sb, userId),
+    idioma: loc.idioma,
+    pais: loc.pais,
+    modelo: MODELO,
+    vocabularioMax: Math.max(0, Number(env('SCANNER_VOCAB_MAX', '600')) || 0),
+    gemini: async (imagem, mime, prompt, timeoutMs) => {
+      const g = await chamarGemini({
+        contents: [{ parts: [{ inline_data: { mime_type: mime, data: imagem } }, { text: prompt }] }],
+        generationConfig: configGeracao(3072, 0.1, true),
+      }, timeoutMs)
+      return { ok: g.ok, texto: g.texto, tokens: g.tokens, custo: g.custo }
+    },
+    extrairJSON,
+    consumirCota: async () => {
+      const c = await consumirCota(sb, userId, 'vision', loc.fuso)
+      return c.ok ? { ok: true as const } : { ok: false as const, resposta: c.resposta }
+    },
+    devolverCota: () => devolverCota(sb, userId, 'vision'),
+    auditar: async (status, g) => {
+      await auditar(sb, userId, 'scan', status, g ? { ok: g.ok, texto: '', chamadas: [], tokens: g.tokens, custo: g.custo, bloqueado: false } : undefined)
+    },
+    json,
+    agora: () => Date.now(),
+  }, corpo)
 }
 
 // ================================================================

@@ -2768,3 +2768,55 @@ Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
 1. Deploy da ai-proxy v4.2.
 2. Scanner: dono decidir as fotos de referência (pesadas) pra etapa 1.
 3. Demais pendências do bloco de 17/10 continuam.
+
+### 2026-10-21 (cont.) — scanner v1.1, etapa 2 (motor) + TACO como referência — branch `scanner-v1-1`
+
+Base: `ATHOSlife_Scanner_Especificacao_Tecnica_v1.1.md`. Dono pediu TACO como
+referência.
+
+- **TACO** (`db/athoslife_taco_referencia_migration.sql`): tabela `taco` (597
+  itens, TACO 4ª ed. NEPA/UNICAMP 2011, por 100 g; dados via
+  github.com/raulfdm/taco-api, "Tr"→0, "*"/NA→null) + `alimentos.taco_id`.
+  279 alimentos ligados (casamento por nome+preparo, revisado à mão; ambíguos
+  fora: "Laranja", "Uva", "Alface", "Leite de coco"...) + variações "— porção"
+  herdam = 334. **Os macros desses alimentos passam a ser os da TACO** (69
+  mudam > 20%, ex.: batata inglesa cozida 77→52/100 g, café coado 2→18/200 g,
+  virado à paulista 450→921/300 g). Backup em `alimentos_antes_taco` + bloco de
+  desfazer no fim do arquivo.
+- **Catálogo do scanner** (`db/athoslife_scanner_v1_migration.sql`, rodar
+  DEPOIS da TACO): preparo, porção típica, prato montado × prato inteiro, óleo
+  de preparo caseiro (arroz 2,5%, feijão 1,5%, grelhados 2% — estimativa da
+  equipe, só onde a base não tem óleo), densidade de bebida, medidas caseiras
+  (`alimentos_medidas`, 112 estimativas da equipe = só sinalizam revisão),
+  `scan_jobs`, `scan_correcoes`, `scan_nao_resolvidos` (sem user_id) e RPC
+  `scanner_confirmar` (transação única, commit_key idempotente).
+- Testado no banco real num bloco que se desfaz sozinho: as duas migrações
+  rodam; nada foi aplicado.
+- **ai-proxy v4.3** (`supabase/functions/ai-proxy/scanner/`): `{tipo:'scan',
+  op: analisar|status|confirmar}`. Gemini só reconhece (o que é, preparo,
+  gramas, medida caseira, âncoras, óleo visível); nutriente vem do catálogo,
+  calculado no servidor. 1 chamada normal, no máximo 2. request_id + hash da
+  foto = idempotente; cota devolvida uma vez em falha; lease com tentativa.
+  **Desligado** até o segredo `SCANNER_V2=true` (sem ele o app usa o
+  `vision` antigo sozinho). `SCANNER_VOCAB_MAX` (padrão 600 nomes no prompt;
+  ~600 tokens por 100 nomes, conta no teto diário).
+- App: scanner tenta o v1.1 e cai no antigo se desligado; foto 1280 px/0,82.
+  No card do item (layout mantido): "Qual é?" com candidatos, busca na base
+  quando não achou, preparo Sem óleo/Caseiro/Bastante óleo com a premissa
+  escrita, aviso de porção, selo "TACO". Item sem alimento não salva (não vira
+  zero). Correção recalcula no aparelho, sem IA; o servidor refaz a conta ao
+  salvar. Textos pt/en/es.
+- Benchmark: `scripts/scanner-benchmark/` (README com o protocolo das fotos
+  pesadas, `rodar.mjs` v1×v2, métricas e portas G1/G2). Fotos ficam fora do git.
+- Validação: 46 testes Deno (27 do scanner: porta G0 + fluxo com banco em
+  memória), deno check, 13 testes node (inclui app × servidor dando o mesmo
+  número), tsc, vite build. **Nenhum teste com o Gemini de verdade nem no
+  aparelho ainda.**
+
+**Pendências**
+1. Dono aprovar e rodar as migrações (TACO primeiro) — muda números da Dieta.
+2. Deploy da ai-proxy (v4.2 peso + v4.3 scanner) e, pra testar, `SCANNER_V2=true`.
+3. Fotos pesadas (30 pro piloto) → rodar o benchmark v1×v2 (portas G1/G2).
+4. Ver a tela nova no aparelho (dono não viu o visual dos chips).
+5. Depois: rótulo e texto pelo mesmo motor; job de reconciliação de leases;
+   incluir `scan_jobs` no "Baixar meus dados".

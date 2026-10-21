@@ -19,3 +19,6 @@ npm-debug.log*
 *.sln
 *.sw?
 tsconfig.tsbuildinfo
+
+# Fotos pessoais do benchmark do scanner
+scripts/scanner-benchmark/dados/

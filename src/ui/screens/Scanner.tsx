@@ -8,6 +8,7 @@ import { produtoCodigoBarrasRepository } from '@data/repositories/produtoCodigoB
 import { leitorDisponivel, lerCodigoBarras } from '@data/native/codigoBarras'
 import { foodCaptureService } from '@domain/services/foodCaptureService'
 import { reescalarItem } from '@domain/rules/foodReconciliation'
+import { atualizarItemScan } from '@domain/rules/scanCalculo'
 import { temAcessoPremium } from '@domain/rules/access'
 import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
 import { LifeMascote } from '@ui/components/LifeMascote'
@@ -17,6 +18,7 @@ import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { avisar, vibrar } from '@ui/feedback'
 import { mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
+import { ExtrasScan } from '@ui/screens/scanner/ExtrasScan'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
@@ -62,6 +64,9 @@ function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros']): string {
         return t.pausado
       case 'not_authenticated':
         return t.sessao
+      case 'proxy_error':
+        if (e.info.detalhe === 'no_food') return t.semComida
+        break
       default:
         break
     }
@@ -229,6 +234,10 @@ export function Scanner() {
     }
   }
 
+  function mudarGramas(i: ItemRascunho, gramas: number): ItemRascunho {
+    return i.scan ? atualizarItemScan(i, { gramas: Math.max(0, gramas) }) : reescalarItem(i, gramas)
+  }
+
   function mudarItem(id: string, fn: (i: ItemRascunho) => ItemRascunho) {
     setRascunho((r) => (r ? { ...r, itens: r.itens.map((i) => (i.id === id ? fn(i) : i)) } : r))
   }
@@ -318,6 +327,8 @@ export function Scanner() {
 
   const total = rascunho ? foodCaptureService.totalAtual(rascunho) : null
   const incluidos = rascunho?.itens.filter((i) => i.incluir).length ?? 0
+  // Scanner v1.1: item marcado sem alimento escolhido não salva (não vira zero).
+  const faltaEscolher = rascunho?.itens.some((i) => i.incluir && i.scan?.semNumeros) ?? false
 
   return (
     <main className="flex min-h-full flex-col px-4 pb-28 pt-safe-t">
@@ -433,7 +444,7 @@ export function Scanner() {
             )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-content-hi">{rascunho.descricao || t.seuPrato}</p>
-              {origem === 'foto' ? (
+              {origem === 'foto' && rascunho.scan ? null : origem === 'foto' ? (
                 <p className="mt-0.5 text-micro text-content-low">
                   {t.confianca} <span className="font-semibold text-content-mid">{Math.round(rascunho.confianca)}%</span>
                 </p>
@@ -472,6 +483,8 @@ export function Scanner() {
                   <input
                     value={item.nome}
                     onChange={(e) => mudarItem(item.id, (i) => ({ ...i, nome: e.target.value }))}
+                    // Scanner v1.1: o nome vem da base escolhida (troca pelos chips).
+                    readOnly={Boolean(item.scan)}
                     aria-label={t.nomeAria}
                     className="min-h-11 min-w-0 flex-1 rounded-lg bg-transparent px-1 text-base font-semibold text-content-hi focus:bg-surface-3 focus:outline-none"
                   />
@@ -480,13 +493,19 @@ export function Scanner() {
                       item.fonte === 'ia' ? 'bg-surface-3 text-content-low' : 'bg-brand/15 text-brand'
                     }`}
                   >
-                    {item.fonte === 'base' ? t.fonteBase : item.fonte === 'rotulo' ? t.fonteRotulo : t.fonteIa}
+                    {item.scan?.base?.fonte === 'taco'
+                      ? t.v2.fonteTaco
+                      : item.fonte === 'base'
+                        ? t.fonteBase
+                        : item.fonte === 'rotulo'
+                          ? t.fonteRotulo
+                          : t.fonteIa}
                   </span>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG - 10))}
+                      onClick={() => mudarItem(item.id, (i) => mudarGramas(i, i.quantidadeG - 10))}
                       aria-label={t.menos10}
                       className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
                     >
@@ -494,19 +513,24 @@ export function Scanner() {
                     </button>
                     <span className="w-16 text-center font-mono text-sm text-content-hi">{item.quantidadeG} g</span>
                     <button
-                      onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG + 10))}
+                      onClick={() => mudarItem(item.id, (i) => mudarGramas(i, i.quantidadeG + 10))}
                       aria-label={t.mais10}
                       className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
                     >
                       +
                     </button>
                   </div>
-                  <span className="text-right text-micro text-content-low">
-                    <span className="font-semibold text-content-hi">{item.calorias} kcal</span>{' '}
-                    · <span className="text-macro-proteina">{item.proteina}g</span> · <span className="text-macro-carbo">{item.carboidrato}g</span> ·{' '}
-                    <span className="text-macro-gordura">{item.gordura}g</span>
-                  </span>
+                  {item.scan?.semNumeros ? (
+                    <span className="text-right text-micro text-content-low">—</span>
+                  ) : (
+                    <span className="text-right text-micro text-content-low">
+                      <span className="font-semibold text-content-hi">{item.calorias} kcal</span>{' '}
+                      · <span className="text-macro-proteina">{item.proteina}g</span> · <span className="text-macro-carbo">{item.carboidrato}g</span> ·{' '}
+                      <span className="text-macro-gordura">{item.gordura}g</span>
+                    </span>
+                  )}
                 </div>
+                <ExtrasScan item={item} onMudar={(novo) => mudarItem(item.id, () => novo)} />
               </li>
             ))}
           </ul>
@@ -527,12 +551,14 @@ export function Scanner() {
             ))}
           </div>
 
+          {faltaEscolher && <p className="mt-2 text-center text-micro text-content-low">{t.v2.parcial}</p>}
           {erro && <p role="alert" className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
+          {faltaEscolher && <p className="mt-3 text-center text-sm text-accent-gold">{t.v2.resolverAntes}</p>}
 
           <div className="mt-4 space-y-2">
             <button
               onClick={() => void salvar()}
-              disabled={incluidos === 0 || etapa === 'salvando'}
+              disabled={incluidos === 0 || faltaEscolher || etapa === 'salvando'}
               className="min-h-14 w-full rounded-pill bg-brand px-4 text-base font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
             >
               {etapa === 'salvando' ? t.salvando : t.adicionarEm(incluidos, nomeRefeicao)}

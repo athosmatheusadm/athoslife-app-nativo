@@ -1176,6 +1176,23 @@ export const en: Mensagens = {
     outroCodigo: 'Scan another barcode',
     outraFoto: 'Take another photo',
     voltarDescarta: 'Press back again to discard this analysis',
+    v2: {
+      fonteTaco: 'TACO',
+      qualE: 'Which one?',
+      naoAchei: "Not in our database. Search for the food or remove the item.",
+      buscarBase: 'Search the database',
+      nenhumResultado: 'Nothing with that name in the database.',
+      preparo: { sem_oleo: 'No oil', caseiro: 'Homemade', bastante_oleo: 'Lots of oil' },
+      preparoAria: 'Preparation',
+      premissaPadrao: 'Assumed regular homemade cooking (with oil).',
+      premissaVisual: 'I saw oil shine or frying.',
+      conferirPorcao: (min: number | null, max: number | null) =>
+        min !== null && max !== null ? `Portion is hard to see — check it (≈ ${min}–${max} g).` : 'Portion is hard to see — check it.',
+      conversaoEstimada: 'Weight per unit is estimated — check it.',
+      duplicado: 'Looks like part of the dish above — unchecked so it is not counted twice.',
+      parcial: 'Partial total: some items still need a choice.',
+      resolverAntes: 'Pick or remove the flagged items before saving.',
+    },
     erros: {
       premium: 'The scanner is a paid feature. On the free plan you can search and add foods by hand.',
       limite: (quando: string) => `You've used today's scans. They reset in ${quando}.`,

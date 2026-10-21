@@ -27,13 +27,15 @@ export interface FotoCapturada {
 export async function capturarFoto(origem: OrigemFoto): Promise<FotoCapturada | null> {
   try {
     const foto = await Camera.getPhoto({
-      quality: 70,
+      // 1280 px / ~0,82: ponto de partida da especificação do scanner v1.1
+      // (seção 5) — o benchmark compara com 960 e 1600.
+      quality: 82,
       allowEditing: false,
       resultType: CameraResultType.Base64,
       source: origem === 'camera' ? CameraSource.Camera : CameraSource.Photos,
       // Foto de comida não precisa ser gigante: menos upload, menos custo,
       // resposta mais rápida do Gemini.
-      width: 1024,
+      width: 1280,
       correctOrientation: true,
     })
     if (!foto.base64String) return null
