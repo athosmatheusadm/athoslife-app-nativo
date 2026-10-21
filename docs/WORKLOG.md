@@ -2961,6 +2961,5 @@ pediu pra levar ao app.
   que o dono já criou continua como "evitar": apagar e criar de novo.
 - `scripts/supabase.sh` (migrar / deploy / segredo) pra publicar com 1 linha.
 - Validação: tsc, 47 testes Deno, deno check.
-- **Falta publicar:** migração dos hábitos + deploy da ai-proxy (o auto mode
-  bloqueia; o dono roda o script).
+- **Publicado:** migração dos hábitos + ai-proxy (v4.4) via `scripts/supabase.sh`.
 - Refeição sem imagens / "pontinhos" na lista: aguardando print do dono.
