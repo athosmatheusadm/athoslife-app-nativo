@@ -2925,3 +2925,19 @@ pediu pra levar ao app.
   Política dizem 18+ (sem a regra de responsável legal);
   `VERSAO_DOCUMENTOS` = v2.3-2026-10-21. Obs.: editar a idade em Perfil →
   Conta não valida o mínimo (o plano já bloqueia menor de idade na triagem).
+
+### 2026-10-21 (noite, fim) — scanner publicado no Supabase
+
+- `bash scripts/publicar-scanner.sh` (dono autorizou): migração do scanner
+  aplicada (4 tabelas, 112 medidas, RPC `scanner_confirmar`), **ai-proxy
+  publicada** (v4.2 peso + v4.3 scanner; versão 24 no Supabase, ACTIVE) e
+  `SCANNER_V2=true`. O APK atual continua usando o scanner antigo; o novo
+  (tela de vidro + câmera própria) só no próximo APK.
+
+**Pendências**
+1. Token do GitHub → push da `main` e da `scanner-v1-1` + PR → APK pelo Actions.
+2. Testar no aparelho: scanner novo com Gemini de verdade, câmera do código,
+   modo claro/escuro.
+3. Política: RevenueCat, dados da empresa/DPO, página web + exclusão de conta.
+4. Chave do Gemini no plano pago antes de abrir pro público.
+5. Story: dono quer conversar.
