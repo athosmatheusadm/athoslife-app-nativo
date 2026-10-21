@@ -352,9 +352,9 @@ export function DietScreen(props: {
       {/* Cards de macro — kcal já mora no disco da Home; aqui o foco é
           mapear os 3 macros de verdade (proteína, carbo, gordura). */}
       <div className="flex gap-2">
-        <MacroBar valor={`${consumido.proteina}g`} label={m.dieta.macroCurto.proteina} pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="proteina" />
-        <MacroBar valor={`${consumido.carboidrato}g`} label={m.dieta.macroCurto.carbo} pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="carbo" />
-        <MacroBar valor={`${consumido.gordura}g`} label={m.dieta.macroCurto.gordura} pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="gordura" />
+        <MacroBar valor={`${consumido.proteina}g`} label={m.dieta.macroCurto.proteina} meta={`/${metas.proteina}g`} pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="proteina" />
+        <MacroBar valor={`${consumido.carboidrato}g`} label={m.dieta.macroCurto.carbo} meta={`/${metas.carboidrato}g`} pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="carbo" />
+        <MacroBar valor={`${consumido.gordura}g`} label={m.dieta.macroCurto.gordura} meta={`/${metas.gordura}g`} pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="gordura" />
       </div>
 
       {/* TIRA DE DIAS — padrão Hoje */}
@@ -548,11 +548,15 @@ const COR_MACRO = {
   gordura: { texto: 'text-macro-gordura', barra: 'bg-macro-gordura' },
 } as const
 
-function MacroBar({ valor, label, pct, cor }: { valor: string; label: string; pct: number; cor: keyof typeof COR_MACRO }) {
+// A meta ao lado do número: sem ela, "50 g" com a barra quase cheia parecia errado.
+function MacroBar({ valor, meta, label, pct, cor }: { valor: string; meta: string; label: string; pct: number; cor: keyof typeof COR_MACRO }) {
   const c = COR_MACRO[cor]
   return (
     <div className="flex-1 rounded-xl border border-surface-4 bg-surface-2 p-3">
-      <div className={`text-center text-lg font-bold tabular-nums ${c.texto}`}>{valor}</div>
+      <div className={`text-center text-lg font-bold tabular-nums ${c.texto}`}>
+        {valor}
+        <span className="ml-0.5 text-micro font-semibold text-content-low">{meta}</span>
+      </div>
       <div className="mb-2 text-center text-micro text-content-low">{label}</div>
       <div className="h-1.5 overflow-hidden rounded-full bg-surface-4" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
         <div className={`h-full w-full origin-left rounded-full transition-transform duration-500 ease-athos ${c.barra}`} style={{ transform: `scaleX(${pct / 100})` }} />
