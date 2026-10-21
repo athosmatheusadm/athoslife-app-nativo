@@ -36,7 +36,7 @@ import { handleScan } from './scanner/analisar.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
-  aplicarMarcasMemoria, blocoMemoria, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
+  aplicarMarcasMemoria, blocoMemoria, ehConstruir, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
   lerConsentimentoMemoria, linhaCheckinsHoje, memoriasParaContexto, mensagensDaPessoa, padroesDaPessoa, promptCheckin,
   REGRAS_CHECKIN, REGRAS_MEMORIA, respostaCheckinPadrao, resumoCheckin, validarCheckin,
 } from './life.ts'
@@ -1247,7 +1247,7 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
       if (gat.length) extras.push(`gatilhos: ${gat.join(', ')}`)
       if (h.horario_risco) extras.push(`horário de risco: ${texto(h.horario_risco, 20)}`)
       const mais = extras.length ? ` (${extras.join('; ')})` : ''
-      if (h.categoria === 'leitura') {
+      if (ehConstruir(h.categoria)) {
         const firme = !!h.ultimo_checkin && diasAtivosEntre(h.ultimo_checkin, hoje, pausas) === 0
         return `"${h.nome}" (construir) ${firme ? h.streak_atual : 0} dias${mais}`
       }

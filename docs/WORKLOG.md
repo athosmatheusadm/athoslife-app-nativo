@@ -2941,3 +2941,26 @@ pediu pra levar ao app.
 3. Política: RevenueCat, dados da empresa/DPO, página web + exclusão de conta.
 4. Chave do Gemini no plano pago antes de abrir pro público.
 5. Story: dono quer conversar.
+
+### 2026-10-21 (madrugada) — tema, peso por variação, hábitos construir
+
+- **Tema** em Perfil → Acessibilidade: Escuro (padrão), Claro, Automático.
+  `ui/theme/tema.ts` (antes modoClaroEscuro.ts) põe `.tema-claro` no <html>;
+  globals.css trocou o `@media (prefers-color-scheme: light)` por essa classe.
+- **Peso pelo chat v4.4** (`peso.ts`): "perdi 1 kg", "emagreci 2,5 quilos",
+  "ganhei meio quilo", "I lost 2 kg", "perdí un kilo" → pesagem de hoje =
+  última pesagem ± variação (sem IA, sem cota). Antes ia pra IA e o gráfico
+  não mudava (bug relatado pelo dono). "ganhei 5 kg no supino" e "quero perder
+  5 kg" continuam fora.
+- **Hábitos (bug relatado):** Construir + "Outro" gravava categoria null e o
+  hábito voltava como "evitar". Agora Construir tem Dormir melhor, Beber água,
+  Ler mais, Meditar, Caminhar, Comer verduras e Outro (= categoria
+  'construir'). Mesma lista no app (`habito.ts`), no Life (`life.ts`
+  `ehConstruir`) e no banco (`db/athoslife_habitos_construir_categorias_migration.sql`,
+  função `categoria_construir` + `handle_recaida`). O hábito "dormir melhor"
+  que o dono já criou continua como "evitar": apagar e criar de novo.
+- `scripts/supabase.sh` (migrar / deploy / segredo) pra publicar com 1 linha.
+- Validação: tsc, 47 testes Deno, deno check.
+- **Falta publicar:** migração dos hábitos + deploy da ai-proxy (o auto mode
+  bloqueia; o dono roda o script).
+- Refeição sem imagens / "pontinhos" na lista: aguardando print do dono.

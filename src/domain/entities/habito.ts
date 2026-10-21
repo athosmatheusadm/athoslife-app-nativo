@@ -47,7 +47,9 @@ export interface Habito {
 }
 
 /** Categorias hoje classificadas como "hábito a construir" (aumentar). */
-const CATEGORIAS_CONSTRUIR = new Set(['leitura'])
+// Igual a ehConstruir (ai-proxy/life.ts) e public.categoria_construir (banco).
+// 'construir' = "Outro" dentro de Construir (antes virava "evitar" ao recarregar).
+const CATEGORIAS_CONSTRUIR = new Set(['leitura', 'sono', 'agua', 'meditar', 'caminhar', 'verduras', 'construir'])
 
 export function tipoDaCategoria(categoria: string | null): TipoHabito {
   return categoria !== null && CATEGORIAS_CONSTRUIR.has(categoria) ? 'construir' : 'evitar'

@@ -1,5 +1,6 @@
 // ATHOSlife — peso pelo chat (v4.1): registrar pesagem, mudar a meta e ver o
-// histórico pedindo ao Life. v4.2: corrigir ou apagar a última pesagem. Sem IA e sem cota: o card "Meu peso" não tem
+// histórico pedindo ao Life. v4.2: corrigir ou apagar a última pesagem.
+// v4.4: variação ("perdi 1 kg", "ganhei meio quilo") vira pesagem de hoje. Sem IA e sem cota: o card "Meu peso" não tem
 // mais botões, então isso não pode custar mensagem. Parser puro exportado
 // para teste; `executarComandoPeso` toca o banco.
 
@@ -14,6 +15,8 @@ export type ComandoPeso =
   | { tipo: 'historico' }
   | { tipo: 'corrigir'; kg: number }
   | { tipo: 'apagar' }
+  /** "perdi 1 kg": delta sobre a última pesagem (negativo = perdeu). */
+  | { tipo: 'variar'; deltaKg: number }
 
 const norm = (t: string) =>
   t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
@@ -65,6 +68,30 @@ const APAGAR = [
 ]
 const FALA_DE_PESO = /\b(peso|pesagem|pesagens|pesaje|weigh-in|pesava|pesos|pesei|pesando|balanca|weight|weigh|weighed|weigh-ins|scale|pesajes|pesaba|pese|bascula)\b/
 
+// Variação: "perdi 1 kg", "emagreci 2 quilos", "ganhei meio quilo", "lost 2 lbs".
+const PERDEU = /\b(perdi|emagreci|eliminei|sequei|baixei|desci|lost|dropped|shed|perdi|baje|adelgace|elimine)\b/
+const GANHOU = /\b(ganhei|engordei|aumentei|subi|gained|put on|gane|engorde|aumente)\b/
+const NUM_PALAVRA: Record<string, number> = { um: 1, uma: 1, un: 1, una: 1, one: 1, a: 1, dois: 2, duas: 2, dos: 2, two: 2, tres: 3, three: 3 }
+const DELTA = /(\d{1,2}(?:[.,]\d{1,2})?|\d{3,4}|um|uma|un|una|one|a|dois|duas|dos|two|tres|three|meio|medio|half a?)\s*(kg|kgs|quilos?|kilos?|kilogramos?|lbs?|libras?|pounds?|g\b|gramas?|gramos?|grams?)(\s*e\s*meio|\s*y\s*medio|\s*and a half)?/
+// Na variação "gordura" ainda é o corpo ("perdi 1 kg de gordura"); carga/supino não.
+const OUTRO_ASSUNTO_VAR = /\b(proteina|protein|carbo\w*|caloria\w*|calorie\w*|kcal|agua|water|passos|steps|pasos|carga|supino|agachamento|halter|barra|bench|squat|serie|series|sets?|reps?|repeticoes)\b/
+
+function lerDelta(t: string): number | null {
+  const sentido = PERDEU.test(t) ? -1 : GANHOU.test(t) ? 1 : 0
+  if (sentido === 0 || OUTRO_ASSUNTO_VAR.test(t)) return null
+  const m = t.match(DELTA)
+  if (!m) return null
+  const bruto = m[1]
+  let valor = /^(meio|medio|half)/.test(bruto) ? 0.5 : NUM_PALAVRA[bruto] ?? Number(bruto.replace(',', '.'))
+  if (!Number.isFinite(valor)) return null
+  if (m[3]) valor += 0.5
+  const un = m[2]
+  if (/^(g|gramas?|gramos?|grams?)$/.test(un)) valor /= 1000
+  else if (/^(lb|lbs|libras?|pounds?)$/.test(un)) valor /= LB_POR_KG
+  if (valor < 0.1 || valor > 15) return null
+  return sentido * Math.round(valor * 10) / 10
+}
+
 function lerKg(m: RegExpMatchArray): number | null {
   const valor = Number(m[1].replace(',', '.'))
   if (!Number.isFinite(valor)) return null
@@ -82,6 +109,8 @@ function lerKg(m: RegExpMatchArray): number | null {
 export function lerComandoPeso(mensagem: string): ComandoPeso | null {
   const t = norm(mensagem)
   if (t.length > 160) return null // conversa longa: deixa a IA entender
+  const delta = lerDelta(t)
+  if (delta !== null) return { tipo: 'variar', deltaKg: delta }
   const numeros = [...t.matchAll(new RegExp(NUMERO.source, 'g'))]
   const numero = numeros[0]
   // Dois pesos na mesma frase ("pesei 80, meta 75"): ambíguo, vai pra IA.
@@ -125,6 +154,7 @@ const TXT = {
     apagado: (dia: string, kg: string) => `Apaguei a pesagem de ${dia} (${kg} kg).`,
     agoraUltima: (dia: string, kg: string) => `Agora a última é a de ${dia}: ${kg} kg.`,
     nadaPraMexer: 'Você ainda não tem pesagens pra mudar. Quando quiser, é só me contar: "pesei 80 kg".',
+    semBase: 'Pra eu fazer a conta, me diz quanto você pesa hoje: "pesei 80 kg".',
   },
   en: {
     anotado: (kg: string) => `Logged ${kg} kg for today.`,
@@ -140,6 +170,7 @@ const TXT = {
     apagado: (dia: string, kg: string) => `Deleted your ${dia} weigh-in (${kg} kg).`,
     agoraUltima: (dia: string, kg: string) => `Your latest is now ${dia}: ${kg} kg.`,
     nadaPraMexer: 'You have no weigh-ins to change yet. Whenever you want, just tell me: "I weigh 80 kg".',
+    semBase: 'To do the math, tell me how much you weigh today: "I weigh 80 kg".',
   },
   es: {
     anotado: (kg: string) => `Anoté ${kg} kg hoy.`,
@@ -155,6 +186,7 @@ const TXT = {
     apagado: (dia: string, kg: string) => `Borré el pesaje del ${dia} (${kg} kg).`,
     agoraUltima: (dia: string, kg: string) => `Ahora el último es el del ${dia}: ${kg} kg.`,
     nadaPraMexer: 'Aún no tienes pesajes para cambiar. Cuando quieras, solo dime: "hoy peso 80 kg".',
+    semBase: 'Para hacer la cuenta, dime cuánto pesas hoy: "hoy peso 80 kg".',
   },
 } as const
 
@@ -249,18 +281,31 @@ export async function executarComandoPeso(
     return { resposta: partes.join(' '), mudou: true }
   }
 
+  let kg: number
+  if (cmd.tipo === 'variar') {
+    // Base = última pesagem (de qualquer dia); sem nenhuma, o peso do perfil.
+    const { data: ultima } = await sb.from('registros_peso').select('peso_kg')
+      .eq('user_id', userId).order('data', { ascending: false }).limit(1).maybeSingle()
+    const base = ultima ? Number(ultima.peso_kg) : perfil?.peso_atual == null ? null : Number(perfil.peso_atual)
+    if (base === null) return { resposta: t.semBase, mudou: false }
+    kg = Math.round((base + cmd.deltaKg) * 10) / 10
+    if (kg < KG_MIN || kg > KG_MAX) return { resposta: t.semBase, mudou: false }
+  } else {
+    kg = cmd.kg
+  }
+
   const { data: anterior } = await sb.from('registros_peso').select('data, peso_kg')
     .eq('user_id', userId).lt('data', hoje).order('data', { ascending: false }).limit(1).maybeSingle()
   const { error } = await sb.from('registros_peso')
-    .upsert({ user_id: userId, peso_kg: cmd.kg, data: hoje }, { onConflict: 'user_id,data' })
+    .upsert({ user_id: userId, peso_kg: kg, data: hoje }, { onConflict: 'user_id,data' })
   if (error) {
     console.error('[peso] registrar falhou', error.message)
     return { resposta: t.falhou, mudou: false }
   }
-  await sb.from('profiles').update({ peso_atual: cmd.kg }).eq('id', userId)
-  const partes: string[] = [t.anotado(fmtKg(cmd.kg, idioma))]
+  await sb.from('profiles').update({ peso_atual: kg }).eq('id', userId)
+  const partes: string[] = [t.anotado(fmtKg(kg, idioma))]
   if (anterior) partes.push(t.anterior(fmtKg(Number(anterior.peso_kg), idioma), fmtDia(anterior.data)))
-  const m = frasesMeta(cmd.kg, meta, idioma)
+  const m = frasesMeta(kg, meta, idioma)
   if (m) partes.push(m)
   return { resposta: partes.join(' '), mudou: true }
 }

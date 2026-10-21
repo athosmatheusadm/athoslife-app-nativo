@@ -79,6 +79,16 @@ function emojiPorCategoria(cat: string | null): string {
       return '🥤'
     case 'leitura':
       return '📚'
+    case 'sono':
+      return '😴'
+    case 'agua':
+      return '💧'
+    case 'meditar':
+      return '🧘'
+    case 'caminhar':
+      return '🚶'
+    case 'verduras':
+      return '🥦'
     default:
       return '🎯'
   }

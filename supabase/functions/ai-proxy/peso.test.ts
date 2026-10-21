@@ -71,3 +71,20 @@ Deno.test('texto do histórico', () => {
   assertEquals(t.includes('Variação em 14 dias: −1,4 kg.'), true)
   assertEquals(textoHistorico([], 'en').startsWith('You have no weigh-ins'), true)
 })
+
+Deno.test('variação: perdi/ganhei vira pesagem de hoje', () => {
+  assertEquals(lerComandoPeso('perdi um kg'), { tipo: 'variar', deltaKg: -1 })
+  assertEquals(lerComandoPeso('Life, perdi 1 kg essa semana!'), { tipo: 'variar', deltaKg: -1 })
+  assertEquals(lerComandoPeso('emagreci 2,5 quilos'), { tipo: 'variar', deltaKg: -2.5 })
+  assertEquals(lerComandoPeso('perdi meio quilo'), { tipo: 'variar', deltaKg: -0.5 })
+  assertEquals(lerComandoPeso('perdi um quilo e meio'), { tipo: 'variar', deltaKg: -1.5 })
+  assertEquals(lerComandoPeso('perdi 1kg de gordura'), { tipo: 'variar', deltaKg: -1 })
+  assertEquals(lerComandoPeso('ganhei 800 g'), { tipo: 'variar', deltaKg: 0.8 })
+  assertEquals(lerComandoPeso('engordei 2 kg'), { tipo: 'variar', deltaKg: 2 })
+  assertEquals(lerComandoPeso('I lost 2 kg'), { tipo: 'variar', deltaKg: -2 })
+  assertEquals(lerComandoPeso('perdí un kilo'), { tipo: 'variar', deltaKg: -1 })
+  // carga do treino e meta não são variação do corpo
+  assertEquals(lerComandoPeso('ganhei 5 kg no supino'), null)
+  assertEquals(lerComandoPeso('quero perder 5 kg'), null)
+  assertEquals(lerComandoPeso('perdi o treino hoje'), null)
+})
