@@ -2861,3 +2861,35 @@ referência.
 2. Aplicar a migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
 3. Token do GitHub → push da `main` e da `scanner-v1-1`.
 4. Fotos pesadas para o benchmark.
+
+### 2026-10-21 (noite, cont.) — scanner com o visual aprovado (foto em tela cheia + vidro) — branch `scanner-v1-1`
+
+Dono aprovou a prévia (https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ) e
+pediu pra levar ao app.
+
+- **Revisão** (`scanner/RevisaoScanner.tsx`, portal em tela cheia): foto do
+  prato no fundo; no código de barras, foto do produto nítida no meio + cópia
+  borrada no fundo. Painel de vidro: total grande, uma linha por item (✓ ·
+  nome · g · kcal), toque abre o ajuste (− / +, macros, `ExtrasScan`, porção
+  do rótulo × 100 g). Item sem alimento = borda dourada + "qual é?" e o botão
+  vira "Falta escolher: X". ← e o voltar do Android: 1º toque avisa, 2º descarta.
+- **Câmera própria do código** (`scanner/CameraCodigo.tsx` +
+  `data/native/codigoBarras.ts`): sai o leitor pronto do Google
+  (`BarcodeScanner.scan`), entra `startScan` com a câmera atrás da WebView
+  (`html.barcode-scanner-active` deixa o app transparente, globals.css).
+  Mira com cantos verdes + laser, lanterna (se o aparelho tiver), "Digitar o
+  número". Leu: vibra, mira verde, busca o produto. **Agora o Android pede a
+  permissão de câmera** na 1ª vez (já está no Manifest).
+- Botão "Ler código de barras" com ícone, subtítulo e selo GRÁTIS; "Prefere
+  digitar o número?" como link.
+- `.tema-escuro` e `.vidro` em globals.css: o vidro é sempre escuro, mesmo
+  no modo claro. Textos novos em pt/en/es (`scanner.vidro`).
+- Validação: tsc e vite build. **Não testado no aparelho** (câmera atrás da
+  WebView só dá pra ver no APK).
+
+**Pendências**
+1. APK novo → testar: permissão da câmera, imagem aparecendo atrás (se ficar
+   tela preta, algum fundo não ficou transparente), lanterna, leitura, revisão
+   no claro e no escuro.
+2. Migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
+3. Token do GitHub → push da `main` e da `scanner-v1-1` (abrir PR).

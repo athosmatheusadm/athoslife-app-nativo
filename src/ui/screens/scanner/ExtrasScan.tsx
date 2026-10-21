@@ -16,7 +16,7 @@ const MOTIVOS_PORCAO = ['porcao_fraca', 'porcao_atipica', 'porcao_divergente', '
 
 const chip = (ativo: boolean) =>
   `min-h-10 rounded-pill border px-3 text-micro font-semibold transition-colors ${
-    ativo ? 'border-brand bg-brand/15 text-brand' : 'border-surface-4 text-content-mid active:bg-content-hi/5'
+    ativo ? 'border-brand bg-brand/20 text-brand' : 'border-white/25 text-content-hi active:bg-white/10'
   }`
 
 function paraBaseScan(a: AlimentoBase): BaseScan {

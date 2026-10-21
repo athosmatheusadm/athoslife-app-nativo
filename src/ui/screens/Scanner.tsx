@@ -5,7 +5,7 @@ import { AiProxyError, cotaIaHoje, estimarAlimento } from '@data/ai/aiProxy'
 import { capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
 import type { RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
 import { produtoCodigoBarrasRepository } from '@data/repositories/produtoCodigoBarrasRepository'
-import { leitorDisponivel, lerCodigoBarras } from '@data/native/codigoBarras'
+import { leitorDisponivel } from '@data/native/codigoBarras'
 import { foodCaptureService } from '@domain/services/foodCaptureService'
 import { reescalarItem } from '@domain/rules/foodReconciliation'
 import { atualizarItemScan } from '@domain/rules/scanCalculo'
@@ -18,7 +18,8 @@ import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { avisar, vibrar } from '@ui/feedback'
 import { mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
-import { ExtrasScan } from '@ui/screens/scanner/ExtrasScan'
+import { CameraCodigo } from '@ui/screens/scanner/CameraCodigo'
+import { RevisaoScanner } from '@ui/screens/scanner/RevisaoScanner'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
@@ -96,6 +97,7 @@ export function Scanner() {
   const [semBase, setSemBase] = useState(false)
   const [nomeProduto, setNomeProduto] = useState('')
   const [estimando, setEstimando] = useState(false)
+  const [camera, setCamera] = useState(false)
 
   const pago = profile ? temAcessoPremium(profile) : false
   const { m } = useI18n()
@@ -115,7 +117,7 @@ export function Scanner() {
   // Voltar do Android na revisão: 1º toque avisa, 2º descarta (a análise já
   // gastou um scan da cota — sair sem querer jogava ela fora).
   const avisouVoltar = useRef(0)
-  useFecharNoVoltar(etapa === 'revisao', () => {
+  function sairDaRevisao() {
     if (Date.now() - avisouVoltar.current > 3000) {
       avisouVoltar.current = Date.now()
       avisar.ok(t.voltarDescarta)
@@ -124,22 +126,17 @@ export function Scanner() {
     setRascunho(null)
     setFoto(null)
     setEtapa('captura')
-  })
+  }
+  useFecharNoVoltar(etapa === 'revisao', sairDaRevisao)
 
-  async function lerCodigo() {
+  function lerCodigo() {
     setErro(null)
     if (!leitorDisponivel) {
       // Navegador: sem leitor de câmera, digita o número de baixo do código.
       setDigitando(true)
       return
     }
-    try {
-      const codigo = await lerCodigoBarras()
-      if (codigo) await buscarProduto(codigo)
-    } catch (e) {
-      setErro(String(e).includes('modulo_baixando') ? t.erros.baixandoLeitor : t.erros.leitor)
-      setDigitando(true)
-    }
+    setCamera(true)
   }
 
   async function buscarProduto(codigo: string) {
@@ -260,11 +257,26 @@ export function Scanner() {
   const blocoCodigo = (
     <div className="mt-2 space-y-2">
       <button
-        onClick={() => void lerCodigo()}
-        className="min-h-12 w-full rounded-pill border border-brand/40 text-sm font-semibold text-brand active:bg-brand/10"
+        onClick={lerCodigo}
+        className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] border border-surface-4 bg-surface-2 py-3 pl-3 pr-3.5 text-left transition-colors active:bg-surface-3"
       >
-        {t.lerCodigo}
+        <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-brand/15 text-brand">
+          <svg viewBox="0 0 24 24" className="h-[22px] w-[22px]" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+            <path d="M7 8v8M10 8v8M13.5 8v8M17 8v8" strokeWidth="1.6" />
+          </svg>
+        </span>
+        <span className="grid min-w-0 gap-0.5">
+          <span className="text-[15px] font-bold text-content-hi">{t.lerCodigo}</span>
+          <span className="text-micro text-content-low">{t.vidro.lerSub}</span>
+        </span>
+        <span className="rounded-pill bg-brand px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-ink">{t.vidro.gratis}</span>
       </button>
+      {leitorDisponivel && !digitando && (
+        <button onClick={() => setDigitando(true)} className="min-h-10 w-full text-[13px] font-semibold text-content-low underline underline-offset-4">
+          {t.vidro.prefereDigitar}
+        </button>
+      )}
       {digitando && (
         <form
           onSubmit={(e) => {
@@ -327,8 +339,6 @@ export function Scanner() {
 
   const total = rascunho ? foodCaptureService.totalAtual(rascunho) : null
   const incluidos = rascunho?.itens.filter((i) => i.incluir).length ?? 0
-  // Scanner v1.1: item marcado sem alimento escolhido não salva (não vira zero).
-  const faltaEscolher = rascunho?.itens.some((i) => i.incluir && i.scan?.semNumeros) ?? false
 
   return (
     <main className="flex min-h-full flex-col px-4 pb-28 pt-safe-t">
@@ -433,149 +443,47 @@ export function Scanner() {
       )}
 
       {(etapa === 'revisao' || etapa === 'salvando') && rascunho && total && (
-        <section>
-          <div className="flex gap-3 rounded-card border border-surface-4 bg-surface-2 p-3">
-            {(foto?.dataUrl ?? imagemProduto) && (
-              <img
-                src={foto?.dataUrl ?? imagemProduto ?? undefined}
-                alt=""
-                className="h-20 w-20 flex-none rounded-xl bg-white object-contain"
-              />
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-content-hi">{rascunho.descricao || t.seuPrato}</p>
-              {origem === 'foto' && rascunho.scan ? null : origem === 'foto' ? (
-                <p className="mt-0.5 text-micro text-content-low">
-                  {t.confianca} <span className="font-semibold text-content-mid">{Math.round(rascunho.confianca)}%</span>
-                </p>
-              ) : (
-                <p className="mt-0.5 text-micro text-content-low">{t.rotulo}</p>
-              )}
-              {rascunho.observacao && <p className="mt-1 text-micro text-content-low">{rascunho.observacao}</p>}
-            </div>
-          </div>
+        <RevisaoScanner
+          rascunho={rascunho}
+          origem={origem}
+          fotoPrato={foto?.dataUrl ?? null}
+          imagemProduto={imagemProduto}
+          nomeRefeicao={nomeRefeicao}
+          total={total}
+          incluidos={incluidos}
+          salvando={etapa === 'salvando'}
+          erro={erro}
+          onMudarItem={mudarItem}
+          mudarGramas={mudarGramas}
+          onSalvar={() => void salvar()}
+          onRefazer={() => {
+            setRascunho(null)
+            setFoto(null)
+            setEtapa('captura')
+            if (origem === 'codigo') lerCodigo()
+          }}
+          onVoltar={sairDaRevisao}
+        />
+      )}
 
-          <p className="mb-2 mt-4 text-micro text-content-low">
-            {origem === 'codigo' ? t.ajusteCodigo : t.ajusteFoto}
-          </p>
-          <ul className="space-y-2">
-            {rascunho.itens.map((item) => (
-              <li
-                key={item.id}
-                className={`rounded-2xl border p-3 ${item.incluir ? 'border-surface-4 bg-surface-2' : 'border-surface-3 opacity-50'}`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <button
-                    onClick={() => mudarItem(item.id, (i) => ({ ...i, incluir: !i.incluir }))}
-                    role="checkbox"
-                    aria-checked={item.incluir}
-                    aria-label={item.incluir ? t.tirar(item.nome) : t.incluir(item.nome)}
-                    className="-m-2 flex h-12 w-12 flex-none items-center justify-center rounded-xl active:bg-content-hi/5"
-                  >
-                    <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 text-sm font-bold ${
-                        item.incluir ? 'border-brand bg-brand text-brand-ink' : 'border-content-dim text-transparent'
-                      }`}
-                    >
-                      ✓
-                    </span>
-                  </button>
-                  <input
-                    value={item.nome}
-                    onChange={(e) => mudarItem(item.id, (i) => ({ ...i, nome: e.target.value }))}
-                    // Scanner v1.1: o nome vem da base escolhida (troca pelos chips).
-                    readOnly={Boolean(item.scan)}
-                    aria-label={t.nomeAria}
-                    className="min-h-11 min-w-0 flex-1 rounded-lg bg-transparent px-1 text-base font-semibold text-content-hi focus:bg-surface-3 focus:outline-none"
-                  />
-                  <span
-                    className={`flex-none rounded-pill px-2 py-0.5 text-micro font-semibold ${
-                      item.fonte === 'ia' ? 'bg-surface-3 text-content-low' : 'bg-brand/15 text-brand'
-                    }`}
-                  >
-                    {item.scan?.base?.fonte === 'taco'
-                      ? t.v2.fonteTaco
-                      : item.fonte === 'base'
-                        ? t.fonteBase
-                        : item.fonte === 'rotulo'
-                          ? t.fonteRotulo
-                          : t.fonteIa}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => mudarItem(item.id, (i) => mudarGramas(i, i.quantidadeG - 10))}
-                      aria-label={t.menos10}
-                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
-                    >
-                      −
-                    </button>
-                    <span className="w-16 text-center font-mono text-sm text-content-hi">{item.quantidadeG} g</span>
-                    <button
-                      onClick={() => mudarItem(item.id, (i) => mudarGramas(i, i.quantidadeG + 10))}
-                      aria-label={t.mais10}
-                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
-                    >
-                      +
-                    </button>
-                  </div>
-                  {item.scan?.semNumeros ? (
-                    <span className="text-right text-micro text-content-low">—</span>
-                  ) : (
-                    <span className="text-right text-micro text-content-low">
-                      <span className="font-semibold text-content-hi">{item.calorias} kcal</span>{' '}
-                      · <span className="text-macro-proteina">{item.proteina}g</span> · <span className="text-macro-carbo">{item.carboidrato}g</span> ·{' '}
-                      <span className="text-macro-gordura">{item.gordura}g</span>
-                    </span>
-                  )}
-                </div>
-                <ExtrasScan item={item} onMudar={(novo) => mudarItem(item.id, () => novo)} />
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4 grid grid-cols-4 gap-1.5 rounded-card border border-surface-4 bg-surface-2 p-3 text-center">
-            {(
-              [
-                ['kcal', Math.round(total.calorias), 'text-content-hi'],
-                [m.dieta.busca.chipProt, `${Math.round(total.proteina)}g`, 'text-macro-proteina'],
-                [m.dieta.busca.chipCarb, `${Math.round(total.carboidrato)}g`, 'text-macro-carbo'],
-                [m.dieta.busca.chipGord, `${Math.round(total.gordura)}g`, 'text-macro-gordura'],
-              ] as const
-            ).map(([r, v, cor]) => (
-              <div key={r}>
-                <div className="text-micro text-content-low">{r}</div>
-                <div className={`font-mono text-sm font-bold ${cor}`}>{v}</div>
-              </div>
-            ))}
-          </div>
-
-          {faltaEscolher && <p className="mt-2 text-center text-micro text-content-low">{t.v2.parcial}</p>}
-          {erro && <p role="alert" className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
-          {faltaEscolher && <p className="mt-3 text-center text-sm text-accent-gold">{t.v2.resolverAntes}</p>}
-
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={() => void salvar()}
-              disabled={incluidos === 0 || faltaEscolher || etapa === 'salvando'}
-              className="min-h-14 w-full rounded-pill bg-brand px-4 text-base font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
-            >
-              {etapa === 'salvando' ? t.salvando : t.adicionarEm(incluidos, nomeRefeicao)}
-            </button>
-            <button
-              onClick={() => {
-                setRascunho(null)
-                setFoto(null)
-                setEtapa('captura')
-              }}
-              disabled={etapa === 'salvando'}
-              className="min-h-12 w-full text-sm font-semibold text-content-mid"
-            >
-              {origem === 'codigo' ? t.outroCodigo : t.outraFoto}
-            </button>
-          </div>
-        </section>
+      {camera && (
+        <CameraCodigo
+          nomeRefeicao={nomeRefeicao}
+          onCodigo={(codigo) => {
+            setCamera(false)
+            void buscarProduto(codigo)
+          }}
+          onDigitar={() => {
+            setCamera(false)
+            setDigitando(true)
+          }}
+          onFechar={() => setCamera(false)}
+          onErro={(msg) => {
+            setCamera(false)
+            setErro(msg)
+            setDigitando(true)
+          }}
+        />
       )}
     </main>
   )
