@@ -12,14 +12,21 @@
   --gold: 251 191 36; --prot: 96 165 250; --carb: 251 146 60; --gord: 250 204 21;
   --vidro: 14 16 15; --linha-vidro: 255 255 255; --txt-vidro: 255 255 255;
   --fundo: 12 12 12; --hi: 255 255 255; --low: 156 163 175;
+  --s1: 22 22 22; --s2: 26 26 26; --s3: 31 31 31; --s4: 42 42 42; --mid: 209 213 219; --dim: 107 114 128;
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
   --fundo: 232 238 233; --hi: 17 24 20; --low: 87 96 108; color-scheme: light;
+  --s1: 255 255 255; --s2: 246 248 246; --s3: 238 242 239; --s4: 220 226 221; --mid: 55 65 81; --dim: 136 144 153;
+  --brand: 22 163 74; --prot: 37 99 235; --carb: 234 88 12; --gord: 161 98 7; --gold: 202 138 4;
 } }
-:root[data-theme="light"] { --fundo: 232 238 233; --hi: 17 24 20; --low: 87 96 108; color-scheme: light; }
+:root[data-theme="light"] { --fundo: 232 238 233; --hi: 17 24 20; --low: 87 96 108; color-scheme: light;
+  --s1: 255 255 255; --s2: 246 248 246; --s3: 238 242 239; --s4: 220 226 221; --mid: 55 65 81; --dim: 136 144 153;
+  --brand: 22 163 74; --prot: 37 99 235; --carb: 234 88 12; --gord: 161 98 7; --gold: 202 138 4; }
+/* Sobre a foto o vidro fica escuro em qualquer tema: as cores dentro dele vêm do escuro. */
+.tela { --brand: 34 197 94; --prot: 96 165 250; --carb: 251 146 60; --gord: 250 204 21; --gold: 251 191 36; }
 * { box-sizing: border-box; }
 body { background: rgb(var(--fundo)); color: rgb(var(--hi)); font-family: var(--sans); margin: 0;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
@@ -78,9 +85,53 @@ ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .salvar { margin-top: 4px; width: 100%; min-height: 50px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); font-size: 15px; font-weight: 700; }
 .salvar:disabled { background: rgb(var(--vidro) / .55); color: rgb(var(--gold)); border: 1px solid rgb(var(--gold) / .6); cursor: not-allowed; }
 .dica { margin: 0; text-align: center; font-size: 11.5px; opacity: .7; }
+
+.abas { max-width: 380px; margin: 0 auto 14px; display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: rgb(var(--s2)); border: 1px solid rgb(var(--s4)); }
+.aba { flex: 1; min-height: 40px; border-radius: 999px; font-size: 13px; font-weight: 600; color: rgb(var(--low)); }
+.aba[aria-selected="true"] { background: rgb(var(--brand)); color: rgb(var(--brand-ink)); }
+
+/* Código de barras: cópia fiel da tela de hoje (Scanner.tsx, origem 'codigo'). */
+.app { max-width: 380px; margin: 0 auto; background: rgb(var(--s1)); color: rgb(var(--hi)); border-radius: 32px; padding: 8px 16px 20px; border: 1px solid rgb(var(--s4)); }
+.app .cab { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+.app .volta { width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid rgb(var(--s4)); color: rgb(var(--mid)); }
+.app h2 { margin: 0; font-size: 20px; font-weight: 800; }
+.app .sub { margin: 0; font-size: 14px; color: rgb(var(--low)); }
+.passos { display: grid; gap: 10px; }
+.etapa-rot { margin: 18px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--low)); }
+.contorno { min-height: 48px; width: 100%; border-radius: 999px; border: 1px solid rgb(var(--brand) / .4); color: rgb(var(--brand)); font-size: 14px; font-weight: 600; }
+.google { border-radius: 20px; background: #000; color: #fff; padding: 18px; display: grid; gap: 12px; justify-items: center; text-align: center; }
+.mira { width: 78%; height: 90px; border: 2px solid rgb(255 255 255 / .85); border-radius: 14px; display: grid; place-items: center; font-family: var(--mono); letter-spacing: .25em; font-size: 22px; color: rgb(255 255 255 / .8); }
+.google p { margin: 0; font-size: 12px; opacity: .75; }
+.resumo { display: flex; gap: 12px; padding: 12px; border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); }
+.produto { width: 80px; height: 80px; flex: none; border-radius: 12px; background: #fff; display: grid; place-items: center; }
+.produto span { width: 38px; height: 54px; border-radius: 8px 8px 12px 12px; background: linear-gradient(#f2f2f2 0 24%, #3f7fd8 24% 60%, #f2f2f2 60%); border: 1px solid #ddd; }
+.resumo strong { font-size: 14px; font-weight: 600; display: block; }
+.mic { font-size: 12px; line-height: 16px; color: rgb(var(--low)); margin: 2px 0 0; }
+.linha-item { border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); padding: 12px; margin-top: 8px; }
+.l1 { display: flex; align-items: center; gap: 10px; }
+.quad { width: 28px; height: 28px; border-radius: 8px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); display: grid; place-items: center; font-weight: 700; font-size: 14px; flex: none; }
+.l1 b { flex: 1; min-width: 0; font-size: 16px; }
+.selo2 { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600; background: rgb(var(--brand) / .15); color: rgb(var(--brand)); }
+.l2 { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ps { display: flex; align-items: center; gap: 4px; }
+.ps button { width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgb(var(--s4)); font-size: 18px; }
+.ps span { width: 64px; text-align: center; font-family: var(--mono); font-size: 14px; }
+.mc { text-align: right; font-size: 12px; color: rgb(var(--low)); }
+.mc b { color: rgb(var(--hi)); }
+.tots { margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px; border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); text-align: center; font-family: var(--mono); font-size: 14px; font-weight: 700; }
+.tots small { display: block; font-family: var(--sans); font-size: 12px; font-weight: 400; color: rgb(var(--low)); }
+.verde { margin-top: 16px; width: 100%; min-height: 56px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--s1)); font-size: 16px; font-weight: 700; }
+.cinza { width: 100%; min-height: 48px; font-size: 14px; font-weight: 600; color: rgb(var(--mid)); }
+.app .p { color: rgb(var(--prot)); } .app .c { color: rgb(var(--carb)); } .app .g { color: rgb(var(--gord)); }
 @media (prefers-reduced-motion: reduce) { .item { transition: none; } }
 </style>
 
+<div class="abas" role="tablist" aria-label="Qual scanner">
+  <button class="aba" id="aba-foto" role="tab" aria-selected="true" aria-controls="v-foto">Foto do prato</button>
+  <button class="aba" id="aba-codigo" role="tab" aria-selected="false" aria-controls="v-codigo">Código de barras</button>
+</div>
+
+<div id="v-foto">
 <div class="topo">
   <h1>Scanner: a foto é a tela</h1>
   <p>Exemplo com o bowl de frango, arroz e brócolis. Números da TACO. Toque numa linha pra ajustar gramas e preparo; o ✓ tira ou põe o item.</p>
@@ -102,6 +153,42 @@ ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
     <p class="dica" id="dica">Toque num item pra ajustar</p>
   </section>
 </main>
+</div>
+
+<div id="v-codigo" hidden>
+<div class="topo">
+  <h1>Código de barras, como está hoje</h1>
+  <p>É grátis (não usa IA). O app abre o leitor pronto do Google, lê o código e busca o rótulo no Open Food Facts. Produto de exemplo; os números são ilustrativos.</p>
+</div>
+<section class="app" aria-label="Código de barras no app hoje">
+  <div class="cab"><button class="volta" aria-label="Voltar">←</button><div><h2>📷 Escanear comida</h2><p class="sub">Vai pra: Lanche</p></div></div>
+
+  <p class="etapa-rot">1 · Na tela do scanner</p>
+  <button class="contorno">▮▯▮ Ler código de barras</button>
+  <p class="mic" style="text-align:center;margin-top:6px">No navegador (sem câmera) aparece um campo pra digitar o número.</p>
+
+  <p class="etapa-rot">2 · Leitor do Google (tela do sistema, não é nossa)</p>
+  <div class="google"><div class="mira">7 891000 100103</div><p>Aponte para o código. Fecha sozinho ao ler.</p></div>
+
+  <p class="etapa-rot">3 · Revisão</p>
+  <div class="resumo"><div class="produto"><span></span></div><div><strong>Iogurte natural integral · Marca X</strong><p class="mic">Números do rótulo do produto</p></div></div>
+  <p class="mic" style="margin-top:16px">Ajuste a quantidade que você comeu (g ou ml).</p>
+  <div class="linha-item">
+    <div class="l1"><span class="quad">✓</span><b>Iogurte natural integral</b><span class="selo2">rótulo do produto</span></div>
+    <div class="l2"><div class="ps"><button id="cb-menos" aria-label="Menos 10 gramas">−</button><span id="cb-g">170 g</span><button id="cb-mais" aria-label="Mais 10 gramas">+</button></div><span class="mc" id="cb-mc"></span></div>
+  </div>
+  <div class="tots" id="cb-tots"></div>
+  <button class="verde">Adicionar 1 item em Lanche</button>
+  <button class="cinza">Ler outro código</button>
+
+  <p class="etapa-rot">Se o produto não está na base</p>
+  <div class="linha-item" style="border-color:rgb(var(--brand) / .4)">
+    <p class="mic" style="color:rgb(var(--mid));font-size:14px;line-height:20px;margin:0">Não achei esse produto na base pública. Me diz o nome (e a marca) que o Life estima:</p>
+    <div class="contorno" style="margin-top:8px;border-color:rgb(var(--s4));color:rgb(var(--low));display:flex;align-items:center;padding:0 14px;border-radius:12px;font-weight:400">Ex.: iogurte de morango Nestlé</div>
+    <p class="mic" style="text-align:center;margin-top:6px">Aqui usa IA e conta no limite do dia.</p>
+  </div>
+</section>
+</div>
 
 <script>
 // Bases por 100 g (TACO 4ª ed.). pct = óleo de preparo caseiro (% do peso).
@@ -187,4 +274,27 @@ function render() {
   document.getElementById('dica').hidden = aberto !== null
 }
 render()
+
+// Abas
+for (const [aba, vis] of [['aba-foto', 'v-foto'], ['aba-codigo', 'v-codigo']]) {
+  document.getElementById(aba).addEventListener('click', () => {
+    for (const [a, v] of [['aba-foto', 'v-foto'], ['aba-codigo', 'v-codigo']]) {
+      document.getElementById(a).setAttribute('aria-selected', String(a === aba))
+      document.getElementById(v).hidden = v !== vis
+    }
+  })
+}
+
+// Código de barras: rótulo por 100 g (ilustrativo).
+const R = { k: 61, p: 3.8, c: 4.6, g: 3.0 }
+let gCb = 170
+function renderCb() {
+  const f = gCb / 100, r1 = (n) => Math.round(n * f * 10) / 10
+  document.getElementById('cb-g').textContent = gCb + ' g'
+  document.getElementById('cb-mc').innerHTML = `<b>${Math.round(R.k * f)} kcal</b> · <span class="p">${r1(R.p)}g</span> · <span class="c">${r1(R.c)}g</span> · <span class="g">${r1(R.g)}g</span>`
+  document.getElementById('cb-tots').innerHTML = `<div><small>kcal</small>${Math.round(R.k * f)}</div><div class="p"><small>Prot</small>${Math.round(R.p * f)}g</div><div class="c"><small>Carb</small>${Math.round(R.c * f)}g</div><div class="g"><small>Gord</small>${Math.round(R.g * f)}g</div>`
+}
+document.getElementById('cb-menos').addEventListener('click', () => { gCb = Math.max(0, gCb - 10); renderCb() })
+document.getElementById('cb-mais').addEventListener('click', () => { gCb += 10; renderCb() })
+renderCb()
 </script>
