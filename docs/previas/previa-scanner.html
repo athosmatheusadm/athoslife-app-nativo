@@ -123,6 +123,11 @@ ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .verde { margin-top: 16px; width: 100%; min-height: 56px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--s1)); font-size: 16px; font-weight: 700; }
 .cinza { width: 100%; min-height: 48px; font-size: 14px; font-weight: 600; color: rgb(var(--mid)); }
 .app .p { color: rgb(var(--prot)); } .app .c { color: rgb(var(--carb)); } .app .g { color: rgb(var(--gord)); }
+
+.tela-cb { margin-top: 0; }
+.fundo-cb { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, #3f7fd8, transparent 70%), radial-gradient(80% 60% at 50% 35%, #e9eef5, #1d2a3d 75%); filter: blur(6px); transform: scale(1.1); }
+.pote { position: absolute; z-index: 1; left: 50%; top: 22%; transform: translateX(-50%); width: 46%; aspect-ratio: 1; border-radius: 28px; background: #fff; display: grid; place-items: center; box-shadow: 0 20px 50px rgb(0 0 0 / .35); }
+.pote span { width: 46%; height: 64%; border-radius: 12px 12px 20px 20px; background: linear-gradient(#f2f2f2 0 22%, #3f7fd8 22% 62%, #f2f2f2 62%); border: 1px solid #ddd; }
 @media (prefers-reduced-motion: reduce) { .item { transition: none; } }
 </style>
 
@@ -157,8 +162,8 @@ ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 
 <div id="v-codigo" hidden>
 <div class="topo">
-  <h1>Código de barras, como está hoje</h1>
-  <p>É grátis (não usa IA). O app abre o leitor pronto do Google, lê o código e busca o rótulo no Open Food Facts. Produto de exemplo; os números são ilustrativos.</p>
+  <h1>Código de barras no estilo novo</h1>
+  <p>É grátis (não usa IA). O app abre o leitor pronto do Google, lê o código e busca o rótulo no Open Food Facts. Na revisão, a foto do produto vai pro fundo e fica uma linha de vidro só, igual ao scanner do prato. Produto de exemplo; os números são ilustrativos.</p>
 </div>
 <section class="app" aria-label="Código de barras no app hoje">
   <div class="cab"><button class="volta" aria-label="Voltar">←</button><div><h2>📷 Escanear comida</h2><p class="sub">Vai pra: Lanche</p></div></div>
@@ -170,16 +175,43 @@ ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   <p class="etapa-rot">2 · Leitor do Google (tela do sistema, não é nossa)</p>
   <div class="google"><div class="mira">7 891000 100103</div><p>Aponte para o código. Fecha sozinho ao ler.</p></div>
 
-  <p class="etapa-rot">3 · Revisão</p>
-  <div class="resumo"><div class="produto"><span></span></div><div><strong>Iogurte natural integral · Marca X</strong><p class="mic">Números do rótulo do produto</p></div></div>
-  <p class="mic" style="margin-top:16px">Ajuste a quantidade que você comeu (g ou ml).</p>
-  <div class="linha-item">
-    <div class="l1"><span class="quad">✓</span><b>Iogurte natural integral</b><span class="selo2">rótulo do produto</span></div>
-    <div class="l2"><div class="ps"><button id="cb-menos" aria-label="Menos 10 gramas">−</button><span id="cb-g">170 g</span><button id="cb-mais" aria-label="Mais 10 gramas">+</button></div><span class="mc" id="cb-mc"></span></div>
+  <p class="etapa-rot">3 · Revisão (estilo novo, igual ao da foto)</p>
+  <div class="tela tela-cb" aria-label="Revisão do produto">
+    <div class="fundo-cb" aria-hidden="true"></div>
+    <div class="pote" aria-hidden="true"><span></span></div>
+    <div class="barra">
+      <button class="redondo vidro" aria-label="Voltar">←</button>
+      <span class="destino vidro">Lanche</span>
+      <button class="redondo vidro" aria-label="Ler outro código">↻</button>
+    </div>
+    <section class="painel">
+      <div class="total" id="cb-total"></div>
+      <ul>
+        <li class="item vidro">
+          <div class="cab-item">
+            <span class="check"><span style="border-color:rgb(var(--brand));background:rgb(var(--brand));color:rgb(var(--brand-ink))">✓</span></span>
+            <span class="nome">Iogurte natural integral<em style="color:rgb(var(--txt-vidro) / .7)">Marca X</em></span>
+            <span class="gramas" id="cb-g2"></span>
+            <span class="kc" id="cb-k"></span>
+          </div>
+          <div class="ajuste">
+            <div class="passo">
+              <button id="cb-menos" aria-label="Menos 10 gramas">−</button>
+              <span id="cb-g"></span>
+              <button id="cb-mais" aria-label="Mais 10 gramas">+</button>
+              <span class="detalhe" id="cb-det"></span>
+            </div>
+            <div class="chips" role="group" aria-label="Porção">
+              <button class="chip" data-g="170" aria-pressed="true">1 pote (170 g)</button>
+              <button class="chip" data-g="100" aria-pressed="false">100 g</button>
+            </div>
+            <p class="nota">Números do rótulo do produto (Open Food Facts).</p>
+          </div>
+        </li>
+      </ul>
+      <button class="salvar">Adicionar em Lanche</button>
+    </section>
   </div>
-  <div class="tots" id="cb-tots"></div>
-  <button class="verde">Adicionar 1 item em Lanche</button>
-  <button class="cinza">Ler outro código</button>
 
   <p class="etapa-rot">Se o produto não está na base</p>
   <div class="linha-item" style="border-color:rgb(var(--brand) / .4)">
@@ -291,9 +323,13 @@ let gCb = 170
 function renderCb() {
   const f = gCb / 100, r1 = (n) => Math.round(n * f * 10) / 10
   document.getElementById('cb-g').textContent = gCb + ' g'
-  document.getElementById('cb-mc').innerHTML = `<b>${Math.round(R.k * f)} kcal</b> · <span class="p">${r1(R.p)}g</span> · <span class="c">${r1(R.c)}g</span> · <span class="g">${r1(R.g)}g</span>`
-  document.getElementById('cb-tots').innerHTML = `<div><small>kcal</small>${Math.round(R.k * f)}</div><div class="p"><small>Prot</small>${Math.round(R.p * f)}g</div><div class="c"><small>Carb</small>${Math.round(R.c * f)}g</div><div class="g"><small>Gord</small>${Math.round(R.g * f)}g</div>`
+  document.getElementById('cb-g2').textContent = gCb + ' g'
+  document.getElementById('cb-k').textContent = Math.round(R.k * f) + ' kcal'
+  document.getElementById('cb-det').innerHTML = `<span class="p">P ${r1(R.p)}</span><span class="c">C ${r1(R.c)}</span><span class="g">G ${r1(R.g)}</span>`
+  document.getElementById('cb-total').innerHTML = `<span class="kcal">${Math.round(R.k * f)}<small>kcal</small></span><span class="mac"><span class="p">P ${Math.round(R.p * f)}g</span><span class="c">C ${Math.round(R.c * f)}g</span><span class="g">G ${Math.round(R.g * f)}g</span></span>`
+  for (const c of document.querySelectorAll('.tela-cb .chip')) c.setAttribute('aria-pressed', String(Number(c.dataset.g) === gCb))
 }
+for (const c of document.querySelectorAll('.tela-cb .chip')) c.addEventListener('click', () => { gCb = Number(c.dataset.g); renderCb() })
 document.getElementById('cb-menos').addEventListener('click', () => { gCb = Math.max(0, gCb - 10); renderCb() })
 document.getElementById('cb-mais').addEventListener('click', () => { gCb += 10; renderCb() })
 renderCb()
