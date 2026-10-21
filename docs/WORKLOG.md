@@ -2841,3 +2841,23 @@ referência.
 2. Dono decidir: aplicar TACO no banco? publicar ai-proxy? escopo do story
    (proposta: Alimentação + Musculação)? Facebook App ID.
 3. Fotos pesadas (30) pro benchmark do scanner.
+
+### 2026-10-21 (noite) — TACO aplicada no banco; scanner com a foto em tela cheia
+
+- **TACO aplicada no banco de produção** (dono aprovou: a nutricionista que
+  viu o app elogiou a tabela). `taco` = 597, 333 alimentos ligados, backup
+  em `alimentos_antes_taco` (333). Ex.: batata inglesa cozida agora 52 kcal/100 g.
+  Desfazer: bloco no fim de `db/athoslife_taco_referencia_migration.sql`.
+  A migração do scanner (`athoslife_scanner_v1_migration.sql`) **não** foi aplicada.
+- Prévia do scanner refeita como o dono pediu: a foto ocupa a tela inteira,
+  os itens viram linhas de vidro translúcidas (nome · gramas · kcal) e o ajuste
+  abre só ao tocar na linha (um por vez). Foto de exemplo = bowl de frango
+  (`docs/previas/prato.webp`). Mesmo link:
+  https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ
+- Story: o dono quer conversar antes. Nada a fazer até lá.
+
+**Pendências**
+1. Dono aprovar o visual novo da prévia → levar para `ScannerScreen` (app).
+2. Aplicar a migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
+3. Token do GitHub → push da `main` e da `scanner-v1-1`.
+4. Fotos pesadas para o benchmark.
