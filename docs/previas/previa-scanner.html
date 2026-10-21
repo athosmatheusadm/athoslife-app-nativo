@@ -1,0 +1,198 @@
+<title>Prévia do Scanner ATHOS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: uma tela de celular centralizada, igual à revisão do Scanner no app.
+   Tokens = os do app (src/ui/theme/globals.css): escuro por padrão, claro segue o aparelho. */
+:root {
+  --brand: 34 197 94; --brand-ink: 4 18 10;
+  --s1: 22 22 22; --s2: 26 26 26; --s3: 31 31 31; --s4: 42 42 42;
+  --hi: 255 255 255; --mid: 209 213 219; --low: 156 163 175; --dim: 107 114 128;
+  --gold: 251 191 36; --prot: 96 165 250; --carb: 251 146 60; --gord: 250 204 21;
+  --fundo: 12 12 12;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --brand: 22 163 74; --brand-ink: 4 18 10;
+  --s1: 255 255 255; --s2: 246 248 246; --s3: 238 242 239; --s4: 220 226 221;
+  --hi: 17 24 20; --mid: 55 65 81; --low: 87 96 108; --dim: 136 144 153;
+  --gold: 202 138 4; --prot: 37 99 235; --carb: 234 88 12; --gord: 161 98 7;
+  --fundo: 232 238 233; color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --brand: 22 163 74; --brand-ink: 4 18 10;
+  --s1: 255 255 255; --s2: 246 248 246; --s3: 238 242 239; --s4: 220 226 221;
+  --hi: 17 24 20; --mid: 55 65 81; --low: 87 96 108; --dim: 136 144 153;
+  --gold: 202 138 4; --prot: 37 99 235; --carb: 234 88 12; --gord: 161 98 7;
+  --fundo: 232 238 233; color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: rgb(var(--fundo)); color: rgb(var(--hi)); font-family: var(--sans); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
+.topo { max-width: 400px; margin: 0 auto 14px; display: grid; gap: 4px; }
+.topo h1 { font-size: 15px; margin: 0; font-weight: 700; text-wrap: balance; }
+.topo p { margin: 0; font-size: 12.5px; color: rgb(var(--low)); line-height: 1.45; }
+.tela { max-width: 400px; margin: 0 auto; background: rgb(var(--s1)); border-radius: 28px; padding: 8px 16px 20px;
+  border: 1px solid rgb(var(--s4)); box-shadow: 0 20px 50px rgb(0 0 0 / .25); }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
+.cab { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+.voltar { width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid rgb(var(--s4)); color: rgb(var(--mid)); }
+.cab h2 { margin: 0; font-size: 20px; font-weight: 800; }
+.cab p { margin: 0; font-size: 14px; color: rgb(var(--low)); }
+.resumo { display: flex; gap: 12px; padding: 12px; border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); }
+.foto { width: 80px; height: 80px; flex: none; border-radius: 12px; background: rgb(var(--s3)); display: block; }
+.resumo strong { font-size: 14px; font-weight: 600; display: block; }
+.micro { font-size: 12px; line-height: 16px; color: rgb(var(--low)); }
+.dica { margin: 16px 0 8px; }
+ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.item { border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); padding: 12px; transition: opacity .2s; }
+.item.fora { opacity: .5; background: transparent; border-color: rgb(var(--s3)); }
+.linha1 { display: flex; align-items: center; gap: 10px; }
+.check { width: 48px; height: 48px; margin: -8px; flex: none; display: grid; place-items: center; border-radius: 12px; }
+.check span { width: 28px; height: 28px; border-radius: 8px; border: 2px solid rgb(var(--dim)); display: grid; place-items: center; font-weight: 700; font-size: 14px; color: transparent; }
+.check[aria-checked="true"] span { border-color: rgb(var(--brand)); background: rgb(var(--brand)); color: rgb(var(--brand-ink)); }
+.nome { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; padding: 0 4px; overflow-wrap: anywhere; }
+.nome.vazio { color: rgb(var(--low)); font-weight: 500; font-style: italic; }
+.selo { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600; background: rgb(var(--brand) / .15); color: rgb(var(--brand)); }
+.linha2 { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.passo { display: flex; align-items: center; gap: 4px; }
+.passo button { width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgb(var(--s4)); font-size: 18px; }
+.passo span { width: 64px; text-align: center; font-family: var(--mono); font-size: 14px; }
+.macros { text-align: right; font-size: 12px; color: rgb(var(--low)); }
+.macros b { color: rgb(var(--hi)); font-weight: 600; }
+.p { color: rgb(var(--prot)); } .c { color: rgb(var(--carb)); } .g { color: rgb(var(--gord)); }
+.extras { margin-top: 8px; display: grid; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chip { min-height: 40px; border-radius: 999px; border: 1px solid rgb(var(--s4)); padding: 0 12px; font-size: 12px; font-weight: 600; color: rgb(var(--mid)); }
+.chip[aria-pressed="true"] { border-color: rgb(var(--brand)); background: rgb(var(--brand) / .15); color: rgb(var(--brand)); }
+.rotulo { font-size: 12px; font-weight: 600; color: rgb(var(--mid)); }
+.aviso { font-size: 12px; line-height: 16px; color: rgb(var(--gold)); }
+.totais { margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px; border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); text-align: center; }
+.totais div div:last-child { font-family: var(--mono); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.centro { text-align: center; margin: 8px 0 0; }
+.salvar { margin-top: 16px; width: 100%; min-height: 56px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--s1)); font-size: 16px; font-weight: 700; }
+.salvar:disabled { opacity: .5; cursor: not-allowed; }
+.outra { width: 100%; min-height: 48px; font-size: 14px; font-weight: 600; color: rgb(var(--mid)); margin-top: 8px; }
+.ok { color: rgb(var(--brand)); font-weight: 600; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .item { transition: none; } }
+</style>
+
+<div class="topo">
+  <h1>Revisão do scanner novo (v1.1)</h1>
+  <p>Prato de exemplo: arroz, frango, batata e farofa. Números da TACO. Dá pra tocar: os chips, o − / + e o ✓ recalculam na hora, como no app.</p>
+</div>
+
+<main class="tela" aria-label="Tela de revisão do scanner">
+  <header class="cab">
+    <button class="voltar" aria-label="Voltar">←</button>
+    <div><h2>📷 Escanear comida</h2><p>Vai pra: Almoço</p></div>
+  </header>
+
+  <section class="resumo">
+    <canvas class="foto" id="foto" width="160" height="160" aria-hidden="true"></canvas>
+    <div><strong>Arroz, frango grelhado, batata e farofa</strong></div>
+  </section>
+
+  <p class="micro dica">Confira cada item. Desmarque o que a IA errou e ajuste as gramas.</p>
+  <ul id="lista"></ul>
+
+  <div class="totais" id="totais"></div>
+  <p class="micro centro" id="parcial">Total parcial: falta escolher alguns itens.</p>
+  <p class="aviso centro" id="resolver" style="font-size:14px;line-height:20px;margin-top:12px">Escolha ou tire os itens marcados antes de salvar.</p>
+  <p class="ok centro" id="salvo" hidden></p>
+
+  <button class="salvar" id="salvar"></button>
+  <button class="outra">Tirar outra foto</button>
+</main>
+
+<script>
+// Bases por 100 g (TACO 4ª ed.). pct = óleo de preparo caseiro (% do peso).
+const B = {
+  arroz:   { nome: 'Arroz branco cozido', k: 128, p: 2.5, c: 28.1, g: 0.2, pct: 2.5 },
+  frango:  { nome: 'Frango peito grelhado', k: 159, p: 32, c: 0, g: 2.5, pct: 2 },
+  batataI: { nome: 'Batata inglesa cozida', k: 52, p: 1.2, c: 11.9, g: 0, pct: null },
+  batataD: { nome: 'Batata doce cozida', k: 77, p: 0.6, c: 18.4, g: 0.1, pct: null },
+  farofa:  { nome: 'Farofa de mandioca', k: 406, p: 2.1, c: 80.3, g: 9.1, pct: null },
+}
+const MULT = { sem_oleo: 0, caseiro: 1, bastante_oleo: 2 }
+const NOMES_V = { sem_oleo: 'Sem óleo', caseiro: 'Caseiro', bastante_oleo: 'Bastante óleo' }
+const itens = [
+  { id: 'a', base: B.arroz, g: 150, v: 'caseiro', origem: 'padrao', on: true },
+  { id: 'b', base: B.frango, g: 120, v: 'caseiro', origem: 'padrao', on: true },
+  { id: 'c', base: null, visto: 'batata', cand: [B.batataI, B.batataD], g: 120, v: null, on: true },
+  { id: 'd', base: B.farofa, g: 30, v: null, on: true, porcao: [20, 45] },
+]
+function macros(i) {
+  if (!i.base) return null
+  const f = i.g / 100, b = i.base
+  const oleo = b.pct !== null && i.v ? i.g * b.pct / 100 * MULT[i.v] : 0
+  return { k: Math.round(b.k * f + oleo * 9), p: Math.round(b.p * f * 10) / 10, c: Math.round(b.c * f * 10) / 10, g: Math.round((b.g * f + oleo) * 10) / 10 }
+}
+const el = (tag, attrs = {}, ...filhos) => {
+  const e = document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) k === 'on' ? e.addEventListener('click', v) : e.setAttribute(k, v)
+  for (const f of filhos) e.append(f)
+  return e
+}
+function render() {
+  const lista = document.getElementById('lista')
+  lista.replaceChildren()
+  for (const i of itens) {
+    const m = macros(i)
+    const li = el('li', { class: 'item' + (i.on ? '' : ' fora') })
+    const check = el('button', { class: 'check', role: 'checkbox', 'aria-checked': String(i.on), 'aria-label': (i.on ? 'Tirar ' : 'Incluir ') + (i.base?.nome ?? i.visto), on: () => { i.on = !i.on; render() } }, el('span', {}, '✓'))
+    const nome = el('div', { class: 'nome' + (i.base ? '' : ' vazio') }, i.base ? i.base.nome : i.visto)
+    const l1 = el('div', { class: 'linha1' }, check, nome)
+    if (i.base) l1.append(el('span', { class: 'selo' }, 'TACO'))
+    const passo = el('div', { class: 'passo' },
+      el('button', { 'aria-label': 'Menos 10 gramas', on: () => { i.g = Math.max(0, i.g - 10); render() } }, '−'),
+      el('span', {}, i.g + ' g'),
+      el('button', { 'aria-label': 'Mais 10 gramas', on: () => { i.g += 10; render() } }, '+'))
+    const mac = el('span', { class: 'macros' })
+    if (m) mac.innerHTML = `<b>${m.k} kcal</b> · <span class="p">${m.p}g</span> · <span class="c">${m.c}g</span> · <span class="g">${m.g}g</span>`
+    else mac.textContent = '—'
+    li.append(l1, el('div', { class: 'linha2' }, passo, mac))
+    const ex = el('div', { class: 'extras' })
+    if (i.cand) {
+      const chips = el('div', { class: 'chips' })
+      for (const c of i.cand) chips.append(el('button', { class: 'chip', 'aria-pressed': String(i.base === c), on: () => { i.base = c; render() } }, c.nome))
+      ex.append(el('div', {}, el('p', { class: 'rotulo', style: 'margin:0' }, 'Qual é?'), chips))
+    }
+    if (i.base && i.base.pct !== null) {
+      const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Preparo', style: 'margin-top:0' })
+      for (const v of Object.keys(MULT)) chips.append(el('button', { class: 'chip', 'aria-pressed': String(i.v === v), on: () => { i.v = v; render() } }, NOMES_V[v]))
+      ex.append(chips)
+      if (i.origem === 'padrao' && i.v === 'caseiro') ex.append(el('p', { class: 'micro', style: 'margin:-4px 0 0' }, 'Considerei preparo caseiro comum (com óleo).'))
+    }
+    if (i.porcao) ex.append(el('p', { class: 'aviso', style: 'margin:0' }, `Porção difícil de ver — confira (≈ ${i.porcao[0]}–${i.porcao[1]} g).`))
+    if (ex.childElementCount) li.append(ex)
+    lista.append(li)
+  }
+  const inc = itens.filter((i) => i.on)
+  const falta = inc.some((i) => !i.base)
+  const t = inc.reduce((s, i) => { const m = macros(i); if (m) { s.k += m.k; s.p += m.p; s.c += m.c; s.g += m.g } return s }, { k: 0, p: 0, c: 0, g: 0 })
+  document.getElementById('totais').innerHTML = [['kcal', Math.round(t.k), ''], ['Prot', Math.round(t.p) + 'g', 'p'], ['Carb', Math.round(t.c) + 'g', 'c'], ['Gord', Math.round(t.g) + 'g', 'g']]
+    .map(([r, v, cor]) => `<div><div class="micro">${r}</div><div class="${cor}">${v}</div></div>`).join('')
+  document.getElementById('parcial').hidden = !falta
+  document.getElementById('resolver').hidden = !falta
+  const btn = document.getElementById('salvar')
+  btn.disabled = falta || inc.length === 0
+  btn.textContent = `Adicionar ${inc.length} ${inc.length === 1 ? 'item' : 'itens'} em Almoço`
+  btn.onclick = () => { const s = document.getElementById('salvo'); s.hidden = false; s.textContent = `✓ ${inc.length} itens adicionados em Almoço (prévia — nada foi salvo)` }
+}
+render()
+
+// "Foto" do prato desenhada (a prévia não usa foto real).
+const cv = document.getElementById('foto'), x = cv.getContext('2d')
+x.fillStyle = '#e9e4da'; x.beginPath(); x.arc(80, 80, 74, 0, 7); x.fill()
+x.fillStyle = '#f7f4ee'; x.beginPath(); x.arc(80, 80, 60, 0, 7); x.fill()
+const bolha = (cx, cy, r, cor) => { x.fillStyle = cor; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill() }
+for (let k = 0; k < 40; k++) bolha(58 + Math.cos(k) * 14 * Math.random(), 60 + Math.sin(k * 1.7) * 14 * Math.random(), 4, '#fbfaf5')
+bolha(104, 64, 18, '#c98a4b'); bolha(98, 70, 13, '#d79a5a')
+for (let k = 0; k < 6; k++) bolha(70 + k * 7, 104 + (k % 2) * 6, 7, '#e8c46a')
+for (let k = 0; k < 30; k++) bolha(100 + Math.random() * 18, 96 + Math.random() * 18, 2.2, '#d7b27a')
+</script>

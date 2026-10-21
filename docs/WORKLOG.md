@@ -2820,3 +2820,24 @@ referência.
 4. Ver a tela nova no aparelho (dono não viu o visual dos chips).
 5. Depois: rótulo e texto pelo mesmo motor; job de reconciliação de leases;
    incluir `scan_jobs` no "Baixar meus dados".
+
+### 2026-10-21 (fim) — prévia do scanner, story analisado, specs salvas
+
+- Prévia interativa da revisão do scanner novo (prato de exemplo, números
+  TACO): https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ — cópia em
+  `docs/previas/previa-scanner.html`.
+- Especificações salvas no repo: `docs/specs/SCANNER_ESPECIFICACAO_v1.1.md`,
+  `docs/specs/STORY_STUDIO_INTEGRACAO_v3.md` (guia original do zip) e
+  `docs/specs/STORY_STUDIO_ANALISE.md` (o que serve e o que quebraria).
+- Corrigido o que eu disse ao dono: a mesma foto/prato em outro dia **gasta**
+  scan e tokens; só a repetição do mesmo envio (rede caiu) não gasta.
+  Custo estimado ~R$ 0,03 por foto (medir no benchmark).
+- **Push bloqueado de novo** (token do GitHub não fica salvo). Tudo está em
+  commits locais: `main` tem o peso v4.2; a branch `scanner-v1-1` tem peso +
+  scanner + estes docs.
+
+**Pendências pra próxima sessão**
+1. Token do GitHub → `git push` da `main` e da branch `scanner-v1-1` (abrir PR).
+2. Dono decidir: aplicar TACO no banco? publicar ai-proxy? escopo do story
+   (proposta: Alimentação + Musculação)? Facebook App ID.
+3. Fotos pesadas (30) pro benchmark do scanner.
