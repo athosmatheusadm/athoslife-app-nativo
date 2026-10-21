@@ -43,6 +43,8 @@ export function MealSheet(props: {
   const { refeicao } = props
   const [modo, setModo] = useState<Modo>('menu')
   const [salvandoIcone, setSalvandoIcone] = useState(false)
+  // Nome e ícone da refeição extra ficam recolhidos: abertos, empurravam a lista pra baixo.
+  const [editando, setEditando] = useState(false)
   const [erroIcone, setErroIcone] = useState(false)
   const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(null)
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false)
@@ -104,7 +106,18 @@ export function MealSheet(props: {
             </button>
           </div>
 
-          {props.onRenomear && (
+          {(props.onRenomear || props.onMudarIcone) && !editando && (
+            <button
+              type="button"
+              onClick={() => setEditando(true)}
+              className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-pill border border-surface-4 px-3.5 text-micro font-semibold text-content-mid active:bg-content-hi/5"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+              {t.editar}
+            </button>
+          )}
+
+          {editando && props.onRenomear && (
             <NomeExtraInput
               key={refeicao.nome}
               valorInicial={refeicao.nome}
@@ -113,13 +126,25 @@ export function MealSheet(props: {
             />
           )}
 
-          {props.onMudarIcone && <ActivityIconPicker valor={refeicao.icone ?? 'tigela'} opcoes={MEAL_ICONS} disabled={salvandoIcone}
+          {editando && props.onMudarIcone && <ActivityIconPicker valor={refeicao.icone ?? 'tigela'} opcoes={MEAL_ICONS} disabled={salvandoIcone}
             onChange={(icone) => {
               setSalvandoIcone(true)
               setErroIcone(false)
               void props.onMudarIcone!(icone).catch(() => setErroIcone(true)).finally(() => setSalvandoIcone(false))
             }} />}
           {erroIcone && <p role="alert" className="mt-2 text-sm text-accent-danger">{idioma === 'en' ? "Couldn't save the icon. Try again." : idioma === 'es' ? 'No se pudo guardar el icono. Inténtalo de nuevo.' : 'Não deu para salvar o ícone. Tente novamente.'}</p>}
+          {editando && (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-micro text-content-low">{t.dicaOrdem}</p>
+              <button
+                type="button"
+                onClick={() => setEditando(false)}
+                className="min-h-11 flex-none rounded-pill bg-brand px-5 text-sm font-bold text-surface-1 active:scale-95"
+              >
+                {t.pronto}
+              </button>
+            </div>
+          )}
 
           {/* Itens já registrados — toca pra selecionar, ⧉ copia, 🗑 exclui (com Desfazer) */}
           <ul className="mt-3 border-t border-surface-3 pt-1">

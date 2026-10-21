@@ -7,8 +7,6 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DraggableAttributes,
-  type DraggableSyntheticListeners,
 } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -291,7 +289,8 @@ export function DietScreen(props: {
     }
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+  // Segurar ~0,35 s e arrastar (sem puxador "::"): toque curto continua abrindo a refeição e a lista rola normal.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { delay: 350, tolerance: 6 } }))
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -417,24 +416,21 @@ export function DietScreen(props: {
           <div className="space-y-2">
             {visiveis.map((r) => (
               <SortableMealRow key={r.chave} chave={r.chave} draggable={r.tipo === 'extra'}>
-                {(handle) => (
-                  <MealAccordion
-                    refeicao={r}
-                    sugestaoPlano={(() => {
-                      const doPlano = r.itens.length === 0 ? itensDoPlano(r) : []
-                      return doPlano.length
-                        ? { resumo: doPlano.map((i) => i.nome).join(' · '), kcal: doPlano.reduce((s, i) => s + i.calorias, 0) }
-                        : null
-                    })()}
-                    dragHandleProps={handle}
-                    onAbrir={() => setSheetChave(r.chave)}
-                    onToggleConcluida={() => {
-                      // Refeição vazia com plano: o ✓ é "comi o do plano" — registra e conclui.
-                      const doPlano = r.itens.length === 0 && !r.concluida ? itensDoPlano(r) : []
-                      void (doPlano.length ? registrarDoPlano(r, doPlano) : Promise.resolve()).then(() => alternarConcluida(r))
-                    }}
-                  />
-                )}
+                <MealAccordion
+                  refeicao={r}
+                  sugestaoPlano={(() => {
+                    const doPlano = r.itens.length === 0 ? itensDoPlano(r) : []
+                    return doPlano.length
+                      ? { resumo: doPlano.map((i) => i.nome).join(' · '), kcal: doPlano.reduce((s, i) => s + i.calorias, 0) }
+                      : null
+                  })()}
+                  onAbrir={() => setSheetChave(r.chave)}
+                  onToggleConcluida={() => {
+                    // Refeição vazia com plano: o ✓ é "comi o do plano" — registra e conclui.
+                    const doPlano = r.itens.length === 0 && !r.concluida ? itensDoPlano(r) : []
+                    void (doPlano.length ? registrarDoPlano(r, doPlano) : Promise.resolve()).then(() => alternarConcluida(r))
+                  }}
+                />
               </SortableMealRow>
             ))}
           </div>
@@ -527,9 +523,9 @@ export function DietScreen(props: {
 function SortableMealRow(props: {
   chave: string
   draggable: boolean
-  children: (handle: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners } | null) => ReactNode
+  children: ReactNode
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.chave,
     disabled: !props.draggable,
   })
@@ -539,8 +535,8 @@ function SortableMealRow(props: {
     opacity: isDragging ? 0.6 : 1,
   }
   return (
-    <div ref={setNodeRef} style={style}>
-      {props.children(props.draggable ? { attributes, listeners } : null)}
+    <div ref={setNodeRef} style={style} {...(props.draggable ? listeners : {})}>
+      {props.children}
     </div>
   )
 }

@@ -2963,3 +2963,9 @@ pediu pra levar ao app.
 - Validação: tsc, 47 testes Deno, deno check.
 - **Publicado:** migração dos hábitos + ai-proxy (v4.4) via `scripts/supabase.sh`.
 - Refeição sem imagens / "pontinhos" na lista: aguardando print do dono.
+- **Refeição extra (bug relatado):** nome + grade de 16 ícones ficavam sempre
+  abertos no sheet → agora recolhidos atrás de "Editar nome e ícone" (com
+  "Pronto" e a dica de como reordenar). O puxador "⋮⋮" (aparecia como "::")
+  saiu: reordenar = segurar o card ~0,35 s e arrastar (PointerSensor com
+  delay); toque curto abre a refeição. Testar no aparelho se o arraste por
+  toque longo não abre o sheet ao soltar. pt/en/es.
