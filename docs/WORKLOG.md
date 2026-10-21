@@ -2746,3 +2746,25 @@ Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
 4. Emojis restantes (Onboarding, Life Chef, Cozinha, BottomNav).
 5. Segredos/webhook do RevenueCat; "Leaked password protection".
 6. APK novo (widget + RevenueCat + modo claro) e teste no aparelho.
+
+### 2026-10-21 — corrigir/apagar a última pesagem pelo chat
+
+- ai-proxy **v4.2** (`peso.ts`): "corrige a última pesagem pra 80,2",
+  "errei o peso, é 79,5", "apaga a última pesagem", "exclui meu peso de
+  hoje" (pt/en/es) → mexe só na pesagem mais recente, resposta fixa, **sem
+  IA e sem cota**. Apagar faz `peso_atual` voltar pra pesagem anterior.
+  "muda minha meta" continua sendo meta; "apaga o peso do supino" vai pra IA.
+- Dica do card "Meu peso" cita corrigir/apagar (pt/en/es).
+- Validação: 19 testes Deno (peso + life), deno check, tsc, vite build.
+- **Precisa deploy da ai-proxy** (o auto mode bloqueou o deploy daqui).
+- Scanner: mapeado o atual contra `ATHOSlife_Scanner_Especificacao_Tecnica_v1.1.md`
+  (foto 1024 px → Gemini estima itens E calorias → app casa o nome com
+  `alimentos` por "contém" → revisão → grava). Diferenças e plano no chat
+  de 21/10; nada do scanner alterado ainda.
+- PC: 4 GB de RAM → emulador Android não roda; testar no celular com APK
+  do GitHub Actions.
+
+**Pendências**
+1. Deploy da ai-proxy v4.2.
+2. Scanner: dono decidir as fotos de referência (pesadas) pra etapa 1.
+3. Demais pendências do bloco de 17/10 continuam.

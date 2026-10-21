@@ -1,5 +1,5 @@
 // ATHOSlife — peso pelo chat (v4.1): registrar pesagem, mudar a meta e ver o
-// histórico pedindo ao Life. Sem IA e sem cota: o card "Meu peso" não tem
+// histórico pedindo ao Life. v4.2: corrigir ou apagar a última pesagem. Sem IA e sem cota: o card "Meu peso" não tem
 // mais botões, então isso não pode custar mensagem. Parser puro exportado
 // para teste; `executarComandoPeso` toca o banco.
 
@@ -12,6 +12,8 @@ export type ComandoPeso =
   | { tipo: 'registrar'; kg: number }
   | { tipo: 'meta'; kg: number }
   | { tipo: 'historico' }
+  | { tipo: 'corrigir'; kg: number }
+  | { tipo: 'apagar' }
 
 const norm = (t: string) =>
   t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
@@ -50,7 +52,18 @@ const HISTORICO = [
   /\b(history|weigh-ins|past weights|weight log|weight progress|how much did i weigh)\b/,
   /\b(historial|evolucion|pesajes|cuanto pesaba)\b/,
 ]
-const FALA_DE_PESO = /\b(peso|pesagens|pesava|pesos|pesei|pesando|balanca|weight|weigh|weighed|weigh-ins|scale|pesajes|pesaba|pese|bascula)\b/
+// Corrigir/apagar mexem só na ÚLTIMA pesagem (sem data na frase).
+const CORRIGIR = [
+  /\b(corrig\w*|alter\w*|mud\w*|troc\w*|edit\w*|ajust\w*|errei|errado|na verdade)\b/,
+  /\b(fix|change|correct|edit|wrong|actually)\b/,
+  /\b(correg\w*|cambi\w*|modific\w*|equivoqu\w*|en realidad)\b/,
+]
+const APAGAR = [
+  /\b(apag\w*|exclu\w*|remov\w*|delet\w*|desfaz\w*|tira a|tira o|tirar a|tirar o)\b/,
+  /\b(delete|remove|erase|undo)\b/,
+  /\b(borr\w*|elimin\w*|quit\w*|deshac\w*)\b/,
+]
+const FALA_DE_PESO = /\b(peso|pesagem|pesagens|pesaje|weigh-in|pesava|pesos|pesei|pesando|balanca|weight|weigh|weighed|weigh-ins|scale|pesajes|pesaba|pese|bascula)\b/
 
 function lerKg(m: RegExpMatchArray): number | null {
   const valor = Number(m[1].replace(',', '.'))
@@ -80,10 +93,14 @@ export function lerComandoPeso(mensagem: string): ComandoPeso | null {
     if (kg !== null) {
       // "minha meta é 75": meta só existe pro peso aqui (outros assuntos já saíram).
       if (META.some((r) => r.test(t))) return { tipo: 'meta', kg }
+      if (FALA_DE_PESO.test(t) && CORRIGIR.some((r) => r.test(t))) return { tipo: 'corrigir', kg }
       if (comUnidade && REGISTRAR.some((r) => r.test(t))) return { tipo: 'registrar', kg }
     }
   }
-  if (!numero && FALA_DE_PESO.test(t) && HISTORICO.some((r) => r.test(t))) return { tipo: 'historico' }
+  if (!numero && FALA_DE_PESO.test(t) && !OUTRO_ASSUNTO.test(t)) {
+    if (APAGAR.some((r) => r.test(t))) return { tipo: 'apagar' }
+    if (HISTORICO.some((r) => r.test(t))) return { tipo: 'historico' }
+  }
   return null
 }
 
@@ -104,6 +121,10 @@ const TXT = {
     historico: 'Suas últimas pesagens:',
     variacao: (kg: string, dias: number) => `Variação em ${dias} dias: ${kg} kg.`,
     falhou: 'Não consegui salvar agora. Tenta de novo daqui a pouco?',
+    corrigido: (dia: string, de: string, para: string) => `Corrigi a pesagem de ${dia}: de ${de} kg para ${para} kg.`,
+    apagado: (dia: string, kg: string) => `Apaguei a pesagem de ${dia} (${kg} kg).`,
+    agoraUltima: (dia: string, kg: string) => `Agora a última é a de ${dia}: ${kg} kg.`,
+    nadaPraMexer: 'Você ainda não tem pesagens pra mudar. Quando quiser, é só me contar: "pesei 80 kg".',
   },
   en: {
     anotado: (kg: string) => `Logged ${kg} kg for today.`,
@@ -115,6 +136,10 @@ const TXT = {
     historico: 'Your latest weigh-ins:',
     variacao: (kg: string, dias: number) => `Change over ${dias} days: ${kg} kg.`,
     falhou: "I couldn't save that right now. Try again in a bit?",
+    corrigido: (dia: string, de: string, para: string) => `Fixed your ${dia} weigh-in: from ${de} kg to ${para} kg.`,
+    apagado: (dia: string, kg: string) => `Deleted your ${dia} weigh-in (${kg} kg).`,
+    agoraUltima: (dia: string, kg: string) => `Your latest is now ${dia}: ${kg} kg.`,
+    nadaPraMexer: 'You have no weigh-ins to change yet. Whenever you want, just tell me: "I weigh 80 kg".',
   },
   es: {
     anotado: (kg: string) => `Anoté ${kg} kg hoy.`,
@@ -126,6 +151,10 @@ const TXT = {
     historico: 'Tus últimos pesajes:',
     variacao: (kg: string, dias: number) => `Variación en ${dias} días: ${kg} kg.`,
     falhou: 'No pude guardarlo ahora. ¿Lo intentas de nuevo en un rato?',
+    corrigido: (dia: string, de: string, para: string) => `Corregí el pesaje del ${dia}: de ${de} kg a ${para} kg.`,
+    apagado: (dia: string, kg: string) => `Borré el pesaje del ${dia} (${kg} kg).`,
+    agoraUltima: (dia: string, kg: string) => `Ahora el último es el del ${dia}: ${kg} kg.`,
+    nadaPraMexer: 'Aún no tienes pesajes para cambiar. Cuando quieras, solo dime: "hoy peso 80 kg".',
   },
 } as const
 
@@ -185,6 +214,39 @@ export async function executarComandoPeso(
     }
     const resto = atual === null ? '' : ' ' + frasesMeta(atual, cmd.kg, idioma)
     return { resposta: t.metaNova(fmtKg(cmd.kg, idioma)) + resto, mudou: true }
+  }
+
+  if (cmd.tipo === 'corrigir' || cmd.tipo === 'apagar') {
+    const { data: recentes } = await sb.from('registros_peso').select('data, peso_kg')
+      .eq('user_id', userId).order('data', { ascending: false }).limit(2)
+    const ultima = recentes?.[0]
+    if (!ultima) return { resposta: t.nadaPraMexer, mudou: false }
+    const dia = fmtDia(ultima.data)
+    const antes = fmtKg(Number(ultima.peso_kg), idioma)
+
+    if (cmd.tipo === 'corrigir') {
+      const { error } = await sb.from('registros_peso').update({ peso_kg: cmd.kg })
+        .eq('user_id', userId).eq('data', ultima.data)
+      if (error) {
+        console.error('[peso] corrigir falhou', error.message)
+        return { resposta: t.falhou, mudou: false }
+      }
+      await sb.from('profiles').update({ peso_atual: cmd.kg }).eq('id', userId)
+      const m = frasesMeta(cmd.kg, meta, idioma)
+      return { resposta: [t.corrigido(dia, antes, fmtKg(cmd.kg, idioma)), m].filter(Boolean).join(' '), mudou: true }
+    }
+
+    const { error } = await sb.from('registros_peso').delete().eq('user_id', userId).eq('data', ultima.data)
+    if (error) {
+      console.error('[peso] apagar falhou', error.message)
+      return { resposta: t.falhou, mudou: false }
+    }
+    const nova = recentes?.[1]
+    // peso_atual acompanha a pesagem que sobrou; sem nenhuma, fica o que estava.
+    if (nova) await sb.from('profiles').update({ peso_atual: Number(nova.peso_kg) }).eq('id', userId)
+    const partes = [t.apagado(dia, antes)]
+    if (nova) partes.push(t.agoraUltima(fmtDia(nova.data), fmtKg(Number(nova.peso_kg), idioma)))
+    return { resposta: partes.join(' '), mudou: true }
   }
 
   const { data: anterior } = await sb.from('registros_peso').select('data, peso_kg')

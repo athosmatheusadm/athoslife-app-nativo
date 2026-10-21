@@ -297,7 +297,7 @@ export const en: Mensagens = {
       linhaMeta: (kg: string) => `goal ${kg}`,
       registros: (n: number) => `${n} entries`,
       vazio: 'No weigh-ins yet. Tell Life in the chat: "I weigh 80 kg". 📈',
-      dicaChat: 'To log your weight, change your goal or see your history, just tell Life in the chat. It doesn\'t use up messages.',
+      dicaChat: 'To log, fix or delete a weigh-in, change your goal or see your history, just tell Life in the chat. It doesn\'t use up messages.',
       inicio: 'Start',
       atual: 'Now',
       meta: 'Goal',

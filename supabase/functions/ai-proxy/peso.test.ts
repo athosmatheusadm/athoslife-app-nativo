@@ -43,6 +43,23 @@ Deno.test('não confunde com outros assuntos (vai pra IA)', () => {
   ]) assertEquals(lerComandoPeso(m), null, m)
 })
 
+Deno.test('corrigir e apagar a última pesagem', () => {
+  assertEquals(lerComandoPeso('corrige a última pesagem pra 80,2'), { tipo: 'corrigir', kg: 80.2 })
+  assertEquals(lerComandoPeso('errei o peso, é 79,5'), { tipo: 'corrigir', kg: 79.5 })
+  assertEquals(lerComandoPeso('altera meu último peso para 81 kg'), { tipo: 'corrigir', kg: 81 })
+  assertEquals(lerComandoPeso('change my last weigh-in to 80 kg'), { tipo: 'corrigir', kg: 80 })
+  assertEquals(lerComandoPeso('corrige mi último pesaje a 70 kg'), { tipo: 'corrigir', kg: 70 })
+  assertEquals(lerComandoPeso('apaga a última pesagem'), { tipo: 'apagar' })
+  assertEquals(lerComandoPeso('exclui meu peso de hoje'), { tipo: 'apagar' })
+  assertEquals(lerComandoPeso('delete my last weigh-in'), { tipo: 'apagar' })
+  assertEquals(lerComandoPeso('borra mi último pesaje'), { tipo: 'apagar' })
+  // meta continua sendo meta, mesmo com "mudar"
+  assertEquals(lerComandoPeso('muda minha meta pra 75'), { tipo: 'meta', kg: 75 })
+  // apagar outra coisa vai pra IA
+  assertEquals(lerComandoPeso('apaga o peso do supino'), null)
+  assertEquals(lerComandoPeso('apaga o almoço'), null)
+})
+
 Deno.test('peso fora da faixa humana não grava', () => {
   assertEquals(lerComandoPeso('pesei 12 kg'), null)
   assertEquals(lerComandoPeso('pesei 900 kg'), null)

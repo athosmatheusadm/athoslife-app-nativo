@@ -309,7 +309,7 @@ export const ptBR = {
       linhaMeta: (kg: string) => `meta ${kg}`,
       registros: (n: number) => `${n} registros`,
       vazio: 'Ainda sem pesagens. Conte ao Life no chat: "pesei 80 kg". 📈',
-      dicaChat: 'Pra registrar o peso, mudar a meta ou ver o histórico, é só falar com o Life no chat. Não gasta mensagem.',
+      dicaChat: 'Pra registrar, corrigir ou apagar o peso, mudar a meta ou ver o histórico, é só falar com o Life no chat. Não gasta mensagem.',
       inicio: 'Início',
       atual: 'Atual',
       meta: 'Meta',

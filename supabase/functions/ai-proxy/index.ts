@@ -7,6 +7,7 @@
 //                     id_envio: uuid por mensagem (reenvio não repete a ação)
 //                     acao: refeicao_atualizada | pausa | escolha (botões) | peso_atualizado
 //                     v4.1: peso pelo chat ("pesei 80", "minha meta é 75", histórico) — peso.ts, sem IA e sem cota
+//                     v4.2: corrigir/apagar a última pesagem pelo chat ("corrige pra 80,2", "apaga a última pesagem")
 //   { tipo: 'acao',   id, escolha }                       -> { resposta, acao? }  (sem IA, sem cota)
 //                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
 //   { tipo: 'vision', image: base64, mime_type? }         -> ResultadoVisao cru

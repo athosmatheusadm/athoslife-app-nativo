@@ -297,7 +297,7 @@ export const es: Mensagens = {
       linhaMeta: (kg: string) => `meta ${kg}`,
       registros: (n: number) => `${n} registros`,
       vazio: 'Aún sin pesajes. Cuéntale a Life en el chat: "hoy peso 80 kg". 📈',
-      dicaChat: 'Para registrar tu peso, cambiar la meta o ver el historial, solo díselo a Life en el chat. No gasta mensajes.',
+      dicaChat: 'Para registrar, corregir o borrar tu peso, cambiar la meta o ver el historial, solo díselo a Life en el chat. No gasta mensajes.',
       inicio: 'Inicio',
       atual: 'Actual',
       meta: 'Meta',
