@@ -1254,7 +1254,7 @@ export const en: Mensagens = {
       idioma: 'Language and region',
       idiomaSub: 'Language · Idioma · kg/lb',
       acessibilidade: 'Accessibility',
-      acessibilidadeSub: 'Contrast, animations and text size',
+      acessibilidadeSub: 'Theme, contrast, animations and text size',
       sobre: 'About',
       sobreSub: 'Terms, privacy policy and support',
       sair: 'Sign out',
@@ -1421,6 +1421,9 @@ export const en: Mensagens = {
     },
     acessibilidade: {
       titulo: 'Accessibility',
+      tema: 'Theme',
+      temas: { escuro: 'Dark', claro: 'Light', auto: 'Automatic' },
+      temaAutoSub: "Automatic follows your phone's light/dark mode.",
       tamanho: 'Text size',
       tamanhos: { normal: 'Normal', grande: 'Large', extra: 'Extra large' },
       animacoes: 'Reduce motion',

@@ -1268,7 +1268,7 @@ export const ptBR = {
       idioma: 'Idioma e região',
       idiomaSub: 'Language · Idioma · kg/lb',
       acessibilidade: 'Acessibilidade',
-      acessibilidadeSub: 'Contraste, animações e tamanho do texto',
+      acessibilidadeSub: 'Tema, contraste, animações e tamanho do texto',
       sobre: 'Sobre',
       sobreSub: 'Termos, política de privacidade e suporte',
       sair: 'Sair da conta',
@@ -1435,6 +1435,9 @@ export const ptBR = {
     },
     acessibilidade: {
       titulo: 'Acessibilidade',
+      tema: 'Tema',
+      temas: { escuro: 'Escuro', claro: 'Claro', auto: 'Automático' },
+      temaAutoSub: 'Automático segue o modo claro/escuro do celular.',
       tamanho: 'Tamanho do texto',
       tamanhos: { normal: 'Normal', grande: 'Grande', extra: 'Extra grande' },
       animacoes: 'Reduzir animações',
