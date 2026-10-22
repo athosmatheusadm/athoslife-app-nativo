@@ -131,10 +131,14 @@ export const treinoHistoricoRepository = {
     if (error) throw error
 
     // Ficha: best-effort — o histórico já foi salvo, falha aqui não perde o treino.
+    // Dia leve: só marca o que foi feito; séries e carga aliviadas não viram a ficha.
     await Promise.allSettled(
       sessao.exercicios
         .filter((e) => e.feitas.length > 0)
         .map((e) => {
+          if (sessao.leve) {
+            return supabase.from('treino_plano').update({ concluido_em: hojeISO() }).eq('id', e.planoId)
+          }
           const series_detalhe = e.alvo.map((alvo, i) => {
             const feita = e.feitas[i] ?? e.feitas[e.feitas.length - 1]
             return {
@@ -150,6 +154,29 @@ export const treinoHistoricoRepository = {
             .eq('id', e.planoId)
         }),
     )
+    avisarRegistroDoDia()
+  },
+
+  /** Dia leve: a caminhada no lugar do treino conta como treino feito. */
+  async salvarCaminhada(params: { minutos: number; local: string; diaSemana: string }): Promise<void> {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) throw new Error('not_authenticated')
+    const fim = Date.now()
+    const { error } = await supabase.from('treinos_historico').insert({
+      user_id: userId,
+      data: hojeISO(),
+      local: params.local,
+      dia_semana: params.diaSemana,
+      grupo_muscular: null,
+      iniciado_em: new Date(fim - params.minutos * 60_000).toISOString(),
+      finalizado_em: new Date(fim).toISOString(),
+      duracao_min: params.minutos,
+      exercicios_total: 0,
+      exercicios_feitos: 0,
+      completo: true,
+      series_feitas: [],
+    })
+    if (error) throw error
     avisarRegistroDoDia()
   },
 }

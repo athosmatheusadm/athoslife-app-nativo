@@ -3055,3 +3055,27 @@ Jiu-Jitsu por enquanto**, com a entrada que ele aprovou:
 3. Facebook App ID → `facebookAppId` (Instagram direto).
 4. Story: Corrida e Jiu-Jitsu quando o app registrar esses treinos.
 5. Live Activity fase 2: pausar/retomar e card "Exercício concluído".
+
+### 2026-10-22 (cont.) — Dia leve no check-in — branch `story-studio`
+
+Bug relatado pelo dono: check-in "cansado" + sono → o Life só falava, sem
+aliviar nada. Agora (regras em `domain/rules/diaLeve.ts`):
+- **Quando:** palavra de pouca energia e pouco agradável (cansado, esgotado,
+  desanimado, entediado) ou energia baixa + etiqueta sono/saúde. Card logo
+  abaixo da resposta do Life ("Noite ruim? 😴" / "Dia puxado?") →
+  "Deixar mais leve" / "Manter como está" (some até amanhã).
+- **Treino (a pessoa escolhe):** treino leve (1 série a menos, mín. 2, carga
+  −20% em passos de 0,5 kg) ou caminhada de 20 min no lugar ("Fiz a
+  caminhada" grava em treinos_historico como treino feito). Faixa no Treino
+  pra trocar entre os dois ou "Voltar ao normal". **A ficha não muda:**
+  sessão leve só marca `concluido_em`, não grava carga/séries aliviadas.
+- **Passos:** meta de hoje −30% (grava em `passos_diarios.meta`, a Home recarrega).
+- **Dieta:** igual; o texto lembra proteína e água.
+- **Sequência:** conta normal. **Lembretes:** no máx. 2 de água hoje.
+- Estado do dia no aparelho (`data/diaLeve.ts`, Preferences). Textos pt/en/es.
+- Validação: tsc e vite build. Não testado no aparelho.
+
+**Pendências**
+1. O chat do Life (ai-proxy) ainda não sabe do dia leve — se quiser, mandar
+   no contexto pra ele não puxar treino pesado (precisa deploy da ai-proxy).
+2. As do bloco anterior (token do GitHub → push + APK; testes no aparelho).

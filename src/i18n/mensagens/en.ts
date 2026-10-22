@@ -215,6 +215,20 @@ export const en: Mensagens = {
       salvar: 'Save',
     },
     checkin: {
+      diaLeve: {
+        tituloSono: 'Rough night? 😴',
+        tituloCansaco: 'Tough day? 😮‍💨',
+        pergunta: 'Want to make today lighter? Just today — your streak counts as usual.',
+        sim: 'Make it lighter',
+        nao: 'Keep it as is',
+        eOTreino: "What about today's workout?",
+        treinoLeve: 'Lighter workout',
+        treinoLeveSub: '1 set fewer and 20% less weight',
+        caminhada: '20-min walk',
+        caminhadaSub: 'instead of the workout',
+        pronto: (passos: string) => `Done, light day. Steps today: ${passos}. Diet stays the same — protein and water help with the hunger that comes with poor sleep.`,
+        erro: "Couldn't adjust it now. Try again.",
+      },
       rotulo: 'Daily check-in',
       pergunta: {
         manha: 'Good morning! How are you starting the day?',
@@ -1050,6 +1064,16 @@ export const en: Mensagens = {
   },
 
   treino: {
+    diaLeve: {
+      leve: 'Light day: 1 set fewer and 20% less weight. Your plan stays the same.',
+      caminhada: 'Light day: a 20-min walk instead of the workout.',
+      fizCaminhada: 'I did the walk',
+      caminhadaSalva: 'Walk logged. Rest well today 💚',
+      trocarParaCaminhada: 'Switch to a walk',
+      trocarParaLeve: "I'd rather do the light workout",
+      voltarNormal: 'Back to normal',
+      erro: "Couldn't save it. Try again.",
+    },
     marca: 'Athos',
     titulo: 'Workout',
     subtitulo: 'Your body, your rules.',

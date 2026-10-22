@@ -225,6 +225,20 @@ export const ptBR = {
     },
     /** Check-in v3 do Life (palavra de sentimento; vocabulário em domain/rules/checkinLife). */
     checkin: {
+      diaLeve: {
+        tituloSono: 'Noite ruim? 😴',
+        tituloCansaco: 'Dia puxado? 😮‍💨',
+        pergunta: 'Quer deixar o dia mais leve? Só hoje — a sequência conta normal.',
+        sim: 'Deixar mais leve',
+        nao: 'Manter como está',
+        eOTreino: 'E o treino de hoje?',
+        treinoLeve: 'Treino mais leve',
+        treinoLeveSub: '1 série a menos e 20% menos carga',
+        caminhada: 'Caminhada de 20 min',
+        caminhadaSub: 'no lugar do treino',
+        pronto: (passos: string) => `Pronto, dia leve. Passos hoje: ${passos}. A dieta fica igual — proteína e água ajudam a segurar a fome que vem com o sono ruim.`,
+        erro: 'Não deu pra ajustar agora. Tenta de novo.',
+      },
       rotulo: 'Check-in do dia',
       pergunta: {
         manha: 'Bom dia! Como você está chegando hoje?',
@@ -1064,6 +1078,16 @@ export const ptBR = {
   },
 
   treino: {
+    diaLeve: {
+      leve: 'Dia leve: treino com 1 série a menos e 20% menos carga. Sua ficha não muda.',
+      caminhada: 'Dia leve: caminhada de 20 min no lugar do treino.',
+      fizCaminhada: 'Fiz a caminhada',
+      caminhadaSalva: 'Caminhada registrada. Descansa bem hoje 💚',
+      trocarParaCaminhada: 'Trocar por caminhada',
+      trocarParaLeve: 'Prefiro o treino leve',
+      voltarNormal: 'Voltar ao normal',
+      erro: 'Não deu pra salvar. Tenta de novo.',
+    },
     marca: 'Athos',
     titulo: 'Treino',
     subtitulo: 'Seu corpo, suas regras.',

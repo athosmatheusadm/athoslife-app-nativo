@@ -56,7 +56,7 @@ interface SessaoTreinoState {
   readonly sessao: SessaoTreino | null
   readonly carregando: boolean
   readonly agora: number
-  iniciar(params: { itens: readonly ExercicioPlano[]; local: LocalTreino; diaSemana: DiaSemana }): void
+  iniciar(params: { itens: readonly ExercicioPlano[]; local: LocalTreino; diaSemana: DiaSemana; leve?: boolean }): void
   aplicar(fn: Transformacao): void
   finalizar(): Promise<void>
   descartar(): void
@@ -196,11 +196,11 @@ export function SessaoTreinoProvider({ children }: { children: ReactNode }) {
       sessao,
       carregando,
       agora,
-      iniciar: ({ itens, local, diaSemana }) => {
+      iniciar: ({ itens, local, diaSemana, leve }) => {
         // A Live Activity e o aviso de fim de descanso são notificações:
         // pede a permissão (Android 13+) já no começo do treino.
         if (nativo) void LocalNotifications.requestPermissions().catch(() => {})
-        setSessao(criarSessao({ itens, local, diaSemana, agora: Date.now() }))
+        setSessao(criarSessao({ itens, local, diaSemana, agora: Date.now(), ...(leve ? { leve } : {}) }))
       },
       aplicar,
       finalizar: async () => {

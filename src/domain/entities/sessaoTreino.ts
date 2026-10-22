@@ -6,6 +6,7 @@ import type {
   MedidaSerie,
 } from './treino'
 import { iconeDoExercicio } from './treino'
+import { seriesLeves } from '@domain/rules/diaLeve'
 
 /**
  * Sessão de "treino em andamento" — a fonte única de estado que alimenta a
@@ -70,6 +71,8 @@ export interface SessaoTreino {
   readonly cronometroInicioEm: number | null
   /** Descanso padrão entre séries, em segundos. */
   readonly descansoSeg: number
+  /** Dia leve (rules/diaLeve): séries e carga aliviadas; a ficha não muda ao salvar. */
+  readonly leve?: boolean
 }
 
 export const DESCANSO_PADRAO_SEG = 90
@@ -85,10 +88,12 @@ export function criarSessao(params: {
   local: LocalTreino
   diaSemana: DiaSemana
   agora: number
+  leve?: boolean
 }): SessaoTreino {
   const exercicios: ExercicioSessao[] = params.itens.map((item) => {
     const porTempo = item.exercicio.medida === 'tempo'
-    const alvo = (item.series.length > 0 ? item.series : [{ reps: null, cargaKg: null }]).map((s) => ({
+    const series = params.leve ? seriesLeves(item.series) : item.series
+    const alvo = (series.length > 0 ? series : [{ reps: null, cargaKg: null }]).map((s) => ({
       reps: porTempo ? null : s.reps ?? item.exercicio.repeticoesPadrao,
       cargaKg: s.cargaKg,
       segundos: porTempo ? s.segundos ?? item.exercicio.segundosPadrao ?? 30 : null,
@@ -119,6 +124,7 @@ export function criarSessao(params: {
     cronometroFimEm: null,
     cronometroInicioEm: null,
     descansoSeg: DESCANSO_PADRAO_SEG,
+    ...(params.leve ? { leve: true } : {}),
   }
   return carregarValores(base)
 }

@@ -14,6 +14,7 @@ import { treinoPlanoRepository } from '@data/repositories/treinoPlanoRepository'
 import { ExerciseIcon } from '@ui/components/ExerciseIcon'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { BotaoStory } from '@ui/components/story/BotaoStory'
+import { CardDiaLeve, useDiaLeve } from './CardDiaLeve'
 import { ExerciseCard } from './ExerciseCard'
 import { AddExercisePanel } from './AddExercisePanel'
 import { TreinoEmAndamento } from './TreinoEmAndamento'
@@ -46,6 +47,7 @@ export function WorkoutScreen() {
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
   const [painelAberto, setPainelAberto] = useState(false)
   const { sessao, iniciar } = useSessaoTreino()
+  const diaLeve = useDiaLeve()
   const [recarga, setRecarga] = useState(0)
   const { m, idioma } = useI18n()
   const t = m.treino
@@ -234,6 +236,8 @@ export function WorkoutScreen() {
         })}
       </div>
 
+      {!sessao && ehHojeSel && diaLeve && <CardDiaLeve treino={diaLeve} local={local} diaSemana={dia} />}
+
       {sessao ? (
         <TreinoEmAndamento />
       ) : (
@@ -244,7 +248,7 @@ export function WorkoutScreen() {
           <button
             onClick={() => {
               vibrar.leve()
-              iniciar({ itens, local, diaSemana: dia })
+              iniciar({ itens, local, diaSemana: dia, leve: diaLeve === 'leve' })
             }}
             className="mx-4 mb-4 min-h-14 w-[calc(100%-2rem)] rounded-2xl border border-brand/50 bg-brand/10 py-3 text-sm font-extrabold text-brand active:scale-[0.98]"
           >

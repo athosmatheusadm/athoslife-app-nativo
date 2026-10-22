@@ -215,6 +215,20 @@ export const es: Mensagens = {
       salvar: 'Guardar',
     },
     checkin: {
+      diaLeve: {
+        tituloSono: '¿Mala noche? 😴',
+        tituloCansaco: '¿Día pesado? 😮‍💨',
+        pergunta: '¿Quieres hacer el día más liviano? Solo hoy — la racha cuenta normal.',
+        sim: 'Hacerlo más liviano',
+        nao: 'Dejarlo como está',
+        eOTreino: '¿Y el entreno de hoy?',
+        treinoLeve: 'Entreno más liviano',
+        treinoLeveSub: '1 serie menos y 20% menos carga',
+        caminhada: 'Caminata de 20 min',
+        caminhadaSub: 'en lugar del entreno',
+        pronto: (passos: string) => `Listo, día liviano. Pasos hoy: ${passos}. La dieta sigue igual — la proteína y el agua ayudan con el hambre que trae dormir mal.`,
+        erro: 'No se pudo ajustar ahora. Inténtalo de nuevo.',
+      },
       rotulo: 'Check-in del día',
       pergunta: {
         manha: '¡Buenos días! ¿Cómo llegas hoy?',
@@ -1050,6 +1064,16 @@ export const es: Mensagens = {
   },
 
   treino: {
+    diaLeve: {
+      leve: 'Día liviano: 1 serie menos y 20% menos carga. Tu ficha no cambia.',
+      caminhada: 'Día liviano: caminata de 20 min en lugar del entreno.',
+      fizCaminhada: 'Hice la caminata',
+      caminhadaSalva: 'Caminata registrada. Descansa bien hoy 💚',
+      trocarParaCaminhada: 'Cambiar por caminata',
+      trocarParaLeve: 'Prefiero el entreno liviano',
+      voltarNormal: 'Volver a lo normal',
+      erro: 'No se pudo guardar. Inténtalo de nuevo.',
+    },
     marca: 'Athos',
     titulo: 'Entreno',
     subtitulo: 'Tu cuerpo, tus reglas.',
