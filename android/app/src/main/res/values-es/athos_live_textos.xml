@@ -23,4 +23,15 @@
     <string name="la_proximo_ex">siguiente: %1$s</string>
     <string name="la_ate_proxima">hasta la próxima serie</string>
     <string name="la_confirmar_desc">Confirmar serie</string>
+    <string name="la_pausar">Pausar</string>
+    <string name="la_retomar">Reanudar</string>
+    <string name="la_pausado">En pausa</string>
+    <string name="la_faltam">faltan %1$s de %2$s</string>
+    <string name="la_chip_pausado">En pausa</string>
+    <string name="la_chip_feito">Hecho</string>
+    <string name="la_treino_hoje">Entreno de hoy</string>
+    <string name="la_concluido">Entreno terminado</string>
+    <string name="la_n_series">%1$d series</string>
+    <string name="la_resumo_feito">%1$d series · %2$s kg de volumen</string>
+    <string name="la_salvar_app">Guardar en la app</string>
 </resources>

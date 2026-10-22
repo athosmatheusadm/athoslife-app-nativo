@@ -465,6 +465,123 @@
                 android:textColor="@color/athos_la_escuro"
                 android:textSize="12.5sp" />
         </LinearLayout>
+
+        <!-- prancha correndo / pausada: dois botões (Pausar|Retomar + Concluir) -->
+        <LinearLayout
+            android:id="@+id/la_acoes_duplas"
+            android:layout_width="104dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/la_acao_a"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:background="@drawable/athos_la_botao_neutro_alto"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/la_acao_a_icone"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginEnd="6dp"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:id="@+id/la_acao_a_txt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/la_acao_b"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/athos_la_botao_neutro_alto"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/la_acao_b_icone"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginEnd="6dp"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:id="@+id/la_acao_b_txt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- treino concluído: selo + resumo + salvar no app -->
+    <LinearLayout
+        android:id="@+id/la_bloco_feito"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/athos_la_badge">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/athos_la_ic_ok" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/la_feito_titulo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/athos_la_texto"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/la_feito_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@color/athos_la_texto_baixo"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/la_salvar"
+            android:layout_width="wrap_content"
+            android:layout_height="35dp"
+            android:background="@drawable/athos_la_botao_neutro_alto"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:textColor="@color/athos_la_texto"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <!-- formato 3: descanso -->

@@ -53,18 +53,14 @@ final class LiveActivityNotificacao {
         RemoteViews pequeno = new RemoteViews(ctx.getPackageName(), R.layout.athos_la_pequeno);
         RemoteViews grande = new RemoteViews(ctx.getPackageName(), R.layout.athos_la_grande);
         long agora = System.currentTimeMillis();
+        PendingIntent aoTocar = abrirApp(ctx);
         preencherPequeno(ctx, pequeno, e, agora);
-        preencherGrande(ctx, grande, e, agora);
-
-        Intent abrir = new Intent(ctx, MainActivity.class)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent aoTocar = PendingIntent.getActivity(
-                ctx, 0, abrir, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        preencherGrande(ctx, grande, e, agora, aoTocar);
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CANAL)
                 .setSmallIcon(R.drawable.ic_stat_athos)
                 .setColor(ContextCompat.getColor(ctx, R.color.athos_la_lima))
-                .setContentTitle(e.nome())
+                .setContentTitle(e.concluida() ? ctx.getString(R.string.la_concluido) : e.nome())
                 .setContentText(subtitulo(ctx, e))
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(pequeno)
@@ -98,9 +94,22 @@ final class LiveActivityNotificacao {
         String status = e.status();
         boolean descanso = "descanso".equals(status);
         preencherMiniatura(ctx, v, e, descanso);
-        v.setTextViewText(R.id.la_nome, e.nome());
+        v.setTextViewText(R.id.la_nome, e.concluida() ? ctx.getString(R.string.la_concluido) : e.nome());
         v.setTextViewText(R.id.la_sub, subtitulo(ctx, e));
 
+        if (e.concluida()) {
+            v.setViewVisibility(R.id.la_relogio, View.GONE);
+            v.setViewVisibility(R.id.la_resumo, View.VISIBLE);
+            v.setTextViewText(R.id.la_resumo, "✓");
+            v.setTextColor(R.id.la_resumo, cor(ctx, R.color.athos_la_lima));
+            return;
+        }
+        if (e.pausado()) {
+            v.setViewVisibility(R.id.la_relogio, View.GONE);
+            v.setViewVisibility(R.id.la_resumo, View.VISIBLE);
+            v.setTextViewText(R.id.la_resumo, formatarRelogio(segundosAte(e.fimEm(), e.pausadoEm())));
+            return;
+        }
         boolean preparando = e.preparando(agora);
         boolean contando = e.fimEm() > 0 && !"serie".equals(status) && !preparando;
         v.setViewVisibility(R.id.la_relogio, contando ? View.VISIBLE : View.GONE);
@@ -116,15 +125,26 @@ final class LiveActivityNotificacao {
         }
     }
 
-    private static void preencherGrande(Context ctx, RemoteViews v, EstadoLive e, long agora) {
+    private static void preencherGrande(Context ctx, RemoteViews v, EstadoLive e, long agora, PendingIntent abrir) {
         String status = e.status();
         boolean descanso = "descanso".equals(status);
         boolean preparando = e.preparando(agora);
 
         preencherMiniatura(ctx, v, e, descanso);
-        v.setTextViewText(R.id.la_nome, e.nome());
+        v.setTextViewText(R.id.la_nome, e.concluida() ? ctx.getString(R.string.la_treino_hoje) : e.nome());
         v.setTextViewText(R.id.la_sub, subtitulo(ctx, e));
         preencherSegmentos(v, e, descanso);
+
+        v.setViewVisibility(R.id.la_bloco_reps, View.GONE);
+        v.setViewVisibility(R.id.la_bloco_tempo, View.GONE);
+        v.setViewVisibility(R.id.la_bloco_descanso, View.GONE);
+        v.setViewVisibility(R.id.la_bloco_feito, View.GONE);
+
+        if (e.concluida()) {
+            chip(ctx, v, R.string.la_chip_feito, R.drawable.athos_la_chip_lima, cor(ctx, R.color.athos_la_lima));
+            preencherFeito(ctx, v, e, abrir);
+            return;
+        }
 
         // chip de status
         int chipTexto;
@@ -134,6 +154,10 @@ final class LiveActivityNotificacao {
             chipTexto = R.string.la_chip_descanso;
             chipFundo = R.drawable.athos_la_chip_laranja;
             chipCor = cor(ctx, R.color.athos_la_descanso);
+        } else if (e.pausado()) {
+            chipTexto = R.string.la_chip_pausado;
+            chipFundo = R.drawable.athos_la_chip_neutro;
+            chipCor = cor(ctx, R.color.athos_la_texto_baixo);
         } else if (preparando) {
             chipTexto = R.string.la_chip_preparo;
             chipFundo = R.drawable.athos_la_chip_neutro;
@@ -147,14 +171,7 @@ final class LiveActivityNotificacao {
             chipFundo = R.drawable.athos_la_chip_lima;
             chipCor = cor(ctx, R.color.athos_la_lima);
         }
-        v.setTextViewText(R.id.la_chip_txt, ctx.getString(chipTexto));
-        v.setInt(R.id.la_chip, "setBackgroundResource", chipFundo);
-        v.setTextColor(R.id.la_chip_txt, chipCor);
-        v.setTextColor(R.id.la_chip_ponto, chipCor);
-
-        v.setViewVisibility(R.id.la_bloco_reps, View.GONE);
-        v.setViewVisibility(R.id.la_bloco_tempo, View.GONE);
-        v.setViewVisibility(R.id.la_bloco_descanso, View.GONE);
+        chip(ctx, v, chipTexto, chipFundo, chipCor);
 
         if (descanso) {
             preencherDescanso(ctx, v, e, agora);
@@ -181,17 +198,33 @@ final class LiveActivityNotificacao {
 
     private static void preencherTempo(Context ctx, RemoteViews v, EstadoLive e, long agora, boolean preparando) {
         v.setViewVisibility(R.id.la_bloco_tempo, View.VISIBLE);
-        boolean correndo = "cronometro".equals(e.status()) && !preparando;
+        boolean pausado = e.pausado();
+        boolean correndo = "cronometro".equals(e.status()) && !preparando && !pausado;
         int meta = e.segundos();
+        // Correndo ou pausada: dois botões; pronto ou preparo: o botão alto.
+        v.setViewVisibility(R.id.la_acao, correndo || pausado ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(R.id.la_acoes_duplas, correndo || pausado ? View.VISIBLE : View.GONE);
 
         v.setViewVisibility(R.id.la_anel, preparando ? View.GONE : View.VISIBLE);
         v.setViewVisibility(R.id.la_anel_preparo, preparando ? View.VISIBLE : View.GONE);
         v.setViewVisibility(R.id.la_anel_txt, correndo ? View.GONE : View.VISIBLE);
         v.setViewVisibility(R.id.la_anel_relogio, correndo ? View.VISIBLE : View.GONE);
         v.setViewVisibility(R.id.la_ajustes, correndo || preparando ? View.GONE : View.VISIBLE);
-        v.setViewVisibility(R.id.la_tempo_sub, correndo || preparando ? View.VISIBLE : View.GONE);
+        v.setViewVisibility(R.id.la_tempo_sub, correndo || preparando || pausado ? View.VISIBLE : View.GONE);
+        if (pausado) v.setViewVisibility(R.id.la_ajustes, View.GONE);
 
-        if (preparando) {
+        if (pausado) {
+            long total = Math.max(1, e.fimEm() - e.inicioEm());
+            long feito = Math.max(0, Math.min(total, e.pausadoEm() - e.inicioEm()));
+            String falta = formatarRelogio(segundosAte(e.fimEm(), e.pausadoEm()));
+            v.setProgressBar(R.id.la_anel, 1000, (int) (feito * 1000 / total), false);
+            v.setTextViewText(R.id.la_anel_txt, falta);
+            v.setTextViewTextSize(R.id.la_anel_txt, TypedValue.COMPLEX_UNIT_SP, 19f);
+            v.setTextViewText(R.id.la_tempo_titulo, ctx.getString(R.string.la_pausado));
+            v.setTextViewText(R.id.la_tempo_sub, ctx.getString(R.string.la_faltam, falta, formatarRelogio(meta)));
+            botaoDuplo(ctx, v, R.id.la_acao_a, true, R.drawable.athos_la_ic_play, R.string.la_retomar, "retomar");
+            botaoDuplo(ctx, v, R.id.la_acao_b, false, R.drawable.athos_la_ic_ok, R.string.la_concluir, "confirmar");
+        } else if (preparando) {
             long resta = Math.max(0, e.inicioEm() - agora);
             v.setProgressBar(R.id.la_anel_preparo, 1000, (int) (resta * 1000 / EstadoLive.PREPARO_MS), false);
             v.setTextViewText(R.id.la_anel_txt, String.valueOf(segundosAte(e.inicioEm(), agora)));
@@ -207,8 +240,8 @@ final class LiveActivityNotificacao {
             relogio(ctx, v, R.id.la_anel_relogio, e.fimEm(), R.color.athos_la_texto);
             v.setTextViewText(R.id.la_tempo_titulo, ctx.getString(R.string.la_segure));
             v.setTextViewText(R.id.la_tempo_sub, ctx.getString(R.string.la_meta, formatarRelogio(meta)));
-            acao(ctx, v, R.drawable.athos_la_botao_lima_alto, R.drawable.athos_la_ic_ok,
-                    R.string.la_concluir, R.color.athos_la_escuro, "confirmar");
+            botaoDuplo(ctx, v, R.id.la_acao_a, false, R.drawable.athos_la_ic_pausa, R.string.la_pausar, "pausar");
+            botaoDuplo(ctx, v, R.id.la_acao_b, true, R.drawable.athos_la_ic_ok, R.string.la_concluir, "confirmar");
         } else {
             v.setProgressBar(R.id.la_anel, 1000, 0, false);
             v.setTextViewText(R.id.la_anel_txt, formatarRelogio(meta));
@@ -257,6 +290,7 @@ final class LiveActivityNotificacao {
 
     /** No descanso a série já avançou: mostra a próxima. */
     private static String subtitulo(Context ctx, EstadoLive e) {
+        if (e.concluida()) return ctx.getString(R.string.la_n_series, e.resumoSeries());
         int res = "descanso".equals(e.status()) ? R.string.la_proxima_de : R.string.la_serie_de;
         return ctx.getString(res, e.serieAtual(), e.totalSeries());
     }
@@ -268,7 +302,7 @@ final class LiveActivityNotificacao {
 
     private static void preencherSegmentos(RemoteViews v, EstadoLive e, boolean descanso) {
         int total = e.totalSeries();
-        boolean cabe = total > 1 && total <= SEGMENTOS.length;
+        boolean cabe = !e.concluida() && total > 1 && total <= SEGMENTOS.length;
         v.setViewVisibility(R.id.la_segs, cabe ? View.VISIBLE : View.GONE);
         if (!cabe) return;
         int feitas = e.serieAtual() - 1;
@@ -283,6 +317,41 @@ final class LiveActivityNotificacao {
             v.setViewVisibility(SEGMENTOS[i], View.VISIBLE);
             v.setInt(SEGMENTOS[i], "setBackgroundResource", fundo);
         }
+    }
+
+    private static void preencherFeito(Context ctx, RemoteViews v, EstadoLive e, PendingIntent abrir) {
+        v.setViewVisibility(R.id.la_bloco_feito, View.VISIBLE);
+        v.setTextViewText(R.id.la_feito_titulo, ctx.getString(R.string.la_concluido));
+        v.setTextViewText(R.id.la_feito_sub, ctx.getString(R.string.la_resumo_feito,
+                e.resumoSeries(), formatarVolume(e.resumoVolumeKg())));
+        v.setTextViewText(R.id.la_salvar, ctx.getString(R.string.la_salvar_app));
+        v.setOnClickPendingIntent(R.id.la_salvar, abrir);
+    }
+
+    private static void chip(Context ctx, RemoteViews v, int texto, int fundo, int corTexto) {
+        v.setTextViewText(R.id.la_chip_txt, ctx.getString(texto));
+        v.setInt(R.id.la_chip, "setBackgroundResource", fundo);
+        v.setTextColor(R.id.la_chip_txt, corTexto);
+        v.setTextColor(R.id.la_chip_ponto, corTexto);
+    }
+
+    /** Botão baixo da prancha correndo/pausada (Pausar|Retomar, Concluir). Lima = o principal. */
+    private static void botaoDuplo(Context ctx, RemoteViews v, int id, boolean lima, int icone, int texto, String acao) {
+        int corTexto = cor(ctx, lima ? R.color.athos_la_escuro : R.color.athos_la_texto);
+        int icId = id == R.id.la_acao_a ? R.id.la_acao_a_icone : R.id.la_acao_b_icone;
+        int txtId = id == R.id.la_acao_a ? R.id.la_acao_a_txt : R.id.la_acao_b_txt;
+        v.setInt(id, "setBackgroundResource", lima ? R.drawable.athos_la_botao_lima_alto : R.drawable.athos_la_botao_neutro_alto);
+        v.setImageViewResource(icId, icone);
+        v.setInt(icId, "setColorFilter", corTexto);
+        v.setTextViewText(txtId, ctx.getString(texto));
+        v.setTextColor(txtId, corTexto);
+        clique(ctx, v, id, acao);
+    }
+
+    private static PendingIntent abrirApp(Context ctx) {
+        Intent abrir = new Intent(ctx, MainActivity.class)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        return PendingIntent.getActivity(ctx, 0, abrir, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     /** Botão alto da série por tempo (Iniciar / Cancelar / Concluir). */
@@ -324,7 +393,7 @@ final class LiveActivityNotificacao {
     private static void agendarRedesenho(Context ctx, EstadoLive e) {
         cancelarRedesenho();
         long fim = e.fimEm();
-        if (fim <= 0 || "serie".equals(e.status())) return;
+        if (fim <= 0 || "serie".equals(e.status()) || e.pausado()) return;
         long agora = System.currentTimeMillis();
         long proximo;
         if (e.preparando(agora)) {
@@ -382,6 +451,10 @@ final class LiveActivityNotificacao {
         s.setSpan(new RelativeSizeSpan(0.52f), i, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         s.setSpan(new ForegroundColorSpan(cor(ctx, R.color.athos_la_texto_baixo)), i, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return s;
+    }
+
+    private static String formatarVolume(double kg) {
+        return String.format(Locale.getDefault(), "%,d", Math.round(kg));
     }
 
     private static int segundosAte(long fimEm, long agora) {

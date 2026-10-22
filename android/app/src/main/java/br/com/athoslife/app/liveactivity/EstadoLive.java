@@ -19,8 +19,9 @@ import org.json.JSONObject;
  * Campos = EstadoLiveActivity do TS: nomeExercicio, serieAtual, totalSeries,
  * medida (reps|tempo), cargaKg, reps, segundos, status
  * (serie|cronometro|descanso), descansoFimEm, cronometroFimEm,
- * cronometroInicioEm (ms epoch; antes dele é o preparo de 3 s), proximo,
- * descansoSeg.
+ * cronometroInicioEm (ms epoch; antes dele é o preparo de 3 s),
+ * cronometroPausadoEm (prancha pausada), resumoSeries/resumoVolumeKg (status
+ * "concluida"), proximo, descansoSeg.
  */
 final class EstadoLive {
     /** Igual a PREPARO_SEG de sessaoTreino.ts. */
@@ -129,7 +130,28 @@ final class EstadoLive {
     }
 
     boolean preparando(long agora) {
-        return "cronometro".equals(status()) && agora < inicioEm();
+        return "cronometro".equals(status()) && !pausado() && agora < inicioEm();
+    }
+
+    /** Quando a prancha foi pausada; 0 se está correndo. */
+    long pausadoEm() {
+        return json.isNull("cronometroPausadoEm") ? 0L : json.optLong("cronometroPausadoEm", 0L);
+    }
+
+    boolean concluida() {
+        return "concluida".equals(status());
+    }
+
+        boolean pausado() {
+        return "cronometro".equals(status()) && pausadoEm() > 0;
+    }
+
+    int resumoSeries() {
+        return json.optInt("resumoSeries", 0);
+    }
+
+    double resumoVolumeKg() {
+        return json.optDouble("resumoVolumeKg", 0);
     }
 
     int descansoSeg() {
@@ -175,6 +197,21 @@ final class EstadoLive {
                         json.put("status", "serie");
                         json.put("cronometroFimEm", JSONObject.NULL);
                         json.put("cronometroInicioEm", JSONObject.NULL);
+                        json.put("cronometroPausadoEm", JSONObject.NULL);
+                    }
+                    break;
+                case "pausar":
+                    if ("cronometro".equals(status()) && !pausado() && !preparando(agora)) {
+                        json.put("cronometroPausadoEm", agora);
+                    }
+                    break;
+                case "retomar":
+                    if (pausado()) {
+                        // Empurra início e fim pelo tempo parado (igual a retomarCronometro do TS).
+                        long parado = agora - pausadoEm();
+                        json.put("cronometroInicioEm", inicioEm() + parado);
+                        json.put("cronometroFimEm", fimEm() + parado);
+                        json.put("cronometroPausadoEm", JSONObject.NULL);
                     }
                     break;
                 case "confirmar":
@@ -185,6 +222,7 @@ final class EstadoLive {
                         json.put("status", "descanso");
                         json.put("cronometroFimEm", JSONObject.NULL);
                         json.put("cronometroInicioEm", JSONObject.NULL);
+                        json.put("cronometroPausadoEm", JSONObject.NULL);
                         json.put("descansoFimEm", agora + json.optInt("descansoSeg", 90) * 1000L);
                     }
                     break;
@@ -198,7 +236,7 @@ final class EstadoLive {
     /** Descanso/cronômetro que acabou: volta pra série (o app grava a série do cronômetro). */
     boolean avancarRelogio(long agora) {
         long fim = fimEm();
-        if (fim <= 0 || agora < fim) return false;
+        if (fim <= 0 || agora < fim || pausado()) return false;
         try {
             if ("descanso".equals(status())) {
                 json.put("status", "serie");

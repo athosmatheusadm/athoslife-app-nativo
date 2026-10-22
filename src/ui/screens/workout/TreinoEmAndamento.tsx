@@ -4,6 +4,7 @@ import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
   emPreparo,
+  pausado,
   exercicioAtual,
   formatarRelogio,
   indiceSerie,
@@ -50,6 +51,8 @@ export function TreinoEmAndamento() {
   } else if (sessao.status === 'descanso') {
     status = tx.descanso(formatarRelogio(segundosRestantes(sessao.descansoFimEm, t)))
     cor = 'bg-accent-energy'
+  } else if (pausado(sessao)) {
+    status = tx.pausado(ex.nome, formatarRelogio(segundosRestantes(sessao.cronometroFimEm, sessao.cronometroPausadoEm!)))
   } else if (emPreparo(sessao, t)) {
     status = tx.preparo(ex.nome, segundosRestantes(sessao.cronometroInicioEm, t))
   } else if (sessao.status === 'cronometro') {

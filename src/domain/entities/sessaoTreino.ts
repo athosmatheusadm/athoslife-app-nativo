@@ -69,6 +69,8 @@ export interface SessaoTreino {
   readonly descansoFimEm: number | null
   readonly cronometroFimEm: number | null
   readonly cronometroInicioEm: number | null
+  /** Prancha pausada: quando pausou (o relógio fica parado até retomar). Ausente = correndo. */
+  readonly cronometroPausadoEm?: number | null
   /** Descanso padrão entre séries, em segundos. */
   readonly descansoSeg: number
   /** Dia leve (rules/diaLeve): séries e carga aliviadas; a ficha não muda ao salvar. */
@@ -209,6 +211,21 @@ export function emPreparo(s: SessaoTreino, agora: number): boolean {
   return s.status === 'cronometro' && s.cronometroInicioEm !== null && agora < s.cronometroInicioEm
 }
 
+export const pausado = (s: SessaoTreino) => s.status === 'cronometro' && s.cronometroPausadoEm != null
+
+/** Pausa a prancha (só depois do preparo). */
+export function pausarCronometro(s: SessaoTreino, agora: number): SessaoTreino {
+  if (s.status !== 'cronometro' || pausado(s) || emPreparo(s, agora)) return s
+  return { ...s, cronometroPausadoEm: agora }
+}
+
+/** Retoma: empurra início e fim pelo tempo que ficou parado. */
+export function retomarCronometro(s: SessaoTreino, agora: number): SessaoTreino {
+  if (!pausado(s) || s.cronometroInicioEm === null || s.cronometroFimEm === null) return s
+  const parado = agora - s.cronometroPausadoEm!
+  return { ...s, cronometroPausadoEm: null, cronometroInicioEm: s.cronometroInicioEm + parado, cronometroFimEm: s.cronometroFimEm + parado }
+}
+
 /**
  * Registra a série em foco e decide o próximo passo:
  * mais séries -> descanso; acabou o exercício -> descanso e já aponta pro
@@ -221,7 +238,8 @@ export function confirmarSerie(s: SessaoTreino, agora: number): SessaoTreino {
 
   let segundosFeitos = s.segundos
   if (ex.medida === 'tempo' && s.status === 'cronometro' && s.cronometroInicioEm !== null) {
-    const decorrido = Math.round((agora - s.cronometroInicioEm) / 1000)
+    const ate = s.cronometroPausadoEm ?? agora
+    const decorrido = Math.round((ate - s.cronometroInicioEm) / 1000)
     segundosFeitos = Math.min(s.segundos ?? decorrido, Math.max(decorrido, 1))
   }
   const feita: SerieFeita = {
@@ -231,7 +249,7 @@ export function confirmarSerie(s: SessaoTreino, agora: number): SessaoTreino {
     feitaEm: agora,
   }
   const exercicios = s.exercicios.map((e, i) => (i === s.atual ? { ...e, feitas: [...e.feitas, feita] } : e))
-  const depois: SessaoTreino = { ...s, exercicios, cronometroFimEm: null, cronometroInicioEm: null }
+  const depois: SessaoTreino = { ...s, exercicios, cronometroFimEm: null, cronometroInicioEm: null, cronometroPausadoEm: null }
 
   const atualizado = exercicios[s.atual]!
   let proximo = s.atual
@@ -268,7 +286,7 @@ export function pularDescanso(s: SessaoTreino): SessaoTreino {
 /** Cancela o cronômetro sem gravar a série (tocou sem querer). */
 export function cancelarCronometro(s: SessaoTreino): SessaoTreino {
   if (s.status !== 'cronometro') return s
-  return { ...s, status: 'serie', cronometroFimEm: null, cronometroInicioEm: null }
+  return { ...s, status: 'serie', cronometroFimEm: null, cronometroInicioEm: null, cronometroPausadoEm: null }
 }
 
 /** Troca o exercício em foco (lista da sessão). Descanso em curso é mantido. */
@@ -288,7 +306,7 @@ export function avancarRelogio(s: SessaoTreino, agora: number): SessaoTreino {
   if (s.status === 'descanso' && s.descansoFimEm !== null && agora >= s.descansoFimEm) {
     return { ...s, status: 'serie', descansoFimEm: null }
   }
-  if (s.status === 'cronometro' && s.cronometroFimEm !== null && agora >= s.cronometroFimEm) {
+  if (s.status === 'cronometro' && !pausado(s) && s.cronometroFimEm !== null && agora >= s.cronometroFimEm) {
     return confirmarSerie(s, s.cronometroFimEm)
   }
   return s
@@ -360,15 +378,29 @@ export interface EstadoLiveActivity {
   readonly cronometroFimEm: number | null
   /** Fim do preparo de 3 s (o cronômetro vale a partir daqui). */
   readonly cronometroInicioEm: number | null
+  /** Prancha pausada desde (ms epoch); null = correndo. */
+  readonly cronometroPausadoEm: number | null
+  /** Treino concluído: o card vira "Treino concluído" com o resumo. */
+  readonly resumoSeries: number | null
+  readonly resumoVolumeKg: number | null
   /** Nome do próximo exercício, pra mostrar no descanso. */
   readonly proximo: string | null
   /** Descanso padrão — o nativo usa se tocarem "confirmar" com o app dormindo. */
   readonly descansoSeg: number
 }
 
-export function paraLiveActivity(s: SessaoTreino): EstadoLiveActivity | null {
+export function paraLiveActivity(s: SessaoTreino, agora: number = Date.now()): EstadoLiveActivity | null {
+  if (s.status === 'concluida') {
+    // Tudo feito: o card fica com o resumo até a pessoa salvar no app.
+    const r = resumirSessao(s, agora)
+    return {
+      nomeExercicio: '', serieAtual: 0, totalSeries: 0, medida: 'reps', cargaKg: null, reps: null, segundos: null,
+      status: 'concluida', descansoFimEm: null, cronometroFimEm: null, cronometroInicioEm: null, cronometroPausadoEm: null,
+      resumoSeries: r.seriesFeitas, resumoVolumeKg: r.volumeKg, proximo: null, descansoSeg: s.descansoSeg,
+    }
+  }
   const ex = exercicioAtual(s)
-  if (!ex || s.status === 'concluida') return null
+  if (!ex) return null
   return {
     nomeExercicio: ex.nome,
     serieAtual: indiceSerie(ex) + 1,
@@ -381,6 +413,9 @@ export function paraLiveActivity(s: SessaoTreino): EstadoLiveActivity | null {
     descansoFimEm: s.descansoFimEm,
     cronometroFimEm: s.cronometroFimEm,
     cronometroInicioEm: s.cronometroInicioEm,
+    cronometroPausadoEm: s.cronometroPausadoEm ?? null,
+    resumoSeries: null,
+    resumoVolumeKg: null,
     proximo: ex.feitas.length === 0 && s.status === 'descanso' ? ex.nome : null,
     descansoSeg: s.descansoSeg,
   }

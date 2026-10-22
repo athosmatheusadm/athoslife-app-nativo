@@ -1132,6 +1132,7 @@ export const es: Mensagens = {
       descanso: (t: string) => `Descanso ${t}`,
       serieDe: (nome: string, i: number, total: number) => `${nome} · serie ${i} de ${total}`,
       preparo: (nome: string, s: number) => `${nome} · prepárate: ${s}`,
+      pausado: (nome: string, t: string) => `${nome} · en pausa, faltan ${t}`,
       bloqueio: 'Contrólalo desde la pantalla de bloqueo 🔒',
       encerrar: 'Terminar',
       parar: 'Parar',

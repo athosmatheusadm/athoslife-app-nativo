@@ -24,6 +24,9 @@ import {
   ajustarSegundos,
   avancarRelogio,
   cancelarCronometro,
+  pausarCronometro,
+  retomarCronometro,
+  pausado,
   confirmarSerie,
   criarSessao,
   iniciarCronometro,
@@ -77,6 +80,8 @@ function transformacaoDaAcao(acao: AcaoLiveActivity): Transformacao {
     case 'confirmar': return confirmarSerie
     case 'iniciar': return iniciarCronometro
     case 'cancelar': return (s) => cancelarCronometro(s)
+    case 'pausar': return pausarCronometro
+    case 'retomar': return retomarCronometro
     case 'descanso+15': return (s, agora) => adicionarDescanso(s, 15, agora)
     case 'pular': return (s) => pularDescanso(s)
   }
@@ -92,7 +97,7 @@ async function agendarAviso(s: SessaoTreino | null): Promise<void> {
   if (!nativo) return
   await LocalNotifications.cancel({ notifications: [{ id: ID_AVISO }] }).catch(() => {})
   if (!s) return
-  const fim = s.status === 'descanso' ? s.descansoFimEm : s.status === 'cronometro' ? s.cronometroFimEm : null
+  const fim = s.status === 'descanso' ? s.descansoFimEm : s.status === 'cronometro' && !pausado(s) ? s.cronometroFimEm : null
   if (fim === null || fim <= Date.now() + 1000) return
   const m = mensagensAtuais()
   await LocalNotifications.schedule({
@@ -141,13 +146,12 @@ export function SessaoTreinoProvider({ children }: { children: ReactNode }) {
   // Persiste + espelha na Live Activity + agenda aviso, a cada mudança.
   useEffect(() => {
     if (carregando) return
-    if (sessao && sessao.status !== 'concluida') {
+    if (sessao) {
+      // Concluída também aparece ("Treino concluído") até salvar ou descartar.
       void Preferences.set({ key: CHAVE, value: JSON.stringify(sessao) })
       const estado = paraLiveActivity(sessao)
       if (estado) void liveActivity.mostrar(estado)
-    } else if (sessao) {
-      void Preferences.set({ key: CHAVE, value: JSON.stringify(sessao) })
-      void liveActivity.encerrar()
+      else void liveActivity.encerrar()
     } else {
       void Preferences.remove({ key: CHAVE })
       void liveActivity.encerrar()

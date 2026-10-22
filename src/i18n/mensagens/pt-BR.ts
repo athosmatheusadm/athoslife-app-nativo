@@ -1146,6 +1146,7 @@ export const ptBR = {
       descanso: (t: string) => `Descanso ${t}`,
       serieDe: (nome: string, i: number, total: number) => `${nome} · série ${i} de ${total}`,
       preparo: (nome: string, s: number) => `${nome} · prepare-se: ${s}`,
+      pausado: (nome: string, t: string) => `${nome} · pausado, faltam ${t}`,
       bloqueio: 'Controle pela tela de bloqueio 🔒',
       encerrar: 'Encerrar',
       parar: 'Parar',

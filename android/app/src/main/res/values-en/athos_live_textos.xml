@@ -23,4 +23,15 @@
     <string name="la_proximo_ex">next: %1$s</string>
     <string name="la_ate_proxima">until the next set</string>
     <string name="la_confirmar_desc">Confirm set</string>
+    <string name="la_pausar">Pause</string>
+    <string name="la_retomar">Resume</string>
+    <string name="la_pausado">Paused</string>
+    <string name="la_faltam">%1$s left of %2$s</string>
+    <string name="la_chip_pausado">Paused</string>
+    <string name="la_chip_feito">Done</string>
+    <string name="la_treino_hoje">Today\'s workout</string>
+    <string name="la_concluido">Workout complete</string>
+    <string name="la_n_series">%1$d sets</string>
+    <string name="la_resumo_feito">%1$d sets · %2$s kg volume</string>
+    <string name="la_salvar_app">Save in the app</string>
 </resources>

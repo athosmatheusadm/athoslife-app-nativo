@@ -3083,3 +3083,21 @@ aliviar nada. Agora (regras em `domain/rules/diaLeve.ts`):
 **Pendências**
 1. Token do GitHub → push de `main`, `scanner-v1-1` e `story-studio` + APK;
    testes no aparelho (Live Activity, Story, dia leve).
+
+### 2026-10-22 (cont.) — Live Activity completa: pausar/retomar e "Treino concluído"
+
+Dono pediu todos os botões do mockup funcionando no Android. Faltavam:
+- **Pausar / Retomar** na prancha: `pausarCronometro` / `retomarCronometro`
+  (`cronometroPausadoEm`; ao retomar, início e fim andam pelo tempo parado).
+  Pausada: relógio parado, "Pausado · faltam 0:20 de 0:45", Retomar (lima) +
+  Concluir; correndo: Pausar + Concluir (lima). Concluir pausado grava o
+  tempo até a pausa. Pausada não dispara o fim nem o aviso local.
+- **Treino concluído**: antes o card sumia quando a última série acabava;
+  agora fica "Treino concluído · 18 séries · 4.820 kg de volume" com "Salvar
+  no app" (abre o app) até salvar ou descartar. ("Refazer" do mockup não se
+  aplica: a sessão tem vários exercícios.)
+- Mesmas ações no Java (`EstadoLive`, app dormindo) e no TS
+  (`SessaoTreinoProvider`): carga±, reps±, confirmar, seg±, iniciar,
+  cancelar, pausar, retomar, +15s, pular. Textos pt/en/es.
+- Conferido por script: todo id/texto/drawable usado no Java existe.
+  tsc e vite build ok. **Java não compilado aqui** (sem JDK/SDK) → Actions.
