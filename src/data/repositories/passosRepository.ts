@@ -36,6 +36,12 @@ export const passosRepository = {
     }
   },
 
+  /** Muda só a meta de hoje (dia leve), sem mexer nos passos já registrados. */
+  async definirMetaDoDia(meta: number): Promise<void> {
+    const atual = await this.doDia(meta)
+    await this.registrar(atual.passos, meta)
+  },
+
   async registrar(passos: number, meta: number): Promise<void> {
     if (passos < 0) throw new Error('passos_invalido')
     const userId = (await supabase.auth.getUser()).data.user?.id

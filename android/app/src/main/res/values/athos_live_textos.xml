@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos da Live Activity do treino (pt). Mesmo conteúdo em values-en e values-es. -->
+<resources>
+    <string name="la_canal">Treino em andamento</string>
+    <string name="la_canal_desc">Série, descanso e cronômetro do treino na tela de bloqueio</string>
+    <string name="la_serie_de">Série %1$d de %2$d</string>
+    <string name="la_proxima_de">Próxima: %1$d de %2$d</string>
+    <string name="la_chip_serie">Em série</string>
+    <string name="la_chip_pronto">Pronto</string>
+    <string name="la_chip_preparo">Preparo</string>
+    <string name="la_chip_descanso">Descanso</string>
+    <string name="la_peso">peso</string>
+    <string name="la_reps">reps</string>
+    <string name="la_meta_serie">Meta por série</string>
+    <string name="la_posicione">Posicione-se</string>
+    <string name="la_comeca_sozinha">a contagem começa sozinha</string>
+    <string name="la_segure">Segure firme</string>
+    <string name="la_meta">meta %1$s</string>
+    <string name="la_iniciar">Iniciar</string>
+    <string name="la_cancelar">Cancelar</string>
+    <string name="la_concluir">Concluir</string>
+    <string name="la_pular">Pular</string>
+    <string name="la_a_seguir">a seguir: %1$s</string>
+    <string name="la_proximo_ex">próximo: %1$s</string>
+    <string name="la_ate_proxima">até a próxima série</string>
+    <string name="la_confirmar_desc">Confirmar série</string>
+    <string name="la_pausar">Pausar</string>
+    <string name="la_retomar">Retomar</string>
+    <string name="la_pausado">Pausado</string>
+    <string name="la_faltam">faltam %1$s de %2$s</string>
+    <string name="la_chip_pausado">Pausado</string>
+    <string name="la_chip_feito">Feito</string>
+    <string name="la_treino_hoje">Treino de hoje</string>
+    <string name="la_concluido">Treino concluído</string>
+    <string name="la_n_series">%1$d séries</string>
+    <string name="la_resumo_feito">%1$d séries · %2$s kg de volume</string>
+    <string name="la_salvar_app">Salvar no app</string>
+</resources>

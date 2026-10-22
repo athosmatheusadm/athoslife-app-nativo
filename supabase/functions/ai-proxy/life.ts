@@ -7,6 +7,10 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 type Sb = SupabaseClient
 export type Idioma = 'pt-BR' | 'en' | 'es'
 
+/** Hábitos "construir" (aumentar). Igual a CATEGORIAS_CONSTRUIR do app e a public.categoria_construir no banco. */
+const CATEGORIAS_CONSTRUIR = new Set(['leitura', 'sono', 'agua', 'meditar', 'caminhar', 'verduras', 'construir'])
+export const ehConstruir = (categoria: string | null) => categoria !== null && CATEGORIAS_CONSTRUIR.has(categoria)
+
 const norm = (t: string) =>
   t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
 
@@ -320,7 +324,7 @@ interface HabitoBruto {
 
 /** Mesma regra do contexto do Life: construir = sequência ainda válida; evitar = dias desde o último tropeço. */
 export function diasFirme(h: HabitoBruto, hoje: string): number {
-  if (h.categoria === 'leitura') {
+  if (ehConstruir(h.categoria)) {
     return h.ultimo_checkin && diff(h.ultimo_checkin, hoje) <= 1 ? h.streak_atual ?? 0 : 0
   }
   const base = Math.max(Date.parse(h.criado_em), h.ultima_recaida ? Date.parse(h.ultima_recaida) : 0)

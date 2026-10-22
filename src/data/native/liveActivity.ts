@@ -23,6 +23,9 @@ export type AcaoLiveActivity =
   | 'seg-'
   | 'confirmar'
   | 'iniciar'
+  | 'cancelar'
+  | 'pausar'
+  | 'retomar'
   | 'descanso+15'
   | 'pular'
 

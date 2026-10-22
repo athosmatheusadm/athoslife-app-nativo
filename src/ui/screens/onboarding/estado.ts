@@ -126,7 +126,7 @@ export function limparProgresso(userId: string): void {
 // ---------------------------------------------------------------
 export function idadeNumero(e: EstadoOnboarding): number | null {
   const n = lerNumero(e.idade)
-  return n !== null && Number.isInteger(n) && n >= 16 && n <= 100 ? n : null
+  return n !== null && Number.isInteger(n) && n >= 18 && n <= 100 ? n : null
 }
 
 export function alturaEmCm(e: EstadoOnboarding): number | null {

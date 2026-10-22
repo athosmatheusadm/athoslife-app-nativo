@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
+  emPreparo,
+  pausado,
   exercicioAtual,
   formatarRelogio,
   indiceSerie,
@@ -27,6 +31,7 @@ export function TreinoEmAndamento() {
   const [erro, setErro] = useState(false)
   const { m, idioma } = useI18n()
   const tx = m.treino.andamento
+  const navigate = useNavigate()
   // Voltar do Android fecha a janela de Parar/Resumo antes de qualquer coisa.
   useFecharNoVoltar(painel !== null, () => setPainel(null))
 
@@ -46,13 +51,17 @@ export function TreinoEmAndamento() {
   } else if (sessao.status === 'descanso') {
     status = tx.descanso(formatarRelogio(segundosRestantes(sessao.descansoFimEm, t)))
     cor = 'bg-accent-energy'
+  } else if (pausado(sessao)) {
+    status = tx.pausado(ex.nome, formatarRelogio(segundosRestantes(sessao.cronometroFimEm, sessao.cronometroPausadoEm!)))
+  } else if (emPreparo(sessao, t)) {
+    status = tx.preparo(ex.nome, segundosRestantes(sessao.cronometroInicioEm, t))
   } else if (sessao.status === 'cronometro') {
     status = `${ex.nome} · ${formatarRelogio(segundosRestantes(sessao.cronometroFimEm, t))}`
   } else {
     status = tx.serieDe(ex.nome, indiceSerie(ex) + 1, ex.alvo.length)
   }
 
-  async function salvar() {
+  async function salvar(story = false) {
     setSalvando(true)
     setErro(false)
     try {
@@ -63,6 +72,8 @@ export function TreinoEmAndamento() {
         vibrar.sucesso()
         avisar.ok(tx.salvo)
       }
+      // O editor lê o treino recém-salvo do histórico (com recorde pessoal).
+      if (story && salvou) navigate('/story', { state: { modo: 'gym' } })
     } catch {
       setErro(true)
     } finally {
@@ -160,6 +171,16 @@ export function TreinoEmAndamento() {
             >
               {salvando ? tx.salvando : nada ? tx.fechar : tx.salvar}
             </button>
+            {!nada && (
+              <button
+                onClick={() => void salvar(true)}
+                disabled={salvando}
+                className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-pill border border-surface-4 text-sm font-semibold text-content-hi active:bg-content-hi/5 disabled:opacity-60"
+              >
+                <ActivityIcon icone="camera" tile={false} cor="inherit" className="h-5 w-5" />
+                {m.story.postar}
+              </button>
+            )}
             {sessao.status !== 'concluida' && (
               <button
                 onClick={() => setPainel(null)}

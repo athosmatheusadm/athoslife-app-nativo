@@ -7,12 +7,11 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DraggableAttributes,
-  type DraggableSyntheticListeners,
 } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
+import { BotaoStory } from '@ui/components/story/BotaoStory'
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useI18n } from '@/i18n/I18nProvider'
 import { MealAccordion } from './MealAccordion'
@@ -291,7 +290,8 @@ export function DietScreen(props: {
     }
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+  // Segurar ~0,35 s e arrastar (sem puxador "::"): toque curto continua abrindo a refeição e a lista rola normal.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { delay: 350, tolerance: 6 } }))
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -347,15 +347,18 @@ export function DietScreen(props: {
           <ActivityIcon icone="salada" tile={false} className="h-7 w-7" />
           <h1 className="text-xl font-bold text-content-hi">{m.dieta.titulo}</h1>
         </div>
-        <ProfileAvatar />
+        <div className="flex items-center gap-2">
+          <BotaoStory modo="food" />
+          <ProfileAvatar />
+        </div>
       </header>
 
       {/* Cards de macro — kcal já mora no disco da Home; aqui o foco é
           mapear os 3 macros de verdade (proteína, carbo, gordura). */}
       <div className="flex gap-2">
-        <MacroBar valor={`${consumido.proteina}g`} label={m.dieta.macroCurto.proteina} pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="proteina" />
-        <MacroBar valor={`${consumido.carboidrato}g`} label={m.dieta.macroCurto.carbo} pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="carbo" />
-        <MacroBar valor={`${consumido.gordura}g`} label={m.dieta.macroCurto.gordura} pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="gordura" />
+        <MacroBar valor={`${consumido.proteina}g`} label={m.dieta.macroCurto.proteina} meta={`/${metas.proteina}g`} pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="proteina" />
+        <MacroBar valor={`${consumido.carboidrato}g`} label={m.dieta.macroCurto.carbo} meta={`/${metas.carboidrato}g`} pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="carbo" />
+        <MacroBar valor={`${consumido.gordura}g`} label={m.dieta.macroCurto.gordura} meta={`/${metas.gordura}g`} pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="gordura" />
       </div>
 
       {/* TIRA DE DIAS — padrão Hoje */}
@@ -417,24 +420,21 @@ export function DietScreen(props: {
           <div className="space-y-2">
             {visiveis.map((r) => (
               <SortableMealRow key={r.chave} chave={r.chave} draggable={r.tipo === 'extra'}>
-                {(handle) => (
-                  <MealAccordion
-                    refeicao={r}
-                    sugestaoPlano={(() => {
-                      const doPlano = r.itens.length === 0 ? itensDoPlano(r) : []
-                      return doPlano.length
-                        ? { resumo: doPlano.map((i) => i.nome).join(' · '), kcal: doPlano.reduce((s, i) => s + i.calorias, 0) }
-                        : null
-                    })()}
-                    dragHandleProps={handle}
-                    onAbrir={() => setSheetChave(r.chave)}
-                    onToggleConcluida={() => {
-                      // Refeição vazia com plano: o ✓ é "comi o do plano" — registra e conclui.
-                      const doPlano = r.itens.length === 0 && !r.concluida ? itensDoPlano(r) : []
-                      void (doPlano.length ? registrarDoPlano(r, doPlano) : Promise.resolve()).then(() => alternarConcluida(r))
-                    }}
-                  />
-                )}
+                <MealAccordion
+                  refeicao={r}
+                  sugestaoPlano={(() => {
+                    const doPlano = r.itens.length === 0 ? itensDoPlano(r) : []
+                    return doPlano.length
+                      ? { resumo: doPlano.map((i) => i.nome).join(' · '), kcal: doPlano.reduce((s, i) => s + i.calorias, 0) }
+                      : null
+                  })()}
+                  onAbrir={() => setSheetChave(r.chave)}
+                  onToggleConcluida={() => {
+                    // Refeição vazia com plano: o ✓ é "comi o do plano" — registra e conclui.
+                    const doPlano = r.itens.length === 0 && !r.concluida ? itensDoPlano(r) : []
+                    void (doPlano.length ? registrarDoPlano(r, doPlano) : Promise.resolve()).then(() => alternarConcluida(r))
+                  }}
+                />
               </SortableMealRow>
             ))}
           </div>
@@ -527,9 +527,9 @@ export function DietScreen(props: {
 function SortableMealRow(props: {
   chave: string
   draggable: boolean
-  children: (handle: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners } | null) => ReactNode
+  children: ReactNode
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.chave,
     disabled: !props.draggable,
   })
@@ -539,8 +539,8 @@ function SortableMealRow(props: {
     opacity: isDragging ? 0.6 : 1,
   }
   return (
-    <div ref={setNodeRef} style={style}>
-      {props.children(props.draggable ? { attributes, listeners } : null)}
+    <div ref={setNodeRef} style={style} {...(props.draggable ? listeners : {})}>
+      {props.children}
     </div>
   )
 }
@@ -552,11 +552,15 @@ const COR_MACRO = {
   gordura: { texto: 'text-macro-gordura', barra: 'bg-macro-gordura' },
 } as const
 
-function MacroBar({ valor, label, pct, cor }: { valor: string; label: string; pct: number; cor: keyof typeof COR_MACRO }) {
+// A meta ao lado do número: sem ela, "50 g" com a barra quase cheia parecia errado.
+function MacroBar({ valor, meta, label, pct, cor }: { valor: string; meta: string; label: string; pct: number; cor: keyof typeof COR_MACRO }) {
   const c = COR_MACRO[cor]
   return (
     <div className="flex-1 rounded-xl border border-surface-4 bg-surface-2 p-3">
-      <div className={`text-center text-lg font-bold tabular-nums ${c.texto}`}>{valor}</div>
+      <div className={`text-center text-lg font-bold tabular-nums ${c.texto}`}>
+        {valor}
+        <span className="ml-0.5 text-micro font-semibold text-content-low">{meta}</span>
+      </div>
       <div className="mb-2 text-center text-micro text-content-low">{label}</div>
       <div className="h-1.5 overflow-hidden rounded-full bg-surface-4" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
         <div className={`h-full w-full origin-left rounded-full transition-transform duration-500 ease-athos ${c.barra}`} style={{ transform: `scaleX(${pct / 100})` }} />

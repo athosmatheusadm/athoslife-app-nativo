@@ -9,7 +9,7 @@ import type { Idioma } from '@domain/rules/localidade'
  * perfil no aceite (profiles.consentimento_versao) e permite pedir novo
  * aceite depois.
  */
-export const VERSAO_DOCUMENTOS = 'v2.2-2026-09-29'
+export const VERSAO_DOCUMENTOS = 'v2.3-2026-10-21'
 
 export interface Secao {
   readonly titulo: string
@@ -28,7 +28,7 @@ const CONTATO = '[E-MAIL DE PRIVACIDADE]'
 
 const termosPt: Documento = {
   titulo: 'Termos de uso',
-  atualizado: 'Última atualização: 28 de setembro de 2026',
+  atualizado: 'Última atualização: 21 de outubro de 2026',
   secoes: [
     {
       titulo: '1. Quem somos e o que é o app',
@@ -48,7 +48,7 @@ const termosPt: Documento = {
     {
       titulo: '3. Quem pode usar',
       paragrafos: [
-        'O app é destinado a pessoas com 16 anos ou mais. Se você tem entre 16 e 18 anos, precisa da autorização de um responsável legal.',
+        'O app é destinado a pessoas com 18 anos ou mais. Ao criar a conta, você declara ter pelo menos 18 anos.',
         'Você é responsável por manter sua senha em segredo e pelas atividades feitas na sua conta.',
       ],
     },
@@ -116,7 +116,7 @@ const termosPt: Documento = {
 
 const politicaPt: Documento = {
   titulo: 'Política de privacidade',
-  atualizado: 'Última atualização: 28 de setembro de 2026',
+  atualizado: 'Última atualização: 21 de outubro de 2026',
   secoes: [
     {
       titulo: '1. Controlador e contato',
@@ -187,7 +187,7 @@ const politicaPt: Documento = {
     {
       titulo: '10. Idade mínima',
       paragrafos: [
-        'O app não é destinado a menores de 16 anos. Se soubermos que coletamos dados de alguém abaixo dessa idade sem autorização, apagaremos esses dados.',
+        'O app não é destinado a menores de 18 anos. Se soubermos que coletamos dados de alguém abaixo dessa idade, apagaremos a conta e esses dados.',
       ],
     },
     {
@@ -201,7 +201,7 @@ const politicaPt: Documento = {
 
 const termsEn: Documento = {
   titulo: 'Terms of Use',
-  atualizado: 'Last updated: September 28, 2026',
+  atualizado: 'Last updated: October 21, 2026',
   secoes: [
     {
       titulo: '1. Who we are',
@@ -221,7 +221,7 @@ const termsEn: Documento = {
     {
       titulo: '3. Eligibility',
       paragrafos: [
-        'The app is intended for people aged 16 or older. If you are under 18 (or the age of majority where you live), you need permission from a parent or legal guardian.',
+        'The app is intended for people aged 18 or older. By creating an account, you confirm that you are at least 18.',
         'You are responsible for keeping your password secret and for activity in your account.',
       ],
     },
@@ -289,7 +289,7 @@ const termsEn: Documento = {
 
 const privacyEn: Documento = {
   titulo: 'Privacy Policy',
-  atualizado: 'Last updated: September 28, 2026',
+  atualizado: 'Last updated: October 21, 2026',
   secoes: [
     {
       titulo: '1. Controller and contact',
@@ -358,7 +358,7 @@ const privacyEn: Documento = {
     {
       titulo: '10. Minimum age',
       paragrafos: [
-        "The app is not intended for children under 16. If we learn we've collected data from someone under that age without permission, we'll delete it.",
+        "The app is not intended for anyone under 18. If we learn we've collected data from someone under that age, we'll delete the account and that data.",
       ],
     },
     {
@@ -372,7 +372,7 @@ const CONTROLADOR_ES = '[RAZÓN SOCIAL], con número de identificación fiscal b
 
 const terminosEs: Documento = {
   titulo: 'Términos de uso',
-  atualizado: 'Última actualización: 28 de septiembre de 2026',
+  atualizado: 'Última actualización: 21 de octubre de 2026',
   secoes: [
     {
       titulo: '1. Quiénes somos y qué es la app',
@@ -392,7 +392,7 @@ const terminosEs: Documento = {
     {
       titulo: '3. Quién puede usarla',
       paragrafos: [
-        'La app está destinada a personas de 16 años o más. Si tienes entre 16 y 18 años, necesitas la autorización de tu representante legal.',
+        'La app está destinada a personas de 18 años o más. Al crear la cuenta, declaras tener al menos 18 años.',
         'Eres responsable de mantener tu contraseña en secreto y de la actividad realizada en tu cuenta.',
       ],
     },
@@ -460,7 +460,7 @@ const terminosEs: Documento = {
 
 const politicaEs: Documento = {
   titulo: 'Política de privacidad',
-  atualizado: 'Última actualización: 28 de septiembre de 2026',
+  atualizado: 'Última actualización: 21 de octubre de 2026',
   secoes: [
     {
       titulo: '1. Responsable y contacto',
@@ -531,7 +531,7 @@ const politicaEs: Documento = {
     {
       titulo: '10. Edad mínima',
       paragrafos: [
-        'La app no está destinada a menores de 16 años. Si sabemos que hemos recopilado datos de alguien menor de esa edad sin autorización, los eliminaremos.',
+        'La app no está destinada a menores de 18 años. Si sabemos que hemos recopilado datos de alguien menor de esa edad, eliminaremos la cuenta y esos datos.',
       ],
     },
     {

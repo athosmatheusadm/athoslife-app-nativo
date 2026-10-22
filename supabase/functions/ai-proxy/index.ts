@@ -7,7 +7,9 @@
 //                     id_envio: uuid por mensagem (reenvio não repete a ação)
 //                     acao: refeicao_atualizada | pausa | escolha (botões) | peso_atualizado
 //                     v4.1: peso pelo chat ("pesei 80", "minha meta é 75", histórico) — peso.ts, sem IA e sem cota
+//                     v4.3: scanner v1.1 ({tipo:'scan'}) — scanner/, liga com SCANNER_V2=true
 //                     v4.2: corrigir/apagar a última pesagem pelo chat ("corrige pra 80,2", "apaga a última pesagem")
+//                     v4.5: dia_leve?: 'leve' | 'caminhada' — a pessoa aceitou o dia leve no check-in; o Life não puxa treino pesado
 //   { tipo: 'acao',   id, escolha }                       -> { resposta, acao? }  (sem IA, sem cota)
 //                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
 //   { tipo: 'vision', image: base64, mime_type? }         -> ResultadoVisao cru
@@ -31,9 +33,11 @@
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
+import { handleScan } from './scanner/analisar.ts'
+import { repoSupabase } from './scanner/repositorio.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
-  aplicarMarcasMemoria, blocoMemoria, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
+  aplicarMarcasMemoria, blocoMemoria, ehConstruir, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
   lerConsentimentoMemoria, linhaCheckinsHoje, memoriasParaContexto, mensagensDaPessoa, padroesDaPessoa, promptCheckin,
   REGRAS_CHECKIN, REGRAS_MEMORIA, respostaCheckinPadrao, resumoCheckin, validarCheckin,
 } from './life.ts'
@@ -607,6 +611,8 @@ async function rotear(req: Request): Promise<Response> {
         return await handleChat(sb, user.id, corpo)
       case 'vision':
         return await handleVision(sb, user.id, corpo)
+      case 'scan':
+        return await handleScanV2(sb, user.id, corpo)
       case 'recipe':
         return await handleRecipe(sb, user.id, corpo)
       case 'acao':
@@ -1066,6 +1072,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     : null
   const sistema =
     `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
+    linhaDiaLeve(corpo.dia_leve) +
     adaptativo +
     (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
@@ -1141,6 +1148,20 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 }
 
 /** Contexto compacto (poucas linhas = poucos tokens). Tolera falha parcial. */
+/**
+ * Dia leve (v4.5): no check-in de pouca energia a pessoa aceitou aliviar as
+ * metas de hoje (o app manda junto com a mensagem). O Life apoia em vez de cobrar.
+ */
+function linhaDiaLeve(v: unknown): string {
+  if (v !== 'leve' && v !== 'caminhada') return ''
+  const treino = v === 'leve'
+    ? 'treino leve (1 série a menos por exercício e 20% menos carga)'
+    : 'caminhada de 20 min no lugar do treino'
+  return `\nDIA LEVE HOJE: a pessoa acordou cansada e escolheu aliviar o dia — ${treino}, meta de passos 30% menor, dieta igual. ` +
+    'Apoie essa escolha: não sugira treino pesado, carga maior, cardio extra nem compensar amanhã, e não cobre registros com insistência. ' +
+    'Se ela disser que melhorou e quiser treinar normal, tudo bem: é só tocar em "Voltar ao normal" na tela de Treino.'
+}
+
 async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<string> {
   const hoje = hojeNoFuso(fuso)
   const ontem = somarDias(hoje, -1)
@@ -1242,7 +1263,7 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
       if (gat.length) extras.push(`gatilhos: ${gat.join(', ')}`)
       if (h.horario_risco) extras.push(`horário de risco: ${texto(h.horario_risco, 20)}`)
       const mais = extras.length ? ` (${extras.join('; ')})` : ''
-      if (h.categoria === 'leitura') {
+      if (ehConstruir(h.categoria)) {
         const firme = !!h.ultimo_checkin && diasAtivosEntre(h.ultimo_checkin, hoje, pausas) === 0
         return `"${h.nome}" (construir) ${firme ? h.streak_atual : 0} dias${mais}`
       }
@@ -1813,6 +1834,42 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
   ])
   await auditar(sb, userId, 'acao', r.status)
   return json({ resposta: r.resposta, acao: r.acao })
+}
+
+// ================================================================
+// SCAN v1.1 — o Gemini só reconhece; nutriente vem do catálogo (TACO).
+// Desligado até SCANNER_V2=true: o app cai no `vision` antigo.
+// ================================================================
+const SCANNER_V2 = env('SCANNER_V2') === 'true'
+
+async function handleScanV2(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+  if (!SCANNER_V2) return json({ error: 'scanner_v2_off' }, 404)
+  const loc = await lerLocalidade(sb, userId)
+  return handleScan({
+    repo: repoSupabase(sb, userId),
+    idioma: loc.idioma,
+    pais: loc.pais,
+    modelo: MODELO,
+    vocabularioMax: Math.max(0, Number(env('SCANNER_VOCAB_MAX', '600')) || 0),
+    gemini: async (imagem, mime, prompt, timeoutMs) => {
+      const g = await chamarGemini({
+        contents: [{ parts: [{ inline_data: { mime_type: mime, data: imagem } }, { text: prompt }] }],
+        generationConfig: configGeracao(3072, 0.1, true),
+      }, timeoutMs)
+      return { ok: g.ok, texto: g.texto, tokens: g.tokens, custo: g.custo }
+    },
+    extrairJSON,
+    consumirCota: async () => {
+      const c = await consumirCota(sb, userId, 'vision', loc.fuso)
+      return c.ok ? { ok: true as const } : { ok: false as const, resposta: c.resposta }
+    },
+    devolverCota: () => devolverCota(sb, userId, 'vision'),
+    auditar: async (status, g) => {
+      await auditar(sb, userId, 'scan', status, g ? { ok: g.ok, texto: '', chamadas: [], tokens: g.tokens, custo: g.custo, bloqueado: false } : undefined)
+    },
+    json,
+    agora: () => Date.now(),
+  }, corpo)
 }
 
 // ================================================================

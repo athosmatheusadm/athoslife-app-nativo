@@ -3,6 +3,7 @@ import { useSession } from '@app/SessionProvider'
 import { ProgressRing } from '@ui/components/ProgressRing'
 import { macrosRepository } from '@data/repositories/macrosRepository'
 import { passosRepository } from '@data/repositories/passosRepository'
+import { aoMudarDiaLeve } from '@data/diaLeve'
 import { profileRepository } from '@data/repositories/profileRepository'
 import { useAgua } from '@ui/screens/water/useAgua'
 import { ATALHOS_AGUA_ML, formatarVolume, progressoAgua } from '@domain/entities/water'
@@ -56,6 +57,18 @@ export function TodayActivity({ metas }: { metas: Metas }) {
       ativo = false
     }
   }, [metas.passos])
+
+  // Dia leve muda a meta de passos de hoje.
+  useEffect(
+    () =>
+      aoMudarDiaLeve(() => {
+        void passosRepository.doDia(metas.passos).then((p) => {
+          setPassos(p.passos)
+          setPassosMeta(p.meta)
+        }).catch(() => {})
+      }),
+    [metas.passos],
+  )
 
   const totalAgua = agua.estado?.totalMl ?? 0
 

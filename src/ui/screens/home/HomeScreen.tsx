@@ -11,6 +11,8 @@ import { CheckinLife } from './CheckinLife'
 import { LifeSaudacao } from './LifeSaudacao'
 import { WeightCard } from '@ui/screens/weight/WeightCard'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
+import { BotaoStory } from '@ui/components/story/BotaoStory'
+import { ConviteStory, ehDiaBom, useDiaBom } from './ConviteStory'
 import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
 
 /**
@@ -26,6 +28,11 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
   const { profile } = useSession()
   // Lido uma vez por montagem: no 1º acesso do dia o Life fica no topo.
   const [lifeNoTopo] = useState(() => primeiroAcessoDoDiaNaHome(dataLocalISO()))
+  const diaBom = useDiaBom(
+    profile?.metas ?? { kcal: 0, proteina: 0, carboidrato: 0, gordura: 0, aguaMl: 0, passos: 0 },
+    profile?.streakAtual ?? 0,
+    profile?.maiorStreak ?? 0,
+  )
   if (!profile) return null
 
   return (
@@ -35,7 +42,10 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
         <h1 className="text-2xl font-bold text-content-hi">
           ATHOS<span className="font-semibold text-brand">life</span>
         </h1>
-        <ProfileAvatar />
+        <div className="flex items-center gap-2">
+          <BotaoStory destaque={ehDiaBom(diaBom)} />
+          <ProfileAvatar />
+        </div>
       </header>
 
       {lifeNoTopo && <LifeSaudacao />}
@@ -44,6 +54,8 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
       <AberturaLife />
 
       <CheckinLife />
+
+      <ConviteStory dia={diaBom} />
 
       <TodayActivity metas={profile.metas} />
 

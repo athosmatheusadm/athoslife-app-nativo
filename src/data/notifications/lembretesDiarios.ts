@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Preferences } from '@capacitor/preferences'
 import { lifePausadoHoje, ultimaConversaComLife } from '@data/lifePausa'
+import { diaLeveHoje } from '@data/diaLeve'
 import { contatoRepository } from '@data/repositories/contatoRepository'
 import { sincronizarLembretesHabito } from './habitReminders'
 import { aguaRepository } from '@data/repositories/aguaRepository'
@@ -170,6 +171,7 @@ async function replanejarAgora(metaAguaMl: number): Promise<void> {
     diasComTreino: dias,
     agora: new Date(),
     pausadoHoje: pausado,
+    diaLeveHoje: (await diaLeveHoje()) !== null,
     checkins,
   })
   if (planejados.length === 0) return

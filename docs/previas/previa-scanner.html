@@ -1,0 +1,385 @@
+<title>Prévia do Scanner ATHOS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a foto ocupa a tela inteira; por cima, só um painel de vidro no rodapé
+   com uma linha por item. Tocar numa linha abre o ajuste dela (uma de cada vez).
+   Tokens = os do app (src/ui/theme/globals.css). Sobre a foto o vidro é sempre escuro,
+   como na câmera; a página em volta segue o tema. */
+:root {
+  --brand: 34 197 94; --brand-ink: 4 18 10;
+  --gold: 251 191 36; --prot: 96 165 250; --carb: 251 146 60; --gord: 250 204 21;
+  --vidro: 14 16 15; --linha-vidro: 255 255 255; --txt-vidro: 255 255 255;
+  --fundo: 12 12 12; --hi: 255 255 255; --low: 156 163 175;
+  --s1: 22 22 22; --s2: 26 26 26; --s3: 31 31 31; --s4: 42 42 42; --mid: 209 213 219; --dim: 107 114 128;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --fundo: 232 238 233; --hi: 17 24 20; --low: 87 96 108; color-scheme: light;
+  --s1: 255 255 255; --s2: 246 248 246; --s3: 238 242 239; --s4: 220 226 221; --mid: 55 65 81; --dim: 136 144 153;
+  --brand: 22 163 74; --prot: 37 99 235; --carb: 234 88 12; --gord: 161 98 7; --gold: 202 138 4;
+} }
+:root[data-theme="light"] { --fundo: 232 238 233; --hi: 17 24 20; --low: 87 96 108; color-scheme: light;
+  --s1: 255 255 255; --s2: 246 248 246; --s3: 238 242 239; --s4: 220 226 221; --mid: 55 65 81; --dim: 136 144 153;
+  --brand: 22 163 74; --prot: 37 99 235; --carb: 234 88 12; --gord: 161 98 7; --gold: 202 138 4; }
+/* Sobre a foto o vidro fica escuro em qualquer tema: as cores dentro dele vêm do escuro. */
+.tela { --brand: 34 197 94; --prot: 96 165 250; --carb: 251 146 60; --gord: 250 204 21; --gold: 251 191 36; }
+* { box-sizing: border-box; }
+body { background: rgb(var(--fundo)); color: rgb(var(--hi)); font-family: var(--sans); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
+.topo { max-width: 380px; margin: 0 auto 14px; display: grid; gap: 4px; }
+.topo h1 { font-size: 15px; margin: 0; font-weight: 700; text-wrap: balance; }
+.topo p { margin: 0; font-size: 12.5px; color: rgb(var(--low)); line-height: 1.45; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+button:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
+
+.tela { position: relative; max-width: 380px; aspect-ratio: 9 / 19; margin: 0 auto; border-radius: 32px; overflow: hidden;
+  background: rgb(var(--vidro)); color: rgb(var(--txt-vidro)); box-shadow: 0 24px 60px rgb(0 0 0 / .35); }
+.fundo { position: absolute; inset: 0; width: 100%; height: 100%; max-width: 100%; object-fit: cover; object-position: 50% 22%; }
+.tela::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(rgb(0 0 0 / .35), transparent 18%, transparent 42%, rgb(0 0 0 / .72) 78%); }
+
+.vidro { background: rgb(var(--vidro) / .42); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgb(var(--linha-vidro) / .14); }
+
+.barra { position: absolute; z-index: 2; top: 14px; left: 14px; right: 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.redondo { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; font-size: 17px; }
+.destino { height: 32px; padding: 0 14px; border-radius: 999px; display: flex; align-items: center; font-size: 13px; font-weight: 600; }
+
+.painel { position: absolute; z-index: 2; left: 12px; right: 12px; bottom: 14px; display: grid; gap: 6px; }
+.total { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 4px 2px; text-shadow: 0 1px 8px rgb(0 0 0 / .5); }
+.total .kcal { font-family: var(--mono); font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.total .kcal small { font-family: var(--sans); font-size: 13px; font-weight: 600; opacity: .8; margin-left: 4px; letter-spacing: 0; }
+.total .mac { font-family: var(--mono); font-size: 13px; font-weight: 700; display: flex; gap: 10px; font-variant-numeric: tabular-nums; }
+.p { color: rgb(var(--prot)); } .c { color: rgb(var(--carb)); } .g { color: rgb(var(--gord)); }
+
+ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.item { border-radius: 14px; overflow: hidden; transition: opacity .2s; }
+.item.pendente { border-color: rgb(var(--gold) / .7); }
+.item.fora { opacity: .45; }
+.item.fora .nome { text-decoration: line-through; }
+.cab-item { display: grid; grid-template-columns: 44px 1fr auto auto; align-items: center; min-height: 46px; padding-right: 12px; }
+.check { width: 44px; height: 46px; display: grid; place-items: center; }
+.check span { width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid rgb(var(--linha-vidro) / .6); display: grid; place-items: center; font-size: 11px; font-weight: 800; color: transparent; }
+.check[aria-checked="true"] span { border-color: rgb(var(--brand)); background: rgb(var(--brand)); color: rgb(var(--brand-ink)); }
+.abrir { display: contents; text-align: left; }
+.nome { min-width: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+.nome em { font-style: normal; font-weight: 500; font-size: 12px; color: rgb(var(--gold)); margin-left: 6px; }
+.gramas { font-family: var(--mono); font-size: 12px; opacity: .75; padding-right: 10px; font-variant-numeric: tabular-nums; }
+.kc { font-family: var(--mono); font-size: 13px; font-weight: 700; min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.ajuste { padding: 2px 12px 12px; display: grid; gap: 8px; border-top: 1px solid rgb(var(--linha-vidro) / .1); padding-top: 10px; }
+.passo { display: flex; align-items: center; gap: 6px; }
+.passo button { width: 36px; height: 36px; border-radius: 999px; border: 1px solid rgb(var(--linha-vidro) / .25); font-size: 17px; }
+.passo span { min-width: 64px; text-align: center; font-family: var(--mono); font-size: 14px; font-weight: 700; }
+.passo .detalhe { margin-left: auto; font-size: 11px; font-family: var(--mono); display: flex; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { height: 32px; border-radius: 999px; border: 1px solid rgb(var(--linha-vidro) / .22); padding: 0 12px; font-size: 12px; font-weight: 600; }
+.chip[aria-pressed="true"] { border-color: rgb(var(--brand)); background: rgb(var(--brand) / .22); color: rgb(var(--brand)); }
+.nota { margin: 0; font-size: 11.5px; line-height: 15px; opacity: .72; }
+.nota.aviso { color: rgb(var(--gold)); opacity: 1; }
+
+.salvar { margin-top: 4px; width: 100%; min-height: 50px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); font-size: 15px; font-weight: 700; }
+.salvar:disabled { background: rgb(var(--vidro) / .55); color: rgb(var(--gold)); border: 1px solid rgb(var(--gold) / .6); cursor: not-allowed; }
+.dica { margin: 0; text-align: center; font-size: 11.5px; opacity: .7; }
+
+.abas { max-width: 380px; margin: 0 auto 14px; display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: rgb(var(--s2)); border: 1px solid rgb(var(--s4)); }
+.aba { flex: 1; min-height: 40px; border-radius: 999px; font-size: 13px; font-weight: 600; color: rgb(var(--low)); }
+.aba[aria-selected="true"] { background: rgb(var(--brand)); color: rgb(var(--brand-ink)); }
+
+/* Código de barras: cópia fiel da tela de hoje (Scanner.tsx, origem 'codigo'). */
+.app { max-width: 380px; margin: 0 auto; background: rgb(var(--s1)); color: rgb(var(--hi)); border-radius: 32px; padding: 8px 16px 20px; border: 1px solid rgb(var(--s4)); }
+.app .cab { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+.app .volta { width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid rgb(var(--s4)); color: rgb(var(--mid)); }
+.app h2 { margin: 0; font-size: 20px; font-weight: 800; }
+.app .sub { margin: 0; font-size: 14px; color: rgb(var(--low)); }
+.passos { display: grid; gap: 10px; }
+.etapa-rot { margin: 18px 0 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--low)); }
+.contorno { min-height: 48px; width: 100%; border-radius: 999px; border: 1px solid rgb(var(--brand) / .4); color: rgb(var(--brand)); font-size: 14px; font-weight: 600; }
+.google { border-radius: 20px; background: #000; color: #fff; padding: 18px; display: grid; gap: 12px; justify-items: center; text-align: center; }
+.mira { width: 78%; height: 90px; border: 2px solid rgb(255 255 255 / .85); border-radius: 14px; display: grid; place-items: center; font-family: var(--mono); letter-spacing: .25em; font-size: 22px; color: rgb(255 255 255 / .8); }
+.google p { margin: 0; font-size: 12px; opacity: .75; }
+.resumo { display: flex; gap: 12px; padding: 12px; border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); }
+.produto { width: 80px; height: 80px; flex: none; border-radius: 12px; background: #fff; display: grid; place-items: center; }
+.produto span { width: 38px; height: 54px; border-radius: 8px 8px 12px 12px; background: linear-gradient(#f2f2f2 0 24%, #3f7fd8 24% 60%, #f2f2f2 60%); border: 1px solid #ddd; }
+.resumo strong { font-size: 14px; font-weight: 600; display: block; }
+.mic { font-size: 12px; line-height: 16px; color: rgb(var(--low)); margin: 2px 0 0; }
+.linha-item { border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); padding: 12px; margin-top: 8px; }
+.l1 { display: flex; align-items: center; gap: 10px; }
+.quad { width: 28px; height: 28px; border-radius: 8px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); display: grid; place-items: center; font-weight: 700; font-size: 14px; flex: none; }
+.l1 b { flex: 1; min-width: 0; font-size: 16px; }
+.selo2 { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600; background: rgb(var(--brand) / .15); color: rgb(var(--brand)); }
+.l2 { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ps { display: flex; align-items: center; gap: 4px; }
+.ps button { width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgb(var(--s4)); font-size: 18px; }
+.ps span { width: 64px; text-align: center; font-family: var(--mono); font-size: 14px; }
+.mc { text-align: right; font-size: 12px; color: rgb(var(--low)); }
+.mc b { color: rgb(var(--hi)); }
+.tots { margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px; border-radius: 16px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); text-align: center; font-family: var(--mono); font-size: 14px; font-weight: 700; }
+.tots small { display: block; font-family: var(--sans); font-size: 12px; font-weight: 400; color: rgb(var(--low)); }
+.verde { margin-top: 16px; width: 100%; min-height: 56px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--s1)); font-size: 16px; font-weight: 700; }
+.cinza { width: 100%; min-height: 48px; font-size: 14px; font-weight: 600; color: rgb(var(--mid)); }
+.app .p { color: rgb(var(--prot)); } .app .c { color: rgb(var(--carb)); } .app .g { color: rgb(var(--gord)); }
+
+.tela-cb { margin-top: 0; }
+.fundo-cb { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, #3f7fd8, transparent 70%), radial-gradient(80% 60% at 50% 35%, #e9eef5, #1d2a3d 75%); filter: blur(6px); transform: scale(1.1); }
+.pote { position: absolute; z-index: 1; left: 50%; top: 22%; transform: translateX(-50%); width: 46%; aspect-ratio: 1; border-radius: 28px; background: #fff; display: grid; place-items: center; box-shadow: 0 20px 50px rgb(0 0 0 / .35); }
+.pote span { width: 46%; height: 64%; border-radius: 12px 12px 20px 20px; background: linear-gradient(#f2f2f2 0 22%, #3f7fd8 22% 62%, #f2f2f2 62%); border: 1px solid #ddd; }
+
+.ler-cb { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 12px 14px 12px 12px; border-radius: 18px; border: 1px solid rgb(var(--s4)); background: rgb(var(--s2)); text-align: left; }
+.ler-cb:active { background: rgb(var(--s3)); }
+.ler-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgb(var(--brand) / .14); color: rgb(var(--brand)); }
+.ler-txt { display: grid; gap: 2px; min-width: 0; }
+.ler-txt b { font-size: 15px; font-weight: 700; }
+.ler-txt small { font-size: 12px; color: rgb(var(--low)); }
+.gratis { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); }
+.digitar { width: 100%; min-height: 40px; margin-top: 4px; font-size: 13px; font-weight: 600; color: rgb(var(--low)); text-decoration: underline; text-underline-offset: 3px; }
+
+.cam { margin-top: 0; }
+.cam-fundo { position: absolute; inset: 0; background: radial-gradient(70% 50% at 50% 45%, #6b6156, #2a2622 80%); display: grid; place-items: center; }
+.emb { width: 72%; padding: 18px 16px 12px; border-radius: 10px; background: #f4f1ea; transform: rotate(-3deg); box-shadow: 0 10px 30px rgb(0 0 0 / .4); display: grid; gap: 6px; justify-items: center; filter: blur(.4px); }
+.barras { width: 100%; height: 70px; background: repeating-linear-gradient(90deg, #111 0 2px, transparent 2px 4px, #111 4px 5px, transparent 5px 8px, #111 8px 11px, transparent 11px 12px); }
+.emb span { font-family: var(--mono); font-size: 13px; letter-spacing: .2em; color: #111; }
+.mira-cb { position: absolute; z-index: 1; left: 12%; right: 12%; top: 36%; height: 20%; box-shadow: 0 0 0 999px rgb(0 0 0 / .45); border-radius: 18px; }
+.mira-cb i { position: absolute; width: 28px; height: 28px; border: 3px solid rgb(var(--brand)); }
+.mira-cb i:nth-child(1) { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 18px; }
+.mira-cb i:nth-child(2) { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-top-right-radius: 18px; }
+.mira-cb i:nth-child(3) { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-bottom-left-radius: 18px; }
+.mira-cb i:nth-child(4) { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 18px; }
+.laser { position: absolute; left: 8%; right: 8%; top: 50%; height: 2px; border-radius: 2px; background: rgb(var(--brand)); box-shadow: 0 0 12px rgb(var(--brand)); animation: laser 1.8s ease-in-out infinite alternate; }
+@keyframes laser { from { top: 18%; } to { top: 82%; } }
+.cam-rodape { position: absolute; z-index: 2; left: 14px; right: 14px; bottom: 18px; display: grid; gap: 10px; justify-items: center; }
+.cam-dica { margin: 0; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.cam-digitar { width: 100%; min-height: 48px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+#lanterna[aria-pressed="true"] { background: rgb(var(--gold) / .9); color: #1a1406; }
+@media (prefers-reduced-motion: reduce) { .laser { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .item { transition: none; } }
+</style>
+
+<div class="abas" role="tablist" aria-label="Qual scanner">
+  <button class="aba" id="aba-foto" role="tab" aria-selected="true" aria-controls="v-foto">Foto do prato</button>
+  <button class="aba" id="aba-codigo" role="tab" aria-selected="false" aria-controls="v-codigo">Código de barras</button>
+</div>
+
+<div id="v-foto">
+<div class="topo">
+  <h1>Scanner: a foto é a tela</h1>
+  <p>Exemplo com o bowl de frango, arroz e brócolis. Números da TACO. Toque numa linha pra ajustar gramas e preparo; o ✓ tira ou põe o item.</p>
+</div>
+
+<main class="tela" aria-label="Revisão do scanner">
+  <img class="fundo" src="prato.webp" alt="Foto do prato: bowl com arroz, frango grelhado e brócolis">
+
+  <div class="barra">
+    <button class="redondo vidro" aria-label="Voltar">←</button>
+    <span class="destino vidro">Almoço</span>
+    <button class="redondo vidro" aria-label="Tirar outra foto">↻</button>
+  </div>
+
+  <section class="painel">
+    <div class="total" id="total"></div>
+    <ul id="lista"></ul>
+    <button class="salvar" id="salvar"></button>
+    <p class="dica" id="dica">Toque num item pra ajustar</p>
+  </section>
+</main>
+</div>
+
+<div id="v-codigo" hidden>
+<div class="topo">
+  <h1>Código de barras no estilo novo</h1>
+  <p>É grátis (não usa IA). A câmera abre numa tela nossa, lê o código e busca o rótulo no Open Food Facts. Na revisão, a foto do produto vai pro fundo e fica uma linha de vidro só, igual ao scanner do prato. Produto de exemplo; os números são ilustrativos.</p>
+</div>
+<section class="app" aria-label="Código de barras no app hoje">
+  <div class="cab"><button class="volta" aria-label="Voltar">←</button><div><h2>📷 Escanear comida</h2><p class="sub">Vai pra: Lanche</p></div></div>
+
+  <p class="etapa-rot">1 · Na tela do scanner</p>
+  <button class="ler-cb">
+    <span class="ler-ic"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13.5 8v8M17 8v8" stroke-width="1.6"/></svg></span>
+    <span class="ler-txt"><b>Ler código de barras</b><small>Produto embalado · números do rótulo</small></span>
+    <span class="gratis">Grátis</span>
+  </button>
+  <button class="digitar">Prefere digitar o número?</button>
+
+  <p class="etapa-rot">2 · Câmera do código (nossa, no visual do app)</p>
+  <div class="tela cam" aria-label="Leitor de código de barras">
+    <div class="cam-fundo" aria-hidden="true"><div class="emb"><div class="barras"></div><span>7 891000 100103</span></div></div>
+    <div class="barra">
+      <button class="redondo vidro" aria-label="Fechar">✕</button>
+      <span class="destino vidro">Lanche</span>
+      <button class="redondo vidro" id="lanterna" aria-label="Lanterna" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 5 13h6l-1 9 8-11h-6l1-9Z"/></svg>
+      </button>
+    </div>
+    <div class="mira-cb" aria-hidden="true"><i></i><i></i><i></i><i></i><span class="laser"></span></div>
+    <div class="cam-rodape">
+      <p class="cam-dica vidro">Aponte pro código de barras</p>
+      <button class="cam-digitar vidro">Digitar o número</button>
+    </div>
+  </div>
+  <p class="mic" style="text-align:center;margin-top:8px">Leu o código: vibra, a mira fica verde e já abre a revisão.</p>
+
+  <p class="etapa-rot">3 · Revisão (estilo novo, igual ao da foto)</p>
+  <div class="tela tela-cb" aria-label="Revisão do produto">
+    <div class="fundo-cb" aria-hidden="true"></div>
+    <div class="pote" aria-hidden="true"><span></span></div>
+    <div class="barra">
+      <button class="redondo vidro" aria-label="Voltar">←</button>
+      <span class="destino vidro">Lanche</span>
+      <button class="redondo vidro" aria-label="Ler outro código">↻</button>
+    </div>
+    <section class="painel">
+      <div class="total" id="cb-total"></div>
+      <ul>
+        <li class="item vidro">
+          <div class="cab-item">
+            <span class="check"><span style="border-color:rgb(var(--brand));background:rgb(var(--brand));color:rgb(var(--brand-ink))">✓</span></span>
+            <span class="nome">Iogurte natural integral<em style="color:rgb(var(--txt-vidro) / .7)">Marca X</em></span>
+            <span class="gramas" id="cb-g2"></span>
+            <span class="kc" id="cb-k"></span>
+          </div>
+          <div class="ajuste">
+            <div class="passo">
+              <button id="cb-menos" aria-label="Menos 10 gramas">−</button>
+              <span id="cb-g"></span>
+              <button id="cb-mais" aria-label="Mais 10 gramas">+</button>
+              <span class="detalhe" id="cb-det"></span>
+            </div>
+            <div class="chips" role="group" aria-label="Porção">
+              <button class="chip" data-g="170" aria-pressed="true">1 pote (170 g)</button>
+              <button class="chip" data-g="100" aria-pressed="false">100 g</button>
+            </div>
+            <p class="nota">Números do rótulo do produto (Open Food Facts).</p>
+          </div>
+        </li>
+      </ul>
+      <button class="salvar">Adicionar em Lanche</button>
+    </section>
+  </div>
+
+  <p class="etapa-rot">Se o produto não está na base</p>
+  <div class="linha-item" style="border-color:rgb(var(--brand) / .4)">
+    <p class="mic" style="color:rgb(var(--mid));font-size:14px;line-height:20px;margin:0">Não achei esse produto na base pública. Me diz o nome (e a marca) que o Life estima:</p>
+    <div class="contorno" style="margin-top:8px;border-color:rgb(var(--s4));color:rgb(var(--low));display:flex;align-items:center;padding:0 14px;border-radius:12px;font-weight:400">Ex.: iogurte de morango Nestlé</div>
+    <p class="mic" style="text-align:center;margin-top:6px">Aqui usa IA e conta no limite do dia.</p>
+  </div>
+</section>
+</div>
+
+<script>
+// Bases por 100 g (TACO 4ª ed.). pct = óleo de preparo caseiro (% do peso).
+const B = {
+  arroz:  { nome: 'Arroz branco', k: 128, p: 2.5, c: 28.1, g: 0.2, pct: 2.5 },
+  frango: { nome: 'Frango grelhado', k: 159, p: 32, c: 0, g: 2.5, pct: 2 },
+  brocC:  { nome: 'Brócolis cozido', k: 25, p: 2.1, c: 4.4, g: 0.5, pct: null },
+  brocR:  { nome: 'Brócolis cru', k: 25, p: 3.6, c: 4.0, g: 0.3, pct: null },
+}
+const MULT = { sem_oleo: 0, caseiro: 1, bastante_oleo: 2 }
+const NOMES_V = { sem_oleo: 'Sem óleo', caseiro: 'Caseiro', bastante_oleo: 'Bastante óleo' }
+const itens = [
+  { id: 'a', base: B.frango, g: 140, v: 'caseiro', origem: 'padrao', on: true },
+  { id: 'b', base: B.arroz, g: 160, v: 'caseiro', origem: 'padrao', on: true, porcao: [120, 200] },
+  { id: 'c', base: null, visto: 'Brócolis', cand: [B.brocC, B.brocR], g: 90, v: null, on: true },
+]
+let aberto = null
+
+function macros(i) {
+  if (!i.base) return null
+  const f = i.g / 100, b = i.base
+  const oleo = b.pct !== null && i.v ? i.g * b.pct / 100 * MULT[i.v] : 0
+  return { k: Math.round(b.k * f + oleo * 9), p: Math.round(b.p * f * 10) / 10, c: Math.round(b.c * f * 10) / 10, g: Math.round((b.g * f + oleo) * 10) / 10 }
+}
+const el = (tag, attrs = {}, ...filhos) => {
+  const e = document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) k === 'on' ? e.addEventListener('click', v) : e.setAttribute(k, v)
+  for (const f of filhos) e.append(f)
+  return e
+}
+const span = (cls, txt) => el('span', { class: cls }, txt)
+
+function render() {
+  const lista = document.getElementById('lista')
+  lista.replaceChildren()
+  for (const i of itens) {
+    const m = macros(i)
+    const li = el('li', { class: 'item vidro' + (i.base ? '' : ' pendente') + (i.on ? '' : ' fora') })
+    const check = el('button', { class: 'check', role: 'checkbox', 'aria-checked': String(i.on), 'aria-label': (i.on ? 'Tirar ' : 'Incluir ') + (i.base?.nome ?? i.visto),
+      on: () => { i.on = !i.on; render() } }, el('span', {}, '✓'))
+    const nome = el('span', { class: 'nome' }, i.base ? i.base.nome : i.visto)
+    if (!i.base) nome.append(el('em', {}, 'qual é?'))
+    const abrir = el('button', { class: 'abrir', 'aria-expanded': String(aberto === i.id), on: () => { aberto = aberto === i.id ? null : i.id; render() } },
+      nome, span('gramas', i.g + ' g'), span('kc', m ? m.k + ' kcal' : '—'))
+    li.append(el('div', { class: 'cab-item' }, check, abrir))
+
+    if (aberto === i.id) {
+      const aj = el('div', { class: 'ajuste' })
+      if (i.cand) {
+        const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Qual é?' })
+        for (const c of i.cand) chips.append(el('button', { class: 'chip', 'aria-pressed': String(i.base === c), on: () => { i.base = c; render() } }, c.nome))
+        aj.append(chips)
+      }
+      const det = el('span', { class: 'detalhe' })
+      if (m) det.innerHTML = `<span class="p">P ${m.p}</span><span class="c">C ${m.c}</span><span class="g">G ${m.g}</span>`
+      aj.append(el('div', { class: 'passo' },
+        el('button', { 'aria-label': 'Menos 10 gramas', on: () => { i.g = Math.max(0, i.g - 10); render() } }, '−'),
+        el('span', {}, i.g + ' g'),
+        el('button', { 'aria-label': 'Mais 10 gramas', on: () => { i.g += 10; render() } }, '+'),
+        det))
+      if (i.base && i.base.pct !== null) {
+        const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Preparo' })
+        for (const v of Object.keys(MULT)) chips.append(el('button', { class: 'chip', 'aria-pressed': String(i.v === v), on: () => { i.v = v; i.origem = 'usuario'; render() } }, NOMES_V[v]))
+        aj.append(chips)
+        if (i.origem === 'padrao' && i.v === 'caseiro') aj.append(el('p', { class: 'nota' }, 'Considerei preparo caseiro comum (com óleo).'))
+      }
+      if (i.porcao) aj.append(el('p', { class: 'nota aviso' }, `Parte fica embaixo do frango. Confira (≈ ${i.porcao[0]}–${i.porcao[1]} g).`))
+      li.append(aj)
+    }
+    lista.append(li)
+  }
+
+  const inc = itens.filter((i) => i.on)
+  const pend = inc.find((i) => !i.base)
+  const t = inc.reduce((s, i) => { const m = macros(i); if (m) { s.k += m.k; s.p += m.p; s.c += m.c; s.g += m.g } return s }, { k: 0, p: 0, c: 0, g: 0 })
+  document.getElementById('total').innerHTML =
+    `<span class="kcal">${Math.round(t.k)}<small>kcal${pend ? ' parcial' : ''}</small></span>` +
+    `<span class="mac"><span class="p">P ${Math.round(t.p)}g</span><span class="c">C ${Math.round(t.c)}g</span><span class="g">G ${Math.round(t.g)}g</span></span>`
+  const btn = document.getElementById('salvar')
+  btn.disabled = !!pend || inc.length === 0
+  btn.textContent = pend ? `Escolha o tipo de ${pend.visto.toLowerCase()}` : `Adicionar ${inc.length} ${inc.length === 1 ? 'item' : 'itens'} em Almoço`
+  btn.onclick = () => { btn.textContent = `✓ Adicionado (prévia, nada foi salvo)` }
+  document.getElementById('dica').hidden = aberto !== null
+}
+render()
+
+// Abas
+for (const [aba, vis] of [['aba-foto', 'v-foto'], ['aba-codigo', 'v-codigo']]) {
+  document.getElementById(aba).addEventListener('click', () => {
+    for (const [a, v] of [['aba-foto', 'v-foto'], ['aba-codigo', 'v-codigo']]) {
+      document.getElementById(a).setAttribute('aria-selected', String(a === aba))
+      document.getElementById(v).hidden = v !== vis
+    }
+  })
+}
+
+// Código de barras: rótulo por 100 g (ilustrativo).
+const R = { k: 61, p: 3.8, c: 4.6, g: 3.0 }
+let gCb = 170
+function renderCb() {
+  const f = gCb / 100, r1 = (n) => Math.round(n * f * 10) / 10
+  document.getElementById('cb-g').textContent = gCb + ' g'
+  document.getElementById('cb-g2').textContent = gCb + ' g'
+  document.getElementById('cb-k').textContent = Math.round(R.k * f) + ' kcal'
+  document.getElementById('cb-det').innerHTML = `<span class="p">P ${r1(R.p)}</span><span class="c">C ${r1(R.c)}</span><span class="g">G ${r1(R.g)}</span>`
+  document.getElementById('cb-total').innerHTML = `<span class="kcal">${Math.round(R.k * f)}<small>kcal</small></span><span class="mac"><span class="p">P ${Math.round(R.p * f)}g</span><span class="c">C ${Math.round(R.c * f)}g</span><span class="g">G ${Math.round(R.g * f)}g</span></span>`
+  for (const c of document.querySelectorAll('.tela-cb .chip')) c.setAttribute('aria-pressed', String(Number(c.dataset.g) === gCb))
+}
+for (const c of document.querySelectorAll('.tela-cb .chip')) c.addEventListener('click', () => { gCb = Number(c.dataset.g); renderCb() })
+document.getElementById('cb-menos').addEventListener('click', () => { gCb = Math.max(0, gCb - 10); renderCb() })
+document.getElementById('cb-mais').addEventListener('click', () => { gCb += 10; renderCb() })
+renderCb()
+const lan = document.getElementById('lanterna')
+lan.addEventListener('click', () => lan.setAttribute('aria-pressed', String(lan.getAttribute('aria-pressed') !== 'true')))
+</script>

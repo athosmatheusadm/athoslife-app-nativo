@@ -2768,3 +2768,370 @@ Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
 1. Deploy da ai-proxy v4.2.
 2. Scanner: dono decidir as fotos de referência (pesadas) pra etapa 1.
 3. Demais pendências do bloco de 17/10 continuam.
+
+### 2026-10-21 (cont.) — scanner v1.1, etapa 2 (motor) + TACO como referência — branch `scanner-v1-1`
+
+Base: `ATHOSlife_Scanner_Especificacao_Tecnica_v1.1.md`. Dono pediu TACO como
+referência.
+
+- **TACO** (`db/athoslife_taco_referencia_migration.sql`): tabela `taco` (597
+  itens, TACO 4ª ed. NEPA/UNICAMP 2011, por 100 g; dados via
+  github.com/raulfdm/taco-api, "Tr"→0, "*"/NA→null) + `alimentos.taco_id`.
+  279 alimentos ligados (casamento por nome+preparo, revisado à mão; ambíguos
+  fora: "Laranja", "Uva", "Alface", "Leite de coco"...) + variações "— porção"
+  herdam = 334. **Os macros desses alimentos passam a ser os da TACO** (69
+  mudam > 20%, ex.: batata inglesa cozida 77→52/100 g, café coado 2→18/200 g,
+  virado à paulista 450→921/300 g). Backup em `alimentos_antes_taco` + bloco de
+  desfazer no fim do arquivo.
+- **Catálogo do scanner** (`db/athoslife_scanner_v1_migration.sql`, rodar
+  DEPOIS da TACO): preparo, porção típica, prato montado × prato inteiro, óleo
+  de preparo caseiro (arroz 2,5%, feijão 1,5%, grelhados 2% — estimativa da
+  equipe, só onde a base não tem óleo), densidade de bebida, medidas caseiras
+  (`alimentos_medidas`, 112 estimativas da equipe = só sinalizam revisão),
+  `scan_jobs`, `scan_correcoes`, `scan_nao_resolvidos` (sem user_id) e RPC
+  `scanner_confirmar` (transação única, commit_key idempotente).
+- Testado no banco real num bloco que se desfaz sozinho: as duas migrações
+  rodam; nada foi aplicado.
+- **ai-proxy v4.3** (`supabase/functions/ai-proxy/scanner/`): `{tipo:'scan',
+  op: analisar|status|confirmar}`. Gemini só reconhece (o que é, preparo,
+  gramas, medida caseira, âncoras, óleo visível); nutriente vem do catálogo,
+  calculado no servidor. 1 chamada normal, no máximo 2. request_id + hash da
+  foto = idempotente; cota devolvida uma vez em falha; lease com tentativa.
+  **Desligado** até o segredo `SCANNER_V2=true` (sem ele o app usa o
+  `vision` antigo sozinho). `SCANNER_VOCAB_MAX` (padrão 600 nomes no prompt;
+  ~600 tokens por 100 nomes, conta no teto diário).
+- App: scanner tenta o v1.1 e cai no antigo se desligado; foto 1280 px/0,82.
+  No card do item (layout mantido): "Qual é?" com candidatos, busca na base
+  quando não achou, preparo Sem óleo/Caseiro/Bastante óleo com a premissa
+  escrita, aviso de porção, selo "TACO". Item sem alimento não salva (não vira
+  zero). Correção recalcula no aparelho, sem IA; o servidor refaz a conta ao
+  salvar. Textos pt/en/es.
+- Benchmark: `scripts/scanner-benchmark/` (README com o protocolo das fotos
+  pesadas, `rodar.mjs` v1×v2, métricas e portas G1/G2). Fotos ficam fora do git.
+- Validação: 46 testes Deno (27 do scanner: porta G0 + fluxo com banco em
+  memória), deno check, 13 testes node (inclui app × servidor dando o mesmo
+  número), tsc, vite build. **Nenhum teste com o Gemini de verdade nem no
+  aparelho ainda.**
+
+**Pendências**
+1. Dono aprovar e rodar as migrações (TACO primeiro) — muda números da Dieta.
+2. Deploy da ai-proxy (v4.2 peso + v4.3 scanner) e, pra testar, `SCANNER_V2=true`.
+3. Fotos pesadas (30 pro piloto) → rodar o benchmark v1×v2 (portas G1/G2).
+4. Ver a tela nova no aparelho (dono não viu o visual dos chips).
+5. Depois: rótulo e texto pelo mesmo motor; job de reconciliação de leases;
+   incluir `scan_jobs` no "Baixar meus dados".
+
+### 2026-10-21 (fim) — prévia do scanner, story analisado, specs salvas
+
+- Prévia interativa da revisão do scanner novo (prato de exemplo, números
+  TACO): https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ — cópia em
+  `docs/previas/previa-scanner.html`.
+- Especificações salvas no repo: `docs/specs/SCANNER_ESPECIFICACAO_v1.1.md`,
+  `docs/specs/STORY_STUDIO_INTEGRACAO_v3.md` (guia original do zip) e
+  `docs/specs/STORY_STUDIO_ANALISE.md` (o que serve e o que quebraria).
+- Corrigido o que eu disse ao dono: a mesma foto/prato em outro dia **gasta**
+  scan e tokens; só a repetição do mesmo envio (rede caiu) não gasta.
+  Custo estimado ~R$ 0,03 por foto (medir no benchmark).
+- **Push bloqueado de novo** (token do GitHub não fica salvo). Tudo está em
+  commits locais: `main` tem o peso v4.2; a branch `scanner-v1-1` tem peso +
+  scanner + estes docs.
+
+**Pendências pra próxima sessão**
+1. Token do GitHub → `git push` da `main` e da branch `scanner-v1-1` (abrir PR).
+2. Dono decidir: aplicar TACO no banco? publicar ai-proxy? escopo do story
+   (proposta: Alimentação + Musculação)? Facebook App ID.
+3. Fotos pesadas (30) pro benchmark do scanner.
+
+### 2026-10-21 (noite) — TACO aplicada no banco; scanner com a foto em tela cheia
+
+- **TACO aplicada no banco de produção** (dono aprovou: a nutricionista que
+  viu o app elogiou a tabela). `taco` = 597, 333 alimentos ligados, backup
+  em `alimentos_antes_taco` (333). Ex.: batata inglesa cozida agora 52 kcal/100 g.
+  Desfazer: bloco no fim de `db/athoslife_taco_referencia_migration.sql`.
+  A migração do scanner (`athoslife_scanner_v1_migration.sql`) **não** foi aplicada.
+- Prévia do scanner refeita como o dono pediu: a foto ocupa a tela inteira,
+  os itens viram linhas de vidro translúcidas (nome · gramas · kcal) e o ajuste
+  abre só ao tocar na linha (um por vez). Foto de exemplo = bowl de frango
+  (`docs/previas/prato.webp`). Mesmo link:
+  https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ
+- Story: o dono quer conversar antes. Nada a fazer até lá.
+
+**Pendências**
+1. Dono aprovar o visual novo da prévia → levar para `ScannerScreen` (app).
+2. Aplicar a migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
+3. Token do GitHub → push da `main` e da `scanner-v1-1`.
+4. Fotos pesadas para o benchmark.
+
+### 2026-10-21 (noite, cont.) — scanner com o visual aprovado (foto em tela cheia + vidro) — branch `scanner-v1-1`
+
+Dono aprovou a prévia (https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ) e
+pediu pra levar ao app.
+
+- **Revisão** (`scanner/RevisaoScanner.tsx`, portal em tela cheia): foto do
+  prato no fundo; no código de barras, foto do produto nítida no meio + cópia
+  borrada no fundo. Painel de vidro: total grande, uma linha por item (✓ ·
+  nome · g · kcal), toque abre o ajuste (− / +, macros, `ExtrasScan`, porção
+  do rótulo × 100 g). Item sem alimento = borda dourada + "qual é?" e o botão
+  vira "Falta escolher: X". ← e o voltar do Android: 1º toque avisa, 2º descarta.
+- **Câmera própria do código** (`scanner/CameraCodigo.tsx` +
+  `data/native/codigoBarras.ts`): sai o leitor pronto do Google
+  (`BarcodeScanner.scan`), entra `startScan` com a câmera atrás da WebView
+  (`html.barcode-scanner-active` deixa o app transparente, globals.css).
+  Mira com cantos verdes + laser, lanterna (se o aparelho tiver), "Digitar o
+  número". Leu: vibra, mira verde, busca o produto. **Agora o Android pede a
+  permissão de câmera** na 1ª vez (já está no Manifest).
+- Botão "Ler código de barras" com ícone, subtítulo e selo GRÁTIS; "Prefere
+  digitar o número?" como link.
+- `.tema-escuro` e `.vidro` em globals.css: o vidro é sempre escuro, mesmo
+  no modo claro. Textos novos em pt/en/es (`scanner.vidro`).
+- Validação: tsc e vite build. **Não testado no aparelho** (câmera atrás da
+  WebView só dá pra ver no APK).
+
+**Pendências**
+1. APK novo → testar: permissão da câmera, imagem aparecendo atrás (se ficar
+   tela preta, algum fundo não ficou transparente), lanterna, leitura, revisão
+   no claro e no escuro.
+2. Migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
+3. Token do GitHub → push da `main` e da `scanner-v1-1` (abrir PR).
+
+### 2026-10-21 (noite, cont.) — créditos, licenças, formulário da Play, idade mínima
+
+- **Créditos** (dono pediu letra miúda, verde claro, sem negrito): Sobre →
+  "Dados nutricionais: Tabela TACO (NEPA/UNICAMP) e Open Food Facts (licença
+  ODbL)"; na revisão do código de barras, "Rótulo via Open Food Facts". pt/en/es.
+- **Licenças de código aberto:** Perfil → Sobre → nova tela
+  (`legal/Licencas.tsx`). Lista gerada por `node scripts/gerar-licencas.mjs`
+  (40 pacotes de produção: 38 MIT, 1 Apache-2.0, 1 0BSD) → rodar de novo
+  quando mudar `package.json`. Obs.: o tailwind cita "Inter", mas a fonte
+  não é empacotada; no Android o app usa a fonte do sistema.
+- **Formulário de segurança de dados da Play:** `docs/legal/PLAY_SEGURANCA_DADOS.md`.
+- **Idade mínima × Gemini (pesquisado):** os termos do Gemini API (vigentes
+  desde 23/03/2026) e os do Vertex AI (Google Cloud, "Age Restrictions")
+  proíbem usar a IA em app "directed towards or likely to be accessed by
+  individuals under the age of 18". O app aceita 16+ → conflito. Dono decide:
+  18+ ou trocar o provedor da IA. A chave do Gemini está no plano grátis
+  (Google pode treinar com os dados); a Política diz o contrário → passar
+  pro pago antes do lançamento ou ajustar o texto.
+- Bloqueado pelo auto mode: migração do scanner, deploy da ai-proxy e
+  `SCANNER_V2` (comando pronto no chat de 21/10).
+
+**Pendências**
+1. Dono: idade mínima / provedor de IA; chave Gemini paga antes do lançamento.
+2. Política: incluir RevenueCat; preencher razão social/CNPJ/DPO; publicar na web
+   + página de exclusão de conta (exigência da Play).
+3. Migração do scanner + deploy ai-proxy + `SCANNER_V2=true`; push (token GitHub).
+- **Decisão do dono: continua o Gemini e o app passa a ser 18+.** Onboarding
+  só aceita 18–100 (`onboarding/estado.ts`, aviso em pt/en/es); Termos e
+  Política dizem 18+ (sem a regra de responsável legal);
+  `VERSAO_DOCUMENTOS` = v2.3-2026-10-21. Obs.: editar a idade em Perfil →
+  Conta não valida o mínimo (o plano já bloqueia menor de idade na triagem).
+
+### 2026-10-21 (noite, fim) — scanner publicado no Supabase
+
+- `bash scripts/publicar-scanner.sh` (dono autorizou): migração do scanner
+  aplicada (4 tabelas, 112 medidas, RPC `scanner_confirmar`), **ai-proxy
+  publicada** (v4.2 peso + v4.3 scanner; versão 24 no Supabase, ACTIVE) e
+  `SCANNER_V2=true`. O APK atual continua usando o scanner antigo; o novo
+  (tela de vidro + câmera própria) só no próximo APK.
+
+**Pendências**
+1. Token do GitHub → push da `main` e da `scanner-v1-1` + PR → APK pelo Actions.
+2. Testar no aparelho: scanner novo com Gemini de verdade, câmera do código,
+   modo claro/escuro.
+3. Política: RevenueCat, dados da empresa/DPO, página web + exclusão de conta.
+4. Chave do Gemini no plano pago antes de abrir pro público.
+5. Story: dono quer conversar.
+
+### 2026-10-21 (madrugada) — tema, peso por variação, hábitos construir
+
+- **Tema** em Perfil → Acessibilidade: Escuro (padrão), Claro, Automático.
+  `ui/theme/tema.ts` (antes modoClaroEscuro.ts) põe `.tema-claro` no <html>;
+  globals.css trocou o `@media (prefers-color-scheme: light)` por essa classe.
+- **Peso pelo chat v4.4** (`peso.ts`): "perdi 1 kg", "emagreci 2,5 quilos",
+  "ganhei meio quilo", "I lost 2 kg", "perdí un kilo" → pesagem de hoje =
+  última pesagem ± variação (sem IA, sem cota). Antes ia pra IA e o gráfico
+  não mudava (bug relatado pelo dono). "ganhei 5 kg no supino" e "quero perder
+  5 kg" continuam fora.
+- **Hábitos (bug relatado):** Construir + "Outro" gravava categoria null e o
+  hábito voltava como "evitar". Agora Construir tem Dormir melhor, Beber água,
+  Ler mais, Meditar, Caminhar, Comer verduras e Outro (= categoria
+  'construir'). Mesma lista no app (`habito.ts`), no Life (`life.ts`
+  `ehConstruir`) e no banco (`db/athoslife_habitos_construir_categorias_migration.sql`,
+  função `categoria_construir` + `handle_recaida`). O hábito "dormir melhor"
+  que o dono já criou continua como "evitar": apagar e criar de novo.
+- `scripts/supabase.sh` (migrar / deploy / segredo) pra publicar com 1 linha.
+- Validação: tsc, 47 testes Deno, deno check.
+- **Publicado:** migração dos hábitos + ai-proxy (v4.4) via `scripts/supabase.sh`.
+- Refeição sem imagens / "pontinhos" na lista: aguardando print do dono.
+- **Refeição extra (bug relatado):** nome + grade de 16 ícones ficavam sempre
+  abertos no sheet → agora recolhidos atrás de "Editar nome e ícone" (com
+  "Pronto" e a dica de como reordenar). O puxador "⋮⋮" (aparecia como "::")
+  saiu: reordenar = segurar o card ~0,35 s e arrastar (PointerSensor com
+  delay); toque curto abre a refeição. Testar no aparelho se o arraste por
+  toque longo não abre o sheet ao soltar. pt/en/es.
+
+### 2026-10-21 (madrugada, cont.) — Story Studio dentro do app — branch `story-studio`
+
+Dono aprovou a prévia (https://claude.ai/artifact/Fbq4t5GNHWFSdEbGmWUjfL).
+Escopo: Alimentação + Musculação (Corrida/Jiu-Jitsu depois).
+
+- Tela `/story` (`ui/screens/story/StoryScreen.tsx`): foto da pessoa 9:16 em
+  tela cheia, números arrastáveis, toque = tamanho/cor/ocultar, painéis
+  Dados/Modelos (um por vez), desfazer, faixas do Instagram ao arrastar.
+  Modelo em `domain/entities/story.ts` (posições em %, tamanhos em fração da
+  largura → tela usa `cqw`, export usa ×1080). `exportarStory.ts` desenha o
+  JPEG 1080×1920.
+- Entradas (símbolo = câmera pequena, pedido do dono): cabeçalho da refeição
+  na Dieta (com itens) e "Postar no Story" no resumo do fim do treino (salva
+  e abre o editor com volume/séries/duração/exercícios + grupo principal).
+- Android: `story/AthosInstagramPlugin.java` (do zip V3, pacote
+  `br.com.athoslife.app.story`), **1 linha** no MainActivity (Live Activity e
+  widget continuam), `<queries>` do Instagram no Manifest,
+  `plugins.AthosInstagram.facebookAppId: ''` no capacitor.config.ts.
+  Sem App ID (hoje) "Postar nos Stories" abre o menu de compartilhar.
+  No navegador: menu do navegador ou baixa o arquivo.
+- Textos pt/en/es (`story`). Validação: tsc e vite build. **Não testado no
+  aparelho** (plugin nativo, exportação no WebView).
+
+**Pendências**
+1. Dono: Facebook App ID (junto com o webhook do RevenueCat) → preencher
+   `facebookAppId` e testar o Instagram direto.
+2. APK pra testar arrastar, foto da galeria, exportação e compartilhar.
+3. Recorde pessoal no Story de treino (precisa histórico por exercício).
+4. Dono quer alinhar algo da Live Activity antes de fechar.
+
+### 2026-10-22 — Live Activity nova (mockup de 22/10) e Story no formato do V2 — branch `story-studio`
+
+**Live Activity** (dono aprovou a prévia no localhost, feita a partir de
+`athoslife-live-activity-mockup.html`):
+- Layouts `athos_la_grande`/`athos_la_pequeno` refeitos: miniatura do
+  exercício (halter/prancha), "Série 2 de 4" + segmentos, chip de status
+  (Em série / Pronto / Preparo / Descanso), card verde-escuro com brilho lima
+  no canto (laranja no descanso).
+  - Série com reps: dois steppers (peso com "kg" pequeno, reps) + botão ✓.
+  - Série por tempo: anel + −5s/+5s + Iniciar; **preparo de 3 s** (3, 2, 1)
+    com Cancelar; depois "Segure firme" com relógio e Concluir.
+  - Descanso: relógio laranja grande, "a seguir: 80 kg × 10" (ou próximo
+    exercício), +15s, Pular e barra de progresso.
+- Textos em `res/values{,-en,-es}/athos_live_textos.xml` (antes eram fixos em pt).
+- Redesenho: a cada 1 s no preparo, a cada 5 s no descanso/prancha (barra e
+  anel andam), e na hora exata do fim. Só com o processo vivo; o relógio em
+  si (Chronometer) anda sozinho.
+- App: `PREPARO_SEG = 3` em `sessaoTreino.ts` (`cronometroInicioEm` = fim do
+  preparo), `emPreparo()`, ação `cancelar` vinda da Live Activity, status
+  "prepare-se: 3" no card do treino em andamento (pt/en/es).
+- Posição na tela de bloqueio é decisão do celular (Samsung embaixo, Pixel
+  logo abaixo do relógio). Sem vidro desfocado (notificação não faz).
+
+**Story** — o dono quer o formato do protótipo dele
+(`ATHOS_Story_Editor_Unificado_V2.html`, na raiz, não commitar), **sem Corrida e
+Jiu-Jitsu por enquanto**, com a entrada que ele aprovou:
+- Editor refeito (`StoryScreen.tsx` + `storyCanvas.ts`, motor portado do V2):
+  canvas 1080×1920, foto primeiro ("Comece pela sua foto."), Foto · Adicionar ·
+  Modelos · Ajustes, tocar no elemento abre opacidade / cor do Life / cores /
+  Texto / Outro lado / Ocultar / Excluir, puxar o canto redimensiona, campo
+  personalizado, modelos (Só a foto, Na base, Minimalista, Editorial), ajustes
+  da foto (luz, zoom, posição, sombra), desfazer. Exporta JPEG pro plugin do
+  Instagram (sem App ID: menu de compartilhar). Sem vídeo (o V2 só fazia
+  prévia de vídeo e exportava PNG).
+- Dados reais, sem número de exemplo: Musculação = último treino salvo
+  (`treinoHistoricoRepository.ultimoParaStory`: foco, volume, séries, duração,
+  volume por exercício no gráfico e **recorde pessoal** comparando a maior
+  carga com os treinos anteriores); Alimentação = total do dia
+  (`macrosRepository.doDia`, kcal com "≈").
+- Entradas: câmera discreta no cabeçalho de Início (abas) / Dieta (food) /
+  Treino (gym); convite "Seu dia rendeu! 🔥" na Home (Life feliz) só em dia
+  bom (meta de kcal 90–110%, treino feito ou sequência recorde ≥ 3),
+  dispensável por dia; "Postar no Story" do fim do treino continua (abre
+  depois de salvar). **A câmera saiu do sheet da refeição.**
+- Textos pt/en/es (`story`). `exportarStory.ts` removido.
+- Validação: tsc e vite build. **Nada testado no aparelho**; Java da Live
+  Activity sem compilar aqui (sem JDK/SDK no PC) → conferir no build do Actions.
+
+**Pendências**
+1. Token do GitHub → push de `main`, `scanner-v1-1` e `story-studio` + PR → APK.
+2. No APK: Live Activity (os 4 estados, preparo, botões com tela bloqueada,
+   textos en/es), Story (foto da galeria, cantos, exportar, Instagram/menu).
+3. Facebook App ID → `facebookAppId` (Instagram direto).
+4. Story: Corrida e Jiu-Jitsu quando o app registrar esses treinos.
+5. Live Activity fase 2: pausar/retomar e card "Exercício concluído".
+
+### 2026-10-22 (cont.) — Dia leve no check-in — branch `story-studio`
+
+Bug relatado pelo dono: check-in "cansado" + sono → o Life só falava, sem
+aliviar nada. Agora (regras em `domain/rules/diaLeve.ts`):
+- **Quando:** palavra de pouca energia e pouco agradável (cansado, esgotado,
+  desanimado, entediado) ou energia baixa + etiqueta sono/saúde. Card logo
+  abaixo da resposta do Life ("Noite ruim? 😴" / "Dia puxado?") →
+  "Deixar mais leve" / "Manter como está" (some até amanhã).
+- **Treino (a pessoa escolhe):** treino leve (1 série a menos, mín. 2, carga
+  −20% em passos de 0,5 kg) ou caminhada de 20 min no lugar ("Fiz a
+  caminhada" grava em treinos_historico como treino feito). Faixa no Treino
+  pra trocar entre os dois ou "Voltar ao normal". **A ficha não muda:**
+  sessão leve só marca `concluido_em`, não grava carga/séries aliviadas.
+- **Passos:** meta de hoje −30% (grava em `passos_diarios.meta`, a Home recarrega).
+- **Dieta:** igual; o texto lembra proteína e água.
+- **Sequência:** conta normal. **Lembretes:** no máx. 2 de água hoje.
+- Estado do dia no aparelho (`data/diaLeve.ts`, Preferences). Textos pt/en/es.
+- Validação: tsc e vite build. Não testado no aparelho.
+
+- **ai-proxy v4.5 publicada** (dono autorizou; versão 26, ACTIVE): o app manda
+  `dia_leve` junto com a mensagem do chat e o Life recebe "DIA LEVE HOJE" no
+  contexto — apoia em vez de cobrar, não sugere treino pesado nem compensar
+  amanhã. deno check + 47 testes ok.
+
+**Pendências**
+1. Token do GitHub → push de `main`, `scanner-v1-1` e `story-studio` + APK;
+   testes no aparelho (Live Activity, Story, dia leve).
+
+### 2026-10-22 (cont.) — Live Activity completa: pausar/retomar e "Treino concluído"
+
+Dono pediu todos os botões do mockup funcionando no Android. Faltavam:
+- **Pausar / Retomar** na prancha: `pausarCronometro` / `retomarCronometro`
+  (`cronometroPausadoEm`; ao retomar, início e fim andam pelo tempo parado).
+  Pausada: relógio parado, "Pausado · faltam 0:20 de 0:45", Retomar (lima) +
+  Concluir; correndo: Pausar + Concluir (lima). Concluir pausado grava o
+  tempo até a pausa. Pausada não dispara o fim nem o aviso local.
+- **Treino concluído**: antes o card sumia quando a última série acabava;
+  agora fica "Treino concluído · 18 séries · 4.820 kg de volume" com "Salvar
+  no app" (abre o app) até salvar ou descartar. ("Refazer" do mockup não se
+  aplica: a sessão tem vários exercícios.)
+- Mesmas ações no Java (`EstadoLive`, app dormindo) e no TS
+  (`SessaoTreinoProvider`): carga±, reps±, confirmar, seg±, iniciar,
+  cancelar, pausar, retomar, +15s, pular. Textos pt/en/es.
+- Conferido por script: todo id/texto/drawable usado no Java existe.
+  tsc e vite build ok. **Java não compilado aqui** (sem JDK/SDK) → Actions.
+
+### 2026-10-22 (fim) — push, PR #1 e APK de teste
+
+- Push de `main` (64e1be4), `scanner-v1-1` e `story-studio`.
+- **PR #1** `story-studio` → `main` (inclui o scanner):
+  https://github.com/athosmatheusadm/athoslife-app-nativo/pull/1 — sem merge
+  até o dono testar no aparelho.
+- **APK de teste** (run 39825785326, sem servidor_dev): build ok — o Java novo
+  da Live Activity compilou. Cópia em `Downloads/ATHOSlife-teste-22-10.apk`.
+
+**Pendências**
+1. Dono testa no aparelho: Live Activity (todos os estados e botões com a tela
+   bloqueada, textos en/es), Story (foto, cantos, exportar, Instagram/menu),
+   dia leve (check-in cansado + sono), scanner novo.
+2. Merge do PR #1 depois do teste.
+3. Facebook App ID → `facebookAppId`.
+4. Dono revogar o token do GitHub que foi colado no chat.
+
+### 2026-10-22 (noite) — APK v2 testado: funcionando
+
+- O 1º APK abriu em tela preta: `workflow_dispatch` com `servidor_dev` vazio
+  usou o padrão (IP do PC) → app buscava as telas no `npm run dev`. Workflow
+  corrigido (padrão vazio = APK independente; c72c444). APK v2 (run
+  39841244837) conferido por dentro (sem `server.url`, telas no APK).
+- **Dono instalou o v2 no celular: "tá perfeito".** Tem ajustes pra depois.
+
+**Pendências (próxima sessão)**
+1. Ajustes que o dono vai listar depois do teste.
+2. Merge do PR #1 quando o dono liberar.
+3. Animações do Life (formato dos arquivos?), imagens da ficha de treino
+   (print + qual zip), limite do chat (hoje 40 pago / 4 grátis).
+4. Contas externas: Firebase (google-services.json + conta de serviço),
+   Brevo (SMTP), RevenueCat (produtos na Play, chave, webhook), Facebook App ID.
+5. Dono revogar o token do GitHub colado no chat.
