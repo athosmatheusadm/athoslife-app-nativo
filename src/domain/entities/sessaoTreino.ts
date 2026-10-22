@@ -75,6 +75,8 @@ export interface SessaoTreino {
 export const DESCANSO_PADRAO_SEG = 90
 export const PASSO_CARGA_KG = 2.5
 export const PASSO_SEGUNDOS = 5
+/** Contagem antes do exercício por tempo (prancha): dá tempo de se posicionar. */
+export const PREPARO_SEG = 3
 
 // ── criação ────────────────────────────────────────────────────────────────
 
@@ -191,7 +193,14 @@ export function ajustarSegundos(s: SessaoTreino, delta: number): SessaoTreino {
 export function iniciarCronometro(s: SessaoTreino, agora: number): SessaoTreino {
   if (s.status !== 'serie') return s
   const seg = s.segundos ?? 30
-  return { ...s, status: 'cronometro', cronometroInicioEm: agora, cronometroFimEm: agora + seg * 1000 }
+  // O cronômetro começa depois do preparo; até lá, `agora < cronometroInicioEm`.
+  const inicio = agora + PREPARO_SEG * 1000
+  return { ...s, status: 'cronometro', cronometroInicioEm: inicio, cronometroFimEm: inicio + seg * 1000 }
+}
+
+/** Ainda na contagem de preparo (3, 2, 1) antes do cronômetro valer. */
+export function emPreparo(s: SessaoTreino, agora: number): boolean {
+  return s.status === 'cronometro' && s.cronometroInicioEm !== null && agora < s.cronometroInicioEm
 }
 
 /**
@@ -343,6 +352,8 @@ export interface EstadoLiveActivity {
   readonly status: StatusSessao
   readonly descansoFimEm: number | null
   readonly cronometroFimEm: number | null
+  /** Fim do preparo de 3 s (o cronômetro vale a partir daqui). */
+  readonly cronometroInicioEm: number | null
   /** Nome do próximo exercício, pra mostrar no descanso. */
   readonly proximo: string | null
   /** Descanso padrão — o nativo usa se tocarem "confirmar" com o app dormindo. */
@@ -363,6 +374,7 @@ export function paraLiveActivity(s: SessaoTreino): EstadoLiveActivity | null {
     status: s.status,
     descansoFimEm: s.descansoFimEm,
     cronometroFimEm: s.cronometroFimEm,
+    cronometroInicioEm: s.cronometroInicioEm,
     proximo: ex.feitas.length === 0 && s.status === 'descanso' ? ex.nome : null,
     descansoSeg: s.descansoSeg,
   }

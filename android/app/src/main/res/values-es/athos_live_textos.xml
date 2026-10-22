@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="la_canal">Entrenamiento en curso</string>
+    <string name="la_canal_desc">Series, descanso y cronómetro en la pantalla de bloqueo</string>
+    <string name="la_serie_de">Serie %1$d de %2$d</string>
+    <string name="la_proxima_de">Siguiente: %1$d de %2$d</string>
+    <string name="la_chip_serie">En serie</string>
+    <string name="la_chip_pronto">Listo</string>
+    <string name="la_chip_preparo">Prepárate</string>
+    <string name="la_chip_descanso">Descanso</string>
+    <string name="la_peso">peso</string>
+    <string name="la_reps">reps</string>
+    <string name="la_meta_serie">Meta por serie</string>
+    <string name="la_posicione">Colócate en posición</string>
+    <string name="la_comeca_sozinha">la cuenta empieza sola</string>
+    <string name="la_segure">Aguanta firme</string>
+    <string name="la_meta">meta %1$s</string>
+    <string name="la_iniciar">Iniciar</string>
+    <string name="la_cancelar">Cancelar</string>
+    <string name="la_concluir">Terminar</string>
+    <string name="la_pular">Saltar</string>
+    <string name="la_a_seguir">a continuación: %1$s</string>
+    <string name="la_proximo_ex">siguiente: %1$s</string>
+    <string name="la_ate_proxima">hasta la próxima serie</string>
+    <string name="la_confirmar_desc">Confirmar serie</string>
+</resources>

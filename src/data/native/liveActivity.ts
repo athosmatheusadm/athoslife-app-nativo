@@ -23,6 +23,7 @@ export type AcaoLiveActivity =
   | 'seg-'
   | 'confirmar'
   | 'iniciar'
+  | 'cancelar'
   | 'descanso+15'
   | 'pular'
 

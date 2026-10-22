@@ -1,104 +1,147 @@
 /**
- * Story Studio — o que vai por cima da foto num Story 1080×1920.
- * Posições em % da tela (x, y = centro do elemento), tamanho relativo `k`.
- * A mesma lista desenha a tela (StoryScreen) e a imagem exportada
- * (exportarStory), por isso nada aqui depende de pixel.
+ * Story Studio — formato do protótipo do dono (ATHOS_Story_Editor_Unificado_V2):
+ * a foto vem primeiro e os elementos (números, Life, gráfico) ficam por cima,
+ * cada um com posição, tamanho, opacidade e cor. Musculação e Alimentação;
+ * Corrida e Jiu-Jitsu ficam pra depois (o app ainda não registra esses treinos).
+ *
+ * Posições em fração do quadro 1080×1920 (x, y = centro do elemento). O mesmo
+ * estado desenha a prévia e a imagem exportada (ui/screens/story/storyCanvas).
  */
 
-export type ModoStory = 'food' | 'gym'
+export type ModoStory = 'gym' | 'food'
 
-export interface MetricaStory {
-  readonly id: string
-  readonly rotulo: string
-  readonly valor: string
-  readonly unidade?: string
-  /** Aparece de cara; as outras ficam em "Dados". */
-  readonly ligada: boolean
-}
-
-/** O que a tela de origem (Dieta ou fim do treino) manda pro editor. */
-export interface EntradaStory {
-  readonly modo: ModoStory
-  readonly titulo: { readonly rotulo: string; readonly valor: string }
-  readonly metricas: readonly MetricaStory[]
-}
+export type TipoItemStory = 'metric' | 'life' | 'chart' | 'icon' | 'lines'
 
 export interface ItemStory {
   readonly id: string
-  readonly tipo: 'titulo' | 'metrica' | 'life'
+  readonly tipo: TipoItemStory
   readonly rotulo: string
   readonly valor: string
-  readonly unidade?: string
+  readonly unidade: string
   readonly x: number
   readonly y: number
-  readonly on: boolean
-  /** Escala (0,6–2). */
-  readonly k: number
+  /** Escala (0,4–1,7). */
+  readonly tamanho: number
+  readonly opacidade: number
   readonly cor: string
+  /** Só o Life: giro de cor em graus. */
+  readonly matiz: number
+  readonly visivel: boolean
 }
 
-export type ModeloStory = 'base' | 'topo' | 'lado' | 'foto'
-
-export const CORES_STORY = ['#ffffff', '#86efac', '#fbbf24', '#111412'] as const
-
-/** Faixas cobertas pelos botões do Instagram (em % da altura). */
-export const FAIXA_TOPO = 13
-export const FAIXA_BASE = 82
-
-const limitar = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
-
-/** Posição das métricas ligadas num modelo: duas colunas, de cima pra baixo. */
-function posicao(modelo: Exclude<ModeloStory, 'foto'>, n: number): { x: number; y: number } {
-  if (modelo === 'lado') return { x: 26, y: 34 + n * 10 }
-  const y0 = modelo === 'topo' ? 26 : 60
-  return { x: n % 2 ? 70 : 30, y: y0 + Math.floor(n / 2) * 9 }
+export interface EstadoStory {
+  readonly itens: readonly ItemStory[]
+  /** Volume por bloco (gráfico da musculação), em kg. */
+  readonly blocos: readonly number[]
+  /** Luz da foto, -100 a 100. */
+  readonly luz: number
+  /** Sombra suave à esquerda pra ler os números. */
+  readonly sombra: boolean
+  readonly zoom: number
+  readonly panX: number
+  readonly panY: number
 }
 
-export function itensIniciais(e: EntradaStory, rotuloLife: string): ItemStory[] {
-  const base = { k: 1, cor: CORES_STORY[0] }
-  const ligadas = e.metricas.filter((m) => m.ligada).map((m) => m.id)
-  const itens: ItemStory[] = [
-    { ...base, id: 'titulo', tipo: 'titulo', rotulo: e.titulo.rotulo, valor: e.titulo.valor, x: 50, y: 21, on: true },
-    ...e.metricas.map((m): ItemStory => {
-      const i = ligadas.indexOf(m.id)
-      const p = posicao('base', i >= 0 ? i : ligadas.length)
-      return { ...base, id: m.id, tipo: 'metrica', rotulo: m.rotulo, valor: m.valor, ...(m.unidade ? { unidade: m.unidade } : {}), ...p, on: m.ligada }
-    }),
-    { ...base, id: 'life', tipo: 'life', rotulo: rotuloLife, valor: '', x: 78, y: 42, on: e.modo === 'gym' },
-  ]
-  return itens
+/** Dados que o app manda pro editor. Só os campos presentes viram elemento. */
+export interface ValoresStory {
+  readonly pr?: string
+  readonly evolution?: string
+  readonly focus?: string
+  readonly volume?: string
+  readonly sets?: string
+  readonly duration?: string
+  readonly blocks?: readonly number[]
+  readonly kcal?: string
+  readonly protein?: string
+  readonly carbs?: string
+  readonly fat?: string
 }
 
-/** Reorganiza sem mudar valores nem foto. "foto" esconde tudo (fica a assinatura). */
-export function aplicarModelo(itens: readonly ItemStory[], modelo: ModeloStory): ItemStory[] {
-  if (modelo === 'foto') return itens.map((i) => ({ ...i, on: false }))
+/** Rótulos e unidades no idioma do app (i18n `story.campos`). */
+export interface TextosStory {
+  readonly campos: Readonly<Record<string, { readonly rotulo: string; readonly unidade?: string }>>
+  readonly life: string
+  readonly halter: string
+  readonly grafico: string
+  readonly linhas: string
+}
+
+export const COR_PADRAO = '#ffffff'
+export const CORES_STORY = ['#ffffff', '#d3f6a2', '#171d16'] as const
+
+const CAMPOS: Record<ModoStory, readonly string[]> = {
+  gym: ['pr', 'evolution', 'focus', 'volume', 'sets', 'duration'],
+  food: ['kcal', 'protein', 'carbs', 'fat'],
+}
+
+/** O que aparece de cara quando o app abre o editor (máx. 2, como no V2). */
+const PREFERIDOS: Record<ModoStory, readonly string[]> = {
+  gym: ['pr', 'evolution', 'volume', 'sets', 'focus'],
+  food: ['kcal', 'protein', 'carbs'],
+}
+
+const base = { tamanho: 1, opacidade: 0.82, cor: COR_PADRAO, matiz: 0, valor: '', unidade: '' }
+
+export function criarEstado(modo: ModoStory, valores: ValoresStory, t: TextosStory): EstadoStory {
+  const itens: ItemStory[] = []
+  for (const id of CAMPOS[modo]) {
+    const valor = valores[id as keyof ValoresStory]
+    if (typeof valor !== 'string' || !valor) continue
+    const c = t.campos[id]
+    itens.push({ ...base, id, tipo: 'metric', rotulo: c?.rotulo ?? id, valor: valor.slice(0, 90), unidade: c?.unidade ?? '', x: 0.38, y: 0.5, visivel: false })
+  }
+  if (modo === 'gym') {
+    itens.push({ ...base, id: 'icon', tipo: 'icon', rotulo: t.halter, x: 0.37, y: 0.62, opacidade: 0.8, visivel: false })
+    if (valores.blocks?.length) itens.push({ ...base, id: 'chart', tipo: 'chart', rotulo: t.grafico, x: 0.38, y: 0.85, opacidade: 0.8, visivel: false })
+  } else {
+    itens.push({ ...base, id: 'lines', tipo: 'lines', rotulo: t.linhas, x: 0.3, y: 0.85, opacidade: 0.8, visivel: false })
+  }
+  itens.push({ ...base, id: 'life', tipo: 'life', rotulo: t.life, x: 0.8, y: 0.86, tamanho: 0.85, opacidade: 1, visivel: false })
+
+  // Os dois primeiros dados disponíveis aparecem na base, um embaixo do outro.
   let n = 0
-  return itens.map((i) => {
-    if (i.tipo === 'titulo') return { ...i, on: true, x: modelo === 'lado' ? 30 : 50, y: modelo === 'topo' ? 72 : 21 }
-    if (i.tipo === 'life' || !i.on) return i
-    return { ...i, ...posicao(modelo, n++) }
+  const comPosicao = itens.map((i) => {
+    if (n >= 2 || !PREFERIDOS[modo].includes(i.id)) return i
+    const pos = { x: 0.35, y: n === 0 ? 0.7 : 0.79 }
+    n++
+    return { ...i, ...pos, visivel: true }
   })
+  return { itens: comPosicao, blocos: valores.blocks?.slice(0, 10) ?? [], luz: 0, sombra: false, zoom: 1, panX: 0, panY: 0 }
 }
 
-export function mover(i: ItemStory, x: number, y: number): ItemStory {
-  return { ...i, x: limitar(x, 8, 92), y: limitar(y, 6, 94) }
+export type ModeloStory = 'foto' | 'base' | 'coluna' | 'editorial'
+
+/** Modelos do V2: reorganizam os dados principais; a foto e os valores ficam. */
+export function aplicarModelo(e: EstadoStory, modo: ModoStory, modelo: ModeloStory): EstadoStory {
+  const escondidos = e.itens.map((i) => ({ ...i, visivel: false }))
+  if (modelo === 'foto') return { ...e, itens: escondidos }
+  const max = modo === 'gym' ? 2 : 3
+  const ids = PREFERIDOS[modo].filter((id) => e.itens.some((i) => i.id === id)).slice(0, max)
+  const pos =
+    modelo === 'editorial' ? [[0.28, 0.7], [0.7, 0.7], [0.28, 0.8]]
+      : modelo === 'coluna' ? [[0.3, 0.26], [0.3, 0.37], [0.3, 0.48]]
+        : [[0.3, 0.7], [0.3, 0.79], [0.7, 0.79]]
+  const tamanho = modo === 'gym' && modelo === 'editorial' ? 0.55 : 0.9
+  return {
+    ...e,
+    itens: escondidos.map((i) => {
+      const k = ids.indexOf(i.id)
+      if (k < 0) return i
+      const [x, y] = pos[k]!
+      return { ...i, x: x!, y: y!, tamanho, opacidade: 0.82, visivel: true }
+    }),
+  }
 }
 
-export function escalar(i: ItemStory, passo: number): ItemStory {
-  return { ...i, k: Math.round(limitar(i.k + passo, 0.6, 2) * 100) / 100 }
+let serial = 100
+
+/** "+ Criar campo personalizado" do V2. */
+export function campoPersonalizado(rotulo: string, valor: string): ItemStory {
+  return { ...base, id: `custom${++serial}`, tipo: 'metric', rotulo, valor, x: 0.45, y: 0.55, visivel: true }
 }
 
-export const naFaixaDoInstagram = (i: ItemStory) => i.y < FAIXA_TOPO || i.y > FAIXA_BASE
+export function mudarItem(e: EstadoStory, id: string, fn: (i: ItemStory) => ItemStory): EstadoStory {
+  return { ...e, itens: e.itens.map((i) => (i.id === id ? fn(i) : i)) }
+}
 
-/**
- * Tamanhos em fração da LARGURA do Story — a tela e o canvas 1080 usam os
- * mesmos números (na tela, `cqw`; no canvas, × 1080).
- */
-export const MEDIDAS = {
-  rotulo: 0.026,
-  valor: 0.068,
-  valorTitulo: 0.045,
-  life: 0.24,
-  assinatura: 0.032,
-  margem: 0.042,
-} as const
+export const limitar = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))

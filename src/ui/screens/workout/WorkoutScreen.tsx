@@ -13,6 +13,7 @@ import {
 import { treinoPlanoRepository } from '@data/repositories/treinoPlanoRepository'
 import { ExerciseIcon } from '@ui/components/ExerciseIcon'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
+import { BotaoStory } from '@ui/components/story/BotaoStory'
 import { ExerciseCard } from './ExerciseCard'
 import { AddExercisePanel } from './AddExercisePanel'
 import { TreinoEmAndamento } from './TreinoEmAndamento'
@@ -183,7 +184,10 @@ export function WorkoutScreen() {
           <h1 className="text-2xl font-extrabold text-content-hi">{t.titulo}</h1>
           <p className="text-sm text-content-low">{t.subtitulo}</p>
         </div>
-        <ProfileAvatar />
+        <div className="flex items-center gap-2">
+          <BotaoStory modo="gym" />
+          <ProfileAvatar />
+        </div>
       </header>
 
       {/* Seletor de local */}

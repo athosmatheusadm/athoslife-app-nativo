@@ -23,6 +23,7 @@ import {
   ajustarReps,
   ajustarSegundos,
   avancarRelogio,
+  cancelarCronometro,
   confirmarSerie,
   criarSessao,
   iniciarCronometro,
@@ -75,6 +76,7 @@ function transformacaoDaAcao(acao: AcaoLiveActivity): Transformacao {
     case 'seg-': return (s) => ajustarSegundos(s, -PASSO_SEGUNDOS)
     case 'confirmar': return confirmarSerie
     case 'iniciar': return iniciarCronometro
+    case 'cancelar': return (s) => cancelarCronometro(s)
     case 'descanso+15': return (s, agora) => adicionarDescanso(s, 15, agora)
     case 'pular': return (s) => pularDescanso(s)
   }

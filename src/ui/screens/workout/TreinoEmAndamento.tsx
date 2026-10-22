@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { EntradaStory } from '@domain/entities/story'
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
+  emPreparo,
   exercicioAtual,
   formatarRelogio,
-  grupoPrincipal,
   indiceSerie,
   resumirSessao,
   segundosRestantes,
@@ -51,6 +50,8 @@ export function TreinoEmAndamento() {
   } else if (sessao.status === 'descanso') {
     status = tx.descanso(formatarRelogio(segundosRestantes(sessao.descansoFimEm, t)))
     cor = 'bg-accent-energy'
+  } else if (emPreparo(sessao, t)) {
+    status = tx.preparo(ex.nome, segundosRestantes(sessao.cronometroInicioEm, t))
   } else if (sessao.status === 'cronometro') {
     status = `${ex.nome} · ${formatarRelogio(segundosRestantes(sessao.cronometroFimEm, t))}`
   } else {
@@ -60,8 +61,6 @@ export function TreinoEmAndamento() {
   async function salvar(story = false) {
     setSalvando(true)
     setErro(false)
-    // O resumo some depois de finalizar (a sessão vira null): monta o Story antes.
-    const entrada = story && sessao ? entradaStory() : null
     try {
       const salvou = r.seriesFeitas > 0
       await finalizar()
@@ -70,26 +69,12 @@ export function TreinoEmAndamento() {
         vibrar.sucesso()
         avisar.ok(tx.salvo)
       }
-      if (entrada) navigate('/story', { state: entrada })
+      // O editor lê o treino recém-salvo do histórico (com recorde pessoal).
+      if (story && salvou) navigate('/story', { state: { modo: 'gym' } })
     } catch {
       setErro(true)
     } finally {
       setSalvando(false)
-    }
-  }
-
-  function entradaStory(): EntradaStory {
-    const ts = m.story.gym
-    const grupo = sessao ? grupoPrincipal(sessao) : null
-    return {
-      modo: 'gym',
-      titulo: { rotulo: ts.treinoDeHoje, valor: grupo ? m.treino.grupos[grupo] : ts.treino },
-      metricas: [
-        { id: 'volume', rotulo: ts.volume, valor: r.volumeKg.toLocaleString(idioma), unidade: 'kg', ligada: r.volumeKg > 0 },
-        { id: 'series', rotulo: ts.series, valor: String(r.seriesFeitas), ligada: true },
-        { id: 'duracao', rotulo: ts.duracao, valor: String(r.duracaoMin), unidade: 'min', ligada: true },
-        { id: 'exercicios', rotulo: ts.exercicios, valor: String(r.exerciciosFeitos), ligada: false },
-      ],
     }
   }
 

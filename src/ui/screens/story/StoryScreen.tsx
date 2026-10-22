@@ -1,97 +1,296 @@
-import { useRef, useState, type CSSProperties } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   aplicarModelo,
+  campoPersonalizado,
   CORES_STORY,
-  escalar,
-  FAIXA_BASE,
-  FAIXA_TOPO,
-  itensIniciais,
-  MEDIDAS,
-  mover,
-  naFaixaDoInstagram,
-  type EntradaStory,
+  criarEstado,
+  limitar,
+  mudarItem,
+  type EstadoStory,
   type ItemStory,
   type ModeloStory,
+  type ModoStory,
+  type ValoresStory,
 } from '@domain/entities/story'
 import { capturarFoto } from '@data/ai/photoCapture'
 import { compartilharImagem, postarNoStory, type ComoFoi } from '@data/native/instagramStory'
-import { exportarStory } from '@ui/screens/story/exportarStory'
+import { macrosRepository } from '@data/repositories/macrosRepository'
+import { treinoHistoricoRepository } from '@data/repositories/treinoHistoricoRepository'
+import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { avisar, vibrar } from '@ui/feedback'
 import { useI18n } from '@/i18n/I18nProvider'
+import type { GrupoMuscular } from '@domain/entities/treino'
+import { caixa, cantos, carregarImagem, desenhar, encaixar, exportar, forma, H, W, type Canto, type Midia } from './storyCanvas'
 
 /**
- * Story Studio — a foto da pessoa ocupa a tela (9:16) e os números do treino
- * ou da refeição ficam soltos por cima: arrasta com o dedo, toca pra mudar
- * tamanho e cor. Controles em vidro (como o scanner), um painel por vez.
- * Entrada: `navigate('/story', { state: EntradaStory })` da Dieta (câmera na
- * refeição) ou do resumo do treino. Prévia aprovada: docs/previas/previa-story.html.
+ * Story Studio no formato do protótipo do dono (ATHOS_Story_Editor_Unificado_V2):
+ * a foto vem primeiro; Foto · Adicionar · Modelos · Ajustes embaixo; tocar
+ * num elemento abre os ajustes dele (opacidade, cor, texto, outro lado…) e
+ * puxar um canto redimensiona. Só Musculação e Alimentação por enquanto.
+ *
+ * Entrada: `navigate('/story', { state: { modo, escolher } })`. Câmera da
+ * Dieta → food; do Treino e do fim do treino → gym; da Home → `escolher`
+ * mostra as abas. Os dados vêm do banco (último treino / dieta de hoje).
  */
 
-const LIFE = { food: '/life/chef.webp', gym: '/life/treino.webp' } as const
-const MODELOS: readonly ModeloStory[] = ['base', 'topo', 'lado', 'foto']
-type Painel = null | 'dados' | 'modelos'
-
-const cqw = (f: number, k = 1) => `${(f * 100 * k).toFixed(2)}cqw`
-
-export function StoryScreen() {
-  const entrada = useLocation().state as EntradaStory | null
-  if (!entrada?.modo) return <Navigate to="/home" replace />
-  return <Editor entrada={entrada} />
+interface EntradaStory {
+  readonly modo?: ModoStory
+  /** Mostra as abas Musculação / Alimentação (entrada pela Home). */
+  readonly escolher?: boolean
 }
 
-function Editor({ entrada }: { entrada: EntradaStory }) {
+const LIFE: Record<ModoStory, string> = { gym: '/life/treino.webp', food: '/life/chef.webp' }
+const COR_SELECAO = '#d3f6a2'
+type Gaveta = null | 'adicionar' | 'modelos' | 'ajustes'
+
+export function StoryScreen() {
+  const entrada = (useLocation().state ?? {}) as EntradaStory
   const navigate = useNavigate()
-  const { m } = useI18n()
+  const { m, idioma } = useI18n()
   const t = m.story
-  const lifeSrc = LIFE[entrada.modo]
-  const [itens, setItens] = useState<ItemStory[]>(() =>
-    itensIniciais(entrada, entrada.modo === 'food' ? t.lifeChef : t.lifeTreino),
-  )
-  const [historico, setHistorico] = useState<ItemStory[][]>([])
-  const [foto, setFoto] = useState<string | null>(null)
+  const escolher = entrada.escolher ?? !entrada.modo
+
+  const [modo, setModo] = useState<ModoStory>(entrada.modo ?? 'gym')
+  const [estados, setEstados] = useState<Partial<Record<ModoStory, EstadoStory>>>({})
+  const [historicos, setHistoricos] = useState<Record<ModoStory, EstadoStory[]>>({ gym: [], food: [] })
+  const [fotoSrc, setFotoSrc] = useState<string | null>(null)
+  const [foto, setFoto] = useState<HTMLImageElement | null>(null)
+  const [life, setLife] = useState<HTMLImageElement | null>(null)
   const [sel, setSel] = useState<string | null>(null)
-  const [painel, setPainel] = useState<Painel>(null)
-  const [arrastando, setArrastando] = useState(false)
+  const [gaveta, setGaveta] = useState<Gaveta>(null)
+  const [editandoTexto, setEditandoTexto] = useState(false)
   const [ocupado, setOcupado] = useState(false)
-  const tela = useRef<HTMLDivElement>(null)
-  const arr = useRef<{ id: string; x0: number; y0: number; ix: number; iy: number; moveu: boolean } | null>(null)
+  const cv = useRef<HTMLCanvasElement>(null)
 
-  const selecionado = itens.find((i) => i.id === sel) ?? null
+  const estado = estados[modo]
+  const item = estado?.itens.find((i) => i.id === sel) ?? null
+  const temDados = estado?.itens.some((i) => i.tipo === 'metric') ?? false
 
+  useFecharNoVoltar(gaveta !== null, () => setGaveta(null))
+  useFecharNoVoltar(sel !== null, () => setSel(null))
+
+  // Dados reais da modalidade (uma vez por modalidade).
+  useEffect(() => {
+    if (estados[modo]) return
+    let vivo = true
+    const textos = {
+      campos: t.campos,
+      life: modo === 'gym' ? t.lifeTreino : t.lifeChef,
+      halter: t.halter,
+      grafico: t.grafico,
+      linhas: t.linhas,
+    }
+    const num = (n: number, casas = 0) => n.toLocaleString(idioma, { maximumFractionDigits: casas })
+    const carregar = async (): Promise<ValoresStory> => {
+      if (modo === 'food') {
+        const d = await macrosRepository.doDia()
+        if (!d.kcal && !d.proteina) return {}
+        return { kcal: `≈ ${num(d.kcal)}`, protein: num(d.proteina, 1), carbs: num(d.carboidrato, 1), fat: num(d.gordura, 1) }
+      }
+      const tr = await treinoHistoricoRepository.ultimoParaStory()
+      if (!tr) return {}
+      return {
+        ...(tr.recorde
+          ? { pr: t.pr(num(tr.recorde.kg, 1), tr.recorde.exercicio), evolution: t.evolucao(num(tr.recorde.ganhoKg, 1)) }
+          : {}),
+        ...(tr.grupo ? { focus: m.treino.grupos[tr.grupo as GrupoMuscular] ?? tr.grupo } : {}),
+        ...(tr.volumeKg > 0 ? { volume: num(tr.volumeKg) } : {}),
+        ...(tr.series > 0 ? { sets: String(tr.series) } : {}),
+        ...(tr.duracaoMin > 0 ? { duration: String(tr.duracaoMin) } : {}),
+        ...(tr.blocos.length > 1 ? { blocks: tr.blocos } : {}),
+      }
+    }
+    carregar()
+      .catch(() => ({}))
+      .then((valores) => {
+        if (vivo) setEstados((e) => ({ ...e, [modo]: criarEstado(modo, valores, textos) }))
+      })
+    return () => {
+      vivo = false
+    }
+  }, [modo, estados, t, m.treino.grupos, idioma])
+
+  useEffect(() => {
+    let vivo = true
+    setLife(null)
+    void carregarImagem(LIFE[modo]).then((im) => vivo && setLife(im)).catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [modo])
+
+  useEffect(() => {
+    if (!fotoSrc) return setFoto(null)
+    let vivo = true
+    void carregarImagem(fotoSrc).then((im) => vivo && setFoto(im)).catch(() => avisar.erro(t.erro))
+    return () => {
+      vivo = false
+    }
+  }, [fotoSrc, t.erro])
+
+  const midia: Midia = { foto, life, rotuloGrafico: t.graficoRotulo, idioma }
+  const ctx = () => cv.current?.getContext('2d') ?? null
+  const pxPorPonto = () => W / (cv.current?.getBoundingClientRect().width || W)
+
+  // Desenha a prévia a cada mudança.
+  useEffect(() => {
+    const c = ctx()
+    if (!c || !estado) return
+    desenhar(c, estado, modo, midia, item ? { item, pxPorPonto: pxPorPonto(), cor: COR_SELECAO } : undefined)
+  })
+
+  // ── estado + desfazer ─────────────────────────────────────────────────
+  const atualizar = useCallback(
+    (fn: (e: EstadoStory) => EstadoStory) => setEstados((es) => (es[modo] ? { ...es, [modo]: fn(es[modo]!) } : es)),
+    [modo],
+  )
   function guardar() {
-    setHistorico((h) => [...h.slice(-29), itens])
-  }
-  function mudar(id: string, fn: (i: ItemStory) => ItemStory) {
-    setItens((lista) => lista.map((i) => (i.id === id ? fn(i) : i)))
+    if (!estado) return
+    setHistoricos((h) => ({ ...h, [modo]: [...h[modo].slice(-34), estado] }))
   }
   function desfazer() {
-    setHistorico((h) => {
-      const anterior = h[h.length - 1]
-      if (anterior) setItens(anterior)
-      return h.slice(0, -1)
-    })
+    const anterior = historicos[modo][historicos[modo].length - 1]
+    if (!anterior) return
+    setHistoricos((h) => ({ ...h, [modo]: h[modo].slice(0, -1) }))
+    setEstados((es) => ({ ...es, [modo]: anterior }))
     setSel(null)
+    avisar.ok(t.desfeito)
   }
-  function abrir(p: Exclude<Painel, null>) {
-    setSel(null)
-    setPainel((atual) => (atual === p ? null : p))
+  function mudar(fn: (i: ItemStory) => ItemStory) {
+    if (!sel) return
+    atualizar((e) => mudarItem(e, sel, fn))
   }
-  function fecharTudo() {
-    setSel(null)
-    setPainel(null)
+  function encaixado(i: ItemStory): ItemStory {
+    const c = ctx()
+    return c ? encaixar(c, i, modo, midia) : i
   }
 
-  async function trocarFoto() {
+  // ── gesto: mover e puxar canto (igual ao V2) ──────────────────────────
+  const gesto = useRef<{
+    id: string
+    ponteiro: number
+    x: number
+    y: number
+    ox: number
+    oy: number
+    tamanho: number
+    canto: Canto | null
+    ax: number
+    ay: number
+    w: number
+    h: number
+    mudou: boolean
+  } | null>(null)
+
+  function ponto(e: React.PointerEvent) {
+    const r = cv.current!.getBoundingClientRect()
+    return { x: ((e.clientX - r.left) * W) / r.width, y: ((e.clientY - r.top) * H) / r.height, px: W / r.width }
+  }
+
+  function aoTocar(e: React.PointerEvent<HTMLCanvasElement>) {
+    const c = ctx()
+    if (gesto.current || !c || !estado) return
+    const p = ponto(e)
+    const ativo = item?.visivel ? item : null
+    const b = ativo ? caixa(c, ativo, modo, midia) : null
+    const canto = b
+      ? (cantos(b)
+          .filter((k) => Math.abs(p.x - k.x) <= 22 * p.px && Math.abs(p.y - k.y) <= 22 * p.px)
+          .sort((a, z) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(p.x - z.x, p.y - z.y))[0] ?? null)
+      : null
+    const o = canto
+      ? ativo
+      : [...estado.itens].reverse().find((i) => {
+          if (!i.visivel) return false
+          const k = caixa(c, i, modo, midia)
+          return p.x >= k.x - 8 * p.px && p.x <= k.x + k.w + 8 * p.px && p.y >= k.y - 8 * p.px && p.y <= k.y + k.h + 8 * p.px
+        })
+    if (!o) {
+      setSel(null)
+      return
+    }
+    setSel(o.id)
+    setEditandoTexto(false)
+    setGaveta(null)
+    gesto.current = {
+      id: o.id, ponteiro: e.pointerId, x: p.x, y: p.y, ox: o.x, oy: o.y, tamanho: o.tamanho, canto,
+      ax: canto && b ? (canto.sx === 1 ? b.x : b.x + b.w) : 0,
+      ay: canto && b ? (canto.sy === 1 ? b.y : b.y + b.h) : 0,
+      w: b?.w ?? 0, h: b?.h ?? 0, mudou: false,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+    e.preventDefault()
+  }
+
+  function aoMover(e: React.PointerEvent<HTMLCanvasElement>) {
+    const g = gesto.current
+    const c = ctx()
+    if (!g || e.pointerId !== g.ponteiro || !c) return
+    const p = ponto(e)
+    if (!g.mudou) {
+      if (Math.hypot(p.x - g.x, p.y - g.y) < 3 * p.px) return
+      guardar()
+      g.mudou = true
+    }
+    atualizar((est) =>
+      mudarItem(est, g.id, (o) => {
+        if (g.canto) {
+          const vx = g.canto.sx * g.w
+          const vy = g.canto.sy * g.h
+          const razao = 1 + ((p.x - g.x) * vx + (p.y - g.y) * vy) / (vx * vx + vy * vy)
+          const f = forma(c, o, modo, midia)
+          const cabe = Math.min(
+            1.7,
+            (g.canto.sx === 1 ? 1053 - g.ax : g.ax - 27) / f.w,
+            (g.canto.sy === 1 ? 1872 - g.ay : g.ay - 48) / f.h,
+          )
+          const tamanho = Math.max(Math.min(0.4, cabe), Math.min(cabe, g.tamanho * razao))
+          return { ...o, tamanho, x: (g.ax + (g.canto.sx * f.w * tamanho) / 2) / W, y: (g.ay + (g.canto.sy * f.h * tamanho) / 2) / H }
+        }
+        return encaixar(c, { ...o, x: g.ox + (p.x - g.x) / W, y: g.oy + (p.y - g.y) / H }, modo, midia)
+      }),
+    )
+  }
+
+  function aoSoltar(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (!gesto.current || e.pointerId !== gesto.current.ponteiro) return
+    gesto.current = null
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
+  }
+
+  // ── ações ─────────────────────────────────────────────────────────────
+  async function escolherFoto() {
+    setGaveta(null)
     const f = await capturarFoto('galeria')
-    if (f) setFoto(f.dataUrl)
+    if (!f) return
+    setFotoSrc(f.dataUrl)
+    atualizar((e) => ({ ...e, zoom: 1, panX: 0, panY: 0 }))
+    setSel(null)
+    avisar.ok(t.fotoAdicionada)
   }
 
-  async function exportar(como: 'story' | 'enviar') {
+  function soFoto() {
+    guardar()
+    atualizar((e) => aplicarModelo(e, modo, 'foto'))
+    setSel(null)
+    setGaveta(null)
+    avisar.ok(t.soFotoAviso)
+  }
+
+  function trocarModo(novo: ModoStory) {
+    if (novo === modo) return
+    setSel(null)
+    setGaveta(null)
+    setModo(novo)
+  }
+
+  async function exportarComo(como: 'story' | 'enviar') {
+    if (!estado) return
     setOcupado(true)
-    fecharTudo()
+    setSel(null)
     try {
-      const base64 = await exportarStory({ foto, itens, lifeSrc })
+      const base64 = exportar(estado, modo, midia)
       const r: ComoFoi = como === 'story' ? await postarNoStory(base64) : await compartilharImagem(base64)
       vibrar.sucesso()
       avisar.ok(r === 'instagram' ? t.abriuInstagram : r === 'menu' ? t.abriuMenu : t.baixou)
@@ -102,278 +301,357 @@ function Editor({ entrada }: { entrada: EntradaStory }) {
     }
   }
 
-  // Arrastar: posição em % da tela, pra bater com a imagem 1080×1920.
-  function onPointerDown(e: React.PointerEvent, i: ItemStory) {
-    arr.current = { id: i.id, x0: e.clientX, y0: e.clientY, ix: i.x, iy: i.y, moveu: false }
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    const a = arr.current
-    const r = tela.current?.getBoundingClientRect()
-    if (!a || !r) return
-    const dx = ((e.clientX - a.x0) / r.width) * 100
-    const dy = ((e.clientY - a.y0) / r.height) * 100
-    if (!a.moveu && Math.hypot(dx, dy) < 1.2) return
-    if (!a.moveu) {
-      guardar()
-      a.moveu = true
-      setArrastando(true)
-    }
-    mudar(a.id, (i) => mover(i, a.ix + dx, a.iy + dy))
-  }
-  function onPointerUp() {
-    const a = arr.current
-    arr.current = null
-    if (!a) return
-    setArrastando(false)
-    if (!a.moveu) {
-      setPainel(null)
-      setSel((s) => (s === a.id ? null : a.id))
-      return
-    }
-    const i = itens.find((x) => x.id === a.id)
-    if (i && naFaixaDoInstagram(i)) avisar.ok(t.avisoFaixa)
-  }
-
-  const faixa = 'pointer-events-none absolute inset-x-0 z-[1] border-dashed border-white/35 bg-[repeating-linear-gradient(135deg,rgb(255_255_255/0.08)_0_6px,transparent_6px_12px)] transition-opacity'
-  const chip = (ativo: boolean) =>
-    `h-9 rounded-pill border px-3 text-micro font-semibold ${ativo ? 'border-brand bg-brand/20 text-brand' : 'border-white/25'}`
-
   return (
-    <main className="tema-escuro fixed inset-0 z-50 flex items-center justify-center bg-black">
-      <div
-        ref={tela}
-        className="relative aspect-[9/16] max-h-full w-full max-w-[min(100vw,calc(100dvh*9/16))] touch-none select-none overflow-hidden [container-type:inline-size]"
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-      >
-        {/* Fundo: a foto da pessoa, ou um degradê até ela escolher. */}
-        <button type="button" onClick={fecharTudo} aria-hidden="true" tabIndex={-1} className="absolute inset-0">
-          {foto ? (
-            <img src={foto} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="block h-full w-full bg-[radial-gradient(90%_60%_at_30%_80%,rgb(34_197_94/0.18),transparent_70%),linear-gradient(160deg,#262b27,#0b0d0c_70%)]" />
-          )}
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-surface-1 px-4 pb-safe-b pt-safe-t text-content-hi">
+      <header className="flex items-center justify-between gap-2 py-3">
+        <button onClick={() => navigate(-1)} aria-label={t.voltar} className="flex h-9 w-9 items-center justify-center rounded-full border border-surface-4 text-content-mid active:bg-content-hi/5">
+          <Svg><path d="M15 5l-7 7 7 7" /></Svg>
         </button>
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgb(0_0_0/0.35),transparent_16%,transparent_60%,rgb(0_0_0/0.55))]" />
-
-        <div className={`${faixa} top-0 border-b ${arrastando ? 'opacity-100' : 'opacity-0'}`} style={{ height: `${FAIXA_TOPO}%` }}>
-          <span className="absolute bottom-1.5 left-2.5 text-[10px] font-semibold">{t.faixa}</span>
+        <div className="text-lg font-extrabold tracking-tight">
+          ATHOS<span className="font-normal text-brand">life</span>
         </div>
-        <div className={`${faixa} bottom-0 border-t ${arrastando ? 'opacity-100' : 'opacity-0'}`} style={{ height: `${100 - FAIXA_BASE}%` }}>
-          <span className="absolute left-2.5 top-1.5 text-[10px] font-semibold">{t.faixa}</span>
-        </div>
+        <button onClick={desfazer} disabled={!historicos[modo].length} aria-label={t.desfazer} className="flex h-9 w-9 items-center justify-center rounded-full border border-surface-4 text-content-mid disabled:opacity-35">
+          <Svg><path d="M8 4L3 9l5 5M3 9h10a7 7 0 0 1 0 14" /></Svg>
+        </button>
+      </header>
 
-        {!foto && (
-          <button
-            type="button"
-            onClick={() => void trocarFoto()}
-            className="vidro absolute left-1/2 top-[40%] z-[2] -translate-x-1/2 rounded-pill px-4 py-2.5 text-sm font-semibold"
-          >
-            {t.semFoto}
-          </button>
-        )}
-
-        {itens.filter((i) => i.on).map((i) => {
-          const estilo: CSSProperties = { left: `${i.x}%`, top: `${i.y}%`, color: i.cor }
-          return (
-            <div
-              key={i.id}
-              role="button"
-              tabIndex={0}
-              aria-label={i.tipo === 'life' ? i.rotulo : `${i.rotulo}: ${i.valor} ${i.unidade ?? ''}`}
-              aria-pressed={sel === i.id}
-              onPointerDown={(e) => onPointerDown(e, i)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setPainel(null)
-                  setSel(i.id)
-                }
-              }}
-              style={estilo}
-              className={`absolute z-[2] -translate-x-1/2 -translate-y-1/2 cursor-grab text-center [text-shadow:0_2px_12px_rgb(0_0_0/0.55)] ${
-                sel === i.id ? 'rounded-md outline-dashed outline-[1.5px] outline-offset-[6px] outline-white/80' : ''
-              }`}
+      {escolher && (
+        <nav className="mb-2 flex gap-1 rounded-xl bg-surface-2 p-1" aria-label={t.formato}>
+          {(['gym', 'food'] as const).map((md) => (
+            <button
+              key={md}
+              onClick={() => trocarModo(md)}
+              aria-pressed={md === modo}
+              className={`flex-1 rounded-lg py-2 text-xs font-semibold ${md === modo ? 'bg-surface-4 text-content-hi' : 'text-content-low'}`}
             >
-              {i.tipo === 'life' ? (
-                <img src={lifeSrc} alt="" draggable={false} style={{ width: cqw(MEDIDAS.life, i.k) }} className="block h-auto drop-shadow-[0_8px_16px_rgb(0_0_0/0.45)]" />
-              ) : (
-                <>
-                  <span className="block whitespace-nowrap font-bold uppercase tracking-[0.08em] opacity-85" style={{ fontSize: cqw(MEDIDAS.rotulo, i.k) }}>
-                    {i.rotulo}
-                  </span>
-                  <span
-                    className={`block whitespace-nowrap leading-[1.05] ${i.tipo === 'titulo' ? 'font-extrabold' : 'font-black tracking-tight'}`}
-                    style={{ fontSize: cqw(i.tipo === 'titulo' ? MEDIDAS.valorTitulo : MEDIDAS.valor, i.k) }}
-                  >
-                    {i.valor}
-                    {i.unidade && <small className="ml-[0.12em] text-[0.5em] font-bold">{i.unidade}</small>}
-                  </span>
-                </>
-              )}
-            </div>
-          )
-        })}
+              {t.modos[md]}
+            </button>
+          ))}
+        </nav>
+      )}
 
-        <div
-          className="pointer-events-none absolute z-[2] font-extrabold [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]"
-          style={{ left: cqw(MEDIDAS.margem), bottom: cqw(MEDIDAS.margem), fontSize: cqw(MEDIDAS.assinatura) }}
-        >
-          ATHOS<span className="text-brand">life</span>
-        </div>
+      <div className="mx-auto mb-2 flex w-full max-w-[360px] items-center justify-between text-[10px] text-content-low">
+        <b className="font-medium text-content-hi">{t.tituloModo[modo]}</b>
+        <span>{t.formato}</span>
+      </div>
 
-        {/* Topo */}
-        <div className="absolute inset-x-3.5 top-[calc(env(safe-area-inset-top,0px)+14px)] z-[4] flex items-center justify-between gap-2">
-          <button type="button" onClick={() => navigate(-1)} aria-label={t.voltar} className="vidro grid h-11 w-11 place-items-center rounded-full text-lg">
-            ←
-          </button>
-          <span className="vidro flex h-8 items-center rounded-pill px-3.5 text-sm font-semibold">{t.titulo(t.modos[entrada.modo])}</span>
-          <button
-            type="button"
-            onClick={desfazer}
-            disabled={historico.length === 0}
-            aria-label={t.desfazer}
-            className="vidro grid h-11 w-11 place-items-center rounded-full text-lg disabled:opacity-40"
-          >
-            ↶
-          </button>
-        </div>
-
-        {/* Rodapé: 3 ferramentas + postar (some quando um painel abre) */}
-        {!painel && !selecionado && (
-          <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+14px)] z-[4] grid gap-2.5">
-            <div className="flex justify-center gap-6">
-              <Ferramenta rotulo={t.foto} onClick={() => void trocarFoto()} icone={<path d="M3 9a3 3 0 0 1 3-3h1.5l2-2h5l2 2H18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3Zm9 1.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" />} />
-              <Ferramenta rotulo={t.dados} onClick={() => abrir('dados')} icone={<path d="M5 19v-8M12 19V5M19 19v-6" />} />
-              <Ferramenta rotulo={t.modelos} onClick={() => abrir('modelos')} icone={<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 12h6m-6 3h4" />} />
-            </div>
-            <div className="grid grid-cols-[1fr_auto] gap-2">
-              <button
-                type="button"
-                onClick={() => void exportar('story')}
-                disabled={ocupado}
-                className="flex min-h-[50px] items-center justify-center gap-2 rounded-pill bg-brand text-[15px] font-bold text-brand-ink active:scale-[0.98] disabled:opacity-60"
-              >
-                {ocupado ? t.gerando : t.postarStories}
-              </button>
-              <button
-                type="button"
-                onClick={() => void exportar('enviar')}
-                disabled={ocupado}
-                aria-label={t.salvar}
-                className="vidro grid h-[50px] w-[50px] place-items-center rounded-full disabled:opacity-60"
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 19h14" /></svg>
-              </button>
-            </div>
+      <div
+        className="relative mx-auto aspect-[9/16] w-full overflow-hidden rounded-[13px] bg-[#202720] shadow-[0_25px_70px_#0006]"
+        style={{ maxWidth: 'min(360px, calc((100dvh - 330px) * 9 / 16))', minWidth: 230 }}
+      >
+        <canvas
+          ref={cv}
+          width={W}
+          height={H}
+          className="block h-full w-full touch-none"
+          onPointerDown={aoTocar}
+          onPointerMove={aoMover}
+          onPointerUp={aoSoltar}
+          onPointerCancel={aoSoltar}
+          onLostPointerCapture={() => (gesto.current = null)}
+        />
+        {!estado && (
+          <div className="absolute inset-0 grid place-items-center text-xs text-content-mid">{t.carregando}</div>
+        )}
+        {estado && !foto && (
+          <div className="pointer-events-none absolute left-[15%] top-[34%] w-[70%] text-center">
+            <span className="mb-2 block text-[26px] leading-tight tracking-tight text-white">{t.comece}</span>
+            <p className="text-xs leading-relaxed text-[#c0cab6]">{temDados ? t.dadosRecebidos : t.semDados[modo]}</p>
+            <button onClick={() => void escolherFoto()} className="pointer-events-auto mt-3 rounded-full bg-[#e5eddc] px-5 py-3 text-sm font-semibold text-[#172011] active:scale-95">
+              {t.escolherFoto}
+            </button>
           </div>
         )}
 
-        {painel === 'dados' && (
-          <Painel titulo={t.oQueAparece} pronto={t.pronto} onPronto={fecharTudo}>
-            <div className="flex flex-wrap gap-1.5">
-              {itens.map((i) => (
-                <button
-                  key={i.id}
-                  type="button"
-                  aria-pressed={i.on}
-                  onClick={() => {
-                    guardar()
-                    mudar(i.id, (x) => ({ ...x, on: !x.on }))
-                  }}
-                  className={chip(i.on)}
-                >
-                  {i.tipo === 'titulo' ? i.valor : i.rotulo}
-                </button>
-              ))}
-            </div>
-            <p className="text-micro opacity-70">{entrada.modo === 'food' ? t.notaFood : t.notaGym}</p>
-          </Painel>
-        )}
-
-        {painel === 'modelos' && (
-          <Painel titulo={t.modelos} pronto={t.pronto} onPronto={fecharTudo}>
-            <div className="flex flex-wrap gap-1.5">
-              {MODELOS.map((mod) => (
-                <button
-                  key={mod}
-                  type="button"
-                  onClick={() => {
-                    guardar()
-                    setItens((lista) => aplicarModelo(lista, mod))
-                    if (mod === 'foto') avisar.ok(t.soFoto)
-                  }}
-                  className={chip(false)}
-                >
-                  {t.modelo[mod]}
-                </button>
-              ))}
-            </div>
-            <p className="text-micro opacity-70">{t.modelosNota}</p>
-          </Painel>
-        )}
-
-        {selecionado && (
-          <Painel titulo={selecionado.tipo === 'titulo' ? selecionado.valor : selecionado.rotulo} pronto={t.pronto} onPronto={fecharTudo}>
-            <div className="flex items-center gap-2.5">
-              <span className="w-16 text-micro font-semibold opacity-80">{t.tamanho}</span>
-              <button type="button" aria-label={t.menor} onClick={() => { guardar(); mudar(selecionado.id, (i) => escalar(i, -0.15)) }} className="h-9 w-9 rounded-full border border-white/25 text-lg">−</button>
-              <button type="button" aria-label={t.maior} onClick={() => { guardar(); mudar(selecionado.id, (i) => escalar(i, 0.15)) }} className="h-9 w-9 rounded-full border border-white/25 text-lg">+</button>
-            </div>
-            {selecionado.tipo !== 'life' && (
-              <div className="flex items-center gap-2.5">
-                <span className="w-16 text-micro font-semibold opacity-80">{t.cor}</span>
-                {CORES_STORY.map((c, n) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-label={t.cores[n]}
-                    aria-pressed={selecionado.cor === c}
-                    onClick={() => { guardar(); mudar(selecionado.id, (i) => ({ ...i, cor: c })) }}
-                    style={{ background: c }}
-                    className={`h-8 w-8 rounded-full border-2 ${selecionado.cor === c ? 'border-brand ring-2 ring-brand/40' : 'border-white/35'}`}
-                  />
-                ))}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => { guardar(); mudar(selecionado.id, (i) => ({ ...i, on: false })); setSel(null) }}
-              className="h-9 self-start rounded-pill border border-white/25 px-3 text-micro font-semibold"
-            >
-              {t.ocultar}
-            </button>
-          </Painel>
+        {item && (
+          <Contexto
+            item={item}
+            t={t}
+            editandoTexto={editandoTexto}
+            onEditarTexto={() => setEditandoTexto((v) => !v)}
+            onFechar={() => setSel(null)}
+            onInicioAjuste={guardar}
+            onMudar={(fn) => mudar((i) => encaixado(fn(i)))}
+            onOutroLado={() => { guardar(); mudar((i) => encaixado({ ...i, x: 1 - i.x })) }}
+            onOcultar={() => { guardar(); mudar((i) => ({ ...i, visivel: false })); setSel(null) }}
+            onExcluir={() => {
+              guardar()
+              atualizar((e) => ({ ...e, itens: e.itens.filter((i) => i.id !== sel) }))
+              setSel(null)
+              avisar.ok(t.excluido)
+            }}
+          />
         )}
       </div>
+
+      <p className="my-2 text-center text-[9px] text-content-low">{t.dica}</p>
+
+      <div className="flex justify-center gap-2">
+        <Ferramenta rotulo={t.foto} onClick={() => void escolherFoto()}>
+          <rect x="3" y="5" width="18" height="15" rx="3" /><path d="M8 5l2-2h4l2 2" /><circle cx="12" cy="12" r="4" />
+        </Ferramenta>
+        <Ferramenta rotulo={t.adicionar} ativo={gaveta === 'adicionar'} onClick={() => { setSel(null); setGaveta('adicionar') }}>
+          <path d="M12 4v16M4 12h16" />
+        </Ferramenta>
+        <Ferramenta rotulo={t.modelos} ativo={gaveta === 'modelos'} onClick={() => { setSel(null); setGaveta('modelos') }}>
+          <rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 14h8M8 17h5" />
+        </Ferramenta>
+        <Ferramenta rotulo={t.ajustes} ativo={gaveta === 'ajustes'} onClick={() => { setSel(null); setGaveta('ajustes') }}>
+          <path d="M4 7h16M4 17h16" /><circle cx="8" cy="7" r="2" className="fill-surface-2" /><circle cx="16" cy="17" r="2" className="fill-surface-2" />
+        </Ferramenta>
+      </div>
+
+      <div className="mx-auto mt-3 flex w-full max-w-[360px] gap-2 pb-4">
+        <button
+          onClick={() => void exportarComo('story')}
+          disabled={ocupado || !estado}
+          className="min-h-12 flex-1 rounded-[13px] bg-brand px-4 text-sm font-bold text-brand-ink active:scale-[0.98] disabled:opacity-60"
+        >
+          {ocupado ? t.gerando : t.compartilhar}
+        </button>
+        <button
+          onClick={() => void exportarComo('enviar')}
+          disabled={ocupado || !estado}
+          aria-label={t.salvar}
+          className="grid w-12 place-items-center rounded-[13px] border border-surface-4 text-content-mid disabled:opacity-60"
+        >
+          <Svg><path d="M12 3v12m-5-5l5 5 5-5M4 17v4h16v-4" /></Svg>
+        </button>
+      </div>
+
+      {gaveta && estado && (
+        <GavetaStory titulo={gaveta === 'adicionar' ? t.oQueAcompanha : gaveta === 'modelos' ? t.pontoPartida : t.ajustesTitulo} fechar={t.fechar} onFechar={() => setGaveta(null)}>
+          {gaveta === 'adicionar' && (
+            <>
+              <p className="text-xs leading-relaxed text-content-low">{t.adicionarNota}</p>
+              {estado.itens.map((o) => (
+                <div key={o.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2.5 border-b border-content-hi/5 py-3">
+                  <div className="min-w-0 text-sm">
+                    {o.rotulo}
+                    <small className="mt-0.5 block truncate text-[10px] text-content-low">
+                      {o.tipo === 'metric' ? `${o.valor}${o.unidade ? ` ${o.unidade}` : ''}` : o.tipo === 'life' ? t.descLife : t.descVisual}
+                    </small>
+                  </div>
+                  <button
+                    className="px-1.5 text-xs font-semibold text-brand"
+                    onClick={() => {
+                      if (!o.visivel) { guardar(); atualizar((e) => mudarItem(e, o.id, (i) => ({ ...i, visivel: true }))) }
+                      setGaveta(null)
+                      setSel(o.id)
+                    }}
+                  >
+                    {t.editar}
+                  </button>
+                  <Chave
+                    ligado={o.visivel}
+                    rotulo={t.mostrar(o.rotulo)}
+                    onChange={(v) => { guardar(); atualizar((e) => mudarItem(e, o.id, (i) => ({ ...i, visivel: v }))) }}
+                  />
+                </div>
+              ))}
+              <BotaoLargo onClick={soFoto}>{t.soFoto}</BotaoLargo>
+              <BotaoLargo
+                onClick={() => {
+                  guardar()
+                  const novo = campoPersonalizado(t.seuTitulo, t.seuTexto)
+                  atualizar((e) => ({ ...e, itens: [...e.itens, novo] }))
+                  setGaveta(null)
+                  setSel(novo.id)
+                  setEditandoTexto(true)
+                }}
+              >
+                {t.criarCampo}
+              </BotaoLargo>
+            </>
+          )}
+
+          {gaveta === 'modelos' && (
+            <>
+              <p className="text-xs leading-relaxed text-content-low">{t.modelosNota}</p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(['foto', 'base', 'coluna', 'editorial'] as const satisfies readonly ModeloStory[]).map((md) => (
+                  <button
+                    key={md}
+                    onClick={() => { guardar(); atualizar((e) => aplicarModelo(e, modo, md)); setGaveta(null) }}
+                    className="rounded-xl border border-surface-4 px-2.5 py-4 text-left text-sm active:bg-content-hi/5"
+                  >
+                    {t.modelo[md][0]}
+                    <small className="mt-1 block text-[10px] text-content-low">{t.modelo[md][1]}</small>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {gaveta === 'ajustes' && (
+            <>
+              <p className="text-xs leading-relaxed text-content-low">{t.ajustesNota}</p>
+              {([
+                ['luz', t.luz, -100, 100, 1],
+                ['zoom', t.aproximar, 1, 3, 0.01],
+                ['panX', t.posH, -1, 1, 0.01],
+                ['panY', t.posV, -1, 1, 0.01],
+              ] as const).map(([k, rotulo, min, max, passo]) => (
+                <label key={k} className="my-3.5 flex flex-col gap-1.5 text-[11px]">
+                  {rotulo}
+                  <input
+                    type="range" min={min} max={max} step={passo} value={estado[k]}
+                    onPointerDown={guardar}
+                    onChange={(ev) => atualizar((e) => ({ ...e, [k]: Number(ev.target.value) }))}
+                    className="w-full accent-brand"
+                  />
+                </label>
+              ))}
+              <label className="my-3.5 flex items-center justify-between text-xs">
+                {t.sombra}
+                <Chave ligado={estado.sombra} rotulo={t.sombra} onChange={(v) => { guardar(); atualizar((e) => ({ ...e, sombra: v })) }} />
+              </label>
+              <p className="text-xs leading-relaxed text-content-low">{t.ajustesDica}</p>
+              <BotaoLargo onClick={() => void escolherFoto()}>{t.trocarFoto}</BotaoLargo>
+            </>
+          )}
+        </GavetaStory>
+      )}
     </main>
   )
 }
 
-function Ferramenta(props: { rotulo: string; onClick: () => void; icone: React.ReactNode }) {
+// ── peças ──────────────────────────────────────────────────────────────────
+
+type Textos = ReturnType<typeof useI18n>['m']['story']
+
+/** Ajustes do elemento tocado — painel no pé do quadro, como no V2. */
+function Contexto(p: {
+  item: ItemStory
+  t: Textos
+  editandoTexto: boolean
+  onEditarTexto: () => void
+  onFechar: () => void
+  onInicioAjuste: () => void
+  onMudar: (fn: (i: ItemStory) => ItemStory) => void
+  onOutroLado: () => void
+  onOcultar: () => void
+  onExcluir: () => void
+}) {
+  const { item: o, t } = p
+  const life = o.tipo === 'life'
+  const metrica = o.tipo === 'metric'
   return (
-    <button type="button" onClick={props.onClick} className="grid justify-items-center gap-1 text-[11px] font-semibold [text-shadow:0_1px_6px_rgb(0_0_0/0.6)]">
-      <span className="vidro grid h-[46px] w-[46px] place-items-center rounded-full">
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          {props.icone}
-        </svg>
-      </span>
-      {props.rotulo}
+    <section className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md rounded-t-[20px] border-t border-[#c3e09b44] bg-[#10170ff5] px-[18px] pb-[max(15px,env(safe-area-inset-bottom))] pt-[15px] shadow-[0_-8px_28px_#0004]" aria-label={o.rotulo}>
+      <div className="mb-2.5 flex items-center justify-between text-xs">
+        <strong className="max-w-[220px] truncate">{o.rotulo}</strong>
+        <button onClick={p.onFechar} aria-label={t.concluir} className="px-2 py-1 text-lg leading-none">✓</button>
+      </div>
+      <Faixa rotulo={t.opacidade} min={0.1} max={1} passo={0.01} valor={o.opacidade} saida={`${Math.round(o.opacidade * 100)}%`}
+        onInicio={p.onInicioAjuste} onChange={(v) => p.onMudar((i) => ({ ...i, opacidade: v }))} />
+      {life && (
+        <Faixa rotulo={t.corLife} min={-180} max={180} passo={1} valor={o.matiz} saida={`${o.matiz}°`}
+          onInicio={p.onInicioAjuste} onChange={(v) => p.onMudar((i) => ({ ...i, matiz: v }))} />
+      )}
+      <div className="mt-2.5 flex items-center justify-between gap-1">
+        {!life && (
+          <div className="flex items-center gap-1.5">
+            {CORES_STORY.map((c, k) => (
+              <button key={c} aria-label={t.cores[k]} onClick={() => { p.onInicioAjuste(); p.onMudar((i) => ({ ...i, cor: c })) }}
+                className="h-[21px] w-[21px] rounded-full border border-white/30" style={{ background: c }} />
+            ))}
+            <input type="color" aria-label={t.corPersonalizada} value={o.cor} className="h-6 w-6 border-0 bg-transparent p-0"
+              onChange={(ev) => { p.onInicioAjuste(); p.onMudar((i) => ({ ...i, cor: ev.target.value })) }} />
+          </div>
+        )}
+        {metrica && <MiniBotao onClick={p.onEditarTexto}>{t.texto}</MiniBotao>}
+        <MiniBotao onClick={p.onOutroLado}>{t.outroLado}</MiniBotao>
+        <MiniBotao onClick={p.onOcultar}>{t.ocultar}</MiniBotao>
+        {metrica && <MiniBotao onClick={p.onExcluir} perigo>{t.excluir}</MiniBotao>}
+      </div>
+      {metrica && p.editandoTexto && (
+        <div className="mt-2 flex gap-1.5">
+          <input aria-label={t.rotulo} maxLength={40} defaultValue={o.rotulo} onFocus={p.onInicioAjuste}
+            onChange={(ev) => p.onMudar((i) => ({ ...i, rotulo: ev.target.value }))}
+            className="w-1/2 min-w-0 rounded-lg border border-surface-4 bg-surface-2 p-2 text-xs" />
+          <input aria-label={t.valor} maxLength={90} defaultValue={o.valor} onFocus={p.onInicioAjuste}
+            onChange={(ev) => p.onMudar((i) => ({ ...i, valor: ev.target.value }))}
+            className="w-1/2 min-w-0 rounded-lg border border-surface-4 bg-surface-2 p-2 text-xs" />
+        </div>
+      )}
+    </section>
+  )
+}
+
+function Faixa(p: { rotulo: string; min: number; max: number; passo: number; valor: number; saida: string; onInicio: () => void; onChange: (v: number) => void }) {
+  return (
+    <label className="my-2 grid grid-cols-[66px_1fr_37px] items-center gap-2 text-[11px] text-[#c5cfbf]">
+      {p.rotulo}
+      <input type="range" min={p.min} max={p.max} step={p.passo} value={p.valor} onPointerDown={p.onInicio}
+        onChange={(ev) => p.onChange(limitar(Number(ev.target.value), p.min, p.max))} className="w-full min-w-0 accent-brand" />
+      <output className="text-right tabular-nums">{p.saida}</output>
+    </label>
+  )
+}
+
+function MiniBotao({ children, onClick, perigo }: { children: ReactNode; onClick: () => void; perigo?: boolean }) {
+  return (
+    <button onClick={onClick} className={`rounded-lg bg-[#293323] px-2 py-2 text-[10px] ${perigo ? 'text-[#e2b0a5]' : ''}`}>
+      {children}
     </button>
   )
 }
 
-function Painel(props: { titulo: string; pronto: string; onPronto: () => void; children: React.ReactNode }) {
+function Ferramenta({ rotulo, children, onClick, ativo }: { rotulo: string; children: ReactNode; onClick: () => void; ativo?: boolean }) {
   return (
-    <section className="vidro absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+14px)] z-[5] grid gap-2.5 rounded-[20px] p-3.5">
-      <div className="flex items-center justify-between gap-2">
-        <b className="min-w-0 truncate text-sm">{props.titulo}</b>
-        <button type="button" onClick={props.onPronto} aria-label={props.pronto} className="h-9 w-9 flex-none rounded-full bg-brand font-extrabold text-brand-ink">
-          ✓
-        </button>
+    <button
+      onClick={onClick}
+      aria-expanded={ativo}
+      className={`flex min-w-[62px] flex-col items-center gap-1 rounded-[11px] border px-3 py-2 text-[10px] ${ativo ? 'border-brand/60 bg-brand/15' : 'border-surface-4 bg-surface-2'} active:bg-content-hi/5`}
+    >
+      <Svg tamanho={18}>{children}</Svg>
+      {rotulo}
+    </button>
+  )
+}
+
+function Chave({ ligado, rotulo, onChange }: { ligado: boolean; rotulo: string; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={ligado}
+      aria-label={rotulo}
+      onClick={() => onChange(!ligado)}
+      className={`relative h-[21px] w-[35px] flex-none rounded-full transition-colors ${ligado ? 'bg-brand' : 'bg-surface-4'}`}
+    >
+      <span className={`absolute top-[3px] h-[15px] w-[15px] rounded-full transition-transform ${ligado ? 'left-[3px] translate-x-[14px] bg-brand-ink' : 'left-[3px] bg-content-hi'}`} />
+    </button>
+  )
+}
+
+function BotaoLargo({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="mt-2.5 w-full rounded-[10px] border border-surface-4 p-3 text-left text-xs active:bg-content-hi/5">
+      {children}
+    </button>
+  )
+}
+
+/** Painel de baixo (Adicionar / Modelos / Ajustes), um de cada vez. */
+function GavetaStory({ titulo, fechar, onFechar, children }: { titulo: string; fechar: string; onFechar: () => void; children: ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={titulo}>
+      <button aria-label={fechar} onClick={onFechar} className="absolute inset-0 bg-black/55 backdrop-blur-[5px]" />
+      <div className="relative mb-2.5 max-h-[80dvh] w-[min(440px,calc(100%-24px))] overflow-y-auto rounded-[22px] border border-surface-4 bg-surface-2 pb-safe-b">
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-surface-2 px-5 pb-2.5 pt-5">
+          <h2 className="text-lg font-semibold tracking-tight">{titulo}</h2>
+          <button onClick={onFechar} aria-label={fechar} className="px-2 py-1 text-xl leading-none text-content-mid">×</button>
+        </div>
+        <div className="px-5 pb-6">{children}</div>
       </div>
-      {props.children}
-    </section>
+    </div>
+  )
+}
+
+function Svg({ children, tamanho = 20 }: { children: ReactNode; tamanho?: number }) {
+  return (
+    <svg width={tamanho} height={tamanho} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
   )
 }

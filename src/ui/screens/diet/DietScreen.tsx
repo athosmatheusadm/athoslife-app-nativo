@@ -11,6 +11,7 @@ import {
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
+import { BotaoStory } from '@ui/components/story/BotaoStory'
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useI18n } from '@/i18n/I18nProvider'
 import { MealAccordion } from './MealAccordion'
@@ -346,7 +347,10 @@ export function DietScreen(props: {
           <ActivityIcon icone="salada" tile={false} className="h-7 w-7" />
           <h1 className="text-xl font-bold text-content-hi">{m.dieta.titulo}</h1>
         </div>
-        <ProfileAvatar />
+        <div className="flex items-center gap-2">
+          <BotaoStory modo="food" />
+          <ProfileAvatar />
+        </div>
       </header>
 
       {/* Cards de macro — kcal já mora no disco da Home; aqui o foco é

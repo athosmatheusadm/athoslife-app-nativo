@@ -2999,3 +2999,59 @@ Escopo: Alimentação + Musculação (Corrida/Jiu-Jitsu depois).
 2. APK pra testar arrastar, foto da galeria, exportação e compartilhar.
 3. Recorde pessoal no Story de treino (precisa histórico por exercício).
 4. Dono quer alinhar algo da Live Activity antes de fechar.
+
+### 2026-10-22 — Live Activity nova (mockup de 22/10) e Story no formato do V2 — branch `story-studio`
+
+**Live Activity** (dono aprovou a prévia no localhost, feita a partir de
+`athoslife-live-activity-mockup.html`):
+- Layouts `athos_la_grande`/`athos_la_pequeno` refeitos: miniatura do
+  exercício (halter/prancha), "Série 2 de 4" + segmentos, chip de status
+  (Em série / Pronto / Preparo / Descanso), card verde-escuro com brilho lima
+  no canto (laranja no descanso).
+  - Série com reps: dois steppers (peso com "kg" pequeno, reps) + botão ✓.
+  - Série por tempo: anel + −5s/+5s + Iniciar; **preparo de 3 s** (3, 2, 1)
+    com Cancelar; depois "Segure firme" com relógio e Concluir.
+  - Descanso: relógio laranja grande, "a seguir: 80 kg × 10" (ou próximo
+    exercício), +15s, Pular e barra de progresso.
+- Textos em `res/values{,-en,-es}/athos_live_textos.xml` (antes eram fixos em pt).
+- Redesenho: a cada 1 s no preparo, a cada 5 s no descanso/prancha (barra e
+  anel andam), e na hora exata do fim. Só com o processo vivo; o relógio em
+  si (Chronometer) anda sozinho.
+- App: `PREPARO_SEG = 3` em `sessaoTreino.ts` (`cronometroInicioEm` = fim do
+  preparo), `emPreparo()`, ação `cancelar` vinda da Live Activity, status
+  "prepare-se: 3" no card do treino em andamento (pt/en/es).
+- Posição na tela de bloqueio é decisão do celular (Samsung embaixo, Pixel
+  logo abaixo do relógio). Sem vidro desfocado (notificação não faz).
+
+**Story** — o dono quer o formato do protótipo dele
+(`ATHOS_Story_Editor_Unificado_V2.html`, na raiz, não commitar), **sem Corrida e
+Jiu-Jitsu por enquanto**, com a entrada que ele aprovou:
+- Editor refeito (`StoryScreen.tsx` + `storyCanvas.ts`, motor portado do V2):
+  canvas 1080×1920, foto primeiro ("Comece pela sua foto."), Foto · Adicionar ·
+  Modelos · Ajustes, tocar no elemento abre opacidade / cor do Life / cores /
+  Texto / Outro lado / Ocultar / Excluir, puxar o canto redimensiona, campo
+  personalizado, modelos (Só a foto, Na base, Minimalista, Editorial), ajustes
+  da foto (luz, zoom, posição, sombra), desfazer. Exporta JPEG pro plugin do
+  Instagram (sem App ID: menu de compartilhar). Sem vídeo (o V2 só fazia
+  prévia de vídeo e exportava PNG).
+- Dados reais, sem número de exemplo: Musculação = último treino salvo
+  (`treinoHistoricoRepository.ultimoParaStory`: foco, volume, séries, duração,
+  volume por exercício no gráfico e **recorde pessoal** comparando a maior
+  carga com os treinos anteriores); Alimentação = total do dia
+  (`macrosRepository.doDia`, kcal com "≈").
+- Entradas: câmera discreta no cabeçalho de Início (abas) / Dieta (food) /
+  Treino (gym); convite "Seu dia rendeu! 🔥" na Home (Life feliz) só em dia
+  bom (meta de kcal 90–110%, treino feito ou sequência recorde ≥ 3),
+  dispensável por dia; "Postar no Story" do fim do treino continua (abre
+  depois de salvar). **A câmera saiu do sheet da refeição.**
+- Textos pt/en/es (`story`). `exportarStory.ts` removido.
+- Validação: tsc e vite build. **Nada testado no aparelho**; Java da Live
+  Activity sem compilar aqui (sem JDK/SDK no PC) → conferir no build do Actions.
+
+**Pendências**
+1. Token do GitHub → push de `main`, `scanner-v1-1` e `story-studio` + PR → APK.
+2. No APK: Live Activity (os 4 estados, preparo, botões com tela bloqueada,
+   textos en/es), Story (foto da galeria, cantos, exportar, Instagram/menu).
+3. Facebook App ID → `facebookAppId` (Instagram direto).
+4. Story: Corrida e Jiu-Jitsu quando o app registrar esses treinos.
+5. Live Activity fase 2: pausar/retomar e card "Exercício concluído".
