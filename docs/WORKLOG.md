@@ -3118,3 +3118,20 @@ Dono pediu todos os botões do mockup funcionando no Android. Faltavam:
 2. Merge do PR #1 depois do teste.
 3. Facebook App ID → `facebookAppId`.
 4. Dono revogar o token do GitHub que foi colado no chat.
+
+### 2026-10-22 (noite) — APK v2 testado: funcionando
+
+- O 1º APK abriu em tela preta: `workflow_dispatch` com `servidor_dev` vazio
+  usou o padrão (IP do PC) → app buscava as telas no `npm run dev`. Workflow
+  corrigido (padrão vazio = APK independente; c72c444). APK v2 (run
+  39841244837) conferido por dentro (sem `server.url`, telas no APK).
+- **Dono instalou o v2 no celular: "tá perfeito".** Tem ajustes pra depois.
+
+**Pendências (próxima sessão)**
+1. Ajustes que o dono vai listar depois do teste.
+2. Merge do PR #1 quando o dono liberar.
+3. Animações do Life (formato dos arquivos?), imagens da ficha de treino
+   (print + qual zip), limite do chat (hoje 40 pago / 4 grátis).
+4. Contas externas: Firebase (google-services.json + conta de serviço),
+   Brevo (SMTP), RevenueCat (produtos na Play, chave, webhook), Facebook App ID.
+5. Dono revogar o token do GitHub colado no chat.
