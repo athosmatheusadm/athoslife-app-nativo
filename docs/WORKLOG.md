@@ -3101,3 +3101,20 @@ Dono pediu todos os botões do mockup funcionando no Android. Faltavam:
   cancelar, pausar, retomar, +15s, pular. Textos pt/en/es.
 - Conferido por script: todo id/texto/drawable usado no Java existe.
   tsc e vite build ok. **Java não compilado aqui** (sem JDK/SDK) → Actions.
+
+### 2026-10-22 (fim) — push, PR #1 e APK de teste
+
+- Push de `main` (64e1be4), `scanner-v1-1` e `story-studio`.
+- **PR #1** `story-studio` → `main` (inclui o scanner):
+  https://github.com/athosmatheusadm/athoslife-app-nativo/pull/1 — sem merge
+  até o dono testar no aparelho.
+- **APK de teste** (run 39825785326, sem servidor_dev): build ok — o Java novo
+  da Live Activity compilou. Cópia em `Downloads/ATHOSlife-teste-22-10.apk`.
+
+**Pendências**
+1. Dono testa no aparelho: Live Activity (todos os estados e botões com a tela
+   bloqueada, textos en/es), Story (foto, cantos, exportar, Instagram/menu),
+   dia leve (check-in cansado + sono), scanner novo.
+2. Merge do PR #1 depois do teste.
+3. Facebook App ID → `facebookAppId`.
+4. Dono revogar o token do GitHub que foi colado no chat.
