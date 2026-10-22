@@ -1,3 +1,4 @@
+import { diaLeveHoje } from '@data/diaLeve'
 import { supabase } from '@data/supabase/client'
 import type { BaseScan, ResultadoVisao, VarianteOleo } from '@domain/entities/food'
 
@@ -285,10 +286,12 @@ export async function enviarMensagemChat(
   foco: FocoLife = 'home',
   idEnvio: string = crypto.randomUUID(),
 ): Promise<RespostaChat> {
+  const diaLeve = await diaLeveHoje()
   const cru = await chamar<{ resposta: string; restantes: number | null; acao?: AcaoLife; sugerir_memoria?: boolean }>('chat', {
     mensagem,
     foco,
     id_envio: idEnvio,
+    ...(diaLeve ? { dia_leve: diaLeve } : {}),
   })
   return { resposta: cru.resposta, restantes: cru.restantes, acao: cru.acao ?? null, sugerirMemoria: cru.sugerir_memoria === true }
 }

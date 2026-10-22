@@ -9,6 +9,7 @@
 //                     v4.1: peso pelo chat ("pesei 80", "minha meta é 75", histórico) — peso.ts, sem IA e sem cota
 //                     v4.3: scanner v1.1 ({tipo:'scan'}) — scanner/, liga com SCANNER_V2=true
 //                     v4.2: corrigir/apagar a última pesagem pelo chat ("corrige pra 80,2", "apaga a última pesagem")
+//                     v4.5: dia_leve?: 'leve' | 'caminhada' — a pessoa aceitou o dia leve no check-in; o Life não puxa treino pesado
 //   { tipo: 'acao',   id, escolha }                       -> { resposta, acao? }  (sem IA, sem cota)
 //                     foco: 'home' | 'dieta' | 'treino' | 'habitos' (tela de onde abriu)
 //   { tipo: 'vision', image: base64, mime_type? }         -> ResultadoVisao cru
@@ -1071,6 +1072,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     : null
   const sistema =
     `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
+    linhaDiaLeve(corpo.dia_leve) +
     adaptativo +
     (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
@@ -1146,6 +1148,20 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 }
 
 /** Contexto compacto (poucas linhas = poucos tokens). Tolera falha parcial. */
+/**
+ * Dia leve (v4.5): no check-in de pouca energia a pessoa aceitou aliviar as
+ * metas de hoje (o app manda junto com a mensagem). O Life apoia em vez de cobrar.
+ */
+function linhaDiaLeve(v: unknown): string {
+  if (v !== 'leve' && v !== 'caminhada') return ''
+  const treino = v === 'leve'
+    ? 'treino leve (1 série a menos por exercício e 20% menos carga)'
+    : 'caminhada de 20 min no lugar do treino'
+  return `\nDIA LEVE HOJE: a pessoa acordou cansada e escolheu aliviar o dia — ${treino}, meta de passos 30% menor, dieta igual. ` +
+    'Apoie essa escolha: não sugira treino pesado, carga maior, cardio extra nem compensar amanhã, e não cobre registros com insistência. ' +
+    'Se ela disser que melhorou e quiser treinar normal, tudo bem: é só tocar em "Voltar ao normal" na tela de Treino.'
+}
+
 async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<string> {
   const hoje = hojeNoFuso(fuso)
   const ontem = somarDias(hoje, -1)

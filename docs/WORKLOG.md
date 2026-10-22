@@ -3075,7 +3075,11 @@ aliviar nada. Agora (regras em `domain/rules/diaLeve.ts`):
 - Estado do dia no aparelho (`data/diaLeve.ts`, Preferences). Textos pt/en/es.
 - Validação: tsc e vite build. Não testado no aparelho.
 
+- **ai-proxy v4.5 publicada** (dono autorizou; versão 26, ACTIVE): o app manda
+  `dia_leve` junto com a mensagem do chat e o Life recebe "DIA LEVE HOJE" no
+  contexto — apoia em vez de cobrar, não sugere treino pesado nem compensar
+  amanhã. deno check + 47 testes ok.
+
 **Pendências**
-1. O chat do Life (ai-proxy) ainda não sabe do dia leve — se quiser, mandar
-   no contexto pra ele não puxar treino pesado (precisa deploy da ai-proxy).
-2. As do bloco anterior (token do GitHub → push + APK; testes no aparelho).
+1. Token do GitHub → push de `main`, `scanner-v1-1` e `story-studio` + APK;
+   testes no aparelho (Live Activity, Story, dia leve).
