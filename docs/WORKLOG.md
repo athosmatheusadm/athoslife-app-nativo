@@ -3280,3 +3280,14 @@ Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
 - Expositor temático **escondido** (`EXPOSITOR_TEMATICO_LIGADO = false` em
   `CozinhaSecao.tsx`) até o dono pedir as receitas. Pra ligar: marcar
   `receitas_cozinha.temas` e trocar a chave.
+
+**Pendências (próxima sessão)**
+1. Dono testar `Downloads/ATHOSlife-teste-24-10.apk` (offline/modo avião,
+   treino sem notificação, "82" no chat, widget, onboarding verde, receitas ×
+   alergia). Gerar APK novo pra ver: convite "Ver planos" da estimativa, selo
+   Grátis corrigido, receitas do dia variando.
+2. Supabase Auth (painel): senha mínima 8 + proteção de senha vazada.
+3. Firebase: dono cria a conta e dá acesso (Crashlytics + FCM).
+4. Receitas temáticas quando o dono pedir (expositor pronto e escondido).
+5. Merge: PR #1 (`story-studio`) e depois `correcoes-teste-apk`, com aprovação.
+6. Tokens do GitHub e do Supabase: dono decidiu manter por enquanto.
