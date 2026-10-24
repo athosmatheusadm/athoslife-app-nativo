@@ -213,7 +213,8 @@ export interface AlimentoEstimado {
 
 /**
  * Life estima um alimento/produto que não está na base (busca da Dieta ou
- * código de barras desconhecido). Gasta 1 mensagem da cota do chat.
+ * código de barras desconhecido). Cota própria 'estimar': grátis 1/semana,
+ * pago 20/dia (não gasta mensagem do chat).
  * `null` = não reconheceu como comida (e não gastou cota).
  */
 export async function estimarAlimento(nome: string): Promise<AlimentoEstimado | null> {
@@ -372,7 +373,7 @@ export async function cotaChatHoje(): Promise<{ usados: number; limite: number }
 }
 
 /** Uso de hoje de um recurso de IA (chat, vision = scanner). */
-export async function cotaIaHoje(tipo: 'chat' | 'vision'): Promise<{ usados: number; limite: number } | null> {
+export async function cotaIaHoje(tipo: 'chat' | 'vision' | 'estimar'): Promise<{ usados: number; limite: number } | null> {
   const { data, error } = await supabase.rpc('cota_ia_status', { p_tipo: tipo })
   const linha = (data as { usados_hoje: number; limite_hoje: number }[] | null)?.[0]
   if (error || !linha) return null

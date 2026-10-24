@@ -3255,3 +3255,24 @@ Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
 3. Firebase (dono cria a conta e dá acesso): Crashlytics + FCM.
 4. Merge do PR #1 e deste branch quando o dono aprovar.
 5. Dono revogar o token do GitHub colado no chat.
+
+### 2026-10-24 (noite) — estimativa do Life com cota própria, receitas variadas e temáticas
+
+- **Código de barras continua grátis** (Open Food Facts, sem IA). O custo só
+  existe quando o Life estima: cota nova `estimar` (`db/athoslife_cota_estimar_migration.sql`,
+  aplicada) — grátis **1 por semana** (como a receita do Life), pago **20 por
+  dia** separado do chat. Grátis sem estimativa: o app mostra o convite pro
+  plano (`PlanoParaEstimar`) na busca da Dieta e no scanner.
+  `ai-proxy` já usa a cota nova no código — **falta deploy** (auto mode pediu
+  autorização do dono). Até o deploy, a estimativa segue gastando 1 msg do chat.
+- **"Receitas que fecham seu dia" variam**: sorteio estável por turno
+  (manhã/tarde/noite) entre as que cabem; antes era sempre a mesma campeã.
+- **Expositor temático**: coluna `receitas_cozinha.temas`
+  (`db/athoslife_receitas_temas_migration.sql`, aplicada) + janelas em
+  `domain/rules/temasSazonais.ts` (Natal 1–25/12, Ano-Novo 26/12–6/1, Páscoa
+  3 semanas antes até o domingo — data calculada —, Festa Junina jun–15/jul só BR).
+  Card dourado no topo da Cozinha na época. **Ainda não há receita marcada**.
+- **Selo "Grátis"** na Cozinha só pra quem está no grátis.
+- **Achado**: `receitas_cozinha` libera leitura coluna a coluna e `alergenos`
+  não tinha GRANT — a Cozinha do APK de 24/10 falharia ao carregar. Corrigido
+  no banco (`grant select (alergenos, temas)`), vale pro APK já gerado.

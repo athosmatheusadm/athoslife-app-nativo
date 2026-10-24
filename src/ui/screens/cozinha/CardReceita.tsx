@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useSession } from '@app/SessionProvider'
+import { temAcessoPremium } from '@domain/rules/access'
 import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Receita } from '@domain/entities/receita'
@@ -44,6 +46,9 @@ export function CardReceita(props: {
   const { m } = useI18n()
   const t = m.cozinha
   const r = props.receita
+  // "Grátis" só faz sentido pra quem está no grátis (no pago tudo é liberado).
+  const { profile } = useSession()
+  const pago = profile ? temAcessoPremium(profile) : false
 
   return (
     <div
@@ -81,7 +86,7 @@ export function CardReceita(props: {
         </div>
       </button>
 
-      {!r.premium && (
+      {!r.premium && !pago && (
         <span className="absolute left-2 top-2 rounded-pill bg-brand px-2 py-0.5 text-micro font-extrabold text-brand-ink">
           {t.gratis}
         </span>

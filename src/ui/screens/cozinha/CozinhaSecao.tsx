@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useI18n } from '@/i18n/I18nProvider'
 import { cozinhaService } from '@domain/services/cozinhaService'
 import { receitasQueFechamODia } from '@domain/rules/cozinha'
+import { temaDoMomento } from '@domain/rules/temasSazonais'
+import { localidadeAtual } from '@data/localidadeAtual'
 import { CATEGORIAS_RECEITA, CATEGORIA_META, type CategoriaReceita, type Receita, type ReceitaCriada } from '@domain/entities/receita'
 import type { Macros } from '@domain/entities/food'
 import type { Profile } from '@domain/entities/profile'
@@ -58,9 +60,12 @@ export function CozinhaSecao(props: {
   const favoritar = (r: Receita) =>
     receitas && void alternarFavorito(receitas, r).then(setReceitas).catch((e) => console.error('favoritar falhou:', e))
 
+  // Época de festa: expositor com as receitas marcadas pro tema (natal, páscoa...).
+  const tema = temaDoMomento(new Date(), localidadeAtual().pais)
+  const tematicas = tema && receitas ? receitas.filter((r) => r.temas.includes(tema)) : []
   const sugestoes = receitas && props.restante ? receitasQueFechamODia(receitas, props.restante) : []
-  // As sugestões já aparecem logo acima: o catálogo não repete as mesmas (relatório do APK).
-  const sugeridas = new Set(sugestoes.map((r) => r.id))
+  // Sugestões e expositor já aparecem acima: o catálogo não repete as mesmas (relatório do APK).
+  const sugeridas = new Set([...sugestoes, ...tematicas].map((r) => r.id))
   const filtradas = receitas
     ? (filtro === 'todos' ? receitas : receitas.filter((r) => r.categoria === filtro)).filter((r) => !sugeridas.has(r.id))
     : []
@@ -80,6 +85,18 @@ export function CozinhaSecao(props: {
         <div className="py-6 text-center">
           <p className="mb-2 text-micro text-content-low">{t.erroCarregar}</p>
           <button type="button" onClick={carregar} className="min-h-11 px-3 text-sm font-bold text-brand active:opacity-70">{t.tentarDeNovo}</button>
+        </div>
+      )}
+
+      {tema && tematicas.length > 0 && (
+        <div className="rounded-2xl border border-accent-gold/40 bg-accent-gold/10 p-3">
+          <h3 className="px-1 text-sm font-bold text-content-hi">{t.temas[tema].titulo}</h3>
+          <p className="mb-2 px-1 text-micro text-content-mid">{t.temas[tema].sub}</p>
+          <div className="flex gap-3 overflow-x-auto sem-barra pb-1">
+            {tematicas.map((r) => (
+              <CardReceita key={r.id} receita={r} onAbrir={() => abrir(r.id)} onFavoritar={() => favoritar(r)} />
+            ))}
+          </div>
         </div>
       )}
 

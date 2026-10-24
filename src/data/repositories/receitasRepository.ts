@@ -3,6 +3,7 @@ import { lerComCache, mexerNoCache } from '@data/offline/cache'
 import { escrever } from '@data/offline/fila'
 import { usuarioId } from '@data/offline/usuario'
 import type { CategoriaReceita, Receita } from '@domain/entities/receita'
+import type { TemaSazonal } from '@domain/rules/temasSazonais'
 import type { Macros } from '@domain/entities/food'
 import { localidadeAtual } from '@data/localidadeAtual'
 import { texto, traducoesDe } from '@data/traducoesConteudo'
@@ -22,6 +23,7 @@ interface ReceitaRow {
   conteudo: string | null
   ordem: number | null
   alergenos?: string[] | null
+  temas?: string[] | null
 }
 
 function macrosDe(row: ReceitaRow): Macros {
@@ -51,12 +53,13 @@ function paraDominio(row: ReceitaRow, trad: Record<string, unknown> = {}): Recei
     conteudo: row.conteudo,
     ordem: row.ordem ?? 0,
     alergenos: row.alergenos ?? [],
+    temas: (row.temas ?? []) as TemaSazonal[],
   }
 }
 
 /** Tudo menos `conteudo` — a coluna não tem GRANT de SELECT direto. */
 const COLUNAS_VITRINE =
-  'id, titulo, subtitulo, categoria, macros, kcal, tempo_preparo_min, cor_tema, premium, destaque, ordem, alergenos'
+  'id, titulo, subtitulo, categoria, macros, kcal, tempo_preparo_min, cor_tema, premium, destaque, ordem, alergenos, temas'
 
 export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada' | 'contemRestricao'>
 
@@ -87,7 +90,7 @@ export const receitasRepository = {
     // Guardado por idioma (o modo de preparo vem traduzido): a Cozinha abre sem rede.
     const { idioma } = localidadeAtual()
     const [linhas, trad] = await Promise.all([
-      lerComCache(`receitas:v2:${idioma}`, async () => {
+      lerComCache(`receitas:v3:${idioma}`, async () => {
         const [vitrine, liberadas] = await Promise.all([
           supabase
             .from('receitas_cozinha')

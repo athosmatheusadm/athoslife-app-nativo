@@ -18,7 +18,7 @@ import { useI18n } from '@/i18n/I18nProvider'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { avisar, vibrar } from '@ui/feedback'
-import { mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
+import { PlanoParaEstimar, fimDaEstimativaGratis, mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
 import { CameraCodigo } from '@ui/screens/scanner/CameraCodigo'
 import { RevisaoScanner } from '@ui/screens/scanner/RevisaoScanner'
 
@@ -99,6 +99,8 @@ export function Scanner() {
   const [semBase, setSemBase] = useState(false)
   const [nomeProduto, setNomeProduto] = useState('')
   const [estimando, setEstimando] = useState(false)
+  // Grátis sem a estimativa da semana: convite pro plano no lugar do botão.
+  const [pedirPlano, setPedirPlano] = useState(false)
   const [camera, setCamera] = useState(false)
 
   const pago = profile ? temAcessoPremium(profile) : false
@@ -203,7 +205,8 @@ export function Scanner() {
       setCodigoDigitado('')
       setEtapa('revisao')
     } catch (err) {
-      setErro(mensagemErroEstimar(err, m.dieta.busca.estimar, m.offline.precisaInternet))
+      if (fimDaEstimativaGratis(err, pago)) setPedirPlano(true)
+      else setErro(mensagemErroEstimar(err, m.dieta.busca.estimar, m.offline.precisaInternet))
     } finally {
       setEstimando(false)
     }
@@ -337,14 +340,22 @@ export function Scanner() {
             aria-label={t.nomeProduto}
             className="mt-2 min-h-12 w-full rounded-card border border-surface-4 bg-surface-1 px-3 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
           />
-          <button
-            type="submit"
-            disabled={estimando || nomeProduto.trim().length < 2}
-            className="mt-2 min-h-12 w-full rounded-pill bg-brand px-4 text-sm font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
-          >
-            {estimando ? m.dieta.busca.estimar.estimando : m.dieta.busca.estimar.botao(nomeProduto.trim() || '…')}
-          </button>
-          <p className="mt-1 text-center text-micro text-content-low">{m.dieta.busca.estimar.custo}</p>
+          {pedirPlano ? (
+            <PlanoParaEstimar />
+          ) : (
+            <>
+              <button
+                type="submit"
+                disabled={estimando || nomeProduto.trim().length < 2}
+                className="mt-2 min-h-12 w-full rounded-pill bg-brand px-4 text-sm font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
+              >
+                {estimando ? m.dieta.busca.estimar.estimando : m.dieta.busca.estimar.botao(nomeProduto.trim() || '…')}
+              </button>
+              <p className="mt-1 text-center text-micro text-content-low">
+                {pago ? m.dieta.busca.estimar.custoPago : m.dieta.busca.estimar.custoGratis}
+              </p>
+            </>
+          )}
         </form>
       )}
     </div>

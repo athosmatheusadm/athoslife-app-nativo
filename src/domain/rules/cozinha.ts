@@ -178,14 +178,20 @@ export const KCAL_MINIMA_SUGESTAO = 150
  * as liberadas (sugestão trancada frustra) e sem alérgeno da pessoa. Cabe = até 10% acima das kcal
  * que faltam. Entre as que cabem, ganha quem cobre mais da proteína que
  * falta por caloria — proteína é o macro que mais fica pra trás.
+ *
+ * Variedade (dono, 24/10: "sempre mostra a mesma receita"): a nota ganha um
+ * sorteio que muda a cada turno do dia (manhã/tarde/noite). Continua só
+ * receita que cabe, mas não é sempre a mesma campeã.
  */
 export function receitasQueFechamODia(
   receitas: readonly Receita[],
   restante: Macros,
   max = 3,
+  agora: Date = new Date(),
 ): Receita[] {
   if (restante.calorias < KCAL_MINIMA_SUGESTAO) return []
   const teto = restante.calorias * 1.1
+  const turno = `${agora.getFullYear()}-${agora.getMonth()}-${agora.getDate()}-${Math.floor(agora.getHours() / 8)}`
   return receitas
     // Um chá de 5 kcal não "fecha" o dia de ninguém: precisa ocupar ao menos 20% do que falta.
     .filter((r) => !r.bloqueada && r.contemRestricao.length === 0 && r.macros.calorias >= restante.calorias * 0.2 && r.macros.calorias <= teto)
@@ -194,11 +200,21 @@ export function receitasQueFechamODia(
       const ocupa = r.macros.calorias / restante.calorias
       // Receita que usa ~40–90% do que falta "fecha" melhor que um chá de 5 kcal.
       const encaixe = ocupa >= 0.4 && ocupa <= 1.1 ? 1 : ocupa
-      return { r, nota: prot * 2 + encaixe }
+      return { r, nota: prot * 2 + encaixe + sorteio(`${turno}:${r.id}`) * 1.5 }
     })
     .sort((a, b) => b.nota - a.nota)
     .slice(0, max)
     .map((x) => x.r)
+}
+
+/** Número de 0 a 1 que depende só do texto (mesmo turno = mesma ordem, sem pular na tela). */
+function sorteio(texto: string): number {
+  let h = 2166136261
+  for (let i = 0; i < texto.length; i++) {
+    h ^= texto.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return (h >>> 0) / 4294967295
 }
 
 export function macrosRestantes(metas: Macros, consumido: Macros): Macros {

@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useSession } from '@app/SessionProvider'
+import { temAcessoPremium } from '@domain/rules/access'
 import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { useFoodSearch } from '@ui/screens/food-search/useFoodSearch'
 import { escalarMacros } from '@domain/rules/foodReconciliation'
@@ -20,6 +23,33 @@ export function mensagemErroEstimar(e: unknown, t: Mensagens['dieta']['busca']['
     if (e.info.tipo === 'indisponivel') return t.pausado
   }
   return t.falhou
+}
+
+/**
+ * Grátis sem estimativa na semana (cota 'estimar': 1/semana no grátis, 20/dia
+ * no pago — o código de barras em si é grátis). Aí não é erro: é o convite
+ * pro plano, como na receita do Life.
+ */
+export function fimDaEstimativaGratis(e: unknown, pago: boolean): boolean {
+  return !pago && e instanceof AiProxyError && (e.info.tipo === 'limit_reached' || e.info.tipo === 'premium_required')
+}
+
+export function PlanoParaEstimar() {
+  const t = useI18n().m.dieta.busca.estimar
+  const navigate = useNavigate()
+  return (
+    <div className="mt-2 rounded-xl border border-accent-gold/40 bg-accent-gold/10 p-3 text-center">
+      <p className="text-sm font-bold text-content-hi">{t.planoTitulo}</p>
+      <p className="mt-1 text-micro text-content-mid">{t.planoTexto}</p>
+      <button
+        type="button"
+        onClick={() => navigate('/perfil/plano')}
+        className="mt-2 min-h-11 w-full rounded-pill bg-brand text-sm font-bold text-brand-ink active:scale-[0.98]"
+      >
+        {t.verPlanos}
+      </button>
+    </div>
+  )
 }
 
 /** Estimativa do Life no formato da base — id fixo, não existe na tabela (sem ⭐). */
@@ -46,6 +76,9 @@ export function InlineFoodSearch(props: {
   const [escolhido, setEscolhido] = useState<AlimentoBase | null>(null)
   const [estimando, setEstimando] = useState(false)
   const [erroEstimar, setErroEstimar] = useState<string | null>(null)
+  const [pedirPlano, setPedirPlano] = useState(false)
+  const { profile } = useSession()
+  const pago = profile ? temAcessoPremium(profile) : false
   const { m } = useI18n()
   const t = m.dieta.busca
   useFecharNoVoltar(escolhido !== null, () => setEscolhido(null))
@@ -61,7 +94,8 @@ export function InlineFoodSearch(props: {
       if (e) setEscolhido(alimentoDeEstimativa(e))
       else setErroEstimar(t.estimar.naoReconhecido)
     } catch (err) {
-      setErroEstimar(mensagemErroEstimar(err, t.estimar, m.offline.precisaInternet))
+      if (fimDaEstimativaGratis(err, pago)) setPedirPlano(true)
+      else setErroEstimar(mensagemErroEstimar(err, t.estimar, m.offline.precisaInternet))
     } finally {
       setEstimando(false)
     }
@@ -100,15 +134,21 @@ export function InlineFoodSearch(props: {
       {!buscando && termo.trim().length >= 2 && resultados.length === 0 && (
         <div className="py-3 text-center">
           <p className="text-micro text-content-low">{t.nada}</p>
-          <button
-            type="button"
-            onClick={() => void pedirEstimativa()}
-            disabled={estimando}
-            className="mt-2 min-h-12 w-full rounded-xl border border-brand/60 px-3 text-sm font-bold text-brand transition-colors active:bg-brand/10 disabled:opacity-50"
-          >
-            {estimando ? t.estimar.estimando : t.estimar.botao(termo.trim())}
-          </button>
-          <p className="mt-1 text-micro text-content-low">{t.estimar.custo}</p>
+          {pedirPlano ? (
+            <PlanoParaEstimar />
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => void pedirEstimativa()}
+                disabled={estimando}
+                className="mt-2 min-h-12 w-full rounded-xl border border-brand/60 px-3 text-sm font-bold text-brand transition-colors active:bg-brand/10 disabled:opacity-50"
+              >
+                {estimando ? t.estimar.estimando : t.estimar.botao(termo.trim())}
+              </button>
+              <p className="mt-1 text-micro text-content-low">{pago ? t.estimar.custoPago : t.estimar.custoGratis}</p>
+            </>
+          )}
           {erroEstimar && <p role="alert" className="mt-2 text-micro text-accent-danger">{erroEstimar}</p>}
         </div>
       )}
