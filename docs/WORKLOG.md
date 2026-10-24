@@ -3235,3 +3235,23 @@ Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
 3. Supabase Auth: senha mínima 8 e proteção de senha vazada (painel).
 4. Testar o APK novo no celular (offline, widget, treino, peso no chat).
 5. Cabeçalhos das abas continuam diferentes entre si (não mexi no layout).
+
+### 2026-10-24 (fim) — Supabase em dia
+
+- **`ai-proxy` publicada (v27)**: leitor de peso compartilhado
+  (`_shared/pesoComando.ts`) + regra no prompt ("não diga que anotou peso").
+  Conferido: a função sobe e responde.
+- **Edge Functions `stripe_webhook` e `create-checkout` apagadas**. Ficam:
+  ai-proxy, rc-sync, rc-webhook, send-welome-whatsapp, relogio-athos (WhatsApp:
+  planos futuros do dono).
+- APK de teste do branch `correcoes-teste-apk` (run 40113535473) em
+  `Downloads/ATHOSlife-teste-24-10.apk`. 1ª tentativa falhou: apóstrofo sem
+  escape em `values-en/athos_widget_textos.xml` (corrigido).
+
+**Pendências**
+1. Dono testar o APK no celular (roteiro: offline/modo avião, treino sem
+   notificação, "82" no chat, widget, onboarding novo, receitas × alergia).
+2. Supabase Auth (painel): senha mínima 8 e proteção de senha vazada.
+3. Firebase (dono cria a conta e dá acesso): Crashlytics + FCM.
+4. Merge do PR #1 e deste branch quando o dono aprovar.
+5. Dono revogar o token do GitHub colado no chat.
