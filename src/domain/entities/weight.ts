@@ -1,3 +1,4 @@
+import { formatarNumero } from '@domain/rules/formatoNumero'
 /**
  * Domínio de peso.
  *
@@ -19,15 +20,15 @@ export interface ResumoPeso {
   readonly registros: readonly RegistroPeso[]
 }
 
-/** Formata peso no padrão BR: 72.3 -> "72,3". */
+/** Peso no padrão do idioma, 1 casa: 72.3 -> "72,3" (pt) / "72.3" (en). */
 export function formatarPeso(kg: number): string {
-  return kg.toFixed(1).replace('.', ',')
+  return formatarNumero(kg, 1, 1)
 }
 
 /** Variação com sinal: -1.7 -> "-1,7", +0.5 -> "+0,5". */
 export function formatarVariacao(kg: number): string {
   const s = kg > 0 ? '+' : kg < 0 ? '-' : ''
-  return `${s}${Math.abs(kg).toFixed(1).replace('.', ',')}`
+  return `${s}${formatarNumero(Math.abs(kg), 1, 1)}`
 }
 
 /**

@@ -1,3 +1,4 @@
+import { formatarNumero } from '@domain/rules/formatoNumero'
 import type {
   DiaSemana,
   ExercicioPlano,
@@ -161,7 +162,7 @@ export function formatarRelogio(totalSeg: number): string {
 
 export function formatarCarga(kg: number | null): string {
   if (kg === null) return '—'
-  return Number.isInteger(kg) ? String(kg) : kg.toFixed(1).replace('.', ',')
+  return formatarNumero(kg, 1)
 }
 
 // ── transições ─────────────────────────────────────────────────────────────

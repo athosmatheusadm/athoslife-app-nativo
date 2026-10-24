@@ -19,10 +19,19 @@ export interface FotoCapturada {
   readonly dataUrl: string
 }
 
+/** A pessoa negou a câmera/galeria pro app: só os ajustes do celular liberam de novo. */
+export class CameraNegadaError extends Error {
+  constructor() {
+    super('camera_negada')
+    this.name = 'CameraNegadaError'
+  }
+}
+
 /**
  * Abre a câmera ou a galeria e devolve a imagem pronta pro scanner.
- * Retorna null se o usuário cancelar. No navegador (npm run dev) o plugin
- * cai sozinho num seletor de arquivo.
+ * Retorna null se o usuário cancelar; lança CameraNegadaError se a
+ * permissão foi negada (antes virava "sem foto" e a tela parecia não fazer
+ * nada). No navegador (npm run dev) o plugin cai num seletor de arquivo.
  */
 export async function capturarFoto(origem: OrigemFoto): Promise<FotoCapturada | null> {
   try {
@@ -41,7 +50,9 @@ export async function capturarFoto(origem: OrigemFoto): Promise<FotoCapturada | 
     if (!foto.base64String) return null
     const mime = foto.format === 'png' ? 'image/png' : foto.format === 'webp' ? 'image/webp' : 'image/jpeg'
     return { base64: foto.base64String, mime, dataUrl: `data:${mime};base64,${foto.base64String}` }
-  } catch {
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (/denied|permission|not authorized|negad/i.test(msg)) throw new CameraNegadaError()
     // Cancelamento do usuário cai aqui — não é erro de verdade.
     return null
   }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { useFoodSearch } from '@ui/screens/food-search/useFoodSearch'
 import { escalarMacros } from '@domain/rules/foodReconciliation'
 import { favoritosAlimentoRepository } from '@data/repositories/favoritosAlimentoRepository'
@@ -7,10 +8,12 @@ import type { ItemRefeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { AiProxyError, estimarAlimento, type AlimentoEstimado } from '@data/ai/aiProxy'
+import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 
 /** Erro do "Life estima" em texto pra pessoa (busca da Dieta e scanner). */
-export function mensagemErroEstimar(e: unknown, t: Mensagens['dieta']['busca']['estimar']): string {
+export function mensagemErroEstimar(e: unknown, t: Mensagens['dieta']['busca']['estimar'], semRede: string): string {
+  if (ehFalhaDeRede(e)) return semRede
   if (e instanceof AiProxyError) {
     if (e.info.tipo === 'limit_reached') return e.info.proximoReset ? t.limite(e.info.proximoReset) : t.limiteSemHora
     if (e.info.tipo === 'rate_limited') return t.rapido
@@ -58,7 +61,7 @@ export function InlineFoodSearch(props: {
       if (e) setEscolhido(alimentoDeEstimativa(e))
       else setErroEstimar(t.estimar.naoReconhecido)
     } catch (err) {
-      setErroEstimar(mensagemErroEstimar(err, t.estimar))
+      setErroEstimar(mensagemErroEstimar(err, t.estimar, m.offline.precisaInternet))
     } finally {
       setEstimando(false)
     }
@@ -122,7 +125,7 @@ export function InlineFoodSearch(props: {
                 <span className="block text-micro text-content-low">{t.referencia(a.porcaoG)}</span>
               </span>
               <span className="flex-none text-right">
-                <span className="block text-sm font-bold text-brand">{a.calorias} kcal</span>
+                <span className="block text-sm font-bold text-brand">{fmtKcal(a.calorias)} kcal</span>
                 <span className="block text-micro text-macro-proteina">{t.prot(a.proteina)}</span>
               </span>
             </button>
@@ -144,7 +147,11 @@ export function PorcaoInline(props: {
   onVoltar: () => void
 }) {
   const { alimento } = props
-  const [gramas, setGramas] = useState(alimento.porcaoG)
+  // Ovo, pão, azeite: começa em 1 unidade e oferece 1–3 unidades (relatório
+  // do APK, item 13). Sem porção típica na base, fica nos atalhos em gramas.
+  const unidadeG = alimento.porcaoTipicaG && alimento.porcaoTipicaG > 0 ? Math.round(alimento.porcaoTipicaG) : null
+  const [gramas, setGramas] = useState(unidadeG ?? alimento.porcaoG)
+  const unidades = unidadeG && gramas % unidadeG === 0 ? gramas / unidadeG : null
   const m = escalarMacros(alimento, gramas)
   const t = useI18n().m.dieta.busca
 
@@ -160,7 +167,7 @@ export function PorcaoInline(props: {
         </button>
         <span className="flex-1 truncate text-sm font-semibold text-content-hi">{alimento.nome}</span>
         {alimento.id !== ID_ESTIMADO && <FavoritoStar alimentoId={alimento.id} />}
-        <span className="text-sm font-bold text-brand">{m.calorias} kcal</span>
+        <span className="text-sm font-bold text-brand">{fmtKcal(m.calorias)} kcal</span>
       </div>
 
       <MacroChips m={m} />
@@ -176,25 +183,29 @@ export function PorcaoInline(props: {
           className="min-h-12 w-24 rounded-xl border border-surface-4 bg-surface-3 px-3 text-center text-base font-bold text-content-hi focus:border-brand focus:outline-none"
         />
         <span className="text-micro text-content-low">{t.gramas}</span>
-        <div className="flex flex-1 justify-end gap-1.5">
-          {[50, 100, 150].map((g) => (
+        <div className="flex flex-1 flex-wrap justify-end gap-1.5">
+          {(unidadeG ? [1, 2, 3].map((n) => ({ g: n * unidadeG, rotulo: t.unidades(n) })) : [50, 100, 150].map((g) => ({ g, rotulo: String(g) }))).map(({ g, rotulo }) => (
             <button
               key={g}
               onClick={() => setGramas(g)}
-              className="min-h-11 min-w-11 rounded-pill border border-surface-4 px-3 text-sm font-semibold text-content-mid active:scale-95 active:bg-content-hi/5"
+              aria-pressed={gramas === g}
+              className={`min-h-11 min-w-11 rounded-pill border px-3 text-sm font-semibold active:scale-95 active:bg-content-hi/5 ${
+                gramas === g ? 'border-brand/60 text-brand' : 'border-surface-4 text-content-mid'
+              }`}
             >
-              {g}
+              {rotulo}
             </button>
           ))}
         </div>
       </div>
+      {unidadeG && <p className="mt-1 text-micro text-content-low">{t.umaUnidade(unidadeG)}</p>}
 
       <button
         onClick={() =>
           props.onConfirmar({
             id: `item-${Date.now()}`,
             nome: alimento.nome,
-            quantidade: `${gramas} g`,
+            quantidade: unidades ? t.quantidadeUnidades(unidades, gramas) : `${gramas} g`,
             ...m,
           })
         }
@@ -216,9 +227,9 @@ export function MacroChips(props: { m: Macros }) {
   const t = useI18n().m.dieta.busca
   return (
     <div className="mt-1.5 flex gap-3 text-micro text-content-low">
-      <span><b className="font-bold text-macro-proteina">{props.m.proteina}g</b> {t.chipProt}</span>
-      <span><b className="font-bold text-macro-carbo">{props.m.carboidrato}g</b> {t.chipCarb}</span>
-      <span><b className="font-bold text-macro-gordura">{props.m.gordura}g</b> {t.chipGord}</span>
+      <span><b className="font-bold text-macro-proteina">{fmtG(props.m.proteina)}g</b> {t.chipProt}</span>
+      <span><b className="font-bold text-macro-carbo">{fmtG(props.m.carboidrato)}g</b> {t.chipCarb}</span>
+      <span><b className="font-bold text-macro-gordura">{fmtG(props.m.gordura)}g</b> {t.chipGord}</span>
     </div>
   )
 }

@@ -4,9 +4,8 @@ import { useAndroidBackButton } from './useAndroidBackButton'
 import { IntegracoesNativas } from './IntegracoesNativas'
 import { LembretesDoLife } from './LembretesDoLife'
 import { Avisos } from '@ui/feedback'
-import { OnboardingConversa } from '@ui/screens/prototipo/OnboardingConversa'
-import { OnboardingEssencial } from '@ui/screens/prototipo/OnboardingEssencial'
 import { AppShell } from './AppShell'
+import { StatusConexao } from '@ui/components/StatusConexao'
 import { Login } from '@ui/screens/Login'
 import { RecuperarSenha } from '@ui/screens/RecuperarSenha'
 import { Consentimento } from '@ui/screens/Consentimento'
@@ -43,6 +42,7 @@ function Shell() {
       <IntegracoesNativas />
       <LembretesDoLife />
       <Outlet />
+      <StatusConexao />
       <Avisos />
     </>
   )
@@ -60,9 +60,14 @@ export const router = createBrowserRouter([
       // Públicas: abrem do Consentimento (antes do aceite) e do Perfil > Sobre.
       { path: '/termos', element: <DocumentoLegal tipo="termos" /> },
       { path: '/politica-de-privacidade', element: <DocumentoLegal tipo="politica" /> },
-      // PROTÓTIPO (2026-10-01): onboarding em conversa, público e sem salvar nada.
-      { path: '/prototipo/onboarding', element: <OnboardingConversa /> },
-      { path: '/prototipo/onboarding-essencial', element: <OnboardingEssencial /> },
+      // PROTÓTIPO (2026-10-01): onboarding em conversa, público e sem salvar
+      // nada. Só no `npm run dev` — fora do APK (relatório do teste, 24/10).
+      ...(import.meta.env.DEV
+        ? [
+            { path: '/prototipo/onboarding', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingConversa')).OnboardingConversa }) },
+            { path: '/prototipo/onboarding-essencial', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingEssencial')).OnboardingEssencial }) },
+          ]
+        : []),
       {
         element: <RequireAuth><Outlet /></RequireAuth>,
         children: [

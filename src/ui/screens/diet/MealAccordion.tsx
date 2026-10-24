@@ -1,4 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
+import { fmtKcal } from '@domain/rules/formatoNumero'
 import { macrosRefeicao, resumoRefeicao, type Refeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
 
@@ -50,9 +51,9 @@ export function MealAccordion(props: {
         </span>
 
         {props.sugestaoPlano ? (
-          <span className="flex-none text-sm font-semibold tabular-nums text-content-low">~{props.sugestaoPlano.kcal} kcal</span>
+          <span className="flex-none text-sm font-semibold tabular-nums text-content-low">~{fmtKcal(props.sugestaoPlano.kcal)} kcal</span>
         ) : (
-          <span className="flex-none text-sm font-bold tabular-nums text-content-mid">{totalKcal} kcal</span>
+          <span className="flex-none text-sm font-bold tabular-nums text-content-mid">{fmtKcal(totalKcal)} kcal</span>
         )}
       </button>
 

@@ -9,6 +9,7 @@ import {
 } from '@domain/rules/localidade'
 import type { Mensagens } from './mensagens/tipo'
 import { DICIONARIOS } from './dicionarios'
+import { definirIdiomaNumeros } from '@domain/rules/formatoNumero'
 
 /**
  * Idioma escolhido NESTE aparelho (troca na tela de boas-vindas ou no
@@ -62,6 +63,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const pais = profile?.localidade.pais ?? localidadeAtualDoAparelho().pais
   // Repositórios leem daqui (busca de alimentos no idioma/país da pessoa).
   definirLocalidadeAtual(idioma, pais)
+  definirIdiomaNumeros(idioma)
 
   useEffect(() => {
     document.documentElement.lang = idioma

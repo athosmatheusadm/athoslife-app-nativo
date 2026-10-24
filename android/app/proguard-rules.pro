@@ -19,3 +19,15 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- ATHOSlife ---------------------------------------------------------
+# Plugins do Capacitor são achados por reflexão (nome da classe + métodos
+# @PluginMethod). Os nossos (widget, Live Activity, Instagram) e os de
+# terceiros ficam inteiros.
+-keep class br.com.athoslife.app.** { *; }
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * { *; }
+-keepclassmembers class * { @com.getcapacitor.PluginMethod public <methods>; }
+-keep class com.getcapacitor.** { *; }
+# Bridge JS <-> WebView
+-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod

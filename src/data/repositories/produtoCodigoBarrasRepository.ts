@@ -1,3 +1,5 @@
+import { exigirRede } from '@data/offline/cache'
+import { SemConexaoError } from '@data/offline/conexao'
 import type { Macros } from '@domain/entities/food'
 
 /**
@@ -41,9 +43,12 @@ export const produtoCodigoBarrasRepository = {
   async buscar(codigo: string): Promise<ProdutoRotulo | null> {
     const limpo = codigo.replace(/\D/g, '')
     if (limpo.length < 8) return null
+    exigirRede()
     const res = await fetch(
       `https://world.openfoodfacts.org/api/v2/product/${limpo}.json?fields=${CAMPOS}`,
-    )
+    ).catch(() => {
+      throw new SemConexaoError()
+    })
     if (res.status === 404) return null
     if (!res.ok) throw new Error('off_indisponivel')
     const d = (await res.json()) as RespostaOFF

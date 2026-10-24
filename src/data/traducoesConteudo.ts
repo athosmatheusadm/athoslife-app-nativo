@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache } from '@data/offline/cache'
 import { localidadeAtual } from '@data/localidadeAtual'
 
 /**
@@ -16,9 +17,17 @@ type PorIdioma = Partial<Record<'en' | 'es', Record<string, unknown>>>
 const cache = new Map<Tabela, Promise<Map<string, PorIdioma>>>()
 
 async function buscar(tabela: Tabela): Promise<Map<string, PorIdioma>> {
-  const { data, error } = await supabase.from(tabela).select('id, traducoes').returns<{ id: string; traducoes: PorIdioma | null }[]>()
-  if (error) throw error
-  return new Map((data ?? []).map((r) => [r.id, r.traducoes ?? {}]))
+  // Guardado no aparelho: sem rede, exercícios e receitas continuam traduzidos.
+  const linhas = await lerComCache(
+    `traducoes:${tabela}`,
+    async () => {
+      const { data, error } = await supabase.from(tabela).select('id, traducoes').returns<{ id: string; traducoes: PorIdioma | null }[]>()
+      if (error) throw error
+      return data ?? []
+    },
+    { validadeMs: 24 * 60 * 60 * 1000 },
+  )
+  return new Map(linhas.map((r) => [r.id, r.traducoes ?? {}]))
 }
 
 /** Campos traduzidos de cada linha no idioma atual (vazio em pt ou sem tradução). */

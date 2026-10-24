@@ -18,6 +18,11 @@ import { LifeChatSheet } from './LifeChatSheet'
  *
  * aparecerDepoisDe: só aparece depois de rolar tantos px (Home no 1º acesso
  * do dia, quando o Life grande já está no topo da página).
+ *
+ * Relatório do teste do APK (24/10): ele tapava conteúdo e pegava o toque
+ * de botões embaixo dele ("Adicionar exercício"). Agora só o corpo dele
+ * (não a caixa transparente da imagem) abre o chat, e enquanto a pessoa
+ * rola ele fica translúcido e deixa o toque passar — continua à vista.
  */
 export function LifeFlutuante(props: {
   humor: HumorLife
@@ -27,20 +32,26 @@ export function LifeFlutuante(props: {
 }) {
   const { m } = useI18n()
   const [aberto, setAberto] = useState(false)
+  const [rascunho, setRascunho] = useState<string | undefined>(undefined)
   const visivel = useRolouAlem(props.aparecerDepoisDe ?? 0)
+  const rolando = useRolando()
 
-  useEffect(() => aoPedirAbrirLife(() => setAberto(true)), [])
+  useEffect(
+    () =>
+      aoPedirAbrirLife((texto) => {
+        setRascunho(texto)
+        setAberto(true)
+      }),
+    [],
+  )
 
   return (
     <>
       <div className="h-28" aria-hidden="true" />
-      <button
-        type="button"
-        onClick={() => setAberto(true)}
-        aria-label={m.lifeChat.abrir}
-        className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom))] left-2 z-20 transition-transform duration-300 active:scale-95 ${
+      <div
+        className={`pointer-events-none fixed bottom-[calc(72px+env(safe-area-inset-bottom))] left-2 z-20 transition-[transform,opacity] duration-300 ${
           visivel ? 'translate-x-0' : '-translate-x-[130%]'
-        }`}
+        } ${rolando ? 'opacity-40' : 'opacity-100'}`}
       >
         {props.corBrilho && (
           <span
@@ -50,10 +61,48 @@ export function LifeFlutuante(props: {
           />
         )}
         <LifeMascote humor={props.humor} alt="" className="relative h-32" />
-      </button>
-      {aberto && <LifeChatSheet foco={props.foco} humor={props.humor} onFechar={() => setAberto(false)} />}
+        {/* Área de toque: o corpo do Life, não a imagem inteira. */}
+        <button
+          type="button"
+          onClick={() => {
+            setRascunho(undefined)
+            setAberto(true)
+          }}
+          aria-label={m.lifeChat.abrir}
+          className={`absolute bottom-2 left-1/2 h-24 w-20 -translate-x-1/2 rounded-full active:scale-95 ${
+            rolando ? 'pointer-events-none' : 'pointer-events-auto'
+          }`}
+        />
+      </div>
+      {aberto && (
+        <LifeChatSheet
+          foco={props.foco}
+          humor={props.humor}
+          {...(rascunho ? { rascunho } : {})}
+          onFechar={() => setAberto(false)}
+        />
+      )}
     </>
   )
+}
+
+/** true enquanto a página está rolando (e um instante depois). */
+function useRolando(): boolean {
+  const [rolando, setRolando] = useState(false)
+  useEffect(() => {
+    let timer = 0
+    const aoRolar = () => {
+      setRolando(true)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => setRolando(false), 700)
+    }
+    window.addEventListener('scroll', aoRolar, { passive: true })
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('scroll', aoRolar)
+    }
+  }, [])
+  return rolando
 }
 
 /** true quando a página já rolou mais que `limite` px (limite 0 = sempre). */

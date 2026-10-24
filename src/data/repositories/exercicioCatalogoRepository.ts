@@ -1,4 +1,5 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache } from '@data/offline/cache'
 import { lista, texto, traducoesDe } from '@data/traducoesConteudo'
 import type { ExercicioCatalogo, GrupoMuscular, LocalTreino, MedidaSerie, NivelTreino } from '@domain/entities/treino'
 
@@ -41,6 +42,26 @@ export function exercicioParaDominio(r: CatalogoRow, trad: Record<string, unknow
   }
 }
 
+const COLUNAS =
+  'id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, medida, segundos_padrao, dica, nivel_minimo'
+
+/** O catálogo inteiro (100 exercícios), guardado no aparelho e renovado uma vez por dia. */
+export function linhasDoCatalogo(): Promise<CatalogoRow[]> {
+  return lerComCache(
+    'exercicios:catalogo',
+    async () => {
+      const { data, error } = await supabase
+        .from('exercicios_catalogo')
+        .select(COLUNAS)
+        .order('ordem', { ascending: true })
+        .returns<CatalogoRow[]>()
+      if (error) throw error
+      return data ?? []
+    },
+    { validadeMs: 24 * 60 * 60 * 1000 },
+  )
+}
+
 /** Único ponto que conhece exercicios_catalogo — conteúdo curado, somente leitura. */
 export const exercicioCatalogoRepository = {
   /**
@@ -49,17 +70,9 @@ export const exercicioCatalogoRepository = {
    * adicionar qualquer exercício do catálogo na ficha de qualquer local.
    */
   async listar(filtro?: { grupoMuscular?: GrupoMuscular }): Promise<ExercicioCatalogo[]> {
-    let query = supabase
-      .from('exercicios_catalogo')
-      .select(
-        'id, nome, grupo_muscular, musculos_trabalhados, ambientes, icone_url, imagem_url, prancha_url, como_executar, series_padrao, repeticoes_padrao, medida, segundos_padrao, dica, nivel_minimo',
-      )
-      .order('ordem', { ascending: true })
-
-    if (filtro?.grupoMuscular) query = query.eq('grupo_muscular', filtro.grupoMuscular)
-
-    const [{ data, error }, trad] = await Promise.all([query.returns<CatalogoRow[]>(), traducoesDe('exercicios_catalogo')])
-    if (error) throw error
-    return (data ?? []).map((r) => exercicioParaDominio(r, trad(r.id)))
+    const [linhas, trad] = await Promise.all([linhasDoCatalogo(), traducoesDe('exercicios_catalogo')])
+    return linhas
+      .filter((r) => !filtro?.grupoMuscular || r.grupo_muscular === filtro.grupoMuscular)
+      .map((r) => exercicioParaDominio(r, trad(r.id)))
   },
 }

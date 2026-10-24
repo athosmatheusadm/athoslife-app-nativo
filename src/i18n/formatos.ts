@@ -24,5 +24,5 @@ export function altura(idioma: Idioma, unidades: Unidades, cm: number): string {
 
 export function volume(idioma: Idioma, unidades: Unidades, ml: number): string {
   if (unidades === 'imperial') return `${numero(idioma, mlParaOz(ml))} fl oz`
-  return ml >= 1000 ? `${numero(idioma, ml / 1000, 1)} L` : `${numero(idioma, ml)} ml`
+  return ml >= 1000 ? `${numero(idioma, ml / 1000, 2)} L` : `${numero(idioma, ml)} ml`
 }

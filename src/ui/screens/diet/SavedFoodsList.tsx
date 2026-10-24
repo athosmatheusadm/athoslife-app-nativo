@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { fmtKcal } from '@domain/rules/formatoNumero'
 import { favoritosAlimentoRepository } from '@data/repositories/favoritosAlimentoRepository'
 import { PorcaoInline } from './InlineFoodSearch'
 import type { AlimentoBase } from '@domain/entities/food'
@@ -73,7 +74,7 @@ export function SavedFoodsList(props: {
                 <span className="block text-micro text-content-low">{m.dieta.busca.referencia(a.porcaoG)}</span>
               </span>
               <span className="flex-none text-right">
-                <span className="block text-sm font-bold text-brand">{a.calorias} kcal</span>
+                <span className="block text-sm font-bold text-brand">{fmtKcal(a.calorias)} kcal</span>
                 <span className="block text-micro text-macro-proteina">{m.dieta.busca.prot(a.proteina)}</span>
               </span>
             </button>

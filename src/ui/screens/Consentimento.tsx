@@ -21,7 +21,8 @@ export function Consentimento() {
 
   const [termos, setTermos] = useState(false)
   const [saude, setSaude] = useState(false)
-  const [habitos, setHabitos] = useState(true)
+  // Opcional e dado sensível: começa desmarcada (LGPD — o aceite parte de quem usa).
+  const [habitos, setHabitos] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 

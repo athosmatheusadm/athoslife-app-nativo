@@ -10,6 +10,7 @@ import type { Macros } from '@domain/entities/food'
 import { profileRepository } from '@data/repositories/profileRepository'
 import { macrosRepository } from '@data/repositories/macrosRepository'
 import { AiProxyError } from '@data/ai/aiProxy'
+import { ehFalhaDeRede } from '@data/offline/conexao'
 import { CabecalhoCozinha } from './CabecalhoCozinha'
 import { ReceitaView } from './ReceitaView'
 
@@ -111,6 +112,7 @@ export function LifeChefScreen() {
   }
 
   function mensagemErro(e: unknown): string {
+    if (ehFalhaDeRede(e)) return m.offline.lifePrecisaInternet
     if (e instanceof AiProxyError) {
       switch (e.info.tipo) {
         case 'limit_reached':

@@ -9,6 +9,8 @@ import type { Habito } from '@domain/entities/habito'
 import { LembretesDoDia } from './notificacoes/LembretesDoDia'
 import { ContatoDoLife } from './notificacoes/ContatoDoLife'
 
+const LIFE_PUXA_CONVERSA_PRONTO = false
+
 /**
  * Sub-página "Notificações" do Perfil.
  *
@@ -58,7 +60,9 @@ export function Notificacoes() {
         </div>
       </section>
 
-      <ContatoDoLife />
+      {/* "Life puxa conversa" ainda não envia nada (relatório do APK): fica
+          escondido até funcionar. O código e a preferência no banco continuam. */}
+      {LIFE_PUXA_CONVERSA_PRONTO && <ContatoDoLife />}
     </main>
   )
 }

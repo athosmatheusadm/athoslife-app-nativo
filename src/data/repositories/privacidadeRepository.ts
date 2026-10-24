@@ -1,4 +1,6 @@
 import { supabase } from '@data/supabase/client'
+import { exigirRede } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
 
 /** Tabelas com dado pessoal do usuário — tudo que entra na exportação (LGPD, direito de portabilidade). */
 const TABELAS_EXPORTAVEIS = [
@@ -22,6 +24,9 @@ const TABELAS_EXPORTAVEIS = [
   'treinos_historico',
   'triagens_saude',
   'planos_gerados',
+  'receitas_criadas',
+  'scan_historico',
+  'life_pausas',
 ] as const
 
 /** Pastas `<user_id>/` no Storage com arquivo da pessoa (Storage não apaga por SQL). */
@@ -47,8 +52,8 @@ async function chamarExclusao(senha: string, soConferir: boolean): Promise<Resul
  */
 export const privacidadeRepository = {
   async exportarMeusDados(): Promise<Record<string, unknown>> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    exigirRede()
+    const userId = await usuarioId()
 
     const perfil = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
     if (perfil.error) throw perfil.error
@@ -68,8 +73,8 @@ export const privacidadeRepository = {
   },
 
   async excluirConta(senha: string): Promise<ResultadoExclusao> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    exigirRede()
+    const userId = await usuarioId()
 
     const conferida = await chamarExclusao(senha, true)
     if (conferida !== 'ok') return conferida

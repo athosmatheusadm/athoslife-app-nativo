@@ -182,7 +182,6 @@ export function EnergiaPesoGrafico({ periodo, onPeriodo }: {
           >
             {frase(resumo)}
           </p>
-          <p className="mt-1.5 text-micro text-content-low">{t.nota}</p>
           <TabelaDados resumo={resumo} fmt={fmt} />
         </>
       )}
@@ -471,6 +470,7 @@ function TabelaDados({ resumo, fmt }: Pick<GraficoProps, 'resumo' | 'fmt'>) {
   return (
     <details className="mt-2 text-micro text-content-mid">
       <summary className="flex min-h-11 cursor-pointer items-center text-content-low">{t.verTabela}</summary>
+      <p className="mb-2 text-content-low">{t.nota}</p>
       <table className="w-full border-collapse tabular-nums">
         <thead>
           <tr className="text-left text-content-low">

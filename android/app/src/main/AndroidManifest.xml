@@ -46,7 +46,7 @@
         <receiver
             android:name=".widget.WidgetAguaProvider"
             android:exported="false"
-            android:label="Água do dia">
+            android:label="@string/athos_widget_agua_nome">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

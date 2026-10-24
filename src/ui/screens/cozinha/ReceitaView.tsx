@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { fmtG } from '@domain/rules/formatoNumero'
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Macros } from '@domain/entities/food'
 import { escalarIngrediente, escalarMacros, PORCAO, type ReceitaEstruturada } from '@domain/rules/cozinha'
@@ -29,6 +30,8 @@ export function ReceitaView(props: {
   /** Botões depois do preparo (salvar, foto…). */
   acoes?: ReactNode
   aviso?: string
+  /** Receita com alérgeno que está nas restrições da pessoa. */
+  alerta?: string | null
 }) {
   const { m } = useI18n()
   const t = m.cozinha
@@ -69,6 +72,12 @@ export function ReceitaView(props: {
         )}
       </div>
 
+      {props.alerta && (
+        <p role="alert" className="mb-4 rounded-2xl border border-accent-danger/40 bg-accent-danger/10 px-3 py-2.5 text-sm font-semibold text-content-hi">
+          ⚠️ {props.alerta}
+        </p>
+      )}
+
       {estrutura.porque && estrutura.porque !== props.subtitulo && (
         <Secao icone="🍽" titulo={t.sobrePrato}>
           <p className="text-sm leading-relaxed text-content-mid">{estrutura.porque}</p>
@@ -98,9 +107,9 @@ export function ReceitaView(props: {
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
           <Macro valor={macrosTotais.calorias} rotulo={t.kcal} cor={props.corTema} />
-          <Macro valor={`${macrosTotais.proteina}g`} rotulo={t.prot} cor="#f43f5e" />
-          <Macro valor={`${macrosTotais.carboidrato}g`} rotulo={t.carb} cor="#3b82f6" />
-          <Macro valor={`${macrosTotais.gordura}g`} rotulo={t.gord} cor="#fbbf24" />
+          <Macro valor={`${fmtG(macrosTotais.proteina)}g`} rotulo={t.prot} cor="#f43f5e" />
+          <Macro valor={`${fmtG(macrosTotais.carboidrato)}g`} rotulo={t.carb} cor="#3b82f6" />
+          <Macro valor={`${fmtG(macrosTotais.gordura)}g`} rotulo={t.gord} cor="#fbbf24" />
         </div>
         <p className="mt-2 text-center text-micro text-content-low">
           {t.macrosDe(String(porcoes))}

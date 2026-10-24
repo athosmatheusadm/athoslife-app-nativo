@@ -73,6 +73,11 @@
   html {
     background-color: theme('colors.surface.1');
   }
+  /* Nada empurra a página pro lado (360 px + texto "Extra grande"). `clip`
+     não cria área de rolagem, então os cabeçalhos fixos continuam fixos. */
+  #root {
+    overflow-x: clip;
+  }
 
   body {
     @apply font-sans antialiased;

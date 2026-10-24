@@ -3,6 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
+  PASSO_CARGA_KG,
+  PASSO_SEGUNDOS,
+  adicionarDescanso,
+  ajustarCarga,
+  ajustarReps,
+  ajustarSegundos,
+  cancelarCronometro,
+  confirmarSerie,
+  formatarCarga,
+  iniciarCronometro,
+  pausarCronometro,
+  pularDescanso,
+  retomarCronometro,
+  type SessaoTreino,
   emPreparo,
   pausado,
   exercicioAtual,
@@ -19,12 +33,14 @@ import { avisar, vibrar } from '@ui/feedback'
  * Faixa de "treino em andamento" no topo da tela de Treino.
  *
  * Decisão do dono (2026-09-27): a tela de Treino continua a mesma de sempre;
- * "Começar treino" só liga a sessão que alimenta a Live Activity — o card com
- * peso/reps/descanso aparece na TELA DE BLOQUEIO, não dentro do app. Aqui fica
- * só o status (tempo, série/descanso) e o "Encerrar", que abre o resumo.
+ * "Começar treino" liga a sessão que alimenta a Live Activity (o card na tela
+ * de bloqueio). Relatório do teste do APK (24/10): sem a notificação (o
+ * Android 13+ pergunta e a pessoa pode negar), não havia como registrar
+ * série nenhuma. Por isso a faixa também tem os mesmos controles do card:
+ * carga/reps, confirmar série, cronômetro e descanso.
  */
 export function TreinoEmAndamento() {
-  const { sessao, agora, finalizar, descartar } = useSessaoTreino()
+  const { sessao, agora, finalizar, descartar, aplicar } = useSessaoTreino()
   const [relogio, setRelogio] = useState(() => Date.now())
   const [painel, setPainel] = useState<null | 'resumo' | 'parar'>(null)
   const [salvando, setSalvando] = useState(false)
@@ -86,7 +102,7 @@ export function TreinoEmAndamento() {
 
   return (
     <>
-      <div className="mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-brand/40 bg-brand/10 p-3">
+      <div className="mx-4 mb-2 flex items-center gap-3 rounded-2xl border border-brand/40 bg-brand/10 p-3">
         <span className="relative flex h-2.5 w-2.5 flex-none">
           <span className={`absolute inset-0 rounded-full opacity-60 motion-safe:animate-ping ${cor}`} />
           <span className={`relative h-2.5 w-2.5 rounded-full ${cor}`} />
@@ -96,7 +112,6 @@ export function TreinoEmAndamento() {
             {tx.titulo(formatarRelogio((t - sessao.iniciadoEm) / 1000))}
           </div>
           <div className="truncate text-sm text-content-mid" aria-live="polite">{status}</div>
-          <div className="text-micro text-content-low">{tx.bloqueio}</div>
         </div>
         <div className="flex flex-none flex-col gap-1.5">
           <button
@@ -114,6 +129,9 @@ export function TreinoEmAndamento() {
           </button>
         </div>
       </div>
+      {sessao.status !== 'concluida' && ex && (
+        <Controles sessao={sessao} agora={t} aplicar={aplicar} />
+      )}
 
       {painel === 'parar' && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={tx.pararTitulo}>
@@ -206,5 +224,116 @@ export function TreinoEmAndamento() {
         </div>
       )}
     </>
+  )
+}
+
+type Aplicar = ReturnType<typeof useSessaoTreino>['aplicar']
+
+/** Os controles do card da tela de bloqueio, dentro do app. */
+function Controles(props: { sessao: SessaoTreino; agora: number; aplicar: Aplicar }) {
+  const { sessao: s, aplicar } = props
+  const { m } = useI18n()
+  const tx = m.treino.andamento
+  const c = tx.ctl
+  const ex = exercicioAtual(s)
+  if (!ex) return null
+  const toque = (fn: Parameters<Aplicar>[0]) => () => {
+    vibrar.leve()
+    aplicar(fn)
+  }
+
+  let corpo: JSX.Element
+  if (s.status === 'descanso') {
+    corpo = (
+      <div className="flex gap-2">
+        <BotaoCtl onClick={toque((x, agora) => adicionarDescanso(x, 15, agora))}>{c.mais15}</BotaoCtl>
+        <BotaoCtl destaque onClick={toque((x) => pularDescanso(x))}>{c.pular}</BotaoCtl>
+      </div>
+    )
+  } else if (s.status === 'cronometro') {
+    corpo = emPreparo(s, props.agora) ? (
+      <div className="flex gap-2">
+        <BotaoCtl onClick={toque((x) => cancelarCronometro(x))}>{c.cancelar}</BotaoCtl>
+      </div>
+    ) : (
+      <div className="flex gap-2">
+        {pausado(s) ? (
+          <BotaoCtl onClick={toque(retomarCronometro)}>{c.retomar}</BotaoCtl>
+        ) : (
+          <BotaoCtl onClick={toque(pausarCronometro)}>{c.pausar}</BotaoCtl>
+        )}
+        <BotaoCtl destaque onClick={toque(confirmarSerie)}>{c.concluir}</BotaoCtl>
+      </div>
+    )
+  } else if (ex.medida === 'tempo') {
+    corpo = (
+      <div className="flex items-center gap-2">
+        <Ajuste
+          valor={`${s.segundos ?? 30} s`}
+          menos={toque((x) => ajustarSegundos(x, -PASSO_SEGUNDOS))}
+          mais={toque((x) => ajustarSegundos(x, PASSO_SEGUNDOS))}
+          rotuloMenos={c.menosSeg}
+          rotuloMais={c.maisSeg}
+        />
+        <BotaoCtl destaque onClick={toque(iniciarCronometro)}>{c.iniciar}</BotaoCtl>
+      </div>
+    )
+  } else {
+    corpo = (
+      <div className="flex flex-wrap items-center gap-2">
+        <Ajuste
+          valor={s.cargaKg === null ? c.semCarga : `${formatarCarga(s.cargaKg)} kg`}
+          menos={toque((x) => ajustarCarga(x, -PASSO_CARGA_KG))}
+          mais={toque((x) => ajustarCarga(x, PASSO_CARGA_KG))}
+          rotuloMenos={c.menosCarga}
+          rotuloMais={c.maisCarga}
+        />
+        <Ajuste
+          valor={`${s.reps ?? 0} ${c.reps}`}
+          menos={toque((x) => ajustarReps(x, -1))}
+          mais={toque((x) => ajustarReps(x, 1))}
+          rotuloMenos={c.menosReps}
+          rotuloMais={c.maisReps}
+        />
+        <BotaoCtl destaque onClick={toque(confirmarSerie)}>{c.confirmar}</BotaoCtl>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-4 mb-4 rounded-2xl border border-surface-4 bg-surface-2 p-3">
+      {corpo}
+      <p className="mt-2 text-micro text-content-low">{tx.bloqueio}</p>
+    </div>
+  )
+}
+
+function BotaoCtl(props: { onClick: () => void; destaque?: boolean; children: string }) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={`min-h-11 flex-1 rounded-pill px-3 text-sm font-bold active:scale-95 ${
+        props.destaque ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-hi active:bg-content-hi/5'
+      }`}
+    >
+      {props.children}
+    </button>
+  )
+}
+
+function Ajuste(props: { valor: string; menos: () => void; mais: () => void; rotuloMenos: string; rotuloMais: string }) {
+  return (
+    <div className="flex items-center rounded-pill border border-surface-4">
+      <button type="button" onClick={props.menos} aria-label={props.rotuloMenos} className="grid h-11 w-10 place-items-center text-lg font-bold text-content-mid active:scale-90">
+        −
+      </button>
+      <span className="min-w-[4.5rem] text-center font-mono text-sm font-semibold tabular-nums text-content-hi" aria-live="polite">
+        {props.valor}
+      </span>
+      <button type="button" onClick={props.mais} aria-label={props.rotuloMais} className="grid h-11 w-10 place-items-center text-lg font-bold text-content-mid active:scale-90">
+        +
+      </button>
+    </div>
   )
 }

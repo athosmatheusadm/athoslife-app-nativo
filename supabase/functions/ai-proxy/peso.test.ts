@@ -88,3 +88,16 @@ Deno.test('variação: perdi/ganhei vira pesagem de hoje', () => {
   assertEquals(lerComandoPeso('quero perder 5 kg'), null)
   assertEquals(lerComandoPeso('perdi o treino hoje'), null)
 })
+
+Deno.test('frases do relatório do APK (24/10) e número sozinho', () => {
+  assertEquals(lerComandoPeso('hoje tô com 81'), { tipo: 'registrar', kg: 81 })
+  assertEquals(lerComandoPeso('peso 79'), { tipo: 'registrar', kg: 79 })
+  assertEquals(lerComandoPeso('acordei com 81,5kg'), { tipo: 'registrar', kg: 81.5 })
+  assertEquals(lerComandoPeso('errei, é 81,2'), { tipo: 'corrigir', kg: 81.2 })
+  assertEquals(lerComandoPeso('80 kg'), { tipo: 'confirmar', kg: 80 })
+  assertEquals(lerComandoPeso('82'), { tipo: 'confirmar', kg: 82 })
+  // continua ignorando o que não é o peso do corpo
+  assertEquals(lerComandoPeso('tô com 40 graus de febre'), null)
+  assertEquals(lerComandoPeso('tô com 30 anos'), null)
+  assertEquals(lerComandoPeso('corri 45 minutos'), null)
+})

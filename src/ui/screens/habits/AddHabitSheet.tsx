@@ -80,7 +80,7 @@ export function AddHabitSheet(props: {
       // Sucesso: o pai fecha o painel (desmonta), sem precisar zerar `salvando` aqui.
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
-      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : t.erro)
+      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : msg === 'limite_habitos_gratis' ? m.habitos.limiteGratis : t.erro)
       setSalvando(false)
     }
   }

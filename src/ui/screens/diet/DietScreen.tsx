@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { fmtG } from '@domain/rules/formatoNumero'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
@@ -356,9 +357,9 @@ export function DietScreen(props: {
       {/* Cards de macro — kcal já mora no disco da Home; aqui o foco é
           mapear os 3 macros de verdade (proteína, carbo, gordura). */}
       <div className="flex gap-2">
-        <MacroBar valor={`${consumido.proteina}g`} label={m.dieta.macroCurto.proteina} meta={`/${metas.proteina}g`} pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="proteina" />
-        <MacroBar valor={`${consumido.carboidrato}g`} label={m.dieta.macroCurto.carbo} meta={`/${metas.carboidrato}g`} pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="carbo" />
-        <MacroBar valor={`${consumido.gordura}g`} label={m.dieta.macroCurto.gordura} meta={`/${metas.gordura}g`} pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="gordura" />
+        <MacroBar valor={`${fmtG(consumido.proteina)}g`} label={m.dieta.macroCurto.proteina} meta={`/${fmtG(metas.proteina)}g`} pct={calcularProgresso(consumido.proteina, metas.proteina)} cor="proteina" />
+        <MacroBar valor={`${fmtG(consumido.carboidrato)}g`} label={m.dieta.macroCurto.carbo} meta={`/${fmtG(metas.carboidrato)}g`} pct={calcularProgresso(consumido.carboidrato, metas.carboidrato)} cor="carbo" />
+        <MacroBar valor={`${fmtG(consumido.gordura)}g`} label={m.dieta.macroCurto.gordura} meta={`/${fmtG(metas.gordura)}g`} pct={calcularProgresso(consumido.gordura, metas.gordura)} cor="gordura" />
       </div>
 
       {/* TIRA DE DIAS — padrão Hoje */}
@@ -556,12 +557,13 @@ const COR_MACRO = {
 function MacroBar({ valor, meta, label, pct, cor }: { valor: string; meta: string; label: string; pct: number; cor: keyof typeof COR_MACRO }) {
   const c = COR_MACRO[cor]
   return (
-    <div className="flex-1 rounded-xl border border-surface-4 bg-surface-2 p-3">
-      <div className={`text-center text-lg font-bold tabular-nums ${c.texto}`}>
-        {valor}
+    <div className="min-w-0 flex-1 rounded-xl border border-surface-4 bg-surface-2 p-3">
+      {/* Quebra em vez de vazar: 360 px e texto "Extra grande" (relatório do APK). */}
+      <div className={`flex flex-wrap items-baseline justify-center text-lg font-bold leading-tight tabular-nums ${c.texto}`}>
+        <span>{valor}</span>
         <span className="ml-0.5 text-micro font-semibold text-content-low">{meta}</span>
       </div>
-      <div className="mb-2 text-center text-micro text-content-low">{label}</div>
+      <div className="mb-2 break-words text-center text-micro leading-tight text-content-low">{label}</div>
       <div className="h-1.5 overflow-hidden rounded-full bg-surface-4" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
         <div className={`h-full w-full origin-left rounded-full transition-transform duration-500 ease-athos ${c.barra}`} style={{ transform: `scaleX(${pct / 100})` }} />
       </div>

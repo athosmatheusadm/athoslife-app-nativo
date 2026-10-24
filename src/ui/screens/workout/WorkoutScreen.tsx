@@ -211,8 +211,9 @@ export function WorkoutScreen() {
         ))}
       </div>
 
-      {/* Tira de dias da semana */}
-      <div className="mb-4 flex gap-2 overflow-x-auto sem-barra px-4 pb-1">
+      {/* Tira de dias da semana: os 7 cabem na largura (antes o domingo sumia
+          à direita); com texto grande, ainda rola de lado. */}
+      <div className="mb-4 flex gap-1.5 overflow-x-auto sem-barra px-4 pb-1">
         {DIAS_SEMANA.map((d) => {
           const ehHoje = d.id === diaSemanaHoje()
           const ativo = d.id === dia
@@ -223,7 +224,7 @@ export function WorkoutScreen() {
               key={d.id}
               onClick={() => setDia(d.id)}
               aria-pressed={ativo}
-              className={`flex min-h-12 w-14 flex-none flex-col items-center justify-center rounded-xl py-1.5 text-xs font-bold capitalize transition-colors active:scale-95 ${
+              className={`flex min-h-12 min-w-[2.75rem] flex-1 flex-col items-center justify-center rounded-xl py-1.5 text-xs font-bold capitalize transition-colors active:scale-95 ${
                 ativo ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
               }`}
             >

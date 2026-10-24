@@ -59,7 +59,11 @@ export function CozinhaSecao(props: {
     receitas && void alternarFavorito(receitas, r).then(setReceitas).catch((e) => console.error('favoritar falhou:', e))
 
   const sugestoes = receitas && props.restante ? receitasQueFechamODia(receitas, props.restante) : []
-  const filtradas = receitas ? (filtro === 'todos' ? receitas : receitas.filter((r) => r.categoria === filtro)) : []
+  // As sugestões já aparecem logo acima: o catálogo não repete as mesmas (relatório do APK).
+  const sugeridas = new Set(sugestoes.map((r) => r.id))
+  const filtradas = receitas
+    ? (filtro === 'todos' ? receitas : receitas.filter((r) => r.categoria === filtro)).filter((r) => !sugeridas.has(r.id))
+    : []
 
   return (
     <section className="space-y-4">

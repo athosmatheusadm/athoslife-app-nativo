@@ -1,4 +1,6 @@
-import { supabase } from '@data/supabase/client'
+import { mexerNoCache } from '@data/offline/cache'
+import { escrever } from '@data/offline/fila'
+import { linhaDoPerfil } from './profileRepository'
 
 export const MOMENTOS_LIFE = ['manha', 'meio_dia', 'noite'] as const
 export type MomentoLife = (typeof MOMENTOS_LIFE)[number]
@@ -19,14 +21,7 @@ export interface PreferenciasContato {
  */
 export const contatoRepository = {
   async buscar(): Promise<PreferenciasContato> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('life_chat_ligado, life_chat_momentos')
-      .eq('id', userId)
-      .single<{ life_chat_ligado: boolean | null; life_chat_momentos: string[] | null }>()
-    if (error) throw error
+    const data = await linhaDoPerfil()
     return {
       lifeLigado: data.life_chat_ligado ?? false,
       lifeMomentos: (data.life_chat_momentos ?? []).filter((m): m is MomentoLife =>
@@ -36,20 +31,22 @@ export const contatoRepository = {
   },
 
   async salvar(p: PreferenciasContato): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const atual = await supabase
-      .from('profiles')
-      .select('telefone')
-      .eq('id', userId)
-      .single<{ telefone: string | null }>()
-    if (atual.error) throw atual.error
-    const { error } = await supabase.rpc('salvar_preferencias_contato', {
-      p_life_ligado: p.lifeLigado,
-      p_life_momentos: p.lifeMomentos,
-      p_whatsapp_opcoes: [],
-      p_telefone: atual.data.telefone,
-    })
-    if (error) throw error
+    const atual = await linhaDoPerfil()
+    await escrever(
+      {
+        op: 'rpc',
+        fn: 'salvar_preferencias_contato',
+        args: {
+          p_life_ligado: p.lifeLigado,
+          p_life_momentos: p.lifeMomentos,
+          p_whatsapp_opcoes: [],
+          p_telefone: atual.telefone ?? null,
+        },
+      },
+      () =>
+        mexerNoCache<Record<string, unknown> | null>('perfil', (row) =>
+          row ? { ...row, life_chat_ligado: p.lifeLigado, life_chat_momentos: [...p.lifeMomentos] } : undefined,
+        ),
+    )
   },
 }

@@ -7,6 +7,7 @@
     android:minResizeWidth="220dp"
     android:minResizeHeight="70dp"
     android:previewImage="@drawable/athos_widget_life"
+    android:previewLayout="@layout/athos_widget_agua"
     android:resizeMode="horizontal"
     android:targetCellWidth="4"
     android:targetCellHeight="1"

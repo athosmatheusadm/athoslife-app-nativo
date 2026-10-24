@@ -1,4 +1,6 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
 import { pesoRepository } from '@data/repositories/pesoRepository'
 import type {
   CategoriaConquista,
@@ -92,8 +94,13 @@ export const conquistasRepository = {
    * já existe no banco) e devolve a lista completa pra galeria.
    */
   async avaliarEListar(metas: Metas): Promise<Conquista[]> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    // Sem rede: a galeria como estava na última vez (a avaliação cruza
+    // muitas tabelas e grava desbloqueios — fica pra quando voltar a rede).
+    return lerComCache('conquistas', () => this.avaliarNoServidor(metas))
+  },
+
+  async avaliarNoServidor(metas: Metas): Promise<Conquista[]> {
+    const userId = await usuarioId()
 
     const [
       catalogo,

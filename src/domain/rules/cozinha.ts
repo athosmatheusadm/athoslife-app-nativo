@@ -175,7 +175,7 @@ export const KCAL_MINIMA_SUGESTAO = 150
 
 /**
  * Escolhe até `max` receitas que cabem no que falta do dia. Só considera
- * as liberadas (sugestão trancada frustra). Cabe = até 10% acima das kcal
+ * as liberadas (sugestão trancada frustra) e sem alérgeno da pessoa. Cabe = até 10% acima das kcal
  * que faltam. Entre as que cabem, ganha quem cobre mais da proteína que
  * falta por caloria — proteína é o macro que mais fica pra trás.
  */
@@ -188,7 +188,7 @@ export function receitasQueFechamODia(
   const teto = restante.calorias * 1.1
   return receitas
     // Um chá de 5 kcal não "fecha" o dia de ninguém: precisa ocupar ao menos 20% do que falta.
-    .filter((r) => !r.bloqueada && r.macros.calorias >= restante.calorias * 0.2 && r.macros.calorias <= teto)
+    .filter((r) => !r.bloqueada && r.contemRestricao.length === 0 && r.macros.calorias >= restante.calorias * 0.2 && r.macros.calorias <= teto)
     .map((r) => {
       const prot = restante.proteina > 0 ? Math.min(r.macros.proteina / restante.proteina, 1) : 0
       const ocupa = r.macros.calorias / restante.calorias

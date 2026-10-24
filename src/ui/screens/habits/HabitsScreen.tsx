@@ -28,7 +28,6 @@ import {
 export function HabitsScreen(props: {
   habitos: readonly Habito[]
   carregando: boolean
-  maiorStreak: number
   insightIA: string | null
   onRegistrarTropeco: (habitoId: string) => void
   onRegistrarCheckin: (habitoId: string) => void
@@ -40,7 +39,10 @@ export function HabitsScreen(props: {
     intensidade: IntensidadeHabito
   }) => Promise<void>
 }) {
-  const { habitos, maiorStreak } = props
+  const { habitos } = props
+  // A sequência atual dos hábitos (a melhor delas) — não o recorde do app,
+  // que fazia "firme há 9 dias" brigar com os "4 dias seguidos" da Home.
+  const sequencia = habitos.reduce((maior, h) => Math.max(maior, h.streakAtual), 0)
   const [vontadeDe, setVontadeDe] = useState<Habito | null>(null)
   const [mostrarAdicionar, setMostrarAdicionar] = useState(false)
   const [chatAberto, setChatAberto] = useState(false)
@@ -60,8 +62,8 @@ export function HabitsScreen(props: {
             <ActivityIcon icone="outro" tile={false} className="h-7 w-7" />
             <h1 className="text-2xl font-extrabold text-content-hi">{t.titulo}</h1>
           </div>
-          {maiorStreak > 0 && (
-            <p className="mt-1 text-sm text-content-low">{t.firmeHa(maiorStreak)}</p>
+          {sequencia > 0 && (
+            <p className="mt-1 text-sm text-content-low">{t.firmeHa(sequencia)}</p>
           )}
         </div>
         <ProfileAvatar />

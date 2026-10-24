@@ -1,3 +1,4 @@
+import { SENHA_MINIMA } from './Login'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authRepository } from '@data/repositories/authRepository'
@@ -56,6 +57,10 @@ export function RecuperarSenha() {
   async function redefinir(e: FormEvent) {
     e.preventDefault()
     setErro(null)
+    if (senha.length < SENHA_MINIMA) {
+      setErro(t.erros.fraca)
+      return
+    }
     setCarregando(true)
     try {
       await authRepository.redefinirSenha(email.trim(), codigo.trim(), senha)
@@ -119,7 +124,7 @@ export function RecuperarSenha() {
               <input
                 type="password"
                 required
-                minLength={6}
+                minLength={SENHA_MINIMA}
                 autoComplete="new-password"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}

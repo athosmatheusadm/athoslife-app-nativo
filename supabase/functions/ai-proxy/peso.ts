@@ -9,129 +9,10 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 type Sb = SupabaseClient
 export type Idioma = 'pt-BR' | 'en' | 'es'
 
-export type ComandoPeso =
-  | { tipo: 'registrar'; kg: number }
-  | { tipo: 'meta'; kg: number }
-  | { tipo: 'historico' }
-  | { tipo: 'corrigir'; kg: number }
-  | { tipo: 'apagar' }
-  /** "perdi 1 kg": delta sobre a última pesagem (negativo = perdeu). */
-  | { tipo: 'variar'; deltaKg: number }
+import { KG_MAX, KG_MIN, lerComandoPeso, type ComandoPeso } from '../_shared/pesoComando.ts'
 
-const norm = (t: string) =>
-  t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
-
-const KG_MIN = 25
-const KG_MAX = 350
-const LB_POR_KG = 2.20462
-
-// Número de peso (70, 80,5, 80.5) com unidade opcional logo depois.
-const NUMERO = /(\d{2,3}(?:[.,]\d{1,2})?)\s*(kg|kgs|quilos?|kilos?|lbs?|libras?|pounds?)?(?![\d.,]*\s*(?:g\b|gramas?|grams?|gramos?|kcal|cal\b|ml|l\b|litros?|liters?|passos|steps|pasos|min|reps?|x\b|%))/
-
-// Assunto que NÃO é o peso do corpo — "meta de 150 g de proteína" não muda a meta.
-const OUTRO_ASSUNTO =
-  /\b(proteina|protein|carbo\w*|gordura|fat|grasa|caloria\w*|calorie\w*|kcal|agua|water|litros?|passos|steps|pasos|carga|supino|agachamento|halter|barra|bench|squat|serie|series|sets?|reps?|repeticoes|sono|sleep|horas?|hours?)\b/
-
-const REGISTRAR = [
-  /\b(pesei|me pesei|to pesando|tou pesando|estou pesando|t[oô] com|estou com|pesando hoje)\b/,
-  /\bmeu peso\b.{0,20}\b(hoje|agora|atual|e|eh|esta|ta|deu)\b/,
-  /\b(registr\w*|anot\w*|salv\w*|coloc\w*|lanc\w*)\b.{0,15}\b(meu )?peso\b/,
-  /\bpeso (de )?hoje\b/,
-  /\bbalanca (deu|marcou|mostrou)\b/,
-  /\b(i weigh|i weighed|weighed in at|weighed|my weight is|my weight today|log (my )?weight|record (my )?weight|scale (says|said|showed))\b/,
-  /\b(me pese|peso hoy|hoy peso|mi peso (es|hoy|actual)|registr\w* (mi )?peso|anot\w* (mi )?peso|la bascula (marco|dio))\b/,
-]
-
-const META = [
-  /\b(meta|objetivo|alvo)\b/,
-  /\b(quero chegar|chegar (a|aos|em|nos)|quero pesar|quero ficar com)\b/,
-  /\b(goal|target)\b/,
-  /\b(want to (reach|get to|weigh))\b/,
-  /\b(quiero llegar|llegar a|quiero pesar)\b/,
-]
-
-const HISTORICO = [
-  /\b(historico|evolucao|pesagens|ultimas pesagens|quanto eu pesava|meus pesos)\b/,
-  /\b(history|weigh-ins|past weights|weight log|weight progress|how much did i weigh)\b/,
-  /\b(historial|evolucion|pesajes|cuanto pesaba)\b/,
-]
-// Corrigir/apagar mexem só na ÚLTIMA pesagem (sem data na frase).
-const CORRIGIR = [
-  /\b(corrig\w*|alter\w*|mud\w*|troc\w*|edit\w*|ajust\w*|errei|errado|na verdade)\b/,
-  /\b(fix|change|correct|edit|wrong|actually)\b/,
-  /\b(correg\w*|cambi\w*|modific\w*|equivoqu\w*|en realidad)\b/,
-]
-const APAGAR = [
-  /\b(apag\w*|exclu\w*|remov\w*|delet\w*|desfaz\w*|tira a|tira o|tirar a|tirar o)\b/,
-  /\b(delete|remove|erase|undo)\b/,
-  /\b(borr\w*|elimin\w*|quit\w*|deshac\w*)\b/,
-]
-const FALA_DE_PESO = /\b(peso|pesagem|pesagens|pesaje|weigh-in|pesava|pesos|pesei|pesando|balanca|weight|weigh|weighed|weigh-ins|scale|pesajes|pesaba|pese|bascula)\b/
-
-// Variação: "perdi 1 kg", "emagreci 2 quilos", "ganhei meio quilo", "lost 2 lbs".
-const PERDEU = /\b(perdi|emagreci|eliminei|sequei|baixei|desci|lost|dropped|shed|perdi|baje|adelgace|elimine)\b/
-const GANHOU = /\b(ganhei|engordei|aumentei|subi|gained|put on|gane|engorde|aumente)\b/
-const NUM_PALAVRA: Record<string, number> = { um: 1, uma: 1, un: 1, una: 1, one: 1, a: 1, dois: 2, duas: 2, dos: 2, two: 2, tres: 3, three: 3 }
-const DELTA = /(\d{1,2}(?:[.,]\d{1,2})?|\d{3,4}|um|uma|un|una|one|a|dois|duas|dos|two|tres|three|meio|medio|half a?)\s*(kg|kgs|quilos?|kilos?|kilogramos?|lbs?|libras?|pounds?|g\b|gramas?|gramos?|grams?)(\s*e\s*meio|\s*y\s*medio|\s*and a half)?/
-// Na variação "gordura" ainda é o corpo ("perdi 1 kg de gordura"); carga/supino não.
-const OUTRO_ASSUNTO_VAR = /\b(proteina|protein|carbo\w*|caloria\w*|calorie\w*|kcal|agua|water|passos|steps|pasos|carga|supino|agachamento|halter|barra|bench|squat|serie|series|sets?|reps?|repeticoes)\b/
-
-function lerDelta(t: string): number | null {
-  const sentido = PERDEU.test(t) ? -1 : GANHOU.test(t) ? 1 : 0
-  if (sentido === 0 || OUTRO_ASSUNTO_VAR.test(t)) return null
-  const m = t.match(DELTA)
-  if (!m) return null
-  const bruto = m[1]
-  let valor = /^(meio|medio|half)/.test(bruto) ? 0.5 : NUM_PALAVRA[bruto] ?? Number(bruto.replace(',', '.'))
-  if (!Number.isFinite(valor)) return null
-  if (m[3]) valor += 0.5
-  const un = m[2]
-  if (/^(g|gramas?|gramos?|grams?)$/.test(un)) valor /= 1000
-  else if (/^(lb|lbs|libras?|pounds?)$/.test(un)) valor /= LB_POR_KG
-  if (valor < 0.1 || valor > 15) return null
-  return sentido * Math.round(valor * 10) / 10
-}
-
-function lerKg(m: RegExpMatchArray): number | null {
-  const valor = Number(m[1].replace(',', '.'))
-  if (!Number.isFinite(valor)) return null
-  const lb = m[2] !== undefined && /^(lb|lbs|libra|libras|pound|pounds)$/.test(m[2])
-  const kg = lb ? valor / LB_POR_KG : valor
-  if (kg < KG_MIN || kg > KG_MAX) return null
-  return Math.round(kg * 10) / 10
-}
-
-/**
- * Reconhece só pedido claro sobre o PESO DO CORPO. Na dúvida devolve null e a
- * mensagem segue pra IA normalmente (melhor gastar 1 mensagem que gravar peso
- * errado).
- */
-export function lerComandoPeso(mensagem: string): ComandoPeso | null {
-  const t = norm(mensagem)
-  if (t.length > 160) return null // conversa longa: deixa a IA entender
-  const delta = lerDelta(t)
-  if (delta !== null) return { tipo: 'variar', deltaKg: delta }
-  const numeros = [...t.matchAll(new RegExp(NUMERO.source, 'g'))]
-  const numero = numeros[0]
-  // Dois pesos na mesma frase ("pesei 80, meta 75"): ambíguo, vai pra IA.
-  if (numeros.length > 1) return null
-
-  if (numero && !OUTRO_ASSUNTO.test(t)) {
-    const kg = lerKg(numero)
-    const comUnidade = numero[2] !== undefined || FALA_DE_PESO.test(t)
-    if (kg !== null) {
-      // "minha meta é 75": meta só existe pro peso aqui (outros assuntos já saíram).
-      if (META.some((r) => r.test(t))) return { tipo: 'meta', kg }
-      if (FALA_DE_PESO.test(t) && CORRIGIR.some((r) => r.test(t))) return { tipo: 'corrigir', kg }
-      if (comUnidade && REGISTRAR.some((r) => r.test(t))) return { tipo: 'registrar', kg }
-    }
-  }
-  if (!numero && FALA_DE_PESO.test(t) && !OUTRO_ASSUNTO.test(t)) {
-    if (APAGAR.some((r) => r.test(t))) return { tipo: 'apagar' }
-    if (HISTORICO.some((r) => r.test(t))) return { tipo: 'historico' }
-  }
-  return null
-}
+// O leitor de frases mora em _shared: o app usa o mesmo sem internet.
+export { lerComandoPeso, type ComandoPeso }
 
 // ---------------------------------------------------------------- textos
 
@@ -141,6 +22,7 @@ const fmtDia = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 
 const TXT = {
   'pt-BR': {
+    confirmar: (kg: string) => `Quer que eu anote ${kg} kg como seu peso de hoje? Se sim, me diz "pesei ${kg} kg".`,
     anotado: (kg: string) => `Anotei ${kg} kg hoje.`,
     anterior: (kg: string, dia: string) => `Na pesagem anterior (${dia}) eram ${kg} kg.`,
     faltam: (kg: string, meta: string) => `Faltam ${kg} kg pra sua meta de ${meta} kg.`,
@@ -157,6 +39,7 @@ const TXT = {
     semBase: 'Pra eu fazer a conta, me diz quanto você pesa hoje: "pesei 80 kg".',
   },
   en: {
+    confirmar: (kg: string) => `Want me to log ${kg} kg as today's weight? If so, tell me "I weigh ${kg} kg".`,
     anotado: (kg: string) => `Logged ${kg} kg for today.`,
     anterior: (kg: string, dia: string) => `Your previous weigh-in (${dia}) was ${kg} kg.`,
     faltam: (kg: string, meta: string) => `${kg} kg to go to your ${meta} kg goal.`,
@@ -173,6 +56,7 @@ const TXT = {
     semBase: 'To do the math, tell me how much you weigh today: "I weigh 80 kg".',
   },
   es: {
+    confirmar: (kg: string) => `¿Anoto ${kg} kg como tu peso de hoy? Si es así, dime "hoy peso ${kg} kg".`,
     anotado: (kg: string) => `Anoté ${kg} kg hoy.`,
     anterior: (kg: string, dia: string) => `En el pesaje anterior (${dia}) eran ${kg} kg.`,
     faltam: (kg: string, meta: string) => `Faltan ${kg} kg para tu meta de ${meta} kg.`,
@@ -227,6 +111,9 @@ export async function executarComandoPeso(
   const t = TXT[idioma]
   const { data: perfil } = await sb.from('profiles').select('peso_meta, peso_atual, objetivo').eq('id', userId).maybeSingle()
   const meta = perfil?.peso_meta == null ? null : Number(perfil.peso_meta)
+
+  // Só o número: o app novo pergunta com botões; aqui (app antigo) pergunta em texto.
+  if (cmd.tipo === 'confirmar') return { resposta: t.confirmar(fmtKg(cmd.kg, idioma)), mudou: false }
 
   if (cmd.tipo === 'historico') {
     const { data } = await sb.from('registros_peso').select('data, peso_kg')

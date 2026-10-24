@@ -13,7 +13,7 @@ import {
   type ModoStory,
   type ValoresStory,
 } from '@domain/entities/story'
-import { capturarFoto } from '@data/ai/photoCapture'
+import { CameraNegadaError, capturarFoto } from '@data/ai/photoCapture'
 import { compartilharImagem, postarNoStory, type ComoFoi } from '@data/native/instagramStory'
 import { macrosRepository } from '@data/repositories/macrosRepository'
 import { treinoHistoricoRepository } from '@data/repositories/treinoHistoricoRepository'
@@ -262,7 +262,10 @@ export function StoryScreen() {
   // ── ações ─────────────────────────────────────────────────────────────
   async function escolherFoto() {
     setGaveta(null)
-    const f = await capturarFoto('galeria')
+    const f = await capturarFoto('galeria').catch((e: unknown) => {
+      if (e instanceof CameraNegadaError) avisar.erro(m.comum.cameraNegada)
+      return null
+    })
     if (!f) return
     setFotoSrc(f.dataUrl)
     atualizar((e) => ({ ...e, zoom: 1, panX: 0, panY: 0 }))

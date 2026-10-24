@@ -1,4 +1,8 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache, mexerNoCache } from '@data/offline/cache'
+import { escrever, inserir, novoId } from '@data/offline/fila'
+import { usuarioId } from '@data/offline/usuario'
+import { atualizarPerfil, linhaDoPerfil } from './profileRepository'
 import type { Etiqueta, Momento, Sentimento } from '@domain/rules/checkinLife'
 
 /** Tipos de memória (life_memorias.categoria). */
@@ -21,10 +25,11 @@ interface MemoriaRow {
   fixada: boolean
 }
 
-async function userId(): Promise<string> {
-  const id = (await supabase.auth.getSession()).data.session?.user.id
-  if (!id) throw new Error('not_authenticated')
-  return id
+const userId = usuarioId
+const CHAVE = 'life:memorias'
+
+async function mexerNasMemorias(fn: (lista: MemoriaRow[]) => MemoriaRow[]): Promise<void> {
+  await mexerNoCache<MemoriaRow[]>(CHAVE, (atual) => (atual ? fn(atual) : undefined))
 }
 
 /**
@@ -36,34 +41,30 @@ async function userId(): Promise<string> {
 export const lifeMemoriaRepository = {
   /** null = ainda não perguntado. */
   async consentimento(): Promise<boolean | null> {
-    const id = await userId()
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('consentimento_memoria')
-      .eq('id', id)
-      .maybeSingle<{ consentimento_memoria: boolean | null }>()
-    if (error) throw error
-    return data?.consentimento_memoria ?? null
+    const row = await linhaDoPerfil()
+    return row.consentimento_memoria ?? null
   },
 
   async definirConsentimento(valor: boolean): Promise<void> {
-    const id = await userId()
-    const { error } = await supabase
-      .from('profiles')
-      .update({ consentimento_memoria: valor, consentimento_memoria_em: new Date().toISOString() })
-      .eq('id', id)
-    if (error) throw error
+    await atualizarPerfil({ consentimento_memoria: valor, consentimento_memoria_em: new Date().toISOString() })
   },
 
   async listar(): Promise<MemoriaLife[]> {
-    const { data, error } = await supabase
-      .from('life_memorias')
-      .select('id, texto, categoria, data_referencia, fixada')
-      .order('fixada', { ascending: false })
-      .order('criado_em', { ascending: false })
-      .returns<MemoriaRow[]>()
-    if (error) throw error
-    return (data ?? []).map((r) => ({
+    const data = await lerComCache(
+      CHAVE,
+      async () => {
+        const { data: rows, error } = await supabase
+          .from('life_memorias')
+          .select('id, texto, categoria, data_referencia, fixada')
+          .order('fixada', { ascending: false })
+          .order('criado_em', { ascending: false })
+          .returns<MemoriaRow[]>()
+        if (error) throw error
+        return rows ?? []
+      },
+      { padrao: [] },
+    )
+    return data.map((r) => ({
       id: r.id,
       texto: r.texto,
       categoria: r.categoria,
@@ -73,32 +74,29 @@ export const lifeMemoriaRepository = {
   },
 
   async fixar(id: string, fixada: boolean): Promise<void> {
-    const { error } = await supabase.from('life_memorias').update({ fixada }).eq('id', id)
-    if (error) throw error
+    await escrever({ op: 'update', tabela: 'life_memorias', valores: { fixada }, filtros: [['id', id]] }, () =>
+      mexerNasMemorias((l) => l.map((m) => (m.id === id ? { ...m, fixada } : m))),
+    )
   },
 
   async apagar(id: string): Promise<void> {
-    const { error } = await supabase.from('life_memorias').delete().eq('id', id)
-    if (error) throw error
+    await escrever({ op: 'delete', tabela: 'life_memorias', filtros: [['id', id]] }, () =>
+      mexerNasMemorias((l) => l.filter((m) => m.id !== id)),
+    )
   },
 
   async apagarTudo(): Promise<void> {
     const id = await userId()
-    const { error } = await supabase.from('life_memorias').delete().eq('user_id', id)
-    if (error) throw error
+    await escrever({ op: 'delete', tabela: 'life_memorias', filtros: [['user_id', id]] }, () => mexerNasMemorias(() => []))
   },
 
   /** A pessoa conta algo ao Life (só com a memória ligada — a regra do banco confere). */
   async contar(texto: string, categoria: CategoriaMemoria, dataReferencia: string | null): Promise<void> {
     const id = await userId()
-    const { error } = await supabase.from('life_memorias').insert({
-      user_id: id,
-      texto,
-      categoria,
-      origem: 'usuario',
-      data_referencia: categoria === 'evento' ? dataReferencia : null,
-    })
-    if (error) throw error
+    const row: MemoriaRow = { id: novoId(), texto, categoria, data_referencia: categoria === 'evento' ? dataReferencia : null, fixada: false }
+    await escrever(inserir('life_memorias', { ...row, user_id: id, origem: 'usuario' }), () =>
+      mexerNasMemorias((l) => [row, ...l]),
+    )
   },
 
   /** Check-in já feito neste momento do dia (pra mostrar só o "Hoje: …"). */
@@ -107,14 +105,20 @@ export const lifeMemoriaRepository = {
     momento: Momento,
   ): Promise<{ palavra: Sentimento; etiquetas: Etiqueta[] } | null> {
     const id = await userId()
-    const { data: row, error } = await supabase
-      .from('life_checkins')
-      .select('palavra, etiquetas')
-      .eq('user_id', id)
-      .eq('data', data)
-      .eq('momento', momento)
-      .maybeSingle<{ palavra: Sentimento; etiquetas: Etiqueta[] }>()
-    if (error) throw error
-    return row ?? null
+    return lerComCache(
+      `life:checkin:${data}:${momento}`,
+      async () => {
+        const { data: row, error } = await supabase
+          .from('life_checkins')
+          .select('palavra, etiquetas')
+          .eq('user_id', id)
+          .eq('data', data)
+          .eq('momento', momento)
+          .maybeSingle<{ palavra: Sentimento; etiquetas: Etiqueta[] }>()
+        if (error) throw error
+        return row ?? null
+      },
+      { padrao: null },
+    )
   },
 }

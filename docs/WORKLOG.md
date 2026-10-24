@@ -3135,3 +3135,79 @@ Dono pediu todos os botões do mockup funcionando no Android. Faltavam:
 4. Contas externas: Firebase (google-services.json + conta de serviço),
    Brevo (SMTP), RevenueCat (produtos na Play, chave, webhook), Facebook App ID.
 5. Dono revogar o token do GitHub colado no chat.
+
+### 2026-10-24 — Relatório do teste do APK + app funcionando offline (branch `correcoes-teste-apk`)
+
+Relatório (`ATHOSlife-relatorio-teste-APK.pdf`, outra sessão) conferido contra o
+código e o banco antes de mexer. **Item 8 estava errado**: as 9 tabelas citadas
+têm FK com `on delete cascade` (só `fundadores` é `set null`, de propósito) —
+excluir conta já apaga tudo. Os outros itens batiam.
+
+**Offline (pedido do dono: "mesmo off, usar tudo sem bug")** — `src/data/offline/`:
+- `conexao.ts`: estado real da rede (o fetch do Supabase avisa; pedido ao banco
+  corta em 9 s em sinal ruim). `armazem.ts`: IndexedDB. `usuario.ts`: id da
+  sessão local — **sai o `auth.getUser()`** (ia ao servidor em toda leitura e,
+  sem rede, dizia "não logado"). Sessão vencida sem rede continua valendo.
+- `cache.ts`: toda leitura guarda cópia por usuário; sem rede devolve a cópia.
+- `fila.ts`: toda gravação é uma operação em dados; sem rede vai pra fila e
+  atualiza a cópia na hora; sobe em ordem ao voltar o sinal / reabrir / a cada
+  30 s (`sincronia.ts`). Inserção leva id do aparelho e vai como upsert
+  "ignora se existe" → reenvio não duplica. Recusa do servidor vira aviso.
+- Todos os repositórios convertidos. Base de alimentos (1.650) e catálogo de
+  exercícios ficam no aparelho (busca offline). Chat: histórico guardado; IA e
+  scanner dizem "precisa de internet". Selo discreto no topo (sem internet /
+  N registros esperando). Sair com registro pendente avisa antes.
+- Abertura (item 9): abre na hora com o perfil guardado; sem nada guardado e
+  sem rede, tela "Sem conexão" + "Tentar de novo". Perfil carrega 1 vez (era 3×).
+- **Testado**: simulação com banco falso (`scratchpad`, 18 cenários: gravar
+  offline, desfazer offline, sincronizar, ordem, reenvio sem duplicar) — tudo ok.
+
+**Itens do relatório**
+1. Receitas × alergias: `domain/rules/alergias.ts` casa o texto livre (pt/en/es)
+   com `receitas_cozinha.alergenos`; some das sugestões, aviso no card e na receita.
+2. Caixa de hábitos do consentimento começa desmarcada.
+3. Life flutuante: toque só no corpo dele; translúcido e sem pegar toque ao rolar.
+4. Hábitos: "firme há N dias" usa a sequência atual dos hábitos.
+5. Números no idioma (`domain/rules/formatoNumero.ts`): kcal inteira, gramas,
+   peso, água (2,75 L / 2.75 L igual em todo lugar).
+6. Onboarding: "Ex.: 175", "4 refeições por dia", alergia com sugestões e
+   obrigatória se marcou "Sim".
+7. **Treino sem notificação**: a faixa do treino tem os controles do card
+   (carga/reps, confirmar série, cronômetro, +15 s, pular).
+10. `check_access_status` só na linha de quem chama (migração, ver pendências).
+11. Exportação inclui receitas_criadas, scan_historico, life_pausas.
+12. Rótulos quebram linha; `#root { overflow-x: clip }`.
+13. Porção por unidade quando a base tem `porcao_tipica_g` (1/2/3 un.).
+14. Zoom liberado; selo de kcal da receita com mais contraste.
+15. Câmera negada → "Libere a câmera nos ajustes"; sem rede avisa antes da foto.
+- Peso pelo Life: leitor de frases virou `supabase/functions/_shared/pesoComando.ts`
+  (servidor e app usam o mesmo). Aceita as 6 frases do relatório; número sozinho
+  ("82") → Life pergunta "Anoto 82 kg?" com Sim/Não; offline o app anota sozinho.
+  Prompt: o Gemini não diz "anotei" peso. Card "Meu peso": botão "Contar meu peso
+  pro Life" (abre o chat com "Pesei  kg"). Conta > peso grava pesagem de hoje.
+- Widget: botão "Colocar o widget na tela inicial" no painel de água
+  (`requestPinAppWidget`), nome/descrição em pt/en/es, `previewLayout`.
+- Telas de protótipo só no `npm run dev`. Esconde "Life puxa conversa" e o
+  "Health Connect chega em breve". Senha mínima 8 no app. Release com R8
+  (`minifyEnabled`/`shrinkResources`, regras dos plugins no proguard).
+- Faixa de dias do Treino cabe os 7; Dieta não repete as receitas sugeridas;
+  selo Premium não empurra a seta.
+
+Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
+(31 frases) ok. **Não testado no celular** (Java do widget e R8 → Actions).
+
+**Pendências**
+1. **Aplicar a migração** `db/athoslife_offline_e_relatorio_apk_migration.sql`
+   ANTES de publicar este JS (o "Fiz hoje" offline manda `p_dia`; sem a migração
+   o servidor recusa). O modo automático bloqueou aplicar daqui.
+2. **Deploy do `ai-proxy`** (leitor de peso em `_shared/` + regra no prompt).
+3. Supabase Auth: senha mínima 8 e proteção contra senha vazada (painel).
+4. Dono decidir: apagar funções antigas (stripe_webhook, create-checkout,
+   send-welome-whatsapp, relogio-athos) e índices de Stripe; `vagas_fundador`
+   sem login (página de vendas?); alerta do teto de IA a 80%.
+5. Dono decidir (visual): uma identidade só (login verde × onboarding limão),
+   cabeçalhos das abas, fonte Inter (hoje é a do sistema).
+6. Sentry/Crashlytics (Firebase); fotos de exercício em WebP (precisa trocar as
+   URLs no banco).
+7. Já conhecidas: chave RevenueCat, Facebook App ID, Termos/Política, e-mail de
+   suporte, AAB assinado (workflow android-build pronto).

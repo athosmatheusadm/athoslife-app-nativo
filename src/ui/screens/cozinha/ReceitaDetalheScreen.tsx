@@ -58,6 +58,11 @@ export function ReceitaDetalheScreen(props: {
           titulo={receita.titulo}
           subtitulo={receita.subtitulo}
           corTema={receita.corTema}
+          alerta={
+            receita.contemRestricao.length > 0
+              ? t.avisoRestricao(receita.contemRestricao.map((a) => t.alergenos[a]).join(', '))
+              : null
+          }
           capa={<FotoReceita receita={receita} className="mb-4 h-48 rounded-2xl" emojiClassName="text-6xl" />}
           acaoTitulo={
             <button

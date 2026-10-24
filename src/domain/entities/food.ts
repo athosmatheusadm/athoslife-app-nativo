@@ -38,6 +38,8 @@ export interface AlimentoBase extends Macros {
   readonly gorduraPreparoPct?: number | null
   /** Ligado à TACO 4ª ed. */
   readonly tacoId?: number | null
+  /** Peso de 1 unidade/porção caseira (ovo, fatia de pão, colher de azeite), quando a base sabe. */
+  readonly porcaoTipicaG?: number | null
 }
 
 /**

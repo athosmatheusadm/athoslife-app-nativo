@@ -154,7 +154,9 @@ export function Onboarding() {
             ? o.corpo.erroObjetivo
             : erro === 'meta'
               ? o.corpo.erroMeta
-              : null
+              : erro === 'alergia'
+                ? o.comportamento.erroAlergia
+                : null
 
   const rodape = (textoCta: string, acao: () => void = avancar) => (
     <div className="mt-auto pt-6">
@@ -280,8 +282,8 @@ export function Onboarding() {
                     value={e.alturaCm}
                     onChange={(ev) => mudar({ alturaCm: ev.target.value.replace(/\D/g, '').slice(0, 3) })}
                     inputMode="numeric"
-                    placeholder="175"
-                    className="w-full bg-transparent text-base text-[#f4f8f4] outline-none"
+                    placeholder={o.corpo.exemplo('175')}
+                    className="w-full bg-transparent text-base text-[#f4f8f4] outline-none placeholder:text-[#65756a]"
                   />
                   <span className="text-micro text-[#65756a]">cm</span>
                 </div>
@@ -293,8 +295,8 @@ export function Onboarding() {
                   value={e.peso}
                   onChange={(ev) => mudar({ peso: ev.target.value.replace(/[^\d.,]/g, '').slice(0, 5) })}
                   inputMode="decimal"
-                  placeholder={e.unidades === 'imperial' ? '155' : '70'}
-                  className="w-full bg-transparent text-base text-[#f4f8f4] outline-none"
+                  placeholder={o.corpo.exemplo(e.unidades === 'imperial' ? '155' : '70')}
+                  className="w-full bg-transparent text-base text-[#f4f8f4] outline-none placeholder:text-[#65756a]"
                 />
                 <span className="text-micro text-[#65756a]">{e.unidades === 'imperial' ? 'lb' : 'kg'}</span>
               </div>
@@ -506,7 +508,7 @@ export function Onboarding() {
             <div className="mt-3">
               <ListaTags
                 itens={e.alergias}
-                sugestoes={[]}
+                sugestoes={m.perfil.metas.restricoesSugestoes.filter((x) => !e.alergias.some((a) => a.toLowerCase() === x.toLowerCase()))}
                 placeholder={c.quais}
                 rotuloAdicionar={m.comum.adicionar}
                 rotuloRemover={m.comum.remover}
@@ -587,7 +589,7 @@ export function Onboarding() {
           4,
         ],
         [r.rotina, lista(e.rotina, rot.rotina), 3],
-        [r.alimentacao, e.refeicoes ? (e.refeicoes === 'sem_rotina' ? o.alimentacao.semRotina : e.refeicoes.replace('-', '–')) : m.comum.naoInformado, 5],
+        [r.alimentacao, e.refeicoes ? (e.refeicoes === 'sem_rotina' ? o.alimentacao.semRotina : o.alimentacao.porDia(e.refeicoes.replace('-', '–'))) : m.comum.naoInformado, 5],
         [r.desafio, lista(e.obstaculos, rot.obstaculos), 6],
       ]
       tela = (

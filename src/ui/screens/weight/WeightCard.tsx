@@ -1,3 +1,4 @@
+import { pedirAbrirLife } from '@app/eventosLife'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSession } from '@app/SessionProvider'
 import { pesoRepository } from '@data/repositories/pesoRepository'
@@ -118,9 +119,17 @@ export function WeightCard() {
         </div>
       )}
 
-      {/* Sem botões: registrar, mudar a meta e ver o histórico é pedindo ao Life
-          no chat (resposta fixa no servidor, sem IA e sem gastar mensagem). */}
-      <p className="text-center text-micro text-content-low">{t.dicaChat}</p>
+      {/* Registrar, mudar a meta e ver o histórico é pedindo ao Life no chat
+          (resposta fixa, sem IA e sem gastar mensagem). O botão só abre o chat
+          com "Pesei  kg" escrito — a pessoa completa o número (relatório do APK). */}
+      <button
+        type="button"
+        onClick={() => pedirAbrirLife(t.rascunhoChat)}
+        className="mt-1 flex min-h-11 w-full items-center justify-center gap-2 rounded-pill border border-brand/40 bg-brand/10 text-sm font-semibold text-brand active:scale-[0.98]"
+      >
+        {t.contarAoLife}
+      </button>
+      <p className="mt-1.5 text-center text-micro text-content-low">{t.dicaChat}</p>
     </section>
   )
 }

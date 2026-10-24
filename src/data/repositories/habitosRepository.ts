@@ -1,4 +1,7 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache, mexerNoCache } from '@data/offline/cache'
+import { escrever, inserir, novoId } from '@data/offline/fila'
+import { usuarioId } from '@data/offline/usuario'
 import {
   streakConstruir,
   streakEvitar,
@@ -24,6 +27,12 @@ interface HabitoRow {
   ultimo_checkin: string | null
   criado_em: string
   ativo: boolean | null
+}
+
+const CHAVE = 'habitos'
+
+async function mexerHabito(id: string, fn: (h: HabitoRow) => HabitoRow): Promise<void> {
+  await mexerNoCache<HabitoRow[]>(CHAVE, (atual) => atual?.map((h) => (h.id === id ? fn(h) : h)))
 }
 
 function hojeISO(): string {
@@ -103,20 +112,24 @@ function emojiPorCategoria(cat: string | null): string {
  */
 export const habitosRepository = {
   async listar(): Promise<Habito[]> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { data, error } = await supabase
-      .from('vicios_user')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('ativo', true)
-      .order('criado_em', { ascending: true })
-      .returns<HabitoRow[]>()
-
-    if (error) throw error
+    const userId = await usuarioId()
+    const data = await lerComCache(
+      CHAVE,
+      async () => {
+        const { data: rows, error } = await supabase
+          .from('vicios_user')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('ativo', true)
+          .order('criado_em', { ascending: true })
+          .returns<HabitoRow[]>()
+        if (error) throw error
+        return rows ?? []
+      },
+      { padrao: [] },
+    )
     const pausados = await diasPausados(diasAtras(90))
-    return (data ?? []).map((r) => paraDominio(r, pausados))
+    return data.filter((r) => r.ativo !== false).map((r) => paraDominio(r, pausados))
   },
 
   /**
@@ -129,18 +142,28 @@ export const habitosRepository = {
     gatilho: string | null
     contexto: string | null
   }): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { error } = await supabase.from('recaidas').insert({
-      user_id: userId,
-      vicio_id: params.habitoId,
-      gatilho: params.gatilho,
-      contexto: params.contexto,
-    })
-    if (error) throw error
-    // O trigger/servidor cuida de zerar streak_atual e incrementar
-    // total_recaidas — o client não mexe nesses números diretamente.
+    const userId = await usuarioId()
+    const agora = new Date().toISOString()
+    await escrever(
+      inserir('recaidas', {
+        id: novoId(),
+        user_id: userId,
+        vicio_id: params.habitoId,
+        gatilho: params.gatilho,
+        contexto: params.contexto,
+        data: hojeISO(),
+        created_at: agora,
+      }),
+      // O trigger do servidor zera streak_atual e soma total_recaidas; a
+      // cópia local só antecipa o mesmo resultado pra tela sem rede.
+      () =>
+        mexerHabito(params.habitoId, (h) => ({
+          ...h,
+          ultima_recaida: agora,
+          streak_atual: 0,
+          total_recaidas: (h.total_recaidas ?? 0) + 1,
+        })),
+    )
   },
 
   /**
@@ -150,8 +173,16 @@ export const habitosRepository = {
    * dia) — o client não inventa o número, só dispara a ação.
    */
   async registrarCheckin(habitoId: string): Promise<void> {
-    const { error } = await supabase.rpc('registrar_checkin_habito', { p_habito_id: habitoId })
-    if (error) throw error
+    const hoje = hojeISO()
+    // p_dia: feito offline e enviado depois, conta pro dia em que foi feito.
+    await escrever({ op: 'rpc', fn: 'registrar_checkin_habito', args: { p_habito_id: habitoId, p_dia: hoje } }, () =>
+      mexerHabito(habitoId, (h) => {
+        if (h.ultimo_checkin === hoje) return h
+        const seguido = h.ultimo_checkin === diasAtras(1)
+        const streak = seguido ? (h.streak_atual ?? 0) + 1 : 1
+        return { ...h, ultimo_checkin: hoje, streak_atual: streak, melhor_streak: Math.max(h.melhor_streak ?? 0, streak) }
+      }),
+    )
   },
 
   /**
@@ -161,15 +192,11 @@ export const habitosRepository = {
    * olha os ativos).
    */
   async excluir(habitoId: string): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { error } = await supabase
-      .from('vicios_user')
-      .update({ ativo: false })
-      .eq('id', habitoId)
-      .eq('user_id', userId)
-    if (error) throw error
+    const userId = await usuarioId()
+    await escrever(
+      { op: 'update', tabela: 'vicios_user', valores: { ativo: false }, filtros: [['id', habitoId], ['user_id', userId]] },
+      () => mexerNoCache<HabitoRow[]>(CHAVE, (atual) => atual?.filter((h) => h.id !== habitoId)),
+    )
   },
 
   async criar(params: {
@@ -178,23 +205,43 @@ export const habitosRepository = {
     categoria: string | null
     intensidade: IntensidadeHabito
   }): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { error } = await supabase.from('vicios_user').insert({
-      user_id: userId,
+    const userId = await usuarioId()
+    const row: HabitoRow = {
+      id: novoId(),
       nome: params.nome,
       categoria: params.categoria,
       intensidade: params.intensidade,
+      gatilhos: null,
+      horario_risco: null,
+      streak_atual: 0,
+      melhor_streak: 0,
+      total_recaidas: 0,
+      ultima_recaida: null,
+      ultimo_checkin: null,
+      criado_em: new Date().toISOString(),
+      ativo: true,
       ...(params.icone ? { icone: params.icone } : {}),
-    })
-    // Triggers do banco: validar_habito (proibidos + consentimento) e
-    // limitar_habitos_gratis (no grátis, só 1 hábito ativo).
-    if (error?.message.includes('habito_nao_permitido')) throw new Error('habito_nao_permitido')
-    if (error?.message.includes('sem_consentimento_habitos')) throw new Error('sem_consentimento_habitos')
-    if (error?.message.includes('limite_habitos_gratis')) {
-      throw new Error('No plano grátis dá pra acompanhar 1 hábito por vez. Com o plano pago, são quantos você quiser.')
     }
-    if (error) throw error
+    try {
+      await escrever(
+        inserir('vicios_user', {
+          id: row.id,
+          user_id: userId,
+          nome: params.nome,
+          categoria: params.categoria,
+          intensidade: params.intensidade,
+          ...(params.icone ? { icone: params.icone } : {}),
+        }),
+        () => mexerNoCache<HabitoRow[]>(CHAVE, (atual = []) => [...atual, row]),
+      )
+    } catch (e) {
+      // Triggers do banco: validar_habito (proibidos + consentimento) e
+      // limitar_habitos_gratis (no grátis, só 1 hábito ativo).
+      const msg = String((e as { message?: unknown }).message ?? '')
+      if (msg.includes('habito_nao_permitido')) throw new Error('habito_nao_permitido')
+      if (msg.includes('sem_consentimento_habitos')) throw new Error('sem_consentimento_habitos')
+      if (msg.includes('limite_habitos_gratis')) throw new Error('limite_habitos_gratis')
+      throw e
+    }
   },
 }

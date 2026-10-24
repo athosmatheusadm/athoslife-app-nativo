@@ -1,4 +1,7 @@
 import { supabase } from '@data/supabase/client'
+import { apagarPorPrefixo } from '@data/offline/armazem'
+import { ehFalhaDeRede, valeTentarRede } from '@data/offline/conexao'
+import { usuarioAtualSincrono } from '@data/offline/usuario'
 
 /**
  * Único ponto do app que conhece `supabase.auth`.
@@ -44,13 +47,28 @@ export const authRepository = {
     if (error) throw error
   },
 
+  /**
+   * Sai e apaga do aparelho a cópia local e a fila offline desta conta
+   * (celular compartilhado não deve mostrar os dados de quem saiu). Quem
+   * chama confere antes se há registro offline esperando (fila.pendentes).
+   * Sem rede, a saída vale só neste aparelho.
+   */
   async sair(): Promise<void> {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    const uid = usuarioAtualSincrono()
+    if (valeTentarRede()) {
+      const { error } = await supabase.auth.signOut()
+      if (error && !ehFalhaDeRede(error)) throw error
+      if (error) await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    } else {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    }
+    if (uid) await apagarPorPrefixo(`${uid}:`)
   },
 
   /** Depois de excluir a conta: a sessão no servidor já não existe, só limpa a local. */
   async limparSessaoLocal(): Promise<void> {
+    const uid = usuarioAtualSincrono()
     await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    if (uid) await apagarPorPrefixo(`${uid}:`)
   },
 }

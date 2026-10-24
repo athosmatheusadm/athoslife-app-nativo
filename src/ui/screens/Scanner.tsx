@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { AiProxyError, cotaIaHoje, estimarAlimento } from '@data/ai/aiProxy'
-import { capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
+import { ehFalhaDeRede, valeTentarRede } from '@data/offline/conexao'
+import { CameraNegadaError, capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
 import type { RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
 import { produtoCodigoBarrasRepository } from '@data/repositories/produtoCodigoBarrasRepository'
 import { leitorDisponivel } from '@data/native/codigoBarras'
@@ -50,7 +51,8 @@ const FIXAS = [
   { tipo: 'jantar' },
 ] as const
 
-function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros']): string {
+function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros'], semRede: string): string {
+  if (ehFalhaDeRede(e)) return semRede
   if (e instanceof AiProxyError) {
     switch (e.info.tipo) {
       case 'premium_required':
@@ -201,7 +203,7 @@ export function Scanner() {
       setCodigoDigitado('')
       setEtapa('revisao')
     } catch (err) {
-      setErro(mensagemErroEstimar(err, m.dieta.busca.estimar))
+      setErro(mensagemErroEstimar(err, m.dieta.busca.estimar, m.offline.precisaInternet))
     } finally {
       setEstimando(false)
     }
@@ -211,7 +213,18 @@ export function Scanner() {
     setErro(null)
     setOrigem('foto')
     setImagemProduto(null)
-    const f = await capturarFoto(origem)
+    // Sem rede a foto não teria pra onde ir: avisa antes de abrir a câmera.
+    if (!valeTentarRede()) {
+      setErro(m.offline.precisaInternet)
+      return
+    }
+    let f: FotoCapturada | null
+    try {
+      f = await capturarFoto(origem)
+    } catch (e) {
+      if (e instanceof CameraNegadaError) setErro(m.comum.cameraNegada)
+      return
+    }
     if (!f) return
     setFoto(f)
     setEtapa('analisando')
@@ -226,7 +239,7 @@ export function Scanner() {
       setEtapa('revisao')
       setRestantes((n) => (n === null ? n : Math.max(n - 1, 0)))
     } catch (e) {
-      setErro(mensagemDeErro(e, t.erros))
+      setErro(mensagemDeErro(e, t.erros, m.offline.precisaInternet))
       setEtapa('captura')
     }
   }

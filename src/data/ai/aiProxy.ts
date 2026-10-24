@@ -1,5 +1,8 @@
 import { diaLeveHoje } from '@data/diaLeve'
 import { supabase } from '@data/supabase/client'
+import { lerComCache } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
+import { ehFalhaDeRede, marcarFalhaDeRede, marcarRespostaDoServidor, valeTentarRede } from '@data/offline/conexao'
 import type { BaseScan, ResultadoVisao, VarianteOleo } from '@domain/entities/food'
 
 /**
@@ -24,6 +27,8 @@ export type AiProxyErro =
   | { tipo: 'image_too_dark' }
   | { tipo: 'image_too_large' }
   | { tipo: 'proxy_error'; detalhe: string }
+  /** Sem internet: a IA só existe no servidor. */
+  | { tipo: 'sem_conexao' }
 
 export class AiProxyError extends Error {
   readonly info: AiProxyErro
@@ -58,19 +63,30 @@ export async function chamar<T>(
   tipo: 'vision' | 'scan' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura',
   payload: Record<string, unknown>,
 ): Promise<T> {
-  const { data: sessao } = await supabase.auth.getSession()
+  if (!valeTentarRede()) throw new AiProxyError({ tipo: 'sem_conexao' })
+  const { data: sessao, error: erroSessao } = await supabase.auth.getSession()
   const token = sessao.session?.access_token
-  if (!token) throw new AiProxyError({ tipo: 'not_authenticated' })
+  if (!token) {
+    // Token vencido sem conseguir renovar por falta de rede ≠ deslogado.
+    throw new AiProxyError({ tipo: erroSessao && ehFalhaDeRede(erroSessao) ? 'sem_conexao' : 'not_authenticated' })
+  }
 
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ tipo, ...payload }),
-  })
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ tipo, ...payload }),
+    })
+    marcarRespostaDoServidor()
+  } catch {
+    marcarFalhaDeRede()
+    throw new AiProxyError({ tipo: 'sem_conexao' })
+  }
 
   if (res.ok) return res.json() as Promise<T>
 
@@ -329,18 +345,25 @@ export async function responderAcaoLife(id: string, escolha: EscolhaAcao): Promi
 
 /** Últimas mensagens da conversa (RLS: só as do próprio usuário). */
 export async function carregarHistoricoChat(limite = 30): Promise<MensagemChat[]> {
-  const { data: sessao } = await supabase.auth.getSession()
-  const userId = sessao.session?.user.id
+  const userId = await usuarioId().catch(() => null)
   if (!userId) return []
-  const { data, error } = await supabase
-    .from('life_chat_mensagens')
-    .select('autor, texto')
-    .eq('user_id', userId)
-    .order('criado_em', { ascending: false })
-    .limit(limite)
-    .returns<MensagemChat[]>()
-  if (error) throw error
-  return (data ?? []).reverse()
+  // Guardado no aparelho: sem rede, a conversa continua aparecendo.
+  const data = await lerComCache(
+    `life:chat:${limite}`,
+    async () => {
+      const { data: rows, error } = await supabase
+        .from('life_chat_mensagens')
+        .select('autor, texto')
+        .eq('user_id', userId)
+        .order('criado_em', { ascending: false })
+        .limit(limite)
+        .returns<MensagemChat[]>()
+      if (error) throw error
+      return rows ?? []
+    },
+    { padrao: [] },
+  )
+  return [...data].reverse()
 }
 
 /** Quanto do chat ainda dá pra usar hoje, pra mostrar antes de enviar. */

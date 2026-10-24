@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nome e descrição do widget de água na lista de widgets do celular (pt / en / es). -->
+<resources>
+    <string name="athos_widget_agua_nome">Today's water</string>
+    <string name="athos_widget_agua_descricao">Water today: tap a glass to log it</string>
+</resources>

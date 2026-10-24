@@ -190,7 +190,7 @@ export function metasDoEstado(e: EstadoOnboarding) {
 }
 
 /** Erro que impede avançar da etapa (null = pode seguir). Obrigatório só o que as metas precisam. */
-export type ErroEtapa = 'nome' | 'idade' | 'medidas' | 'objetivo' | 'meta' | null
+export type ErroEtapa = 'nome' | 'idade' | 'medidas' | 'objetivo' | 'meta' | 'alergia' | null
 
 export function validarEtapa(e: EstadoOnboarding): ErroEtapa {
   if (e.etapa === 1) {
@@ -202,6 +202,8 @@ export function validarEtapa(e: EstadoOnboarding): ErroEtapa {
     if (e.objetivos.length === 0) return 'objetivo'
     if (pedeMetaDePeso(e) && (e.pesoMeta ?? '').trim() !== '' && pesoMetaEmKg(e) === null) return 'meta'
   }
+  // "Tenho alergia" sem dizer qual não protege ninguém (receitas, plano, Life).
+  if (e.etapa === 6 && e.alergia === true && e.alergias.length === 0) return 'alergia'
   return null
 }
 

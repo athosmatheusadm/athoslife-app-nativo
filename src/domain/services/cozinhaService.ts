@@ -1,4 +1,6 @@
 import { receitasRepository } from '@data/repositories/receitasRepository'
+import { profileRepository } from '@data/repositories/profileRepository'
+import { alergenosDasRestricoes, conflitosDeAlergia } from '@domain/rules/alergias'
 import { criacoesRepository } from '@data/repositories/criacoesRepository'
 import { gerarReceitaComIA } from '@data/ai/recipeAi'
 import { temAcessoPremium } from '@domain/rules/access'
@@ -21,21 +23,26 @@ export const cozinhaService = {
   /**
    * Lista as receitas do mini e-book já com:
    *  - `bloqueada`: premium && usuário sem acesso (mostra cadeado);
-   *  - `favoritada`: está nas favoritas.
+   *  - `favoritada`: está nas favoritas;
+   *  - `contemRestricao`: alérgenos que batem com as alergias/restrições do perfil
+   *    (some das sugestões e ganha aviso no card — a tela de Metas promete isso).
    *
    * A decisão de acesso é a mesma de todo o app — nada de regra paralela.
    */
   async listar(profile: Pick<Profile, 'plano' | 'trialExpira'>): Promise<Receita[]> {
-    const [cruas, favoritas] = await Promise.all([
+    const [cruas, favoritas, restricoes] = await Promise.all([
       receitasRepository.listar(),
       receitasRepository.idsFavoritas(),
+      profileRepository.restricoes().catch(() => [] as string[]),
     ])
     const temAcesso = temAcessoPremium(profile)
+    const alergias = alergenosDasRestricoes(restricoes)
 
     return cruas.map((r) => ({
       ...r,
       bloqueada: r.premium && !temAcesso,
       favoritada: favoritas.has(r.id),
+      contemRestricao: conflitosDeAlergia(r.alergenos, alergias),
     }))
   },
 

@@ -1,5 +1,8 @@
 import { Preferences } from '@capacitor/preferences'
 import { supabase } from '@data/supabase/client'
+import { lerComCache, mexerNoCache } from '@data/offline/cache'
+import { escrever } from '@data/offline/fila'
+import { usuarioAtualSincrono } from '@data/offline/usuario'
 import { dataLocalISO } from '@domain/rules/datas'
 
 /**
@@ -33,15 +36,21 @@ export async function marcarPausaLocal(): Promise<void> {
   avisar()
 }
 
+const CHAVE_DIAS = 'life:pausas'
+
 export async function pausarLifeHoje(): Promise<void> {
-  const { error } = await supabase.rpc('pausar_life_hoje')
-  if (error) throw error
+  const hoje = dataLocalISO()
+  await escrever({ op: 'rpc', fn: 'pausar_life_hoje', args: {} }, () =>
+    mexerNoCache<{ dia: string }[]>(CHAVE_DIAS, (atual = []) => (atual.some((d) => d.dia === hoje) ? atual : [...atual, { dia: hoje }])),
+  )
   await marcarPausaLocal()
 }
 
 export async function retomarLifeHoje(): Promise<void> {
-  const { error } = await supabase.rpc('retomar_life_hoje')
-  if (error) throw error
+  const hoje = dataLocalISO()
+  await escrever({ op: 'rpc', fn: 'retomar_life_hoje', args: {} }, () =>
+    mexerNoCache<{ dia: string }[]>(CHAVE_DIAS, (atual) => atual?.filter((d) => d.dia !== hoje)),
+  )
   await Preferences.remove({ key: CHAVE }).catch(() => {})
   avisar()
 }
@@ -62,19 +71,28 @@ export async function lifePausadoHoje(): Promise<boolean> {
   return dias.has(dataLocalISO())
 }
 
-/** Dias pausados a partir de `desdeISO`. Falha (sem rede, tabela ainda não criada) = nenhum. */
+/** Dias pausados a partir de `desdeISO` (todos guardados no aparelho). Falha (tabela ainda não criada) = nenhum. */
 export async function diasPausados(desdeISO: string): Promise<Set<string>> {
-  const { data: sessao } = await supabase.auth.getSession()
-  const userId = sessao.session?.user.id
+  const userId = usuarioAtualSincrono()
   if (!userId) return new Set()
-  const { data, error } = await supabase
-    .from('life_pausas')
-    .select('dia')
-    .eq('user_id', userId)
-    .gte('dia', desdeISO)
-    .returns<{ dia: string }[]>()
-  if (error) return new Set()
-  return new Set((data ?? []).map((d) => d.dia))
+  try {
+    const dias = await lerComCache(
+      CHAVE_DIAS,
+      async () => {
+        const { data, error } = await supabase
+          .from('life_pausas')
+          .select('dia')
+          .eq('user_id', userId)
+          .returns<{ dia: string }[]>()
+        if (error) throw error
+        return data ?? []
+      },
+      { padrao: [] },
+    )
+    return new Set(dias.map((d) => d.dia).filter((d) => d >= desdeISO))
+  } catch {
+    return new Set()
+  }
 }
 
 /** Última vez que a pessoa falou com o Life — check-in não toca colado numa conversa. */

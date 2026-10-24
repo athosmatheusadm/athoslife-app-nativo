@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { fmtKcal } from '@domain/rules/formatoNumero'
 import { alimentosRepository } from '@data/repositories/alimentosRepository'
 import { escalarMacros } from '@domain/rules/foodReconciliation'
 import { FavoritoStar, MacroChips } from './InlineFoodSearch'
@@ -196,7 +197,7 @@ export function SupplementSheet(props: {
                   <span className="block text-micro text-content-low">{m.dieta.busca.referencia(a.porcaoG)}</span>
                 </span>
                 <span className="flex-none text-right">
-                  <span className="block text-sm font-bold text-brand">{a.calorias} kcal</span>
+                  <span className="block text-sm font-bold text-brand">{fmtKcal(a.calorias)} kcal</span>
                   <span className="block text-micro text-macro-proteina">{m.dieta.busca.prot(a.proteina)}</span>
                 </span>
               </button>
@@ -349,7 +350,7 @@ function DoseSuplemento(props: {
           className="min-h-12 w-24 rounded-xl border border-surface-4 bg-surface-3 px-3 text-center text-base font-bold text-content-hi focus:border-brand focus:outline-none"
         />
         <span className="text-sm font-semibold text-content-low">g</span>
-        <span className="ml-3 text-sm font-bold text-brand">{m.calorias} kcal</span>
+        <span className="ml-3 text-sm font-bold text-brand">{fmtKcal(m.calorias)} kcal</span>
       </div>
 
       <button

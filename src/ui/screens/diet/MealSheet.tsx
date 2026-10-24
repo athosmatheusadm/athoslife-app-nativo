@@ -1,4 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
+import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { ActivityIconPicker, MEAL_ICONS, type UiIconKey } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
@@ -85,7 +86,7 @@ export function MealSheet(props: {
           <div className="flex items-center gap-3">
             <ActivityIcon icone={refeicao.icone ?? refeicao.tipo} />
             <span className="min-w-0 flex-1 truncate text-xl font-bold text-content-hi">{refeicao.nome}</span>
-            <span className="text-sm font-bold tabular-nums text-brand">{macros.calorias} kcal</span>
+            <span className="text-sm font-bold tabular-nums text-brand">{fmtKcal(macros.calorias)} kcal</span>
             <button
               type="button"
               role="checkbox"
@@ -161,7 +162,7 @@ export function MealSheet(props: {
                     <span className="min-w-0 flex-1 truncate text-content-hi">{item.nome}</span>
                     <span className="flex-none text-content-low">{item.quantidade}</span>
                     <span className="w-16 flex-none text-right font-medium tabular-nums text-content-mid">
-                      {item.calorias} kcal
+                      {fmtKcal(item.calorias)} kcal
                     </span>
                   </button>
                   {selecionado && (
@@ -218,7 +219,7 @@ export function MealSheet(props: {
                     <span className="flex min-w-0 flex-1 items-center gap-3 opacity-70">
                       <span className="min-w-0 flex-1 truncate text-content-hi">{item.nome}</span>
                       <span className="flex-none text-content-low">{item.quantidade}</span>
-                      <span className="w-14 flex-none text-right tabular-nums text-content-mid">{item.calorias} kcal</span>
+                      <span className="w-14 flex-none text-right tabular-nums text-content-mid">{fmtKcal(item.calorias)} kcal</span>
                     </span>
                     <button
                       type="button"
@@ -237,9 +238,9 @@ export function MealSheet(props: {
 
           {refeicao.itens.length > 0 && (
             <div className="mt-3 flex border-y border-surface-3 py-3 text-center">
-              <MacroCell v={`${macros.proteina}g`} l={m.dieta.macroLongo.proteina} cor="text-macro-proteina" />
-              <MacroCell v={`${macros.carboidrato}g`} l={m.dieta.macroLongo.carbo} cor="text-macro-carbo" />
-              <MacroCell v={`${macros.gordura}g`} l={m.dieta.macroLongo.gordura} cor="text-macro-gordura" />
+              <MacroCell v={`${fmtG(macros.proteina)}g`} l={m.dieta.macroLongo.proteina} cor="text-macro-proteina" />
+              <MacroCell v={`${fmtG(macros.carboidrato)}g`} l={m.dieta.macroLongo.carbo} cor="text-macro-carbo" />
+              <MacroCell v={`${fmtG(macros.gordura)}g`} l={m.dieta.macroLongo.gordura} cor="text-macro-gordura" />
               <MacroCell v={String(macros.calorias)} l={m.dieta.macroLongo.calorias} cor="text-brand" />
             </div>
           )}
