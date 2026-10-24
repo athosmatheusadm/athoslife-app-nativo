@@ -18,7 +18,7 @@
 //                     palavra do vocabulário fixo (life.ts); sem cota; IA no máx. 3x por dia
 //   { tipo: 'abertura' }                                -> { mensagem: string | null, motivo? }  (sem IA, sem cota)
 //   Chat também devolve sugerir_memoria: true quando valeria lembrar algo e a pessoa ainda não decidiu.
-//   { tipo: 'estimar', nome: string }                     -> { reconhecido, nome, porcao_g, calorias, proteina, carboidrato, gordura, confianca }
+//   { tipo: 'estimar', nome: string }  (cota 'estimar')    -> { reconhecido, nome, porcao_g, calorias, proteina, carboidrato, gordura, confianca }
 //                     macros POR PORÇÃO; gasta 1 da cota do chat
 //
 // Erros (sempre { error, ... }, nunca detalhe interno do Gemini):
@@ -488,7 +488,7 @@ function extrairJSON(txt: string): unknown {
 // ================================================================
 // Cota + auditoria
 // ================================================================
-type TipoCota = 'chat' | 'vision' | 'recipe'
+type TipoCota = 'chat' | 'vision' | 'recipe' | 'estimar'
 
 async function consumirCota(sb: Sb, userId: string, tipo: TipoCota, fuso = FUSO_PADRAO) {
   const { data, error } = await sb.rpc('consumir_cota_ia', {
@@ -1950,7 +1950,8 @@ async function handleEstimar(sb: Sb, userId: string, corpo: Record<string, unkno
   if (nome.length < 2) return json({ error: 'invalid_name' }, 400)
 
   const loc = await lerLocalidade(sb, userId)
-  const cota = await consumirCota(sb, userId, 'chat', loc.fuso)
+  // Cota própria (v4.6): grátis 1/semana, pago 20/dia — não gasta mensagem do chat.
+  const cota = await consumirCota(sb, userId, 'estimar', loc.fuso)
   if (!cota.ok) return cota.resposta
   const tabela = loc.pais === 'BR' || !loc.pais ? 'tabela TACO' : loc.pais === 'US' ? 'USDA FoodData Central' : 'tabela nacional do país (ou USDA)'
   const pais = nomePais(loc.pais, 'pt-BR')
@@ -1968,7 +1969,7 @@ async function handleEstimar(sb: Sb, userId: string, corpo: Record<string, unkno
 
   const cru = g.ok ? (extrairJSON(g.texto) as Record<string, unknown> | null) : null
   if (!cru) {
-    await devolverCota(sb, userId, 'chat')
+    await devolverCota(sb, userId, 'estimar')
     await auditar(sb, userId, 'estimar', g.ok ? 'parse_error' : 'error', g)
     return json({ error: 'ia_falhou' }, 502)
   }
@@ -1984,7 +1985,7 @@ async function handleEstimar(sb: Sb, userId: string, corpo: Record<string, unkno
 
   if (cru.reconhecido !== true || calorias <= 0 || calorias > porcao * 9.5) {
     // Não é comida (ou veio absurdo): não cobra a pessoa.
-    await devolverCota(sb, userId, 'chat')
+    await devolverCota(sb, userId, 'estimar')
     await auditar(sb, userId, 'estimar', 'nao_reconhecido', g)
     return json({ reconhecido: false })
   }
