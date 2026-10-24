@@ -7,7 +7,7 @@ import { useState, type ReactNode } from 'react'
  */
 
 export function Eyebrow({ children }: { children: ReactNode }) {
-  return <div className="mb-2 mt-1 text-micro font-bold uppercase tracking-wide text-[#9cff45]">{children}</div>
+  return <div className="mb-2 mt-1 text-micro font-bold uppercase tracking-wide text-brand">{children}</div>
 }
 
 export function Titulo({ children }: { children: ReactNode }) {
@@ -15,11 +15,11 @@ export function Titulo({ children }: { children: ReactNode }) {
 }
 
 export function Lead({ children }: { children: ReactNode }) {
-  return <p className="text-sm leading-relaxed text-[#98a69d]">{children}</p>
+  return <p className="text-sm leading-relaxed text-content-low">{children}</p>
 }
 
 export function Rotulo({ children }: { children: ReactNode }) {
-  return <div className="mb-2 mt-5 text-sm font-semibold text-[#d8e2da]">{children}</div>
+  return <div className="mb-2 mt-5 text-sm font-semibold text-content-mid">{children}</div>
 }
 
 export function Opcoes({ colunas = 2, children }: { colunas?: 2 | 3 | 4; children: ReactNode }) {
@@ -43,8 +43,8 @@ export function Opcao(props: {
         'flex min-h-[48px] items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-center text-sm leading-tight transition-colors',
         props.inteira ? 'col-span-full' : '',
         props.selecionada
-          ? 'border-[#7be153] bg-gradient-to-b from-[#18351f] to-[#102719] text-[#f0ffe9]'
-          : 'border-[#2b4a37] bg-[#09130e] text-[#b9c6bd]',
+          ? 'border-brand bg-brand/10 text-content-hi'
+          : 'border-surface-4 bg-surface-2 text-content-mid',
       ].join(' ')}
     >
       {props.icone && <span aria-hidden="true">{props.icone}</span>}
@@ -54,12 +54,12 @@ export function Opcao(props: {
 }
 
 export const CAMPO =
-  'h-12 w-full rounded-xl border border-[#294633] bg-[#08110c] px-3 text-base text-[#f4f8f4] placeholder:text-[#536258] focus:border-[#71d94f] focus:outline-none'
+  'h-12 w-full rounded-xl border border-surface-4 bg-surface-2 px-3 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none'
 
 export function Medida(props: { rotulo: string; children: ReactNode }) {
   return (
-    <label className="block rounded-xl border border-[#294633] bg-[#08110c] px-3 py-2">
-      <small className="mb-1 block text-micro text-[#65756a]">{props.rotulo}</small>
+    <label className="block rounded-xl border border-surface-4 bg-surface-2 px-3 py-2">
+      <small className="mb-1 block text-micro text-content-low">{props.rotulo}</small>
       {props.children}
     </label>
   )
@@ -94,14 +94,14 @@ export function ListaTags(props: {
           {props.itens.map((x) => (
             <span
               key={x}
-              className="flex min-h-11 items-center gap-1 rounded-lg border border-[#31533e] bg-[#0b1710] pl-3 pr-1.5 text-sm text-[#c4d0c7]"
+              className="flex min-h-11 items-center gap-1 rounded-lg border border-surface-4 bg-surface-2 pl-3 pr-1.5 text-sm text-content-mid"
             >
               {x}
               <button
                 type="button"
                 aria-label={`${props.rotuloRemover} ${x}`}
                 onClick={() => props.onMudar(props.itens.filter((i) => i !== x))}
-                className="-my-2 -mr-1.5 flex h-10 w-9 items-center justify-center text-lg text-[#86e85b] active:opacity-70"
+                className="-my-2 -mr-1.5 flex h-10 w-9 items-center justify-center text-lg text-brand active:opacity-70"
               >
                 ×
               </button>
@@ -126,7 +126,7 @@ export function ListaTags(props: {
         <button
           type="submit"
           aria-label={props.rotuloAdicionar}
-          className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-[#31533e] bg-[#0d1a12] text-lg text-[#a7ef75]"
+          className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-surface-4 bg-surface-2 text-lg text-brand"
         >
           +
         </button>
@@ -138,7 +138,7 @@ export function ListaTags(props: {
               key={s}
               type="button"
               onClick={() => adicionar(s)}
-              className="min-h-11 rounded-lg border border-dashed border-[#31533e] px-3 text-sm text-[#8f9f94] active:bg-content-hi/5"
+              className="min-h-11 rounded-lg border border-dashed border-surface-4 px-3 text-sm text-content-low active:bg-content-hi/5"
             >
               + {s}
             </button>
@@ -167,7 +167,7 @@ export function Cta(props: { onClick: () => void; disabled?: boolean; children: 
       type="button"
       onClick={props.onClick}
       disabled={props.disabled}
-      className="min-h-[50px] w-full rounded-xl bg-gradient-to-b from-[#a7ff52] to-[#8df13d] text-base font-extrabold text-[#061006] shadow-[0_10px_25px_rgba(120,255,61,0.10)] transition-transform active:translate-y-px disabled:opacity-60"
+      className="min-h-[50px] w-full rounded-xl bg-brand text-base font-extrabold text-brand-ink shadow-lg shadow-brand/10 transition-transform active:translate-y-px disabled:opacity-60"
     >
       {props.children} →
     </button>

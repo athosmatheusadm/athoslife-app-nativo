@@ -8,7 +8,13 @@ import { limitar, type EstadoStory, type ItemStory, type ModoStory } from '@doma
 
 export const W = 1080
 export const H = 1920
-const FONTE = 'system-ui, -apple-system, Roboto, Arial, sans-serif'
+const FONTE = '"Inter Variable", system-ui, -apple-system, Roboto, Arial, sans-serif'
+
+// O canvas só usa a fonte já carregada: pede a Inter (que vem no app) antes do 1º desenho.
+if (typeof document !== 'undefined' && document.fonts) {
+  void document.fonts.load('600 40px "Inter Variable"').catch(() => {})
+  void document.fonts.load('400 30px "Inter Variable"').catch(() => {})
+}
 
 export interface Midia {
   readonly foto: HTMLImageElement | null

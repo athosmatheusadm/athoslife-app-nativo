@@ -3211,3 +3211,27 @@ Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
    URLs no banco).
 7. Já conhecidas: chave RevenueCat, Facebook App ID, Termos/Política, e-mail de
    suporte, AAB assinado (workflow android-build pronto).
+
+### 2026-10-24 (tarde) — decisões do dono aplicadas
+
+- **Migração aplicada** no Supabase (`athoslife_offline_e_relatorio_apk`) e
+  conferida: `registrar_checkin_habito(p_habito_id, p_dia)`, `check_access_status`
+  só na própria linha, `is_premium_like`/`fuso_do_usuario` só sobre quem chama.
+- **Stripe**: os 4 índices duplicados em `profiles` apagados
+  (`db/athoslife_limpeza_stripe_migration.sql`, aplicada). Tabelas e colunas
+  `stripe_*` ficam (histórico). **WhatsApp fica** (planos futuros do dono).
+- **Uma identidade só**: consentimento e onboarding usam os tokens do app
+  (verde `brand`, superfícies e textos do tema) em vez do verde-limão fixo;
+  "life" reto como no login. De quebra, essas telas passam a seguir o tema claro.
+- **Fonte Inter** dentro do app (`@fontsource-variable/inter@5.2.8`, ~220 KB,
+  funciona offline); o Story exportado também usa a Inter.
+- Push do branch `correcoes-teste-apk` feito.
+
+**Pendências**
+1. **Deploy do `ai-proxy`** e **apagar as Edge Functions `stripe_webhook` e
+   `create-checkout`**: o token em `~/.supabase/access-token` venceu (401) —
+   precisa de um token novo do Supabase (Account > Access Tokens).
+2. Firebase: o dono vai criar a conta e dar acesso (Crashlytics + FCM).
+3. Supabase Auth: senha mínima 8 e proteção de senha vazada (painel).
+4. Testar o APK novo no celular (offline, widget, treino, peso no chat).
+5. Cabeçalhos das abas continuam diferentes entre si (não mexi no layout).

@@ -135,7 +135,7 @@ export function Onboarding() {
     return (
       <Casca etapa={e.etapa} m={m}>
         <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
-          <div className="mb-5 h-11 w-11 animate-spin rounded-full border-[3px] border-[#1d3425] border-t-[#9cff45]" />
+          <div className="mb-5 h-11 w-11 animate-spin rounded-full border-[3px] border-surface-4 border-t-brand" />
           <Titulo>{o.confirmar.salvando}</Titulo>
           <Lead>{o.confirmar.salvandoLead}</Lead>
         </div>
@@ -163,7 +163,7 @@ export function Onboarding() {
       {mensagemErro && <p className="mb-3 text-center text-sm text-accent-danger">{mensagemErro}</p>}
       <Cta onClick={acao}>{textoCta}</Cta>
       {e.etapa > 0 && (
-        <button type="button" onClick={voltar} className="mt-2 min-h-12 w-full text-sm text-[#8f9f94] active:text-[#c4d0c7]">
+        <button type="button" onClick={voltar} className="mt-2 min-h-12 w-full text-sm text-content-low active:text-content-mid">
           ← {m.comum.voltar}
         </button>
       )}
@@ -248,7 +248,7 @@ export function Onboarding() {
                 onClick={() => mudar({ unidades: u })}
                 aria-pressed={e.unidades === u}
                 className={`min-h-11 rounded-pill border px-4 text-sm font-semibold ${
-                  e.unidades === u ? 'border-[#7be153] text-[#f0ffe9]' : 'border-[#2b4a37] text-[#8f9f94]'
+                  e.unidades === u ? 'border-brand text-content-hi' : 'border-surface-4 text-content-low'
                 }`}
               >
                 {u === 'metrico' ? o.corpo.metrico : o.corpo.imperial}
@@ -264,17 +264,17 @@ export function Onboarding() {
                     onChange={(ev) => mudar({ alturaPes: ev.target.value.replace(/\D/g, '').slice(0, 1) })}
                     inputMode="numeric"
                     placeholder="5"
-                    className="w-8 bg-transparent text-base text-[#f4f8f4] outline-none"
+                    className="w-8 bg-transparent text-base text-content-hi outline-none"
                   />
-                  <span className="text-micro text-[#65756a]">ft</span>
+                  <span className="text-micro text-content-low">ft</span>
                   <input
                     value={e.alturaPol}
                     onChange={(ev) => mudar({ alturaPol: ev.target.value.replace(/\D/g, '').slice(0, 2) })}
                     inputMode="numeric"
                     placeholder="9"
-                    className="w-8 bg-transparent text-base text-[#f4f8f4] outline-none"
+                    className="w-8 bg-transparent text-base text-content-hi outline-none"
                   />
-                  <span className="text-micro text-[#65756a]">in</span>
+                  <span className="text-micro text-content-low">in</span>
                 </div>
               ) : (
                 <div className="flex items-baseline gap-1">
@@ -283,9 +283,9 @@ export function Onboarding() {
                     onChange={(ev) => mudar({ alturaCm: ev.target.value.replace(/\D/g, '').slice(0, 3) })}
                     inputMode="numeric"
                     placeholder={o.corpo.exemplo('175')}
-                    className="w-full bg-transparent text-base text-[#f4f8f4] outline-none placeholder:text-[#65756a]"
+                    className="w-full bg-transparent text-base text-content-hi outline-none placeholder:text-content-low"
                   />
-                  <span className="text-micro text-[#65756a]">cm</span>
+                  <span className="text-micro text-content-low">cm</span>
                 </div>
               )}
             </Medida>
@@ -296,9 +296,9 @@ export function Onboarding() {
                   onChange={(ev) => mudar({ peso: ev.target.value.replace(/[^\d.,]/g, '').slice(0, 5) })}
                   inputMode="decimal"
                   placeholder={o.corpo.exemplo(e.unidades === 'imperial' ? '155' : '70')}
-                  className="w-full bg-transparent text-base text-[#f4f8f4] outline-none placeholder:text-[#65756a]"
+                  className="w-full bg-transparent text-base text-content-hi outline-none placeholder:text-content-low"
                 />
-                <span className="text-micro text-[#65756a]">{e.unidades === 'imperial' ? 'lb' : 'kg'}</span>
+                <span className="text-micro text-content-low">{e.unidades === 'imperial' ? 'lb' : 'kg'}</span>
               </div>
             </Medida>
           </div>
@@ -326,12 +326,12 @@ export function Onboarding() {
                     onChange={(ev) => mudar({ pesoMeta: ev.target.value.replace(/[^\d.,]/g, '').slice(0, 5) })}
                     inputMode="decimal"
                     placeholder={o.corpo.pesoMetaOpcional}
-                    className="w-full bg-transparent text-base text-[#f4f8f4] outline-none"
+                    className="w-full bg-transparent text-base text-content-hi outline-none"
                   />
-                  <span className="text-micro text-[#65756a]">{e.unidades === 'imperial' ? 'lb' : 'kg'}</span>
+                  <span className="text-micro text-content-low">{e.unidades === 'imperial' ? 'lb' : 'kg'}</span>
                 </div>
               </Medida>
-              <p className="mt-1.5 text-micro text-[#65756a]">{o.corpo.pesoMetaDica}</p>
+              <p className="mt-1.5 text-micro text-content-low">{o.corpo.pesoMetaDica}</p>
             </div>
           )}
           {rodape(m.comum.continuar)}
@@ -597,26 +597,26 @@ export function Onboarding() {
           <Eyebrow>{r.eyebrow}</Eyebrow>
           <Titulo>{r.titulo}</Titulo>
           <Lead>{r.lead}</Lead>
-          <div className="mt-4 rounded-xl border border-[#294633] bg-[#08110c] px-3">
+          <div className="mt-4 rounded-xl border border-surface-4 bg-surface-2 px-3">
             {linhas.map(([k, v, etapa]) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => mudar({ etapa })}
-                className="flex w-full justify-between gap-3 border-b border-[#17291e] py-3 text-left text-sm last:border-b-0"
+                className="flex w-full justify-between gap-3 border-b border-surface-4 py-3 text-left text-sm last:border-b-0"
               >
-                <span className="text-[#718076]">{k}</span>
-                <span className="max-w-[60%] text-right text-[#dbe5de]">{v}</span>
+                <span className="text-content-low">{k}</span>
+                <span className="max-w-[60%] text-right text-content-mid">{v}</span>
               </button>
             ))}
           </div>
           {metas && (
-            <div className="mt-3 rounded-xl border border-[#294633] bg-[#08110c] p-3">
-              <div className="text-sm font-semibold text-[#d8e2da]">{r.metas}</div>
-              <div className="mt-1 text-sm text-[#9cff45]">
+            <div className="mt-3 rounded-xl border border-surface-4 bg-surface-2 p-3">
+              <div className="text-sm font-semibold text-content-mid">{r.metas}</div>
+              <div className="mt-1 text-sm text-brand">
                 {r.metasValor(metas.kcal, metas.proteina, volume(idioma, e.unidades, metas.aguaMl))}
               </div>
-              <p className="mt-1 text-micro text-[#68776d]">{r.metasNota}</p>
+              <p className="mt-1 text-micro text-content-low">{r.metasNota}</p>
             </div>
           )}
           {rodape(r.botao)}
@@ -636,8 +636,8 @@ export function Onboarding() {
           </div>
           <div className="mt-5 grid gap-2">
             {o.confirmar.checklist.map((x) => (
-              <div key={x} className="flex items-center gap-2 text-sm text-[#cbd6ce]">
-                <i className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-[#9cff45] text-micro font-black not-italic text-[#071007]">
+              <div key={x} className="flex items-center gap-2 text-sm text-content-mid">
+                <i className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-brand text-micro font-black not-italic text-surface-1">
                   ✓
                 </i>
                 {x}
@@ -665,17 +665,17 @@ export function Onboarding() {
 function Casca(props: { etapa: number; m: Mensagens; children: React.ReactNode }) {
   const n = props.etapa + 1
   return (
-    <main className="min-h-full bg-gradient-to-b from-[#070d09] to-[#07100a] pt-safe-t">
+    <main className="min-h-full bg-surface-1 pt-safe-t">
       <div className="mx-auto flex min-h-[100dvh] max-w-[430px] flex-col px-5 pb-6">
         <div className="flex items-center justify-between pb-2 pt-4">
           <div className="text-lg font-extrabold tracking-tight text-content-hi">
-            ATHOS<span className="italic text-[#9cff45]">life</span>
+            ATHOS<span className="text-brand">life</span>
           </div>
-          <div className="text-micro font-semibold text-[#77877b]">{props.m.onboarding.passo(n, TOTAL_ETAPAS)}</div>
+          <div className="text-micro font-semibold text-content-low">{props.m.onboarding.passo(n, TOTAL_ETAPAS)}</div>
         </div>
-        <div className="mb-4 h-1 overflow-hidden rounded-full bg-[#1a2d21]">
+        <div className="mb-4 h-1 overflow-hidden rounded-full bg-surface-4">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#72e53d] to-[#b1ff5b] transition-all duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-brand to-brand transition-all duration-300"
             style={{ width: `${(n / TOTAL_ETAPAS) * 100}%` }}
           />
         </div>

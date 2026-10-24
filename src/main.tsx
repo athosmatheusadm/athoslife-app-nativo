@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SplashScreen } from '@capacitor/splash-screen'
 import App from './App'
+import '@fontsource-variable/inter'
 import '@ui/theme/globals.css'
 import { iniciarTema } from '@ui/theme/tema'
 
