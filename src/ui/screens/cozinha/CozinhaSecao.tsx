@@ -11,6 +11,12 @@ import type { Profile } from '@domain/entities/profile'
 import { CardReceita } from './CardReceita'
 import { CategoryIcon } from './CategoryIcon'
 
+/**
+ * Expositor de receitas temáticas (Natal, Ano-Novo, Páscoa, Festa Junina).
+ * Pra ligar: marcar receitas em `receitas_cozinha.temas` e trocar pra true.
+ */
+const EXPOSITOR_TEMATICO_LIGADO = false
+
 /** Alterna o favorito no servidor e devolve a lista atualizada. */
 export async function alternarFavorito(lista: Receita[], r: Receita): Promise<Receita[]> {
   if (r.favoritada) await cozinhaService.desfavoritar(r.id)
@@ -61,7 +67,8 @@ export function CozinhaSecao(props: {
     receitas && void alternarFavorito(receitas, r).then(setReceitas).catch((e) => console.error('favoritar falhou:', e))
 
   // Época de festa: expositor com as receitas marcadas pro tema (natal, páscoa...).
-  const tema = temaDoMomento(new Date(), localidadeAtual().pais)
+  // Desligado até o dono pedir (24/10): ainda não há receita temática.
+  const tema = EXPOSITOR_TEMATICO_LIGADO ? temaDoMomento(new Date(), localidadeAtual().pais) : null
   const tematicas = tema && receitas ? receitas.filter((r) => r.temas.includes(tema)) : []
   const sugestoes = receitas && props.restante ? receitasQueFechamODia(receitas, props.restante) : []
   // Sugestões e expositor já aparecem acima: o catálogo não repete as mesmas (relatório do APK).

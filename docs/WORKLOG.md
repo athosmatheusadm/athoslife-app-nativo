@@ -3276,3 +3276,7 @@ Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
 - **Achado**: `receitas_cozinha` libera leitura coluna a coluna e `alergenos`
   não tinha GRANT — a Cozinha do APK de 24/10 falharia ao carregar. Corrigido
   no banco (`grant select (alergenos, temas)`), vale pro APK já gerado.
+- `ai-proxy` publicada com a cota `estimar` (autorizado pelo dono).
+- Expositor temático **escondido** (`EXPOSITOR_TEMATICO_LIGADO = false` em
+  `CozinhaSecao.tsx`) até o dono pedir as receitas. Pra ligar: marcar
+  `receitas_cozinha.temas` e trocar a chave.
