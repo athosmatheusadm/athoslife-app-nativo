@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { ItemRascunho, Macros, RefeicaoRascunho } from '@domain/entities/food'
 import { ExtrasScan } from '@ui/screens/scanner/ExtrasScan'
@@ -18,6 +18,8 @@ interface Props {
   fotoPrato: string | null
   imagemProduto: string | null
   nomeRefeicao: string
+  /** Trocar a refeição aqui mesmo, antes de salvar (abre ao tocar no nome). */
+  seletorRefeicao?: ReactNode
   total: Macros
   incluidos: number
   salvando: boolean
@@ -34,6 +36,7 @@ export function RevisaoScanner(p: Props) {
   const t = m.scanner
   const tv = t.vidro
   const { rascunho } = p
+  const [trocando, setTrocando] = useState(false)
   const [aberto, setAberto] = useState<string | null>(rascunho.itens.length === 1 ? rascunho.itens[0]!.id : null)
   // Porção que veio do rótulo, pra voltar a ela com um toque.
   const [porcaoInicial] = useState(() => new Map(rascunho.itens.map((i) => [i.id, i.quantidadeG])))
@@ -64,7 +67,19 @@ export function RevisaoScanner(p: Props) {
         <button onClick={p.onVoltar} aria-label={t.voltar} className="vidro grid h-11 w-11 place-items-center rounded-full text-lg">
           ←
         </button>
-        <span className="vidro flex h-8 min-w-0 items-center truncate rounded-pill px-3.5 text-sm font-semibold">{p.nomeRefeicao}</span>
+        {p.seletorRefeicao ? (
+          <button
+            onClick={() => setTrocando((x) => !x)}
+            aria-expanded={trocando}
+            aria-label={t.trocarRefeicao}
+            className="vidro flex h-8 min-w-0 items-center gap-1 truncate rounded-pill px-3.5 text-sm font-semibold"
+          >
+            <span className="truncate">{p.nomeRefeicao}</span>
+            <span aria-hidden="true">▾</span>
+          </button>
+        ) : (
+          <span className="vidro flex h-8 min-w-0 items-center truncate rounded-pill px-3.5 text-sm font-semibold">{p.nomeRefeicao}</span>
+        )}
         <button
           onClick={p.onRefazer}
           disabled={p.salvando}
@@ -74,6 +89,11 @@ export function RevisaoScanner(p: Props) {
           ↻
         </button>
       </div>
+      {trocando && p.seletorRefeicao && (
+        <div className="absolute inset-x-3.5 top-[calc(env(safe-area-inset-top,0px)+66px)]" onClick={() => setTrocando(false)}>
+          {p.seletorRefeicao}
+        </div>
+      )}
 
       <section className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+14px)] flex max-h-[calc(100%-90px)] flex-col gap-1.5 overflow-y-auto">
         <div className="flex items-baseline justify-between gap-2 px-1 pb-0.5 [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { macrosRepository } from '@data/repositories/macrosRepository'
 import { treinoHistoricoRepository } from '@data/repositories/treinoHistoricoRepository'
 import { dataLocalISO } from '@domain/rules/datas'
+import { marcarConquistaHoje } from '@data/native/iconeMascote'
 import type { Metas } from '@domain/entities/profile'
 import { useI18n } from '@/i18n/I18nProvider'
 
@@ -30,6 +31,8 @@ export function useDiaBom(metas: Metas, streakAtual: number, maiorStreak: number
       const meta = metas.kcal > 0 && kcal >= metas.kcal * 0.9 && kcal <= metas.kcal * 1.1
       const seq = streakAtual >= 3 && streakAtual >= maiorStreak ? streakAtual : null
       setDia({ meta, treino, seq })
+      // Meta batida deixa o ícone do app no "conquista" até a meia-noite.
+      if (metas.kcal > 0) marcarConquistaHoje(meta)
     })
     return () => {
       vivo = false

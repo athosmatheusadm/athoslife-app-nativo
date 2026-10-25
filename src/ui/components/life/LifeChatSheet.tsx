@@ -294,7 +294,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
         <div className="mx-auto mt-3 h-1 w-10 flex-none rounded-full bg-surface-4" aria-hidden="true" />
 
         <div className="flex flex-none items-center gap-3 px-6 pb-3 pt-3">
-          <LifeMascote humor={props.humor ?? 'normal'} alt="" className="h-14 flex-none" />
+          <LifeMascote humor={props.humor ?? 'normal'} alt="" className="h-14 flex-none" estatico />
           <div className="min-w-0 flex-1">
             <h2 className="text-xl font-bold text-content-hi">{m.lifeChat.titulo[foco]}</h2>
             <p className="mt-0.5 text-sm text-content-low">{m.lifeChat.sub[foco]}</p>

@@ -29,6 +29,8 @@ export function LifeFlutuante(props: {
   foco: FocoLife
   corBrilho?: string
   aparecerDepoisDe?: number
+  /** Hábitos: o Life fica roxo dos pés pra cima conforme o nível (0–100). */
+  nivelHabitos?: number
 }) {
   const { m } = useI18n()
   const [aberto, setAberto] = useState(false)
@@ -60,7 +62,7 @@ export function LifeFlutuante(props: {
             aria-hidden="true"
           />
         )}
-        <LifeMascote humor={props.humor} alt="" className="relative h-32" />
+        <LifeMascote humor={props.humor} alt="" className="relative h-32" nivelHabitos={props.nivelHabitos} />
         {/* Área de toque: o corpo do Life, não a imagem inteira. */}
         <button
           type="button"

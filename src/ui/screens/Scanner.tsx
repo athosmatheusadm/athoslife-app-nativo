@@ -5,12 +5,13 @@ import { AiProxyError, cotaIaHoje, estimarAlimento } from '@data/ai/aiProxy'
 import { ehFalhaDeRede, valeTentarRede } from '@data/offline/conexao'
 import { CameraNegadaError, capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
 import type { RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
-import { produtoCodigoBarrasRepository } from '@data/repositories/produtoCodigoBarrasRepository'
+import { produtoCodigoBarrasRepository, type ProdutoRotulo } from '@data/repositories/produtoCodigoBarrasRepository'
 import { leitorDisponivel } from '@data/native/codigoBarras'
 import { foodCaptureService } from '@domain/services/foodCaptureService'
 import { reescalarItem } from '@domain/rules/foodReconciliation'
 import { atualizarItemScan } from '@domain/rules/scanCalculo'
 import { temAcessoPremium } from '@domain/rules/access'
+import { refeicaoPeloHorario } from '@domain/rules/cozinha'
 import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
 import { LifeMascote } from '@ui/components/LifeMascote'
 import { ActivityIcon } from '@ui/components/ActivityIcon'
@@ -21,15 +22,18 @@ import { avisar, vibrar } from '@ui/feedback'
 import { PlanoParaEstimar, fimDaEstimativaGratis, mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
 import { CameraCodigo } from '@ui/screens/scanner/CameraCodigo'
 import { RevisaoScanner } from '@ui/screens/scanner/RevisaoScanner'
+import { CadastroRotulo } from '@ui/screens/scanner/CadastroRotulo'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
  * alimento da refeição escolhida na Dieta (mesma lista, dá pra excluir e
  * copiar depois). Nada entra no diário sem passar pela revisão.
  *
- * Entrada normal: menu da refeição na Dieta ("Escanear comida"), que manda
- * a refeição e o dia em `location.state`. Chegando direto por /scanner, a
- * pessoa escolhe a refeição aqui (dia = hoje).
+ * Entrada pela Dieta ("Escanear comida"): a refeição e o dia vêm em
+ * `location.state`. Chegando direto por /scanner (câmera do widget), a tela
+ * abre já na escolha foto × código e a refeição sai do horário — dá pra
+ * trocar no topo ou na revisão, antes de salvar (dono, 25/10: escolher a
+ * refeição antes travava a agilidade do scanner). Dia = hoje.
  *
  * Plano: foto com IA é recurso pago (5/dia) — o servidor é quem barra de
  * verdade; aqui só evitamos a pessoa tirar foto à toa. Código de barras é
@@ -82,8 +86,14 @@ export function Scanner() {
   const navigate = useNavigate()
   const entrada = (useLocation().state ?? {}) as EstadoEntrada
 
-  const [alvo, setAlvo] = useState<RefeicaoAlvo | null>(entrada.alvo ?? null)
-  const [nomeRefeicao, setNomeRefeicao] = useState(entrada.nomeRefeicao ?? '')
+  const { m } = useI18n()
+  const [alvo, setAlvo] = useState<RefeicaoAlvo>(() => entrada.alvo ?? { tipo: refeicaoPeloHorario() })
+  const [nomeRefeicao, setNomeRefeicao] = useState(() =>
+    entrada.alvo ? (entrada.nomeRefeicao ?? '') : m.dieta.refeicoes[refeicaoPeloHorario()],
+  )
+  // Refeição escolhida pelo horário: mostra "pelo horário" e deixa trocar.
+  const [pelaHora, setPelaHora] = useState(!entrada.alvo)
+  const [trocando, setTrocando] = useState(false)
   const data = useMemo(() => (entrada.dataISO ? new Date(entrada.dataISO) : new Date()), [entrada.dataISO])
 
   const [etapa, setEtapa] = useState<Etapa>('captura')
@@ -95,8 +105,15 @@ export function Scanner() {
   const [imagemProduto, setImagemProduto] = useState<string | null>(null)
   const [digitando, setDigitando] = useState(false)
   const [codigoDigitado, setCodigoDigitado] = useState('')
-  // Código que o Open Food Facts não conhece: o Life estima pelo nome.
-  const [semBase, setSemBase] = useState(false)
+  // Código que nenhuma base conhece (ou sem tabela): copiar o rótulo ou o Life estima pelo nome.
+  const [faltando, setFaltando] = useState<{
+    codigo: string
+    nome: string
+    marca: string | null
+    imagemUrl: string | null
+    semTabela: boolean
+  } | null>(null)
+  const semBase = faltando !== null
   const [nomeProduto, setNomeProduto] = useState('')
   const [estimando, setEstimando] = useState(false)
   // Grátis sem a estimativa da semana: convite pro plano no lugar do botão.
@@ -104,8 +121,14 @@ export function Scanner() {
   const [camera, setCamera] = useState(false)
 
   const pago = profile ? temAcessoPremium(profile) : false
-  const { m } = useI18n()
   const t = m.scanner
+
+  function escolherRefeicao(tipo: (typeof FIXAS)[number]['tipo']) {
+    setAlvo({ tipo })
+    setNomeRefeicao(m.dieta.refeicoes[tipo])
+    setPelaHora(false)
+    setTrocando(false)
+  }
   // Limite vem do servidor (antes o texto dizia "5" fixo).
   const [limite, setLimite] = useState<number | null>(null)
 
@@ -149,22 +172,44 @@ export function Scanner() {
     setFoto(null)
     setEtapa('analisando')
     try {
-      const produto = await produtoCodigoBarrasRepository.buscar(codigo)
-      if (!produto) {
-        setSemBase(true)
+      const r = await produtoCodigoBarrasRepository.buscar(codigo)
+      if (r.tipo !== 'achado') {
+        setFaltando(
+          r.tipo === 'semTabela'
+            ? { codigo: r.codigo, nome: r.nome, marca: r.marca, imagemUrl: r.imagemUrl, semTabela: true }
+            : { codigo: r.codigo, nome: '', marca: null, imagemUrl: null, semTabela: false },
+        )
+        if (r.tipo === 'semTabela') setNomeProduto(r.marca ? `${r.nome} ${r.marca}` : r.nome)
+        setDigitando(false)
         setEtapa('captura')
         return
       }
-      setSemBase(false)
-      setImagemProduto(produto.imagemUrl)
-      setRascunho(foodCaptureService.rascunhoDeProduto(produto, t.rotuloSemPorcao))
-      setDigitando(false)
-      setCodigoDigitado('')
-      setEtapa('revisao')
-    } catch {
+      abrirRevisaoDoProduto(r.produto)
+    } catch (e) {
+      if (ehFalhaDeRede(e)) {
+        setErro(m.offline.precisaInternet)
+        setEtapa('captura')
+        return
+      }
       setErro(t.erros.buscaProduto)
       setEtapa('captura')
     }
+  }
+
+  function abrirRevisaoDoProduto(produto: ProdutoRotulo) {
+    setFaltando(null)
+    setImagemProduto(produto.imagemUrl)
+    setRascunho(foodCaptureService.rascunhoDeProduto(produto, t.rotuloSemPorcao))
+    setDigitando(false)
+    setCodigoDigitado('')
+    setEtapa('revisao')
+  }
+
+  async function cadastrarRotulo(produto: ProdutoRotulo) {
+    setOrigem('codigo')
+    abrirRevisaoDoProduto(produto)
+    const naBase = await produtoCodigoBarrasRepository.cadastrarPeloRotulo(produto)
+    if (!naBase) avisar.ok(t.rotulo2.soNoCelular)
   }
 
   async function estimarProduto() {
@@ -199,7 +244,7 @@ export function Scanner() {
           },
         ],
       })
-      setSemBase(false)
+      setFaltando(null)
       setNomeProduto('')
       setDigitando(false)
       setCodigoDigitado('')
@@ -321,15 +366,26 @@ export function Scanner() {
           </button>
         </form>
       )}
+      {faltando && (
+        <CadastroRotulo
+          key={faltando.codigo}
+          codigo={faltando.codigo}
+          nomeInicial={faltando.nome}
+          marcaInicial={faltando.marca}
+          imagemUrl={faltando.imagemUrl}
+          semTabela={faltando.semTabela}
+          onPronto={(p) => void cadastrarRotulo(p)}
+        />
+      )}
       {semBase && (
         <form
           onSubmit={(e) => {
             e.preventDefault()
             void estimarProduto()
           }}
-          className="rounded-card border border-brand/40 bg-surface-2 p-3"
+          className="rounded-card border border-surface-4 bg-surface-2 p-3"
         >
-          <p className="text-sm text-content-mid">{t.semProdutoEstimar}</p>
+          <p className="text-sm text-content-mid">{t.rotulo2.estimarTitulo}</p>
           <input
             type="text"
             autoFocus
@@ -376,29 +432,28 @@ export function Scanner() {
         </button>
         <div className="min-w-0">
           <h1 className="text-xl font-extrabold text-content-hi">{t.titulo}</h1>
-          <p className="truncate text-sm text-content-low">{alvo ? t.vaiPra(nomeRefeicao) : t.escolha}</p>
+          <button
+            onClick={() => setTrocando((x) => !x)}
+            aria-expanded={trocando}
+            aria-label={t.trocarRefeicao}
+            className="flex max-w-full items-center gap-1 truncate text-sm text-content-low"
+          >
+            <span className="truncate">
+              {t.vaiPra(nomeRefeicao)}
+              {pelaHora && alvo.tipo !== 'extra' && ` · ${t.pelaHora}`}
+            </span>
+            <span aria-hidden="true" className={`text-brand transition-transform ${trocando ? 'rotate-180' : ''}`}>
+              ▾
+            </span>
+          </button>
         </div>
       </header>
 
-      {!alvo && (
-        <div className="mb-4 grid grid-cols-2 gap-2">
-          {FIXAS.map((f) => (
-            <button
-              key={f.tipo}
-              onClick={() => {
-                setAlvo({ tipo: f.tipo })
-                setNomeRefeicao(m.dieta.refeicoes[f.tipo])
-              }}
-              className="rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left transition-colors active:bg-surface-3"
-            >
-              <ActivityIcon icone={f.tipo} className="h-10 w-10" />
-              <div className="mt-1 text-sm font-semibold text-content-hi">{m.dieta.refeicoes[f.tipo]}</div>
-            </button>
-          ))}
-        </div>
+      {trocando && etapa === 'captura' && (
+        <SeletorRefeicao atual={alvo} nomes={m.dieta.refeicoes} onEscolher={escolherRefeicao} />
       )}
 
-      {alvo && !pago && etapa === 'captura' && (
+      {!pago && etapa === 'captura' && (
         <section className="rounded-card border border-accent-gold/40 bg-surface-2 p-5 text-center">
           <ActivityIcon icone="cadeado" tile={false} cor="inherit" className="mx-auto h-9 w-9 text-accent-gold" />
           <p className="mt-2 font-semibold text-content-hi">{t.pagoTitulo}</p>
@@ -411,7 +466,7 @@ export function Scanner() {
           </button>
         </section>
       )}
-      {alvo && !pago && etapa === 'captura' && (
+      {!pago && etapa === 'captura' && (
         <section className="mt-4">
           <p className="text-center text-sm text-content-low">{t.codigoGratis}</p>
           {erro && <p role="alert" className="mt-2 text-center text-sm font-medium text-accent-danger">{erro}</p>}
@@ -419,7 +474,7 @@ export function Scanner() {
         </section>
       )}
 
-      {alvo && pago && etapa === 'captura' && (
+      {pago && etapa === 'captura' && (
         <section className="flex flex-1 flex-col">
           <div className="flex flex-1 flex-col items-center justify-center rounded-card border border-dashed border-brand/40 bg-surface-2 p-6 text-center">
             <ActivityIcon icone="almoco" className="h-16 w-16" />
@@ -457,7 +512,7 @@ export function Scanner() {
           {foto && (
             <img src={foto.dataUrl} alt="" className="mb-5 h-48 w-48 rounded-3xl object-cover opacity-80" />
           )}
-          <LifeMascote humor="chef" className="mb-3 h-28 motion-safe:animate-pulse" />
+          <LifeMascote humor="chef" className="mb-3 h-28" />
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-surface-4 border-t-brand" />
           <p className="mt-4 font-semibold text-content-hi" role="status">
             {origem === 'codigo' ? t.buscandoProduto : t.olhando}
@@ -473,6 +528,7 @@ export function Scanner() {
           fotoPrato={foto?.dataUrl ?? null}
           imagemProduto={imagemProduto}
           nomeRefeicao={nomeRefeicao}
+          seletorRefeicao={<SeletorRefeicao atual={alvo} nomes={m.dieta.refeicoes} onEscolher={escolherRefeicao} vidro />}
           total={total}
           incluidos={incluidos}
           salvando={etapa === 'salvando'}
@@ -510,5 +566,34 @@ export function Scanner() {
         />
       )}
     </main>
+  )
+}
+
+/** As 4 refeições fixas, pra trocar o destino do scanner. */
+function SeletorRefeicao(props: {
+  atual: RefeicaoAlvo
+  nomes: Mensagens['dieta']['refeicoes']
+  onEscolher: (tipo: (typeof FIXAS)[number]['tipo']) => void
+  vidro?: boolean
+}) {
+  return (
+    <div className="mb-4 grid grid-cols-4 gap-2">
+      {FIXAS.map((f) => {
+        const ativo = props.atual.tipo === f.tipo
+        return (
+          <button
+            key={f.tipo}
+            onClick={() => props.onEscolher(f.tipo)}
+            aria-pressed={ativo}
+            className={`flex flex-col items-center gap-1 rounded-2xl p-2 text-center transition-colors ${
+              props.vidro ? 'vidro' : 'border border-surface-4 bg-surface-2 active:bg-surface-3'
+            } ${ativo ? '!border-brand ring-1 ring-brand' : ''}`}
+          >
+            <ActivityIcon icone={f.tipo} className="h-8 w-8" />
+            <span className={`text-micro font-semibold ${props.vidro ? '' : 'text-content-hi'}`}>{props.nomes[f.tipo]}</span>
+          </button>
+        )
+      })}
+    </div>
   )
 }

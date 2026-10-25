@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Preferences } from '@capacitor/preferences'
+import { atualizarIconeDoMascote } from '@data/native/iconeMascote'
 import { lifePausadoHoje, ultimaConversaComLife } from '@data/lifePausa'
 import { diaLeveHoje } from '@data/diaLeve'
 import { contatoRepository } from '@data/repositories/contatoRepository'
@@ -65,6 +66,8 @@ export async function lerConfigLembretes(): Promise<ConfigLembretes> {
 
 export async function salvarConfigLembretes(config: ConfigLembretes): Promise<void> {
   await Preferences.set({ key: CHAVE, value: JSON.stringify(config) })
+  // Horário de dormir/acordar decide o ícone "sono" do mascote.
+  void atualizarIconeDoMascote()
   // Espelho no perfil: best-effort, o aviso local não depende disso.
   void profileRepository
     .atualizarRotinaLembretes({

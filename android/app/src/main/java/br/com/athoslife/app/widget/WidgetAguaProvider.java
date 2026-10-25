@@ -22,8 +22,10 @@ import br.com.athoslife.app.R;
 
 /**
  * Widget de hidratação da tela inicial (athoslife-widget-hidratacao.html):
- *  - Life: abre o app; muda de humor (azul hidratado / desidratado abaixo de
- *    40% da meta / desidratado apagado sem água nenhuma).
+ *  - Life: abre o app. Animado (quadros gravados do life_agua.html: respira
+ *    e pisca em loop) e com a expressão da faixa da meta: seco triste sem
+ *    água, seco com sede abaixo de 40%, depois hidratado feliz, piscadinha
+ *    (quase lá, 75%) e refrescado (meta batida).
  *  - Copos (5): cada um = 1/5 da meta; toque soma o volume do copo.
  *  - Câmera: abre o app direto no scanner.
  *  - Botão de volume ("..." do HTML): 250 ml -> 500 ml -> 1 L.
@@ -33,6 +35,10 @@ public class WidgetAguaProvider extends AppWidgetProvider {
     static final String ACAO_VOLUME = "br.com.athoslife.app.WIDGET_AGUA_VOLUME";
 
     private static final int[] COPOS = {R.id.wg_copo_0, R.id.wg_copo_1, R.id.wg_copo_2, R.id.wg_copo_3, R.id.wg_copo_4};
+    /** Quadros do Life por faixa (drawable athos_wg_life_<faixa>_NN). */
+    static final int QUADROS = 20;
+    private static final String[] FAIXAS = {"vazio", "sede", "indo", "quase", "meta"};
+
     private static final int[] NIVEIS = {
             R.drawable.athos_wg_copo_0, R.drawable.athos_wg_copo_25, R.drawable.athos_wg_copo_50,
             R.drawable.athos_wg_copo_75, R.drawable.athos_wg_copo_100};
@@ -90,15 +96,13 @@ public class WidgetAguaProvider extends AppWidgetProvider {
         v.setTextViewText(R.id.wg_volume, e.copoMl >= 1000 ? "1 L" : e.copoMl + "\nml");
         v.setOnClickPendingIntent(R.id.wg_volume, broadcast(ctx, ACAO_VOLUME, 20));
 
-        // Humor do Life.
-        String humor = e.humor();
-        if ("hydrated".equals(humor)) {
-            v.setImageViewResource(R.id.wg_life, R.drawable.athos_widget_life);
-            v.setInt(R.id.wg_life, "setImageAlpha", 255);
-        } else {
-            // Life desidratado (rachado) — imagem do dono, 2026-09-28.
-            v.setImageViewResource(R.id.wg_life, R.drawable.athos_widget_life_seco);
-            v.setInt(R.id.wg_life, "setImageAlpha", "empty".equals(humor) ? 140 : 255);
+        // Life da faixa da meta: troca os 20 quadros do ViewFlipper.
+        String faixa = FAIXAS[e.faixa()];
+        for (int i = 0; i < QUADROS; i++) {
+            int quadro = ctx.getResources().getIdentifier(
+                    String.format(Locale.ROOT, "athos_wg_life_%s_%02d", faixa, i), "drawable", ctx.getPackageName());
+            int filho = ctx.getResources().getIdentifier("wg_life_" + i, "id", ctx.getPackageName());
+            if (quadro != 0 && filho != 0) v.setImageViewResource(filho, quadro);
         }
 
         v.setOnClickPendingIntent(R.id.wg_life, abrirApp(ctx, "athoslife://abrir/home", 30));

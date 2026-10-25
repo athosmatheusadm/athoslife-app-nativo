@@ -136,7 +136,7 @@ export function HabitsScreen(props: {
       {/* O Life de Hábitos: o padrão, no tamanho da Home (decisão do dono,
           29/09 — o de língua de fora saiu daqui). O brilho atrás segue o
           termômetro. */}
-      <LifeFlutuante humor="normal" foco="habitos" corBrilho={corLife} />
+      <LifeFlutuante humor="normal" foco="habitos" corBrilho={corLife} nivelHabitos={nivel} />
     </main>
   )
 }

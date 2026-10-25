@@ -3291,3 +3291,54 @@ Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
 4. Receitas temáticas quando o dono pedir (expositor pronto e escondido).
 5. Merge: PR #1 (`story-studio`) e depois `correcoes-teste-apk`, com aprovação.
 6. Tokens do GitHub e do Supabase: dono decidiu manter por enquanto.
+
+### 2026-10-25 — scanner mais rápido e com mais produtos, ícone do mascote, Life animado (branch `scanner-life-vivo`)
+
+- **Scanner sem escolher refeição antes** (dono: travava a agilidade). Pela
+  câmera do widget (ou /scanner direto) a tela abre já em foto × código; a
+  refeição sai do horário (`refeicaoPeloHorario`: café < 10h, almoço < 15h,
+  lanche < 18h, jantar) com "Vai pra: Almoço · pelo horário ▾" no topo pra
+  trocar, e dá pra trocar de novo na revisão (toque no nome da refeição).
+  Vindo da Dieta continua indo pra refeição de onde veio.
+- **Código de barras com mais cobertura** (tudo grátis, sem IA):
+  celular → base própria `produtos_codigo_barras` → Open Food Facts (tenta
+  UPC-A ↔ EAN-13, aceita nutrientes só por porção e kJ) → USDA FoodData
+  Central (`DEMO_KEY`, GTIN com 14 dígitos; cobre importados). O que vem das
+  bases públicas é gravado na base própria. Produto que ninguém conhece (ou
+  conhecido sem tabela): a pessoa **copia o rótulo** (coluna 100 g) em
+  `CadastroRotulo` e o produto entra pra todo mundo; a estimativa do Life
+  continua como 2ª opção. Migração `db/athoslife_codigo_barras_migration.sql`
+  (tabela + `salvar_produto_codigo_barras`: confere os números, 60
+  gravações/dia por pessoa, produto existente só muda pelo autor ou quando
+  dado de base pública substitui cadastro de usuário). **Aplicada** (autorizada
+  pelo dono) e conferida: RLS ligado, só leitura direta, anon sem acesso.
+- **Ícone do mascote** (`mascote-icone.zip` do dono, só Android — não há
+  projeto iOS): 3 `activity-alias` (Normal/Conquista/Sono), plugin
+  `mascote/MascoteIcone*` (pacote renomeado pra `br.com.athoslife.app.mascote`),
+  `RECEIVE_BOOT_COMPLETED`. Sono = horário de dormir/acordar salvo em
+  Perfil > Notificações; Conquista = calorias entre 90–110% da meta hoje
+  (mesma regra do convite do Story). `src/data/native/iconeMascote.ts`.
+  O MainActivity não tem mais LAUNCHER (passa pros alias).
+- **Life animado no app** (`life_foco.html`): o motor WebGL do protótipo roda
+  intacto em `public/life/vivo/foco.html`, gerado por
+  `scripts/gerar_life_vivo.py` (imagens base64 → `public/life/vivo/a/`,
+  HTML de 4 MB → 82 KB). `LifeMascote` usa ele pra normal/feliz/treino/chef
+  no mesmo tamanho do PNG (PNG fica até a animação estar pronta e se não
+  houver WebGL); Hábitos usa a versão roxa pelo nível. Tamanhos pequenos
+  (chat, abertura) seguem PNG (`estatico`). Toque no Life = pulinho.
+- **Widget com o Life água** (`life_agua.html`): widget não roda WebGL, então
+  gravei do motor real 20 quadros por faixa (respira e pisca, 3 s em loop,
+  ViewFlipper de 150 ms, mesmo 58×80 dp): seco triste (0), seco com sede
+  (< 40%), feliz, piscadinha (≥ 75%) e refrescado (meta). Quadros em
+  `drawable-nodpi/athos_wg_life_<faixa>_NN.webp`; `res/raw/athos_keep.xml`
+  segura eles no shrinkResources.
+
+Validado: `npm run typecheck` e `npm run build` ok. Life animado e quadros do
+widget conferidos num Chromium headless (4 versões, tamanho igual ao PNG).
+**Não testado no celular** (ícone, widget e WebGL no WebView → APK).
+
+**Pendências**
+1. Gerar APK e testar: ícone trocando (sono/conquista, com o app fechado),
+   widget animado, Life animado (desempenho em celular simples), scanner
+   pelo widget e cadastro pelo rótulo.
+2. Merge deste branch (depende de `correcoes-teste-apk`).
