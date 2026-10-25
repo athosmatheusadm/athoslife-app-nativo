@@ -5,7 +5,6 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_mascote_normal"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_mascote_normal_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
@@ -41,8 +40,7 @@
             android:enabled="true"
             android:exported="true"
             android:label="@string/app_name"
-            android:icon="@mipmap/ic_mascote_normal"
-            android:roundIcon="@mipmap/ic_mascote_normal_round">
+            android:icon="@mipmap/ic_mascote_normal">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -55,8 +53,7 @@
             android:enabled="false"
             android:exported="true"
             android:label="@string/app_name"
-            android:icon="@mipmap/ic_mascote_conquista"
-            android:roundIcon="@mipmap/ic_mascote_conquista_round">
+            android:icon="@mipmap/ic_mascote_conquista">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -69,8 +66,7 @@
             android:enabled="false"
             android:exported="true"
             android:label="@string/app_name"
-            android:icon="@mipmap/ic_mascote_sono"
-            android:roundIcon="@mipmap/ic_mascote_sono_round">
+            android:icon="@mipmap/ic_mascote_sono">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

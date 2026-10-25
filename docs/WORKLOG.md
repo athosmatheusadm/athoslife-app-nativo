@@ -3318,7 +3318,9 @@ Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
   `RECEIVE_BOOT_COMPLETED`. Sono = horário de dormir/acordar salvo em
   Perfil > Notificações; Conquista = calorias entre 90–110% da meta hoje
   (mesma regra do convite do Story). `src/data/native/iconeMascote.ts`.
-  O MainActivity não tem mais LAUNCHER (passa pros alias).
+  O MainActivity não tem mais LAUNCHER (passa pros alias). Sem a versão
+  redonda (`roundIcon`): o dono não quer ícone redondo. O formato final é a
+  máscara do launcher (Samsung = quadrado arredondado; Pixel corta em círculo).
 - **Life animado no app** (`life_foco.html`): o motor WebGL do protótipo roda
   intacto em `public/life/vivo/foco.html`, gerado por
   `scripts/gerar_life_vivo.py` (imagens base64 → `public/life/vivo/a/`,
