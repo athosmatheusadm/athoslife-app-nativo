@@ -3340,7 +3340,8 @@ widget conferidos num Chromium headless (4 versões, tamanho igual ao PNG).
 **Não testado no celular** (ícone, widget e WebGL no WebView → APK).
 
 **Pendências**
-1. Gerar APK e testar: ícone trocando (sono/conquista, com o app fechado),
+1. APK de teste gerado (run 40233093815, compilou o nativo novo sem erro) em
+   `Downloads/ATHOSlife-teste-25-10.apk`. Testar: ícone trocando (sono/conquista, com o app fechado),
    widget animado, Life animado (desempenho em celular simples), scanner
    pelo widget e cadastro pelo rótulo.
 2. Merge deste branch (depende de `correcoes-teste-apk`).
