@@ -3525,3 +3525,4 @@ nada.
 - Medição: as 15 últimas mensagens do dono somam ~1.070 caracteres (~300 tokens). O peso está no `PROMPT_LIFE` (~11.500 caracteres, ~2.900 tokens) + ferramentas (~800). O próximo ganho de custo é dividir o roteiro por assunto.
 - Validado: `deno check`, 62 testes Deno.
 - PENDENTE: aplicar `db/athoslife_memoria_camadas_migration.sql` ANTES de publicar a `ai-proxy` (precisa deploy; autorização do dono).
+- 27/10 (depois): dono autorizou. APLICADA `athoslife_memoria_camadas` (colunas conferidas) e `ai-proxy` publicada com o histórico em camadas. Falta: conferir no chat real se o `[[RESUMO]]` some do texto e é gravado, e ler os tokens separados no log.
