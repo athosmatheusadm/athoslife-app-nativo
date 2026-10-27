@@ -3481,3 +3481,20 @@ Guaraná Antarctica não aparece no MX, "frango" segue com o básico primeiro.
 2. Push: precisa do token do GitHub de novo.
 3. ~~Ordem da busca "refrigerante"~~: dono aprovou como está (genérico
    primeiro, marcas depois; nome da marca cai direto nela).
+
+## 2026-10-27 (noite) — refeição digitada: alimento padrão primeiro
+
+Conferindo a refeição digitada no chat (o chat usa só o 1º resultado da
+busca): "arroz" virava Farinha de arroz, "rice" virava Rice flour, "taco" no
+MX virava Água de coco Vita Coco (apelido "vitacoco") e "tacos" não achava
+nada.
+- `db/athoslife_busca_padroes_migration.sql`: apelidos padrão (arroz -> branco
+  cozido, feijão -> carioca, ovo -> cozido, banana -> prata, frango -> peito
+  grelhado, bife -> contrafilé, pão -> francês, leite -> integral, taco ->
+  Taco de carne), casou-só-pelo-apelido vai depois de casou-pelo-nome (o
+  "refrigerante" aprovado continua igual), 1ª palavra > palavra no meio.
+  Conferido com consulta só de leitura. Busca offline com a mesma ordem.
+- ai-proxy: plural tenta o singular quando não acha ("tacos" -> "taco",
+  "limões" -> "limão"). Teste novo (55 Deno ok), typecheck e build ok.
+
+**Pendências:** aplicar a migração + publicar a ai-proxy (esperando o OK do dono).

@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1'
-import { gramasDoItem, lerItens, refeicaoPelaHora } from './refeicaoDigitada.ts'
+import { gramasDoItem, lerItens, refeicaoPelaHora, singularDe } from './refeicaoDigitada.ts'
 
 const arroz = { porcaoG: 100, unidadeG: null }
 const ovo = { porcaoG: 100, unidadeG: 50 }
@@ -46,4 +46,16 @@ Deno.test('refeição pela hora (madrugada é jantar)', () => {
   assertEquals(refeicaoPelaHora(12), 'almoco')
   assertEquals(refeicaoPelaHora(16), 'lanche')
   assertEquals(refeicaoPelaHora(20), 'jantar')
+})
+
+Deno.test('singularDe: plural vira singular só pra 2ª tentativa', () => {
+  assertEquals(singularDe('tacos'), 'taco')
+  assertEquals(singularDe('ovos'), 'ovo')
+  assertEquals(singularDe('limões'), 'limão')
+  assertEquals(singularDe('pães'), 'pão')
+  assertEquals(singularDe('frijoles'), 'frijol')
+  assertEquals(singularDe('pão de queijo'), null)
+  assertEquals(singularDe('tortillas de maíz'), null)
+  assertEquals(singularDe('eggs'), 'egg')
+  assertEquals(singularDe('gás'), null)
 })

@@ -100,17 +100,20 @@ function buscarNaBase(base: readonly AlimentoRow[], termo: string, limite: numbe
     const apelidos = (row.aliases ?? []).map(normalizar)
     const nomes = [row.nome, row.nome_en, row.nome_es].filter((n): n is string => !!n).map(normalizar)
     const local = normalizar(nomeLocal(row))
-    if (!palavras.every((p) => nomes.some((n) => n.includes(p))) && !apelidos.some((a) => a.includes(termoTodo))) continue
-    // Mesma ordem da RPC: nome igual; alimento simples antes de prato
-    // pronto/doce; TACO antes; palavra inteira > começa com >
-    // palavra que começa com > resto; nome curto antes.
+    const peloNome = palavras.every((p) => nomes.some((n) => n.includes(p)))
+    if (!peloNome && !apelidos.some((a) => a.includes(termoTodo))) continue
+    // Mesma ordem da RPC: nome igual/apelido exato; casou pelo nome antes
+    // de só pelo apelido; simples antes de prato pronto/doce; TACO antes;
+    // 1ª palavra > palavra inteira > começa com > palavra que começa > resto;
+    // nome curto antes.
     const igual = local === termoTodo || apelidos.includes(termoTodo) ? 0 : 1
-    const posicao = ` ${local.replace(/,/g, ' ')} `.includes(` ${termoTodo} `)
+    const soApelido = peloNome ? 0 : 1
+    const posicao = local === termoTodo || local.startsWith(`${termoTodo} `)
       ? 0
-      : local.startsWith(termoTodo) ? 1 : local.includes(` ${termoTodo}`) ? 2 : 3
+      : ` ${local} `.includes(` ${termoTodo} `) ? 1 : local.startsWith(termoTodo) ? 2 : local.includes(` ${termoTodo}`) ? 3 : 4
     const pronto = row.categoria === 'refeicao' || row.categoria === 'doce' ? 1 : 0
     const taco = row.taco_id != null ? 0 : 1
-    achados.push({ row, nota: igual * 1000 + pronto * 100 + taco * 10 + posicao })
+    achados.push({ row, nota: igual * 10000 + soApelido * 1000 + pronto * 100 + taco * 10 + posicao })
   }
   achados.sort((a, b) => a.nota - b.nota || nomeLocal(a.row).length - nomeLocal(b.row).length)
   return achados.slice(0, limite).map((a) => paraDominio(a.row))

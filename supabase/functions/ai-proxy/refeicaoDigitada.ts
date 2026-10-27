@@ -94,6 +94,19 @@ export function gramasDoItem(
   return Math.min(MAX_GRAMAS, Math.max(1, Math.round(g)))
 }
 
+/** Plural simples -> singular, só pra 2ª tentativa da busca ("tacos" -> "taco"). */
+export function singularDe(nome: string): string | null {
+  const t = nome.trim()
+  const ultima = t.split(/\s+/).pop() ?? ''
+  if (ultima.length < 4) return null
+  let s: string
+  if (/[õã]es$/i.test(ultima)) s = `${ultima.slice(0, -3)}ão` // limões, pães
+  else if (/[rzl]es$/i.test(ultima)) s = ultima.slice(0, -2) // hambúrgueres, frijoles
+  else if (/s$/i.test(ultima)) s = ultima.slice(0, -1) // tacos, ovos, eggs
+  else return null
+  return t.slice(0, t.length - ultima.length) + s
+}
+
 /** Acha cada alimento na base (mesma busca da Dieta, já com o básico primeiro). */
 export async function acharNaBase(
   sb: Sb,
@@ -103,8 +116,15 @@ export async function acharNaBase(
 ): Promise<{ achados: ItemAchado[]; faltando: string[] }> {
   const achados: ItemAchado[] = []
   const faltando: string[] = []
+  const buscar = (termo: string) => sb.rpc('buscar_alimentos', { p_termo: termo, p_idioma: idioma, p_pais: pais, p_limite: 1 })
   const buscas = await Promise.all(
-    itens.map((i) => sb.rpc('buscar_alimentos', { p_termo: i.nome, p_idioma: idioma, p_pais: pais, p_limite: 1 })),
+    itens.map(async (i) => {
+      const r = await buscar(i.nome)
+      if ((r.data as unknown[] | null)?.length) return r
+      // "tacos", "ovos", "panquecas": a base tem o nome no singular.
+      const singular = singularDe(i.nome)
+      return singular ? buscar(singular) : r
+    }),
   )
   const ids = buscas.map((b) => (b.data as { id: string }[] | null)?.[0]?.id).filter((x): x is string => !!x)
   const { data: extras } = ids.length
