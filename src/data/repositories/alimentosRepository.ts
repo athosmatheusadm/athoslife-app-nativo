@@ -92,15 +92,23 @@ function normalizar(t: string): string {
 /** Busca na base guardada — mesma ideia da RPC buscar_alimentos (pt/en/es, sem acento, só do país). */
 function buscarNaBase(base: readonly AlimentoRow[], termo: string, limite: number): AlimentoBase[] {
   const palavras = normalizar(termo).split(/\s+/).filter(Boolean)
+  const termoTodo = palavras.join(' ')
   const achados: { row: AlimentoRow; nota: number }[] = []
   for (const row of base) {
     if (!valeNoPais(row)) continue
     const nomes = [row.nome, row.nome_en, row.nome_es].filter((n): n is string => !!n).map(normalizar)
     const local = normalizar(nomeLocal(row))
     if (!palavras.every((p) => nomes.some((n) => n.includes(p)))) continue
-    const primeira = palavras[0] ?? ''
-    const nota = local.startsWith(primeira) ? 0 : local.includes(` ${primeira}`) ? 1 : 2
-    achados.push({ row, nota })
+    // Mesma ordem da RPC: nome igual; alimento simples antes de prato
+    // pronto/doce; TACO antes; palavra inteira > começa com >
+    // palavra que começa com > resto; nome curto antes.
+    const igual = local === termoTodo ? 0 : 1
+    const posicao = ` ${local.replace(/,/g, ' ')} `.includes(` ${termoTodo} `)
+      ? 0
+      : local.startsWith(termoTodo) ? 1 : local.includes(` ${termoTodo}`) ? 2 : 3
+    const pronto = row.categoria === 'refeicao' || row.categoria === 'doce' ? 1 : 0
+    const taco = row.taco_id != null ? 0 : 1
+    achados.push({ row, nota: igual * 1000 + pronto * 100 + taco * 10 + posicao })
   }
   achados.sort((a, b) => a.nota - b.nota || nomeLocal(a.row).length - nomeLocal(b.row).length)
   return achados.slice(0, limite).map((a) => paraDominio(a.row))

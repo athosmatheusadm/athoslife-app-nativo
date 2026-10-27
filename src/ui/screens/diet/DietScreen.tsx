@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { fmtG } from '@domain/rules/formatoNumero'
+import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
@@ -387,8 +387,8 @@ export function DietScreen(props: {
       <div className="flex items-center gap-2 px-1">
         <ActivityIcon icone="calendario" tile={false} className="h-5 w-5" />
         <div>
-          <div className="font-semibold capitalize text-content-hi">{tituloDoDia}</div>
-          <div className="text-micro tabular-nums text-content-low">{m.dieta.kcalRegistradas(consumido.kcal)}</div>
+          <div className="font-semibold text-content-hi">{tituloDoDia.charAt(0).toLocaleUpperCase(idioma) + tituloDoDia.slice(1)}</div>
+          <div className="text-micro tabular-nums text-content-low">{m.dieta.kcalRegistradas(fmtKcal(consumido.kcal))}</div>
         </div>
       </div>
 

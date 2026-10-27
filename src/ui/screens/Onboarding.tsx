@@ -313,7 +313,7 @@ export function Onboarding() {
             <Opcao icone="🌱" selecionada={e.objetivos.includes('melhorar_habitos')} onClick={() => alternar('objetivos', 'melhorar_habitos')}>
               {o.corpo.melhorarHabitos}
             </Opcao>
-            <Opcao icone="✓" selecionada={e.objetivos.includes('outro')} onClick={() => alternar('objetivos', 'outro')}>
+            <Opcao icone="✎" selecionada={e.objetivos.includes('outro')} onClick={() => alternar('objetivos', 'outro')}>
               {o.corpo.outro}
             </Opcao>
           </Opcoes>
@@ -354,7 +354,7 @@ export function Onboarding() {
             <Opcao inteira icone="🖥" selecionada={e.rotina.includes('remoto')} onClick={() => alternar('rotina', 'remoto')}>
               {o.rotina.remoto}
             </Opcao>
-            <Opcao inteira icone="✓" selecionada={e.rotina.includes('outro')} onClick={() => alternar('rotina', 'outro')}>
+            <Opcao inteira icone="✎" selecionada={e.rotina.includes('outro')} onClick={() => alternar('rotina', 'outro')}>
               {o.rotina.outro}
             </Opcao>
           </Opcoes>

@@ -38,9 +38,10 @@ export const ETIQUETAS_CHECKIN: readonly Etiqueta[] = [
   'sono', 'trabalho', 'treino', 'comida', 'familia', 'relacionamento', 'saude', 'dinheiro', 'nada',
 ]
 
+/** Madrugada (0h–4h) ainda é noite: "Bom dia!" às 00:20 soa estranho. */
 export function momentoAgora(d: Date = new Date()): Momento {
   const h = d.getHours()
-  return h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite'
+  return h < 5 ? 'noite' : h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite'
 }
 
 export function ehSentimento(v: string): v is Sentimento {

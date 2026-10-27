@@ -7,7 +7,41 @@ import type { Mensagens } from './mensagens/tipo'
 
 export const DICIONARIOS: Record<Idioma, Mensagens> = { 'pt-BR': ptBR, en, es }
 
+/**
+ * Nome das refeições que muda de país pra país no mesmo idioma. No México o
+ * almoço é "Comida" ("Almuerzo" lá é um café reforçado); o resto da América
+ * Latina e a Espanha usam "Almuerzo". Troca só os textos que são exatamente
+ * o nome da refeição.
+ */
+const TROCAS_POR_PAIS: Partial<Record<Idioma, Record<string, Record<string, string>>>> = {
+  es: { MX: { Almuerzo: 'Comida' } },
+}
+
+function trocarTextos<T>(v: T, trocas: Record<string, string>): T {
+  if (typeof v === 'string') return (trocas[v] ?? v) as T
+  if (Array.isArray(v) || typeof v !== 'object' || v === null) return v
+  const out: Record<string, unknown> = {}
+  for (const [k, x] of Object.entries(v)) out[k] = trocarTextos(x, trocas)
+  return out as T
+}
+
+const cache = new Map<string, Mensagens>()
+
+/** Dicionário do idioma com os nomes regionais do país, quando há. */
+export function dicionario(idioma: Idioma, pais: string | null): Mensagens {
+  const trocas = pais ? TROCAS_POR_PAIS[idioma]?.[pais] : undefined
+  if (!trocas) return DICIONARIOS[idioma] ?? ptBR
+  const chave = `${idioma}-${pais}`
+  let d = cache.get(chave)
+  if (!d) {
+    d = trocarTextos(DICIONARIOS[idioma], trocas)
+    cache.set(chave, d)
+  }
+  return d
+}
+
 /** Textos no idioma em uso, pra quem não é React (avisos do sistema, repositórios). */
 export function mensagensAtuais(): Mensagens {
-  return DICIONARIOS[localidadeAtual().idioma] ?? ptBR
+  const { idioma, pais } = localidadeAtual()
+  return dicionario(idioma, pais)
 }

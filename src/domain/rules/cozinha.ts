@@ -229,6 +229,7 @@ export function macrosRestantes(metas: Macros, consumido: Macros): Macros {
 /** Refeição mais provável pelo horário — o padrão do "Registrar na refeição". */
 export function refeicaoPeloHorario(agora: Date = new Date()): 'cafe' | 'almoco' | 'lanche' | 'jantar' {
   const h = agora.getHours()
+  if (h < 5) return 'jantar' // madrugada: ceia/jantar tardio, não café
   if (h < 10) return 'cafe'
   if (h < 15) return 'almoco'
   if (h < 18) return 'lanche'

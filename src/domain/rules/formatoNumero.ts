@@ -4,9 +4,19 @@
  * (peso, água, carga) usam daqui em vez de trocar ponto por vírgula fixo.
  */
 let idioma = 'pt-BR'
+/** Unidades do perfil (Perfil > Idioma e região). O banco é sempre métrico. */
+let imperial = false
 
 export function definirIdiomaNumeros(i: string): void {
   idioma = i
+}
+
+export function definirUnidadesNumeros(u: 'metrico' | 'imperial'): void {
+  imperial = u === 'imperial'
+}
+
+export function usaImperial(): boolean {
+  return imperial
 }
 
 /** `casas` = máximo de casas decimais; `minimo` = casas sempre mostradas. */

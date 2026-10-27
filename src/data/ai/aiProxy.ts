@@ -275,6 +275,30 @@ export type AcaoLife =
   | { tipo: 'escolha'; id: string; opcoes: { valor: EscolhaAcao; rotulo: string }[] }
   /** Pesagem ou meta gravada pelo chat (sem IA, sem cota) — recarrega o card "Meu peso". */
   | { tipo: 'peso_atualizado' }
+  /**
+   * Refeição digitada ("almocei arroz e feijão", ai-proxy v4.5): alimentos já
+   * achados na base. O chat mostra o cartão de conferência; só grava quando a
+   * pessoa confirma.
+   */
+  | {
+      tipo: 'registrar_itens'
+      dia: string
+      refeicao: { tipo: 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'; extraId: string | null; nome: string }
+      itens: ItemRegistroLife[]
+    }
+
+/** Um alimento do cartão de conferência (macros da base valem pra `porcaoG`). */
+export interface ItemRegistroLife {
+  alimentoId: string
+  nome: string
+  gramas: number
+  porcaoG: number
+  calorias: number
+  proteina: number
+  carboidrato: number
+  gordura: number
+  unidadeG: number | null
+}
 
 export interface RespostaChat {
   resposta: string
@@ -283,6 +307,26 @@ export interface RespostaChat {
   acao: AcaoLife | null
   /** A pessoa contou algo que valia lembrar e ainda não decidiu sobre a memória (v4.0). */
   sugerirMemoria: boolean
+  /** O que motivou o convite: o app guarda se ela aceitar (v4.5). */
+  memoriaPendente: readonly LembrancaPendente[]
+}
+
+const CATEGORIAS_LEMBRANCA = ['gosto', 'rotina', 'objetivo', 'evento', 'pessoa', 'estilo', 'contexto'] as const
+export interface LembrancaPendente {
+  readonly categoria: (typeof CATEGORIAS_LEMBRANCA)[number]
+  readonly texto: string
+  readonly data: string | null
+}
+
+function lerPendentes(v: unknown): LembrancaPendente[] {
+  if (!Array.isArray(v)) return []
+  return v.flatMap((x) => {
+    const o = (x ?? {}) as Record<string, unknown>
+    const categoria = CATEGORIAS_LEMBRANCA.find((c) => c === o.categoria)
+    const texto = typeof o.texto === 'string' ? o.texto.trim().slice(0, 200) : ''
+    if (!categoria || texto.length < 3) return []
+    return [{ categoria, texto, data: typeof o.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.data) ? o.data : null }]
+  }).slice(0, 2)
 }
 
 /**
@@ -304,13 +348,25 @@ export async function enviarMensagemChat(
   idEnvio: string = crypto.randomUUID(),
 ): Promise<RespostaChat> {
   const diaLeve = await diaLeveHoje()
-  const cru = await chamar<{ resposta: string; restantes: number | null; acao?: AcaoLife; sugerir_memoria?: boolean }>('chat', {
+  const cru = await chamar<{
+    resposta: string
+    restantes: number | null
+    acao?: AcaoLife
+    sugerir_memoria?: boolean
+    memoria_pendente?: unknown
+  }>('chat', {
     mensagem,
     foco,
     id_envio: idEnvio,
     ...(diaLeve ? { dia_leve: diaLeve } : {}),
   })
-  return { resposta: cru.resposta, restantes: cru.restantes, acao: cru.acao ?? null, sugerirMemoria: cru.sugerir_memoria === true }
+  return {
+    resposta: cru.resposta,
+    restantes: cru.restantes,
+    acao: cru.acao ?? null,
+    sugerirMemoria: cru.sugerir_memoria === true,
+    memoriaPendente: lerPendentes(cru.memoria_pendente),
+  }
 }
 
 /** Check-in v3 (ai-proxy v4.0): o servidor grava e o Life responde numa frase. Sem cota do chat. */

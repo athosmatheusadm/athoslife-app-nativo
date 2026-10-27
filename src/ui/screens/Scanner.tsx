@@ -23,6 +23,7 @@ import { PlanoParaEstimar, fimDaEstimativaGratis, mensagemErroEstimar } from '@u
 import { CameraCodigo } from '@ui/screens/scanner/CameraCodigo'
 import { RevisaoScanner } from '@ui/screens/scanner/RevisaoScanner'
 import { CadastroRotulo } from '@ui/screens/scanner/CadastroRotulo'
+import { limitarGramas } from '@domain/rules/limites'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
@@ -293,7 +294,8 @@ export function Scanner() {
   }
 
   function mudarGramas(i: ItemRascunho, gramas: number): ItemRascunho {
-    return i.scan ? atualizarItemScan(i, { gramas: Math.max(0, gramas) }) : reescalarItem(i, gramas)
+    const g = limitarGramas(gramas)
+    return i.scan ? atualizarItemScan(i, { gramas: g }) : reescalarItem(i, g)
   }
 
   function mudarItem(id: string, fn: (i: ItemRascunho) => ItemRascunho) {

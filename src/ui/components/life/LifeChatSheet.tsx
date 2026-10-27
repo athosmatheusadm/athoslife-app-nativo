@@ -13,6 +13,7 @@ import {
   type AcaoLife,
   type EscolhaAcao,
   type FocoLife,
+  type LembrancaPendente,
   type MensagemChat,
 } from '@data/ai/aiProxy'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
@@ -25,6 +26,8 @@ import {
   marcarPausaLocal,
   retomarLifeHoje,
 } from '@data/lifePausa'
+import { TextoLife } from './baloes'
+import { RegistroNoChat } from './RegistroNoChat'
 import { useI18n } from '@/i18n/I18nProvider'
 import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
@@ -93,6 +96,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   const [erro, setErro] = useState<string | null>(null)
   const [restantes, setRestantes] = useState<number | null>(null)
   const [escolha, setEscolha] = useState<Extract<AcaoLife, { tipo: 'escolha' }> | null>(null)
+  const pendentesMemoria = useRef<LembrancaPendente[]>([])
+  const [registro, setRegistro] = useState<Extract<AcaoLife, { tipo: 'registrar_itens' }> | null>(null)
   const [pausado, setPausado] = useState(false)
   const [mudandoPausa, setMudandoPausa] = useState(false)
   // Mensagem que falhou: reenviar o mesmo texto usa o mesmo id (sem ação em dobro).
@@ -145,6 +150,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   /** O que o Life fez no app — só chega depois que o servidor gravou. */
   function aplicarAcao(acao: AcaoLife | null) {
     setEscolha(acao?.tipo === 'escolha' ? acao : null)
+    setRegistro(acao?.tipo === 'registrar_itens' ? acao : null)
     if (acao?.tipo === 'refeicao_atualizada') avisarRegistroDoDia()
     if (acao?.tipo === 'peso_atualizado') {
       avisarRegistroDoDia()
@@ -217,6 +223,13 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     setErroMemoria(false)
     try {
       await lifeMemoriaRepository.definirConsentimento(aceitou)
+      // O que ela contou e motivou o convite entra agora (antes se perdia).
+      if (aceitou) {
+        for (const l of pendentesMemoria.current) {
+          await lifeMemoriaRepository.contar(l.texto, l.categoria, l.data).catch(() => {})
+        }
+      }
+      pendentesMemoria.current = []
       vibrar.leve()
       setConviteMemoria(aceitou ? 'aceito' : 'recusado')
     } catch {
@@ -265,6 +278,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       if (r.restantes !== null) setRestantes(r.restantes)
       aplicarAcao(r.acao)
       if (r.sugerirMemoria) setConviteMemoria((c) => c ?? 'mostrar')
+      if (r.memoriaPendente.length) pendentesMemoria.current = [...pendentesMemoria.current, ...r.memoriaPendente].slice(-4)
     } catch (e) {
       falhaRef.current = { texto: mensagem, id }
       // A mensagem não foi aceita: tira do histórico e devolve pro campo.
@@ -348,7 +362,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                         : 'border border-surface-4 bg-surface-2 text-content-mid'
                     }`}
                   >
-                    {c.texto}
+                    {msg.autor === 'life' ? <TextoLife texto={c.texto} /> : <span className="whitespace-pre-line">{c.texto}</span>}
                   </div>
                 )}
                 {c.receitas.map((id) => {
@@ -400,6 +414,22 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                 </button>
               ))}
             </div>
+          )}
+
+          {registro && !enviando && (
+            <RegistroNoChat
+              key={registro.dia + registro.itens.map((i) => i.alimentoId).join()}
+              acao={registro}
+              onPronto={(texto) => {
+                setRegistro(null)
+                setHistorico((h) => [...h, { autor: 'life', texto }])
+                avisarRegistroDoDia()
+              }}
+              onCancelar={() => {
+                setRegistro(null)
+                setHistorico((h) => [...h, { autor: 'life', texto: tc.registro.cancelado }])
+              }}
+            />
           )}
 
           {(conviteMemoria === 'mostrar' || conviteMemoria === 'salvando') && (

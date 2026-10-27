@@ -29,6 +29,7 @@ export interface Lembranca { categoria: CategoriaMemoria; texto: string; data: s
 const MARCA_LEMBRAR = /\[\[\s*LEMBRAR\s*:\s*([^\]|]+?)\s*\|\s*([^\]|]+?)\s*(?:\|\s*(\d{4}-\d{2}-\d{2})\s*)?\]\]/gi
 const MARCA_ESQUECER = /\[\[\s*ESQUECER\s*:\s*([^\]]+?)\s*\]\]/gi
 const MARCA_QUALQUER = /\[\[\s*(LEMBRAR|ESQUECER)\b[^\]]*\]\]/gi
+const MARCA_ABERTA_NO_FIM = /\[\[\s*(LEMBRAR|ESQUECER)\b[^\]]*\]?$/i
 
 export function extrairMarcasMemoria(resposta: string): { texto: string; lembrar: Lembranca[]; esquecer: string[] } {
   const lembrar: Lembranca[] = []
@@ -40,7 +41,9 @@ export function extrairMarcasMemoria(resposta: string): { texto: string; lembrar
     lembrar.push({ categoria, texto: m[2].trim().slice(0, 200), data })
   }
   for (const m of resposta.matchAll(MARCA_ESQUECER)) esquecer.push(m[1].trim().slice(0, 120))
-  const texto = resposta.replace(MARCA_QUALQUER, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+  // Resposta cortada no limite de tokens pode deixar "[[LEMBRAR: rotina | Trab" sem fechar: some também.
+  const texto = resposta.replace(MARCA_QUALQUER, '').replace(MARCA_ABERTA_NO_FIM, '')
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
   return { texto, lembrar: lembrar.slice(0, 2), esquecer: esquecer.slice(0, 2) }
 }
 
@@ -157,7 +160,7 @@ export function validarCheckin(corpo: Record<string, unknown>, horaLocal: number
   if (!s) return null
   const momento: Momento = corpo.momento === 'manha' || corpo.momento === 'tarde' || corpo.momento === 'noite'
     ? corpo.momento
-    : horaLocal < 12 ? 'manha' : horaLocal < 18 ? 'tarde' : 'noite'
+    : horaLocal < 5 ? 'noite' : horaLocal < 12 ? 'manha' : horaLocal < 18 ? 'tarde' : 'noite'
   const etiquetas = Array.isArray(corpo.etiquetas)
     ? [...new Set(corpo.etiquetas.filter((x): x is string => typeof x === 'string' && (ETIQUETAS as readonly string[]).includes(x)))].slice(0, 6)
     : []
@@ -207,6 +210,7 @@ export const REGRAS_CHECKIN = `
 AGORA É UM CHECK-IN, NÃO UMA CONVERSA:
 - Responda com UMA frase curta (no máximo 25 palavras), acolhendo o sentimento do jeito de um amigo. Pode usar o que você já sabe dela, se encaixar.
 - Sentimento pesado (agradável 1 ou 2): acolha sem tentar consertar e sem dica; pode dizer que está por aqui se ela quiser conversar.
+- Varie o fechamento. "Tô por aqui"/"tô aqui" no máximo de vez em quando, nunca se uma resposta recente já usou; muitas vezes acolher já basta, sem frase de fechamento. Não repita o começo nem o fim das suas últimas respostas de check-in.
 - Sentimento bom: celebre de leve.
 - Não faça pergunta, não dê conselho de comida/treino, não fale de metas nem de registros. Sem marcas [[...]].`
 
@@ -264,7 +268,7 @@ const TXT_ABERTURA: Record<Idioma, {
     eventoOntem: (t) => `E aí, como foi ontem (${t.charAt(0).toLowerCase() + t.slice(1)})? Quero saber!`,
     marco: (n, h) => `${n} dias firme em "${h}"! Isso é muito. Como tá sendo pra você?`,
     pesado: 'Os últimos dias pareceram mais pesados. Sem pressa nenhuma: se quiser conversar, tô aqui.',
-    voltou: (nome) => `${nome ? `${nome}, que` : 'Que'} bom te ver por aqui! Sem cobrança: bora começar leve hoje?`,
+    voltou: (nome) => `${nome ? `${nome}, que` : 'Que'} bom te ver por aqui! No seu ritmo: bora começar leve hoje?`,
   },
   en: {
     eventoHoje: (t) => `Today's the day: ${t.charAt(0).toLowerCase() + t.slice(1)}! Rooting for you 🍀`,
@@ -288,7 +292,9 @@ export function escolherAbertura(d: DadosAbertura): { motivo: string; texto: str
   if (d.pausadoHoje || !d.puxarConversa || d.jaFalouHoje) return null
   const t = TXT_ABERTURA[d.idioma]
   const recente = (motivo: string, dias: number) => d.motivosRecentes.some((m) => m.motivo === motivo && diff(m.dia, d.hoje) < dias)
-  const primeiroNome = d.nome?.trim().split(/\s+/)[0] ?? null
+  // Nome como a pessoa digitou pode vir em minúscula ("matheus") — sai "Matheus".
+  const nome0 = d.nome?.trim().split(/\s+/)[0] || null
+  const primeiroNome = nome0 ? nome0.charAt(0).toLocaleUpperCase() + nome0.slice(1) : null
 
   const evHoje = d.eventos.find((e) => e.data === d.hoje)
   if (evHoje && !recente(`evento:${evHoje.texto}`, 2)) return { motivo: `evento:${evHoje.texto}`.slice(0, 120), texto: t.eventoHoje(evHoje.texto) }
@@ -369,9 +375,14 @@ export async function linhaCheckinsHoje(sb: Sb, userId: string, hoje: string): P
 /** Grava o que o modelo marcou. Devolve se faltou consentimento para algo que valia guardar. */
 export async function aplicarMarcasMemoria(
   sb: Sb, userId: string, consentimento: boolean | null, marcas: { lembrar: Lembranca[]; esquecer: string[] },
-): Promise<{ sugerirMemoria: boolean; guardadas: number; esquecidas: number }> {
+): Promise<{ sugerirMemoria: boolean; pendentes: Lembranca[]; guardadas: number; esquecidas: number }> {
   const validas = marcas.lembrar.filter((l) => memoriaPermitida(l))
-  if (consentimento !== true) return { sugerirMemoria: consentimento === null && validas.length > 0, guardadas: 0, esquecidas: 0 }
+  if (consentimento !== true) {
+    // Ainda não decidiu: o app pergunta e, se ela aceitar, guarda ESTA lembrança
+    // também (antes ela se perdia e a memória só valia dali pra frente).
+    const pergunta = consentimento === null && validas.length > 0
+    return { sugerirMemoria: pergunta, pendentes: pergunta ? validas : [], guardadas: 0, esquecidas: 0 }
+  }
   let guardadas = 0, esquecidas = 0
   for (const l of validas) {
     const { data, error } = await sb.rpc('life_guardar_memoria', { p_user_id: userId, p_texto: l.texto, p_categoria: l.categoria, p_data: l.data })
@@ -383,7 +394,7 @@ export async function aplicarMarcasMemoria(
     if (error) console.warn('[memoria] esquecer falhou', error.message)
     else if (data) esquecidas++
   }
-  return { sugerirMemoria: false, guardadas, esquecidas }
+  return { sugerirMemoria: false, pendentes: [], guardadas, esquecidas }
 }
 
 export async function dadosAbertura(sb: Sb, userId: string, hoje: string, idioma: Idioma): Promise<DadosAbertura> {

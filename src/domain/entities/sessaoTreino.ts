@@ -388,6 +388,14 @@ export interface EstadoLiveActivity {
   readonly proximo: string | null
   /** Descanso padrão — o nativo usa se tocarem "confirmar" com o app dormindo. */
   readonly descansoSeg: number
+  /**
+   * Só falta o exercício atual: "confirmar" a última série dele na tela de
+   * bloqueio com o app dormindo fecha o treino (resumo abaixo + a série) em
+   * vez de abrir outro descanso.
+   */
+  readonly outrosExerciciosCompletos: boolean
+  readonly seriesFeitasAteAqui: number
+  readonly volumeAteAquiKg: number
 }
 
 export function paraLiveActivity(s: SessaoTreino, agora: number = Date.now()): EstadoLiveActivity | null {
@@ -398,10 +406,13 @@ export function paraLiveActivity(s: SessaoTreino, agora: number = Date.now()): E
       nomeExercicio: '', serieAtual: 0, totalSeries: 0, medida: 'reps', cargaKg: null, reps: null, segundos: null,
       status: 'concluida', descansoFimEm: null, cronometroFimEm: null, cronometroInicioEm: null, cronometroPausadoEm: null,
       resumoSeries: r.seriesFeitas, resumoVolumeKg: r.volumeKg, proximo: null, descansoSeg: s.descansoSeg,
+      outrosExerciciosCompletos: false, seriesFeitasAteAqui: r.seriesFeitas, volumeAteAquiKg: r.volumeKg,
     }
   }
   const ex = exercicioAtual(s)
   if (!ex) return null
+  const ate = resumirSessao(s, agora)
+  const outrosExerciciosCompletos = s.exercicios.every((e, i) => i === s.atual || exercicioCompleto(e))
   return {
     nomeExercicio: ex.nome,
     serieAtual: indiceSerie(ex) + 1,
@@ -419,5 +430,8 @@ export function paraLiveActivity(s: SessaoTreino, agora: number = Date.now()): E
     resumoVolumeKg: null,
     proximo: ex.feitas.length === 0 && s.status === 'descanso' ? ex.nome : null,
     descansoSeg: s.descansoSeg,
+    outrosExerciciosCompletos,
+    seriesFeitasAteAqui: ate.seriesFeitas,
+    volumeAteAquiKg: ate.volumeKg,
   }
 }

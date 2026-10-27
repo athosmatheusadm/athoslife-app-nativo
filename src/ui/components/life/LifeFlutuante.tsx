@@ -57,12 +57,13 @@ export function LifeFlutuante(props: {
       >
         {props.corBrilho && (
           <span
-            className="absolute inset-x-0 bottom-0 mx-auto h-24 w-24 rounded-full blur-2xl"
+            className="absolute inset-x-0 bottom-0 mx-auto h-20 w-20 rounded-full blur-2xl min-[380px]:h-24 min-[380px]:w-24"
             style={{ backgroundColor: props.corBrilho, opacity: 0.35 }}
             aria-hidden="true"
           />
         )}
-        <LifeMascote humor={props.humor} alt="" className="relative h-32" nivelHabitos={props.nivelHabitos} />
+        {/* Em celular estreito (360 px) o Life menor não cobre "Jantar" e "+ Nova refeição". */}
+        <LifeMascote humor={props.humor} alt="" className="relative h-24 min-[380px]:h-32" nivelHabitos={props.nivelHabitos} />
         {/* Área de toque: o corpo do Life, não a imagem inteira. */}
         <button
           type="button"
@@ -71,7 +72,7 @@ export function LifeFlutuante(props: {
             setAberto(true)
           }}
           aria-label={m.lifeChat.abrir}
-          className={`absolute bottom-2 left-1/2 h-24 w-20 -translate-x-1/2 rounded-full active:scale-95 ${
+          className={`absolute bottom-2 left-1/2 h-20 w-16 -translate-x-1/2 rounded-full active:scale-95 min-[380px]:h-24 min-[380px]:w-20 ${
             rolando ? 'pointer-events-none' : 'pointer-events-auto'
           }`}
         />

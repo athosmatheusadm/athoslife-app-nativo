@@ -1,3 +1,4 @@
+import { MAX_ML_AGUA } from '@domain/rules/limites'
 import { supabase } from '@data/supabase/client'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { lerComCache, mexerNoCache } from '@data/offline/cache'
@@ -90,7 +91,7 @@ export const aguaRepository = {
    * > 0. "Desfazer" é remover o último registro, não somar negativo.
    */
   async adicionar(quantidadeMl: number): Promise<RegistroAgua> {
-    if (quantidadeMl <= 0) throw new Error('quantidade_invalida')
+    if (quantidadeMl <= 0 || quantidadeMl > MAX_ML_AGUA) throw new Error('quantidade_invalida')
     const userId = await usuarioId()
     const hoje = hojeISO()
     const row: RegistroRow = { id: novoId(), quantidade_ml: quantidadeMl, created_at: new Date().toISOString() }

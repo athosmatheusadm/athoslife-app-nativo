@@ -21,6 +21,17 @@ export interface Localidade {
   readonly unidades: Unidades
 }
 
+/**
+ * Países do seletor em Perfil > Idioma e região (nome sai do Intl no idioma
+ * da pessoa). Os que têm telefone de apoio próprio na ai-proxy vêm primeiro
+ * na lista do código; a tela ordena por nome.
+ */
+export const PAISES = [
+  'BR', 'PT', 'US', 'CA', 'GB', 'IE', 'AU', 'NZ', 'ES', 'MX', 'AR', 'CO', 'CL',
+  'PE', 'UY', 'PY', 'BO', 'EC', 'VE', 'CR', 'PA', 'GT', 'DO', 'PR', 'AO', 'MZ',
+  'ZA', 'IN', 'DE', 'FR', 'IT', 'NL', 'CH', 'JP',
+] as const
+
 /** Países que usam libra/pé/onça no dia a dia. */
 const PAISES_IMPERIAIS = new Set(['US', 'LR', 'MM'])
 

@@ -1,4 +1,5 @@
-import { formatarNumero } from '@domain/rules/formatoNumero'
+import { formatarNumero, usaImperial } from '@domain/rules/formatoNumero'
+import { kgParaLb } from '@domain/rules/unidades'
 /**
  * Domínio de peso.
  *
@@ -20,15 +21,28 @@ export interface ResumoPeso {
   readonly registros: readonly RegistroPeso[]
 }
 
-/** Peso no padrão do idioma, 1 casa: 72.3 -> "72,3" (pt) / "72.3" (en). */
-export function formatarPeso(kg: number): string {
-  return formatarNumero(kg, 1, 1)
+/** "kg" ou "lb", conforme as unidades do perfil. */
+export function unidadePeso(): 'kg' | 'lb' {
+  return usaImperial() ? 'lb' : 'kg'
 }
 
-/** Variação com sinal: -1.7 -> "-1,7", +0.5 -> "+0,5". */
+/**
+ * Peso no padrão do idioma e na unidade do perfil, 1 casa:
+ * 72.3 -> "72,3" (pt) / "72.3" (en) / "159.4" (lb). Sem a unidade.
+ */
+export function formatarPeso(kg: number): string {
+  return formatarNumero(usaImperial() ? kgParaLb(kg) : kg, 1, 1)
+}
+
+/** Mesmo que formatarPeso, com a unidade: "72,3 kg" / "159.4 lb". */
+export function formatarPesoUnidade(kg: number): string {
+  return `${formatarPeso(kg)} ${unidadePeso()}`
+}
+
+/** Variação com sinal: -1.7 -> "-1,7", +0.5 -> "+0,5" (na unidade do perfil). */
 export function formatarVariacao(kg: number): string {
   const s = kg > 0 ? '+' : kg < 0 ? '-' : ''
-  return `${s}${formatarNumero(Math.abs(kg), 1, 1)}`
+  return `${s}${formatarNumero(Math.abs(usaImperial() ? kgParaLb(kg) : kg), 1, 1)}`
 }
 
 /**

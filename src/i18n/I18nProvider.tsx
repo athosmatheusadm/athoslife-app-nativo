@@ -8,8 +8,8 @@ import {
   type Localidade,
 } from '@domain/rules/localidade'
 import type { Mensagens } from './mensagens/tipo'
-import { DICIONARIOS } from './dicionarios'
-import { definirIdiomaNumeros } from '@domain/rules/formatoNumero'
+import { dicionario } from './dicionarios'
+import { definirIdiomaNumeros, definirUnidadesNumeros } from '@domain/rules/formatoNumero'
 
 /**
  * Idioma escolhido NESTE aparelho (troca na tela de boas-vindas ou no
@@ -64,6 +64,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // Repositórios leem daqui (busca de alimentos no idioma/país da pessoa).
   definirLocalidadeAtual(idioma, pais)
   definirIdiomaNumeros(idioma)
+  definirUnidadesNumeros(profile?.localidade.unidades ?? localidadeAtualDoAparelho().unidades)
 
   useEffect(() => {
     document.documentElement.lang = idioma
@@ -72,7 +73,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const value = useMemo<I18nState>(
     () => ({
       idioma,
-      m: DICIONARIOS[idioma],
+      m: dicionario(idioma, pais),
       trocarIdioma: (i) => {
         try {
           localStorage.setItem(CHAVE_IDIOMA, i)
@@ -82,7 +83,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         setEscolhido(i)
       },
     }),
-    [idioma],
+    [idioma, pais],
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>

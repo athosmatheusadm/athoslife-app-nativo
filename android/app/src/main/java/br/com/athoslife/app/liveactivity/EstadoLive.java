@@ -154,6 +154,11 @@ final class EstadoLive {
         return json.optDouble("resumoVolumeKg", 0);
     }
 
+    /** Última série do treino: só falta este exercício e esta é a última série dele. */
+    boolean ultimaDoTreino() {
+        return json.optBoolean("outrosExerciciosCompletos", false) && serieAtual() >= totalSeries();
+    }
+
     int descansoSeg() {
         return json.optInt("descansoSeg", 90);
     }
@@ -215,6 +220,19 @@ final class EstadoLive {
                     }
                     break;
                 case "confirmar":
+                    if (("serie".equals(status()) || "cronometro".equals(status())) && ultimaDoTreino()) {
+                        // Última série do treino: fecha com o resumo em vez de abrir outro descanso.
+                        double volume = json.optDouble("volumeAteAquiKg", 0);
+                        if (!porTempo() && carga() != null) volume += carga() * reps();
+                        json.put("status", "concluida");
+                        json.put("resumoSeries", json.optInt("seriesFeitasAteAqui", 0) + 1);
+                        json.put("resumoVolumeKg", Math.round(volume));
+                        json.put("descansoFimEm", JSONObject.NULL);
+                        json.put("cronometroFimEm", JSONObject.NULL);
+                        json.put("cronometroInicioEm", JSONObject.NULL);
+                        json.put("cronometroPausadoEm", JSONObject.NULL);
+                        break;
+                    }
                     if ("serie".equals(status()) || "cronometro".equals(status())) {
                         // O app decide o próximo exercício de verdade quando acordar;
                         // aqui só avança a série e começa o descanso.

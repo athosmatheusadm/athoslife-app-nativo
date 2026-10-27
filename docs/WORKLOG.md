@@ -3345,3 +3345,95 @@ widget conferidos num Chromium headless (4 versões, tamanho igual ao PNG).
    widget animado, Life animado (desempenho em celular simples), scanner
    pelo widget e cadastro pelo rótulo.
 2. Merge deste branch (depende de `correcoes-teste-apk`).
+
+### 2026-10-27 — revisão completa (PDF de 26/10): tudo que não depende de chave/e-mail (branch `revisao-completa-ajustes`, saiu de `scanner-life-vivo`)
+
+O dono trouxe `ATHOSlife-revisao-completa.pdf` (revisão do APK de 25/10 feita
+em outra sessão). Conferido contra o código antes de mexer; os pontos batiam.
+Ficaram de fora só os que pedem chave ou e-mail (RevenueCat, assinatura de
+release, e-mail de suporte, chave própria do USDA).
+
+**App**
+- **Idioma e região:** idioma virou um botão que abre a lista (antes os 3
+  ficavam à mostra) e entrou o **seletor de país** (nome pelo Intl no idioma
+  da pessoa). Trocar o país ajusta as unidades pro costume de lá.
+- **Unidades e datas:** peso (card Energia e peso + WeightCard) e água seguem
+  `profiles.unidades` (lb / fl oz) via `definirUnidadesNumeros`; datas curtas
+  do gráfico e das memórias no costume do país (`diaMes`: 9/27 nos EUA).
+- **México:** "Almuerzo" vira "Comida" (`TROCAS_POR_PAIS` em dicionarios.ts).
+- **Chat:** `**negrito**` vira negrito e as quebras de linha viram parágrafos
+  (`TextoLife` em baloes.tsx).
+- **Limite de quantidade:** 5 kg por item, 5 L de água por registro
+  (`domain/rules/limites.ts`), na busca, no scanner, nos suplementos e nos
+  repositórios. No banco: `db/athoslife_limites_registro_migration.sql`.
+- **Madrugada (0h–4h) conta como noite:** nada de "Bom dia!" à meia-noite;
+  a refeição sugerida nesse horário é jantar.
+- **Backup do Android desligado** (`allowBackup=false` + regras de extração):
+  sessão e dados de saúde não vão pra nuvem nem pra outro aparelho.
+- **Busca de alimentos com o básico primeiro** (também sem internet).
+  Conferido no banco: frango, chicken, pollo, egg, ovo, arroz, rice e banana
+  trazem o alimento simples nos 5 primeiros. `db/athoslife_busca_basicos_primeiro_migration.sql`.
+- **Acabamento:** "✓ Outro" do onboarding virou ✎; proteína com vírgula/ponto
+  do idioma; "1.653.332 kcal registradas" formatado; "Hoje — segunda-feira"
+  (sem "Segunda-Feira"); versão "1.0" igual no Sobre e no Perfil;
+  "Agregado: tortilla" (concordância); Life flutuante menor em tela de 360 px.
+- **Treino na tela de bloqueio com o app fechado:** alarme do sistema no fim
+  do descanso/cronômetro avança o card (antes dependia do app vivo e o
+  cronômetro ficava negativo); "+15 s" e "Pular" reagendam; a última série do
+  treino confirmada ali fecha o treino com o resumo. `SCHEDULE_EXACT_ALARM`
+  declarada (Android 14+: a pessoa precisa ligar "Alarmes e lembretes";
+  ainda não há tela pedindo).
+- **Refeição digitada no chat (novo):** "almocei arroz, feijão e um bife" ->
+  o Life chama `registrar_alimentos`, o servidor acha cada alimento na base
+  (mesma busca da Dieta, sem IA), calcula gramas pela medida dita (colher,
+  concha, fatia, unidades, g, oz...) e o chat mostra um **cartão de
+  conferência** (±10 g, tirar item, total). Só grava ao tocar em Registrar,
+  pelo mesmo caminho da Dieta (funciona offline). Avisa restrição/alergia.
+  `supabase/functions/ai-proxy/refeicaoDigitada.ts`, `RegistroNoChat.tsx`.
+
+**Life (ai-proxy v4.5 — precisa deploy)**
+- Sabe quando o check de saúde está **bloqueado** (não manda mais tocar em
+  "Montar dieta": fim do loop do teste) e quando pede a declaração de ciente.
+- **Mesmo id_envio = mesma resposta** (tabela `life_chat_envios`): reenvio
+  depois de queda de rede não gera resposta duplicada. Sem a tabela a função
+  segue funcionando, só sem essa trava.
+- Check-in: fechamento variado ("tô por aqui" não a cada resposta).
+- Abertura: nome com maiúscula ("Matheus") e sem "Sem cobrança".
+- **Memória (revisada):** nenhuma memória gravada no banco até hoje; a única
+  pessoa com memória ligada não contou nada duradouro depois de ligar, então
+  não é falha de gravação. Achado e corrigido: quando a pessoa ainda não
+  decidiu, o Life detecta algo pra lembrar e o app convida, mas ao aceitar
+  **aquilo que motivou o convite se perdia**. Agora a ai-proxy manda
+  `memoria_pendente` e o app guarda ao aceitar. Marca `[[LEMBRAR` cortada
+  pelo limite de tokens não vaza mais no chat.
+
+**Banco (migrações prontas, NÃO aplicadas — esperam o OK do dono)**
+1. `db/athoslife_limites_registro_migration.sql` (conferido: nenhum registro atual fora do limite)
+2. `db/athoslife_idade_trava_migration.sql` — menor bloqueado fica bloqueado;
+   data de nascimento que muda entre checks trava; idade do perfil passa a
+   seguir a data de nascimento do 1º check. Mensagem nova: "não conseguimos
+   confirmar sua idade".
+3. `db/athoslife_chat_envio_unico_migration.sql` (tabela `life_chat_envios`)
+4. `db/athoslife_busca_basicos_primeiro_migration.sql`
+5. `db/athoslife_rls_initplan_migration.sql` — 102 regras com
+   `(select auth.uid())` (conferido: pega exatamente as 102 do aviso).
+
+Validado: `npm run typecheck`, `npm run build`, testes node (6 + 4 + 10),
+`deno check` da ai-proxy e 54 testes Deno (inclui os novos de refeição
+digitada e de marca cortada). Nada testado no celular.
+
+**Pendências**
+1. Dono autorizar: aplicar as 5 migrações e publicar a `ai-proxy` v4.5.
+2. APK novo (nativo mudou: backup, alarme do treino, card da última série).
+   Testar: card do treino com o app fechado, refeição digitada, idioma/país,
+   lb/fl oz, Life menor em celular pequeno.
+3. Depende de chave/e-mail (fica pro dono): chave do RevenueCat, assinatura
+   de release, e-mail de suporte, chave própria do USDA via servidor.
+4. Painel: proteção de senha vazada; regras duplicadas em `profiles`
+   (aviso multiple_permissive_policies, 30) e `pg_trgm` no public ficaram
+   pra depois (mexer em regra de acesso sem pressa).
+5. Tela pedindo "Alarmes e lembretes" no Android 14+ (pra o fim do descanso
+   chegar na hora exata).
+6. Funções antigas ainda publicadas: `send-welome-whatsapp`, `relogio-athos`
+   (WhatsApp está fora; apagar com o OK do dono).
+7. Chat por voz/peso em lb: o peso digitado no chat continua em kg.

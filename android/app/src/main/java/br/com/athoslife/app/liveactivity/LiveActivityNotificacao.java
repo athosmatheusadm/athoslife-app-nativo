@@ -1,5 +1,6 @@
 package br.com.athoslife.app.liveactivity;
 
+import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -30,6 +31,8 @@ import br.com.athoslife.app.R;
  * Desenha a Live Activity do treino: notificação fixa, com layout próprio,
  * visível na tela de bloqueio. A contagem do descanso/cronômetro é um
  * Chronometer em modo regressivo — anda sozinho, sem o app acordado.
+ * Quando o descanso/cronômetro acaba, um alarme do sistema redesenha o card
+ * (vira a próxima série) mesmo que o Android tenha fechado o app.
  */
 final class LiveActivityNotificacao {
     static final String CANAL = "athos_treino_ativo";
@@ -80,10 +83,12 @@ final class LiveActivityNotificacao {
             return;
         }
         agendarRedesenho(ctx, e);
+        agendarAlarme(ctx, e);
     }
 
     static void encerrar(Context ctx) {
         cancelarRedesenho();
+        cancelarAlarme(ctx);
         EstadoLive.limpar(ctx);
         NotificationManagerCompat.from(ctx).cancel(ID);
     }
@@ -405,6 +410,42 @@ final class LiveActivityNotificacao {
         final Context app = ctx.getApplicationContext();
         redesenho = () -> mostrar(app);
         HANDLER.postDelayed(redesenho, Math.max(0, proximo - agora) + 150);
+    }
+
+    /**
+     * Alarme no fim do descanso/cronômetro: o Handler acima só vale com o app
+     * vivo. Exato quando a pessoa liberou "Alarmes e lembretes"; senão o
+     * sistema pode atrasar um pouco (o Chronometer do card segue certo).
+     */
+    private static void agendarAlarme(Context ctx, EstadoLive e) {
+        cancelarAlarme(ctx);
+        long fim = e.fimEm();
+        if (fim <= 0 || "serie".equals(e.status()) || e.pausado() || e.concluida()) return;
+        AlarmManager am = ctx.getSystemService(AlarmManager.class);
+        if (am == null) return;
+        PendingIntent pi = alarmeRelogio(ctx);
+        long quando = fim + 300;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, quando, pi);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, quando, pi);
+            } else {
+                am.setExact(AlarmManager.RTC_WAKEUP, quando, pi);
+            }
+        } catch (SecurityException semPermissao) {
+            am.set(AlarmManager.RTC_WAKEUP, quando, pi);
+        }
+    }
+
+    private static void cancelarAlarme(Context ctx) {
+        AlarmManager am = ctx.getSystemService(AlarmManager.class);
+        if (am != null) am.cancel(alarmeRelogio(ctx));
+    }
+
+    private static PendingIntent alarmeRelogio(Context ctx) {
+        Intent i = new Intent(ctx, LiveActivityReceiver.class).setAction(LiveActivityReceiver.ACAO_RELOGIO);
+        return PendingIntent.getBroadcast(ctx, 910_003, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     private static void cancelarRedesenho() {

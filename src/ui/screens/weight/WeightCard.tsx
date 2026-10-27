@@ -7,6 +7,8 @@ import {
   corVariacao,
   filtrarPeriodo,
   formatarPeso,
+  formatarPesoUnidade,
+  unidadePeso,
   formatarVariacao,
   progressoMeta,
   resumirPesos,
@@ -78,17 +80,17 @@ export function WeightCard() {
           <h2 className="mb-0.5 text-micro font-semibold text-content-low">{t.titulo}</h2>
           <div>
             <span className="text-4xl font-bold tabular-nums text-content-hi">{atual > 0 ? formatarPeso(atual) : '—'}</span>
-            <span className="text-lg text-content-low"> kg</span>
+            <span className="text-lg text-content-low"> {unidadePeso()}</span>
           </div>
           {falta && (
             <div className={`mt-0.5 text-micro font-semibold ${falta.atingida ? 'text-brand' : 'text-content-low'}`}>
-              {falta.atingida ? t.atingida(formatarPeso(pesoMeta!)) : t.faltam(formatarPeso(falta.faltaKg))}
+              {falta.atingida ? t.atingida(formatarPesoUnidade(pesoMeta!)) : t.faltam(formatarPesoUnidade(falta.faltaKg))}
             </div>
           )}
         </div>
         {temDados && resumo.variacao !== 0 && (
           <span className={`rounded-pill bg-surface-3 px-3 py-1 text-sm font-bold tabular-nums ${COR[cor]}`}>
-            {formatarVariacao(resumo.variacao)} kg
+            {formatarVariacao(resumo.variacao)} {unidadePeso()}
           </span>
         )}
       </div>
@@ -104,16 +106,16 @@ export function WeightCard() {
         <div className="mb-3 flex text-center">
           <div className="flex-1">
             <div className="text-micro text-content-low">{t.inicio}</div>
-            <div className="text-sm font-bold text-content-hi">{formatarPeso(resumo.inicial)}kg</div>
+            <div className="text-sm font-bold text-content-hi">{formatarPesoUnidade(resumo.inicial)}</div>
           </div>
           <div className="flex-1 border-x border-surface-3">
             <div className="text-micro text-content-low">{t.atual}</div>
-            <div className={`text-sm font-bold ${COR[cor]}`}>{formatarPeso(resumo.atual)}kg</div>
+            <div className={`text-sm font-bold ${COR[cor]}`}>{formatarPesoUnidade(resumo.atual)}</div>
           </div>
           <div className="flex-1">
             <div className="text-micro text-content-low">{pesoMeta ? t.meta : t.variacao}</div>
             <div className={`text-sm font-bold ${pesoMeta ? 'text-accent-gold' : COR[cor]}`}>
-              {pesoMeta ? `${formatarPeso(pesoMeta)}kg` : `${formatarVariacao(resumo.variacao)}kg`}
+              {pesoMeta ? formatarPesoUnidade(pesoMeta) : `${formatarVariacao(resumo.variacao)} ${unidadePeso()}`}
             </div>
           </div>
         </div>

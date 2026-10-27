@@ -98,7 +98,7 @@ export function RegistrarReceitaSheet(props: {
         </div>
 
         <p className="mt-5 text-center text-micro text-content-low">
-          {fmtKcal(macros.calorias)} {t.kcal} · {fmtG(macros.proteina)}g {t.prot} · {fmtG(macros.carboidrato)}g {t.carb} · {fmtG(macros.gordura)}g {t.gord}
+          {fmtKcal(macros.calorias)} {t.kcal} · {fmtG(macros.proteina)} g {t.prot} · {fmtG(macros.carboidrato)} g {t.carb} · {fmtG(macros.gordura)} g {t.gord}
         </p>
 
         {estado === 'feito' ? (

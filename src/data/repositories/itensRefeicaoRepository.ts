@@ -1,3 +1,4 @@
+import { MAX_KCAL_ITEM } from '@domain/rules/limites'
 import { supabase } from '@data/supabase/client'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { lerComCache, mexerNoCache } from '@data/offline/cache'
@@ -106,6 +107,8 @@ function noAlvo(row: ItemRow, alvo: RefeicaoAlvo): boolean {
 }
 
 async function gravarItens(dia: string, rows: ItemRow[]): Promise<void> {
+  // Última barreira antes do banco (que tem a mesma trava): valor absurdo não entra.
+  if (rows.some((r) => !(r.calorias >= 0 && r.calorias <= MAX_KCAL_ITEM))) throw new Error('quantidade_invalida')
   const userId = await usuarioId()
   for (const r of rows) diaDoItem.set(r.id, dia)
   await escrever(

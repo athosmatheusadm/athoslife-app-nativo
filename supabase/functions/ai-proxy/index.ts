@@ -1,4 +1,4 @@
-// ATHOSlife — ai-proxy (v4.0, 2026-10-16: Life adaptativo — memória com consentimento ([[LEMBRAR]]/[[ESQUECER]], a pessoa vê e apaga), padrões dos últimos 28 dias, jeito de falar da pessoa, tipo 'checkin' (check-in v3 com resposta curta do Life) e tipo 'abertura' (no máx. 1 mensagem do Life por dia, sem IA); v3.10, 2026-10-12: Cozinha no chat — pedido de comida leva o catálogo da Cozinha filtrado por restrição/alergia (perfil + o que a pessoa disse); o Life mostra o card da receita que serve ou dá 2 ideias de uma linha + botão do Life-chef; receita completa nunca sai no chat; v3.9, 2026-10-09: tipo 'estimar' — Life estima kcal/macros de alimento ou produto que não está na base (busca da Dieta e código de barras não encontrado), gasta 1 mensagem da cota do chat e só devolve números; v3.8, 2026-10-08: proteção contra uso tipo GPT — pedido de tarefa fora do tema (código, redação, tradução...) com resposta fixa sem IA e sem cota, recusa marcada [FORA] pela IA, mensagem repetida devolvida sem IA, sinais de abuso por dia e chat pausado até meia-noite com 10 fora do tema; v3.7, 2026-10-08: Life MVP — histórico de 15, acolhimento, pausa do dia, repetir refeição (fixas + extras) por ferramenta, hábitos completos, filtro de dose só pra suplemento/remédio; v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; 08/10: cada Life no seu assunto, botões de plano só no Treino/Dieta; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
+// ATHOSlife — ai-proxy (v4.5, 2026-10-27: refeição digitada no chat (ferramenta registrar_alimentos -> cartão de conferência no app), Life sabe do bloqueio do check de saúde, mesmo id_envio = mesma resposta (life_chat_envios), check-in com fechamento variado, madrugada conta como noite; v4.0, 2026-10-16: Life adaptativo — memória com consentimento ([[LEMBRAR]]/[[ESQUECER]], a pessoa vê e apaga), padrões dos últimos 28 dias, jeito de falar da pessoa, tipo 'checkin' (check-in v3 com resposta curta do Life) e tipo 'abertura' (no máx. 1 mensagem do Life por dia, sem IA); v3.10, 2026-10-12: Cozinha no chat — pedido de comida leva o catálogo da Cozinha filtrado por restrição/alergia (perfil + o que a pessoa disse); o Life mostra o card da receita que serve ou dá 2 ideias de uma linha + botão do Life-chef; receita completa nunca sai no chat; v3.9, 2026-10-09: tipo 'estimar' — Life estima kcal/macros de alimento ou produto que não está na base (busca da Dieta e código de barras não encontrado), gasta 1 mensagem da cota do chat e só devolve números; v3.8, 2026-10-08: proteção contra uso tipo GPT — pedido de tarefa fora do tema (código, redação, tradução...) com resposta fixa sem IA e sem cota, recusa marcada [FORA] pela IA, mensagem repetida devolvida sem IA, sinais de abuso por dia e chat pausado até meia-noite com 10 fora do tema; v3.7, 2026-10-08: Life MVP — histórico de 15, acolhimento, pausa do dia, repetir refeição (fixas + extras) por ferramenta, hábitos completos, filtro de dose só pra suplemento/remédio; v3.6, 2026-10-07: Life dá ideia de comida/doce na hora respeitando restrições e Cozinha liberada pro grátis no chat; 08/10: cada Life no seu assunto, botões de plano só no Treino/Dieta; v3.5: receita do Life com macros POR PORÇÃO e sem meta de macros pro grátis; v3.4: respostas do Life mais curtas; v3.3: um Life por tela (foco), planos dentro do chat, thinking certo pro Gemini 3.x)
 //
 // Único lugar que fala com o Gemini. A chave nunca sai daqui.
 //
@@ -17,7 +17,7 @@
 //   { tipo: 'checkin', palavra, etiquetas?, nota?, momento? } -> { resposta, convite_conversa, checkin }
 //                     palavra do vocabulário fixo (life.ts); sem cota; IA no máx. 3x por dia
 //   { tipo: 'abertura' }                                -> { mensagem: string | null, motivo? }  (sem IA, sem cota)
-//   Chat também devolve sugerir_memoria: true quando valeria lembrar algo e a pessoa ainda não decidiu.
+//   Chat também devolve sugerir_memoria: true quando valeria lembrar algo e a pessoa ainda não decidiu. (+ memoria_pendente: o que motivou o convite, pro app guardar se ela aceitar).
 //   { tipo: 'estimar', nome: string }  (cota 'estimar')    -> { reconhecido, nome, porcao_g, calorias, proteina, carboidrato, gordura, confianca }
 //                     macros POR PORÇÃO; gasta 1 da cota do chat
 //
@@ -33,6 +33,7 @@
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
+import { acharNaBase, lerItens, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
 import { handleScan } from './scanner/analisar.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
@@ -608,7 +609,7 @@ async function rotear(req: Request): Promise<Response> {
 
     switch (corpo?.tipo) {
       case 'chat':
-        return await handleChat(sb, user.id, corpo)
+        return await handleChatUmaVez(sb, user.id, corpo)
       case 'vision':
         return await handleVision(sb, user.id, corpo)
       case 'scan':
@@ -653,7 +654,8 @@ PAUSA DO DIA:
 - Chame a ferramenta pausar_life_hoje só quando a pessoa aceitar a SUA oferta de pausa feita nesta conversa. "Sim, quero conversar" NÃO é pausa; na dúvida, pergunte.
 - Se o contexto disser "Life pausado hoje": não puxe assunto nem lembre de registros; só responda o que ela trouxer. A pausa congela sequências e metas — nada se perde.
 
-AÇÕES NO APP (você só executa estas duas, pelas ferramentas):
+AÇÕES NO APP (você só executa estas três, pelas ferramentas):
+- registrar_alimentos: quando a pessoa contar o que comeu pra registrar ("almocei arroz, feijão e um bife", "comi 2 ovos no café", "registra uma banana", "jantei 200 g de frango e salada"). Separe cada alimento com a quantidade e a unidade que ela disse (g, ml, unidade, colher de sopa, concha, fatia, xícara, copo); se ela não disse quantidade, deixe vazio. Refeição: a que ela disse (cafe, almoco, lanche, jantar ou o nome de uma extra dela); se não disse, deixe vazio. O app mostra um cartão pra ela conferir e confirmar — não escreva kcal nem diga que registrou. Se ela está desabafando sobre o que comeu (culpa, "comi demais"), acolha primeiro e só ofereça registrar; não chame a ferramenta sem ela querer.
 - repetir_refeicao: quando a pessoa pedir pra repetir/copiar uma refeição já registrada ("coloca na janta o mesmo de ontem", "repete o café de hoje no lanche"). Origem e destino vêm da lista REFEIÇÕES do contexto — as 4 fixas ou as extras dela, pelo nome. Se não der pra saber qual é a origem ou o destino, pergunte antes ("Você quer repetir o jantar de ontem?"). Se ela já disse se quer somar ao que tem ou trocar, mande o modo.
 - pausar_life_hoje: ver PAUSA DO DIA.
 - Fora isso, você não registra, marca nem muda nada no app. Nunca diga "pronto", "coloquei" ou "registrei" por conta própria — quem confirma é o app, depois de gravar.
@@ -672,7 +674,7 @@ PODE:
 - Lembrar de leve registros do app (água, refeições, hábitos) usando o contexto abaixo.
 - Hábito de EVITAR algo (ex.: doce) e a pessoa pede justamente isso: atenda o pedido, sem sermão e sem negar, e reconheça de leve o esforço uma vez (ex.: "Tá firme há 5 dias no doce — se quiser uma versão mais leve: ..."). Use as alternativas que a tela de Hábitos mostra (no contexto) quando couber. Não repita o hábito como advertência a cada mensagem.
 - Hábitos: use os gatilhos, o horário de risco, a melhor sequência e os tropeços do contexto pra ajudar no momento — tropeço é parte do caminho, nunca fracasso.
-- Quando a pessoa pedir pra MONTAR um treino ou uma dieta: não monte você. O botão "Montar treino" fica no chat do Life da tela de Treino e o "Montar dieta" no chat do Life da tela de Dieta (na primeira vez tem um check de saúde rápido, 5 perguntas). Se o botão estiver neste chat (veja ONDE VOCÊ ESTÁ), diga que é só tocar nele aqui embaixo; se não, diga em qual tela ele fica. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
+- Quando a pessoa pedir pra MONTAR um treino ou uma dieta: não monte você. O botão "Montar treino" fica no chat do Life da tela de Treino e o "Montar dieta" no chat do Life da tela de Dieta (na primeira vez tem um check de saúde rápido, 5 perguntas). Se o botão estiver neste chat (veja ONDE VOCÊ ESTÁ), diga que é só tocar nele aqui embaixo; se não, diga em qual tela ele fica. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude séries, repetições, carga ou dias do plano — se a pessoa quiser mudar, diga que ela ajusta na ficha ou monta de novo no botão "Montar treino" (chat do Life no Treino).
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de dieta que o app montou (se estiver no contexto): de onde vem a meta (fórmula de gasto + objetivo), por que proteína/carboidrato/gordura, como usar o dia-modelo e trocar alimentos equivalentes DENTRO dele. Nunca mude calorias, macros ou quantidades — se a pessoa quiser mudar, diga que ela monta de novo no botão "Montar dieta" (chat do Life na Dieta). Fale "a meta de referência do seu plano é X kcal", nunca "você deve comer X kcal".
 
@@ -962,6 +964,49 @@ async function salvarRestricao(sb: Sb, userId: string, idAcao: string, args: Arg
   return r
 }
 
+/**
+ * Um envio = uma resposta. O app reusa o id_envio quando reenvia depois de
+ * falha de rede; se o servidor já respondeu (ou ainda está respondendo)
+ * aquele id, devolve a mesma resposta em vez de chamar a IA de novo.
+ */
+async function handleChatUmaVez(sb: Sb, userId: string, corpo: Record<string, unknown>): Promise<Response> {
+  const idEnvio = uuidValido(corpo.id_envio)
+  if (!idEnvio) return handleChat(sb, userId, corpo)
+
+  const { error: erroReserva } = await sb.from('life_chat_envios').insert({ user_id: userId, id_envio: idEnvio })
+  if (erroReserva) {
+    // 23505 = já existe: o mesmo envio chegou antes. Outro erro (tabela fora): segue sem a trava.
+    if (erroReserva.code !== '23505') return handleChat(sb, userId, corpo)
+    for (let i = 0; i < 20; i++) {
+      const { data } = await sb.from('life_chat_envios').select('corpo')
+        .eq('user_id', userId).eq('id_envio', idEnvio).maybeSingle()
+      if (!data) return handleChat(sb, userId, corpo) // o primeiro falhou e liberou o id
+      if (data.corpo) return json(data.corpo)
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+    return json({ error: 'em_andamento' }, 409)
+  }
+
+  let res: Response
+  try {
+    res = await handleChat(sb, userId, corpo)
+  } catch (e) {
+    await sb.from('life_chat_envios').delete().eq('user_id', userId).eq('id_envio', idEnvio)
+    throw e
+  }
+  const corpoRes = res.ok ? await res.clone().json().catch(() => null) : null
+  if (corpoRes) {
+    await sb.from('life_chat_envios').update({ corpo: corpoRes }).eq('user_id', userId).eq('id_envio', idEnvio)
+  } else {
+    // Erro (cota, IA fora...): libera o id pra pessoa tentar de novo.
+    await sb.from('life_chat_envios').delete().eq('user_id', userId).eq('id_envio', idEnvio)
+  }
+  // Faxina leve: envios com mais de 2 dias não servem mais pra nada.
+  await sb.from('life_chat_envios').delete().eq('user_id', userId)
+    .lt('criado_em', new Date(Date.now() - 2 * 86_400_000).toISOString())
+  return res
+}
+
 async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>) {
   const mensagem = texto(corpo.mensagem, MAX_MENSAGEM + 1).trim()
   if (!mensagem) return json({ error: 'invalid_message' }, 400)
@@ -1145,7 +1190,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     resposta,
     restantes: Math.max(cota.limite - cota.usados, 0),
     ...(acao ? { acao } : {}),
-    ...(memoria?.sugerirMemoria ? { sugerir_memoria: true } : {}),
+    ...(memoria?.sugerirMemoria ? { sugerir_memoria: true, memoria_pendente: memoria.pendentes } : {}),
   })
 }
 
@@ -1193,6 +1238,10 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
       .select('id, nome, data, ordem').eq('user_id', userId).in('data', [hoje, ontem]).order('ordem'),
     // Dias pausados (Life MVP 08/10): hoje pausado + sequência congelada.
     sb.from('life_pausas').select('dia').eq('user_id', userId).gte('dia', somarDias(hoje, -60)),
+    // Check de saúde mais recente: o Life precisa saber se os botões de plano estão travados.
+    sb.from('triagens_saude')
+      .select('apto_treino, apto_dieta, motivos, ciente_orientacao')
+      .eq('user_id', userId).order('criado_em', { ascending: false }).limit(1).maybeSingle(),
   ])
   // deno-lint-ignore no-explicit-any
   const val = (i: number): any => (r[i].status === 'fulfilled' ? (r[i] as PromiseFulfilledResult<any>).value : null)
@@ -1274,6 +1323,19 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
       return `"${h.nome}" (evitar) ${Math.max(Math.floor((Date.now() - base) / 86_400_000), 0)} dias firme${mais}; alternativas da tela: ${alt}`
     })
     linhas.push(`Hábitos: ${desc.join('\n  ')}`)
+  }
+
+  const tri = val(11)?.data as { apto_treino: boolean; apto_dieta: boolean; motivos: string[] | null; ciente_orientacao: boolean } | null
+  if (tri) {
+    const motivos = tri.motivos ?? []
+    if (motivos.includes('menor_de_idade') || motivos.includes('idade_divergente')) {
+      linhas.push('Check de saúde: BLOQUEADO para montar treino e dieta (a idade não foi confirmada). Os botões "Montar treino" e "Montar dieta" não funcionam pra essa pessoa: não mande tocar neles nem refazer o check. Se ela pedir plano, diga com carinho que por segurança o app não monta planos nesse caso e ajude com o resto (registrar, ideias de comida, hábitos, conversa).')
+    } else {
+      const ressalva = [!tri.apto_treino && 'treino', !tri.apto_dieta && 'dieta'].filter(Boolean)
+      if (ressalva.length && !tri.ciente_orientacao) {
+        linhas.push(`Check de saúde: com ressalva de saúde pra ${ressalva.join(' e ')}. Ao tocar no botão de montar, aparece "Quero mesmo assim" (declaração de ciente); só depois disso o plano sai, e mais leve.`)
+      }
+    }
   }
 
   linhas.push(listaRefeicoes(itensDoisDias, (val(9)?.data ?? []) as ExtraContexto[], hoje, ontem))
@@ -1408,6 +1470,38 @@ const FERRAMENTAS_LIFE = [
             },
           },
           required: ['origem_dia', 'origem_refeicao', 'destino_dia', 'destino_refeicao'],
+        },
+      },
+      {
+        name: 'registrar_alimentos',
+        description:
+          'Monta o registro de alimentos que a pessoa contou que comeu ("almocei arroz, feijão e bife"). O app mostra um cartão pra ela conferir as quantidades e confirmar; nada é gravado sem ela tocar em Registrar.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            refeicao: {
+              type: 'STRING',
+              description: 'cafe, almoco, lanche, jantar, ou o nome de uma refeição extra dela. Vazio se ela não disse.',
+            },
+            dia: { type: 'STRING', description: "'hoje' (padrão), 'ontem' ou 'anteontem'" },
+            itens: {
+              type: 'ARRAY',
+              description: 'Um por alimento, no máximo 12',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  nome: { type: 'STRING', description: 'Nome simples do alimento, no idioma da pessoa (ex.: "arroz branco", "bife", "ovo")' },
+                  quantidade: { type: 'NUMBER', description: 'Número que ela disse (200, 2, 1.5). Vazio se não disse.' },
+                  unidade: {
+                    type: 'STRING',
+                    description: 'g, ml, unidade, colher de sopa, colher de chá, concha, fatia, xícara, copo, prato. Vazio se não disse.',
+                  },
+                },
+                required: ['nome'],
+              },
+            },
+          },
+          required: ['itens'],
         },
       },
       {
@@ -1611,6 +1705,12 @@ function conflitosRestricao(itens: string[], restricoes: string[], idioma: Idiom
 type Escolha = 'adicionar' | 'substituir' | 'forcar' | 'salvar' | 'cancelar'
 type AcaoCliente =
   | { tipo: 'refeicao_atualizada'; data: string }
+  | {
+    tipo: 'registrar_itens'
+    dia: string
+    refeicao: { tipo: TipoFixo | 'extra'; extraId: string | null; nome: string }
+    itens: ItemAchado[]
+  }
   | { tipo: 'pausa'; dia: string }
   | { tipo: 'escolha'; id: string; opcoes: { valor: Escolha; rotulo: string }[] }
 
@@ -1737,6 +1837,8 @@ async function executarFerramenta(
     return { resposta: t.pausa, acao: { tipo: 'pausa', dia: hoje }, status: 'pausa_ok' }
   }
 
+  if (chamada.nome === 'registrar_alimentos') return await proporRegistro(sb, userId, loc, chamada.args, hoje)
+
   if (chamada.nome !== 'repetir_refeicao') return null
   const id = idEnvio ?? crypto.randomUUID()
 
@@ -1777,6 +1879,53 @@ async function executarFerramenta(
 
   const modo = a.modo === 'adicionar' || a.modo === 'substituir' ? a.modo : 'perguntar'
   return executarRepeticao(sb, userId, id, { origem: o.ref, destino: d.ref, modo, forcar: false }, loc.idioma, hoje)
+}
+
+/**
+ * Refeição digitada (v4.5): acha os alimentos na base e devolve o cartão de
+ * conferência. Não grava nada — o app grava quando a pessoa confirma (e
+ * funciona sem internet a partir daí, pelo mesmo caminho da Dieta).
+ */
+async function proporRegistro(
+  sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string,
+): Promise<ResultadoAcao> {
+  const t = TXT[loc.idioma]
+  const tr = TXT_REGISTRO[loc.idioma]
+  const dia = a.dia ? resolverDia(a.dia, hoje) : hoje
+  if (!dia) return { resposta: tr.nada, acao: null, status: 'registro_invalido' }
+  if (dia > hoje) return { resposta: t.futuro, acao: null, status: 'registro_futuro' }
+  if (dia < somarDias(hoje, -7)) return { resposta: t.futuro, acao: null, status: 'registro_antigo' }
+
+  const itens = lerItens(a.itens)
+  if (!itens.length) return { resposta: tr.nada, acao: null, status: 'registro_vazio' }
+
+  let ref: RefResolvida | null = null
+  if (typeof a.refeicao === 'string' && a.refeicao.trim()) {
+    const r = await resolverRefeicao(sb, userId, dia, a.refeicao, false)
+    if (r.ok) ref = r.ref
+  }
+  if (!ref) {
+    const hora = Number(new Intl.DateTimeFormat('en-US', { timeZone: loc.fuso, hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
+    ref = { tipo: refeicaoPelaHora(hora), extraId: null, nome: '', dia }
+  }
+
+  const [{ achados, faltando }, perfil] = await Promise.all([
+    acharNaBase(sb, itens, loc.idioma, loc.pais),
+    sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle(),
+  ])
+  if (!achados.length) return { resposta: tr.nada, acao: null, status: 'registro_nada' }
+
+  const partes = [tr.confira(frase(ref, hoje, loc.idioma))]
+  if (faltando.length) partes.push(tr.faltando(lista(faltando, loc.idioma)))
+  const restricoes = (perfil.data?.restricoes ?? []) as string[]
+  const c = conflitosRestricao(achados.map((x) => x.nome), restricoes, loc.idioma)
+  if (c.itens.length) partes.push(tr.restricao(lista(c.itens, loc.idioma), lista(c.rotulos, loc.idioma)))
+
+  return {
+    resposta: partes.join(' '),
+    acao: { tipo: 'registrar_itens', dia, refeicao: { tipo: ref.tipo, extraId: ref.extraId, nome: ref.nome }, itens: achados },
+    status: 'registro_proposto',
+  }
 }
 
 /**

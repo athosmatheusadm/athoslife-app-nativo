@@ -13,6 +13,7 @@ import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { AiProxyError, estimarAlimento, type AlimentoEstimado } from '@data/ai/aiProxy'
 import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
+import { MAX_GRAMAS_ITEM, limitarGramas } from '@domain/rules/limites'
 
 /** Erro do "Life estima" em texto pra pessoa (busca da Dieta e scanner). */
 export function mensagemErroEstimar(e: unknown, t: Mensagens['dieta']['busca']['estimar'], semRede: string): string {
@@ -166,7 +167,7 @@ export function InlineFoodSearch(props: {
               </span>
               <span className="flex-none text-right">
                 <span className="block text-sm font-bold text-brand">{fmtKcal(a.calorias)} kcal</span>
-                <span className="block text-micro text-macro-proteina">{t.prot(a.proteina)}</span>
+                <span className="block text-micro text-macro-proteina">{t.prot(fmtG(a.proteina))}</span>
               </span>
             </button>
           </li>
@@ -218,7 +219,8 @@ export function PorcaoInline(props: {
           type="number"
           inputMode="numeric"
           value={gramas}
-          onChange={(e) => setGramas(Math.max(0, Number(e.target.value) || 0))}
+          onChange={(e) => setGramas(limitarGramas(Number(e.target.value)))}
+          max={MAX_GRAMAS_ITEM}
           aria-label={t.gramas}
           className="min-h-12 w-24 rounded-xl border border-surface-4 bg-surface-3 px-3 text-center text-base font-bold text-content-hi focus:border-brand focus:outline-none"
         />

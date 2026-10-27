@@ -99,7 +99,7 @@ Deno.test('abertura: marco de hábito, dias pesados e volta depois de sumiço', 
   const pesado = escolherAbertura({ ...base, agradavelUltimosDias: [{ data: '2026-10-15', agradavel: 1 }, { data: '2026-10-16', agradavel: 2 }] })!
   igual(pesado.motivo, 'pesado')
   igual(escolherAbertura({ ...base, agradavelUltimosDias: [{ data: '2026-10-15', agradavel: 1 }, { data: '2026-10-16', agradavel: 4 }] }), null)
-  igual(escolherAbertura({ ...base, ultimaAtividade: '2026-10-10' })!.texto, 'Matheus, que bom te ver por aqui! Sem cobrança: bora começar leve hoje?')
+  igual(escolherAbertura({ ...base, ultimaAtividade: '2026-10-10' })!.texto, 'Matheus, que bom te ver por aqui! No seu ritmo: bora começar leve hoje?')
   igual(escolherAbertura({ ...base, ultimaAtividade: '2026-10-10', motivosRecentes: [{ motivo: 'voltou', dia: '2026-10-12' }] }), null)
 })
 
@@ -107,4 +107,10 @@ Deno.test('dias firmes: mesma regra do contexto do Life', () => {
   igual(diasFirme({ nome: 'Ler', categoria: 'leitura', streak_atual: 14, ultimo_checkin: '2026-10-15', criado_em: '2026-09-01T00:00:00Z', ultima_recaida: null }, '2026-10-16'), 14)
   igual(diasFirme({ nome: 'Ler', categoria: 'leitura', streak_atual: 14, ultimo_checkin: '2026-10-10', criado_em: '2026-09-01T00:00:00Z', ultima_recaida: null }, '2026-10-16'), 0)
   igual(diasFirme({ nome: 'Doce', categoria: 'doce', streak_atual: 0, ultimo_checkin: null, criado_em: '2026-09-01T00:00:00Z', ultima_recaida: '2026-09-16T10:00:00Z' }, '2026-10-16'), 30)
+})
+
+Deno.test('marca de memória cortada no fim não aparece no chat', () => {
+  const r = extrairMarcasMemoria('Boa, bora nessa! [[LEMBRAR: rotina | Trabalha de madru')
+  igual(r.texto, 'Boa, bora nessa!')
+  igual(r.lembrar.length, 0)
 })
