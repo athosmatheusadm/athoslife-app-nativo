@@ -53,15 +53,20 @@ type ChaveLista = {
   [K in keyof EstadoOnboarding]: EstadoOnboarding[K] extends readonly unknown[] ? K : never
 }[keyof EstadoOnboarding]
 
-export function Onboarding() {
+/**
+ * `previa`: só no `npm run dev` (rota /previa/onboarding), pra avaliar o
+ * onboarding sem conta: não lê nem grava nada, e no fim volta pro começo
+ * (sem aviso na tela: a rota nem existe no APK).
+ */
+export function Onboarding({ previa = false }: { previa?: boolean } = {}) {
   const { session, profile, refresh } = useSession()
   const { m, idioma, trocarIdioma } = useI18n()
   const navigate = useNavigate()
-  const userId = session?.user.id ?? ''
+  const userId = previa ? '' : session?.user.id ?? ''
   const localidade = localidadeAtualDoAparelho()
 
   const [e, setE] = useState<EstadoOnboarding>(
-    () => lerProgresso(userId) ?? estadoInicial(localidade.unidades, profile?.nome ?? null),
+    () => (userId ? lerProgresso(userId) : null) ?? estadoInicial(localidade.unidades, previa ? null : profile?.nome ?? null),
   )
   const [erro, setErro] = useState<ErroEtapa>(null)
   const [salvando, setSalvando] = useState(false)
@@ -110,6 +115,10 @@ export function Onboarding() {
     if (!dados) {
       // Algum obrigatório sumiu (ex.: storage antigo) — volta pra tela dele.
       mudar({ etapa: validarEtapaQueFalta(e) })
+      return
+    }
+    if (previa) {
+      setE(estadoInicial(localidade.unidades, null))
       return
     }
     setSalvando(true)

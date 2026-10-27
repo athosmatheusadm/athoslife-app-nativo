@@ -3500,3 +3500,16 @@ nada.
 **Aplicado com OK do dono:** migração busca_padroes no banco e ai-proxy publicada. Conferido no banco: arroz, rice, feijão, ovo, banana, bife, taco (MX), coca, guaraná, refrigerante, gatorade e frango com o esperado no topo.
 
 **Pendências:** APK novo / chaves e e-mail / funções do WhatsApp seguram até o dono liberar; push precisa do token do GitHub.
+
+## 2026-10-27 (noite, 2) — chat sem cartão + prévia do onboarding
+
+- **Bug do chat (visto pelo dono):** "life hj eu comi um arroz e um file de
+  frango" -> o Life respondeu "Mandei pra conferir" sem chamar
+  `registrar_alimentos`, e o cartão não apareceu. Agora, se a pessoa contou o
+  que comeu e a resposta promete o cartão sem a ferramenta, a ai-proxy pede de
+  novo com a ferramenta obrigatória (`prometeuRegistro` em
+  refeicaoDigitada.ts). Se mesmo assim não vier, troca o texto por "não achei"
+  em vez de prometer à toa. 56 testes Deno ok. **Precisa deploy da ai-proxy.**
+- **Prévia do onboarding:** rota `/previa/onboarding` (só `npm run dev`, fora
+  do APK): o onboarding de verdade sem conta e sem gravar nada; no fim volta
+  ao começo.

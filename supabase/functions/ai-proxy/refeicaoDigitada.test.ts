@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1'
-import { gramasDoItem, lerItens, refeicaoPelaHora, singularDe } from './refeicaoDigitada.ts'
+import { gramasDoItem, lerItens, prometeuRegistro, refeicaoPelaHora, singularDe } from './refeicaoDigitada.ts'
 
 const arroz = { porcaoG: 100, unidadeG: null }
 const ovo = { porcaoG: 100, unidadeG: 50 }
@@ -58,4 +58,12 @@ Deno.test('singularDe: plural vira singular só pra 2ª tentativa', () => {
   assertEquals(singularDe('tortillas de maíz'), null)
   assertEquals(singularDe('eggs'), 'egg')
   assertEquals(singularDe('gás'), null)
+})
+
+Deno.test('prometeuRegistro: refeição contada + resposta prometendo o cartão', () => {
+  assertEquals(prometeuRegistro('life hj eu comi um arroz e um file de frango', 'Mandei pra conferir. Comer frango com arroz dá uma base firme pro dia.'), true)
+  assertEquals(prometeuRegistro('I had eggs and toast', 'Sent it for you to check.'), true)
+  assertEquals(prometeuRegistro('comí tacos', 'Revisa las cantidades.'), true)
+  assertEquals(prometeuRegistro('comi demais hoje, to mal', 'Calma, um dia não define nada. Quer conversar?'), false)
+  assertEquals(prometeuRegistro('qual a melhor fruta?', 'Mandei umas ideias.'), false)
 })

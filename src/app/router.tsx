@@ -65,6 +65,8 @@ export const router = createBrowserRouter([
       ...(import.meta.env.DEV
         ? [
             { path: '/prototipo/onboarding', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingConversa')).OnboardingConversa }) },
+            // Onboarding de verdade, sem conta e sem gravar (avaliação do dono, 27/10).
+            { path: '/previa/onboarding', element: <Onboarding previa /> },
             { path: '/prototipo/onboarding-essencial', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingEssencial')).OnboardingEssencial }) },
           ]
         : []),

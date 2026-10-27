@@ -94,6 +94,20 @@ export function gramasDoItem(
   return Math.min(MAX_GRAMAS, Math.max(1, Math.round(g)))
 }
 
+/**
+ * A IA às vezes responde "mandei pra conferir" sem chamar registrar_alimentos
+ * (27/10: "comi um arroz e um filé de frango" ficou sem cartão). Se a pessoa
+ * contou o que comeu e a resposta promete o cartão/registro, o servidor pede
+ * de novo obrigando a ferramenta.
+ */
+export function prometeuRegistro(mensagem: string, resposta: string): boolean {
+  const msg = normalizar(mensagem)
+  const resp = normalizar(resposta)
+  const comeu = /\b(comi|almocei|jantei|lanchei|merendei|tomei|bebi|registra|anota|salva|ate|had|drank|log|comi|almorce|cene|desayune|tome|bebi|merende)\b/.test(msg)
+  const prometeu = /\b(mandei|enviei|conferir|confere|confira|registr\w*|anotei|salvei|cartao|sent|logged|check|card|envie|revisa|anote|guarde|tarjeta)\b/.test(resp)
+  return comeu && prometeu
+}
+
 /** Plural simples -> singular, só pra 2ª tentativa da busca ("tacos" -> "taco"). */
 export function singularDe(nome: string): string | null {
   const t = nome.trim()

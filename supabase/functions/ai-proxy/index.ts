@@ -33,7 +33,7 @@
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
-import { acharNaBase, lerItens, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
+import { acharNaBase, lerItens, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
 import { handleScan } from './scanner/analisar.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
@@ -1127,13 +1127,27 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
       : '')
 
   // 4. IA.
-  const g = await chamarGemini({
+  let g = await chamarGemini({
     systemInstruction: { parts: [{ text: sistema }] },
     contents: conteudos,
     tools: FERRAMENTAS_LIFE,
     toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
     generationConfig: configGeracao(400, 0.8),
   })
+  // Prometeu o cartão da refeição sem chamar a ferramenta: pede de novo,
+  // obrigando registrar_alimentos (custo extra só nesse caso).
+  if (g.ok && !g.chamadas.length && prometeuRegistro(mensagem, g.texto)) {
+    const g2 = await chamarGemini({
+      systemInstruction: { parts: [{ text: sistema }] },
+      contents: conteudos,
+      tools: FERRAMENTAS_LIFE,
+      toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: ['registrar_alimentos'] } },
+      generationConfig: configGeracao(400, 0.2),
+    })
+    if (g2.ok && g2.chamadas.length) g = { ...g2, tokens: g.tokens + g2.tokens, custo: g.custo + g2.custo }
+    // Nunca deixa "mandei pra conferir" sem cartão.
+    else g = { ...g, texto: TXT_REGISTRO[loc.idioma].nada }
+  }
 
   if (!g.ok) {
     await devolverCota(sb, userId, 'chat')
