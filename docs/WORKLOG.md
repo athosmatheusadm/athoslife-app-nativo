@@ -3497,4 +3497,6 @@ nada.
 - ai-proxy: plural tenta o singular quando não acha ("tacos" -> "taco",
   "limões" -> "limão"). Teste novo (55 Deno ok), typecheck e build ok.
 
-**Pendências:** aplicar a migração + publicar a ai-proxy (esperando o OK do dono).
+**Aplicado com OK do dono:** migração busca_padroes no banco e ai-proxy publicada. Conferido no banco: arroz, rice, feijão, ovo, banana, bife, taco (MX), coca, guaraná, refrigerante, gatorade e frango com o esperado no topo.
+
+**Pendências:** APK novo / chaves e e-mail / funções do WhatsApp seguram até o dono liberar; push precisa do token do GitHub.
