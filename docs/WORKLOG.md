@@ -3437,3 +3437,44 @@ digitada e de marca cortada). Nada testado no celular.
 6. Funções antigas ainda publicadas: `send-welome-whatsapp`, `relogio-athos`
    (WhatsApp está fora; apagar com o OK do dono).
 7. Chat por voz/peso em lb: o peso digitado no chat continua em kg.
+
+## 2026-10-27 (tarde) — idade com correção, bebidas de marca, busca por apelido
+
+Branch `revisao-completa-ajustes`.
+
+- **Trava de idade revisada (pedido do dono: "não limitar uma correção").**
+  `db/athoslife_idade_trava_migration.sql` reescrita: a data de nascimento
+  pode ser corrigida **uma vez**; a terceira data diferente trava de vez
+  (`idade_divergente`). Na correção a comparação com a idade antiga do perfil
+  é ignorada e o perfil passa a seguir a data do check mais recente
+  (gatilho `trg_zz_triagem_alinha_perfil`). Testado no banco com bloco que se
+  desfaz: data errada (menor) bloqueia -> corrigida libera e perfil vira 25 ->
+  terceira data trava.
+  No app: "Digitei minha data errada" aparece só no aviso de bloqueio do
+  check e some depois de usada (`planosRepository.corrigirNascimento`,
+  `CorrigirNascimento` em PlanosNoLife.tsx, pt/en/es). O Life só fala disso
+  se a pessoa disser que errou a data (ai-proxy, sem explicar a regra).
+- **Bebidas de marca:** `db/athoslife_bebidas_marcas_migration.sql`, 116
+  bebidas (refrigerantes, sucos, energéticos, isotônicos/eletrólitos, água de
+  coco, chás prontos) em pt/en/es. Marca mundial aparece pra todos; marca
+  regional só no país dela (Guaraná Antarctica BR/PT, Jarritos MX/US, Inca
+  Kola PE, Irn-Bru GB/IE, Pocari JP, Thums Up IN, Appletiser ZA...). Valores
+  típicos por lata/garrafa (porcao_tipica_g = embalagem). scanner=false.
+- **Busca por apelido:** `buscar_alimentos` (na migração da busca) e a busca
+  sem internet olham `aliases` ("coca", "coke", "guarana", "redbull",
+  "refri"...). Apelido exato conta como nome igual. Busca offline agora tira
+  pontuação como o banco ("coca cola" acha "Coca-Cola").
+
+Validado: typecheck, build, `deno check` e 54 testes Deno da ai-proxy.
+
+**Banco:** aplicada só `athoslife_limites_registro_migration.sql`. As outras
+5 (chat_envio_unico, busca_basicos_primeiro, rls_initplan, idade_trava,
+bebidas_marcas) foram barradas pelo modo automático do Claude Code
+("Production Deploy"), esperando liberação do dono. ai-proxy v4.5 ainda
+**precisa deploy** (depois das migrações).
+
+**Pendências**
+1. Aplicar as 5 migrações acima, nessa ordem, e publicar a ai-proxy v4.5.
+2. APK novo / chaves e e-mail / funções antigas do WhatsApp: seguram até o
+   dono liberar (pedido de 27/10).
+3. Push: precisa do token do GitHub de novo.

@@ -811,6 +811,9 @@ export const ptBR = {
     trocarTexto: { treino: 'Quero trocar um exercício do meu treino: ', dieta: 'Quero trocar um alimento da minha dieta: ' },
     erroIncompleto: 'Informe a data de nascimento e marque a declaração.',
     erroNascimento: 'Confira a data de nascimento.',
+    corrigirNascimento: 'Digitei minha data errada',
+    corrigirAviso: 'Confira com calma: a data só pode ser corrigida uma vez.',
+    corrigirConfirmar: 'Corrigir data',
   },
   lifeMontar: {
     evitar: 'Tem algum alimento que você não come, não gosta ou tem alergia? (ex.: frutas, peixe, amendoim)',

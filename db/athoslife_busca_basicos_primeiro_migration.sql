@@ -10,6 +10,8 @@
 --   5. nome mais curto.
 -- Conferido no banco antes de aplicar: frango, chicken, pollo, egg, ovo,
 -- arroz, rice e banana trazem o alimento simples nos 5 primeiros.
+-- Também procura nos apelidos (coluna aliases: "coca", "coke", "refri",
+-- "gatorade"...), com o apelido exato valendo como nome igual.
 -- Mesma assinatura e mesmo retorno; o app faz a mesma ordem na busca sem
 -- internet (alimentosRepository.buscarNaBase).
 
@@ -40,12 +42,13 @@ as $function$
         public.normalizar_texto(b.nome) like '%' || t.termo || '%'
         or public.normalizar_texto(b.nome_en) like '%' || t.termo || '%'
         or public.normalizar_texto(b.nome_es) like '%' || t.termo || '%'
+        or exists (select 1 from unnest(b.aliases) al where public.normalizar_texto(al) like '%' || t.termo || '%')
       )
   )
   select a.id, a.nome_local, a.porcao_g, a.calorias, a.proteina, a.carboidrato, a.gordura, a.categoria
   from achados a, t
   order by
-    case when a.n = t.termo then 0 else 1 end,
+    case when a.n = t.termo or exists (select 1 from unnest(a.aliases) al where public.normalizar_texto(al) = t.termo) then 0 else 1 end,
     case when a.categoria in ('refeicao', 'doce') then 1 else 0 end,
     case when a.taco_id is not null then 0 else 1 end,
     case

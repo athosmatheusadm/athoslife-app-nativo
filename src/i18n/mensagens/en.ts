@@ -797,6 +797,9 @@ export const en: Mensagens = {
     trocarTexto: { treino: 'I want to swap an exercise in my training: ', dieta: 'I want to swap a food in my diet: ' },
     erroIncompleto: 'Enter your date of birth and tick the statement.',
     erroNascimento: 'Check your date of birth.',
+    corrigirNascimento: 'I entered the wrong date',
+    corrigirAviso: 'Double-check it: the date can only be corrected once.',
+    corrigirConfirmar: 'Correct date',
   },
   lifeMontar: {
     evitar: "Any food you don't eat, don't like or are allergic to? (e.g. fruit, fish, peanuts)",

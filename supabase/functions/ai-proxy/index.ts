@@ -1329,7 +1329,7 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
   if (tri) {
     const motivos = tri.motivos ?? []
     if (motivos.includes('menor_de_idade') || motivos.includes('idade_divergente')) {
-      linhas.push('Check de saúde: BLOQUEADO para montar treino e dieta (a idade não foi confirmada). Os botões "Montar treino" e "Montar dieta" não funcionam pra essa pessoa: não mande tocar neles nem refazer o check. Se ela pedir plano, diga com carinho que por segurança o app não monta planos nesse caso e ajude com o resto (registrar, ideias de comida, hábitos, conversa).')
+      linhas.push('Check de saúde: BLOQUEADO para montar treino e dieta (a idade não foi confirmada). Os botões "Montar treino" e "Montar dieta" não funcionam pra essa pessoa: não mande tocar neles nem refazer o check. Se ela pedir plano, diga com carinho que por segurança o app não monta planos nesse caso e ajude com o resto (registrar, ideias de comida, hábitos, conversa). Só se ELA disser que digitou a data de nascimento errada: diga que no aviso do check (no chat de montar treino ou dieta) tem "Digitei minha data errada" pra corrigir. Não sugira isso por conta própria e não explique regras ou limites da verificação.')
     } else {
       const ressalva = [!tri.apto_treino && 'treino', !tri.apto_dieta && 'dieta'].filter(Boolean)
       if (ressalva.length && !tri.ciente_orientacao) {

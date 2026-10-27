@@ -797,6 +797,9 @@ export const es: Mensagens = {
     trocarTexto: { treino: 'Quiero cambiar un ejercicio de mi entreno: ', dieta: 'Quiero cambiar un alimento de mi dieta: ' },
     erroIncompleto: 'Indica tu fecha de nacimiento y marca la declaración.',
     erroNascimento: 'Revisa tu fecha de nacimiento.',
+    corrigirNascimento: 'Puse mal mi fecha',
+    corrigirAviso: 'Revísala con calma: la fecha solo se puede corregir una vez.',
+    corrigirConfirmar: 'Corregir fecha',
   },
   lifeMontar: {
     evitar: '¿Hay algún alimento que no comes, no te gusta o te da alergia? (ej.: frutas, pescado, maní)',

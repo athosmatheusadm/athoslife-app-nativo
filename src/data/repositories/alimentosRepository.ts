@@ -21,6 +21,7 @@ interface AlimentoRow {
   gordura_preparo_pct?: number | null
   taco_id?: number | null
   porcao_tipica_g?: number | null
+  aliases?: string[] | null
 }
 
 /** Nome no idioma em uso (sem tradução, fica o pt-BR). */
@@ -84,9 +85,9 @@ function baseCompleta(): Promise<AlimentoRow[]> {
   )
 }
 
-/** Sem acento e minúsculo, pra "acucar" achar "Açúcar". */
+/** Sem acento, minúsculo e sem pontuação (igual normalizar_texto do banco): "acucar" acha "Açúcar", "coca cola" acha "Coca-Cola". */
 function normalizar(t: string): string {
-  return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+  return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
 /** Busca na base guardada — mesma ideia da RPC buscar_alimentos (pt/en/es, sem acento, só do país). */
@@ -96,13 +97,14 @@ function buscarNaBase(base: readonly AlimentoRow[], termo: string, limite: numbe
   const achados: { row: AlimentoRow; nota: number }[] = []
   for (const row of base) {
     if (!valeNoPais(row)) continue
+    const apelidos = (row.aliases ?? []).map(normalizar)
     const nomes = [row.nome, row.nome_en, row.nome_es].filter((n): n is string => !!n).map(normalizar)
     const local = normalizar(nomeLocal(row))
-    if (!palavras.every((p) => nomes.some((n) => n.includes(p)))) continue
+    if (!palavras.every((p) => nomes.some((n) => n.includes(p))) && !apelidos.some((a) => a.includes(termoTodo))) continue
     // Mesma ordem da RPC: nome igual; alimento simples antes de prato
     // pronto/doce; TACO antes; palavra inteira > começa com >
     // palavra que começa com > resto; nome curto antes.
-    const igual = local === termoTodo ? 0 : 1
+    const igual = local === termoTodo || apelidos.includes(termoTodo) ? 0 : 1
     const posicao = ` ${local.replace(/,/g, ' ')} `.includes(` ${termoTodo} `)
       ? 0
       : local.startsWith(termoTodo) ? 1 : local.includes(` ${termoTodo}`) ? 2 : 3

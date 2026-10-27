@@ -175,6 +175,53 @@ export const planosRepository = {
     return vigente
   },
 
+  /**
+   * Quem digitou a data de nascimento errada pode corrigir uma vez: o banco
+   * aceita até duas datas diferentes por conta (a terceira trava de vez).
+   */
+  async podeCorrigirNascimento(): Promise<boolean> {
+    const userId = await usuarioId()
+    const { data, error } = await supabase
+      .from('triagens_saude')
+      .select('data_nascimento')
+      .eq('user_id', userId)
+      .returns<{ data_nascimento: string }[]>()
+    if (error) return false
+    return new Set((data ?? []).map((r) => r.data_nascimento)).size < 2
+  },
+
+  /** Grava uma linha NOVA igual à última, só com a data de nascimento corrigida. */
+  async corrigirNascimento(dataNascimento: string): Promise<TriagemVigente> {
+    exigirRede()
+    const userId = await usuarioId()
+    const { data: ultima, error: e1 } = await supabase
+      .from('triagens_saude')
+      .select('versao, respostas, ciente_orientacao, ciente_versao')
+      .eq('user_id', userId)
+      .order('criado_em', { ascending: false })
+      .limit(1)
+      .maybeSingle<{ versao: string; respostas: Record<string, boolean>; ciente_orientacao: boolean; ciente_versao: string | null }>()
+    if (e1) throw e1
+    if (!ultima) throw new Error('triagem_necessaria')
+    const { error } = await supabase.from('triagens_saude').insert({
+      user_id: userId,
+      versao: ultima.versao,
+      respostas: ultima.respostas,
+      data_nascimento: dataNascimento,
+      declaracao_versao: DECLARACAO_VERSAO,
+      declaracao_aceita: true,
+      ciente_orientacao: ultima.ciente_orientacao,
+      ciente_versao: ultima.ciente_versao,
+    })
+    if (error) {
+      if (error.message.includes('data_nascimento_invalida')) throw new Error('data_nascimento_invalida')
+      throw error
+    }
+    const vigente = await this.triagemVigente()
+    if (!vigente) throw new Error('triagem_nao_encontrada')
+    return vigente
+  },
+
   /** Troca a ficha do local pelo plano. O servidor revalida tudo; erro vem com o motivo. */
   async aplicarPlanoTreino(plano: PlanoTreinoGerado): Promise<string> {
     // O servidor revalida a triagem de saúde: só com rede.
