@@ -3479,5 +3479,5 @@ Guaraná Antarctica não aparece no MX, "frango" segue com o básico primeiro.
 1. APK novo / chaves e e-mail / funções antigas do WhatsApp: seguram até o
    dono liberar (pedido de 27/10).
 2. Push: precisa do token do GitHub de novo.
-3. Buscar "refrigerante" mostra primeiro os genéricos e depois as marcas
-   (dentro dos 20); se o dono quiser marca antes, é só mudar a ordem.
+3. ~~Ordem da busca "refrigerante"~~: dono aprovou como está (genérico
+   primeiro, marcas depois; nome da marca cai direto nela).
