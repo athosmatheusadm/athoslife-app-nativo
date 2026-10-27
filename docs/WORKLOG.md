@@ -3513,3 +3513,7 @@ nada.
 - **Prévia do onboarding:** rota `/previa/onboarding` (só `npm run dev`, fora
   do APK): o onboarding de verdade sem conta e sem gravar nada; no fim volta
   ao começo.
+
+### 2026-10-27 — ai-proxy publicada (cartão da refeição no chat)
+- Dono autorizou; `ai-proxy` publicada com a nova tentativa que força o `registrar_alimentos` quando o Life promete o cartão sem montar (commit b52026e).
+- Consulta de gasto em `ai_audit_logs`: o log guarda só o total de tokens (entrada + saída somados); não há registro de `scan`/`vision` em produção ainda.
