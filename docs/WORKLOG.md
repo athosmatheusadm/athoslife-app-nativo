@@ -3467,14 +3467,17 @@ Branch `revisao-completa-ajustes`.
 
 Validado: typecheck, build, `deno check` e 54 testes Deno da ai-proxy.
 
-**Banco:** aplicada só `athoslife_limites_registro_migration.sql`. As outras
-5 (chat_envio_unico, busca_basicos_primeiro, rls_initplan, idade_trava,
-bebidas_marcas) foram barradas pelo modo automático do Claude Code
-("Production Deploy"), esperando liberação do dono. ai-proxy v4.5 ainda
-**precisa deploy** (depois das migrações).
+**Banco (aplicado com OK do dono, 27/10):** as 6 migrações entraram
+(limites_registro, chat_envio_unico, busca_basicos_primeiro, rls_initplan,
+idade_trava, bebidas_marcas). Conferido: 0 regras ainda com auth.uid() direto,
+gatilhos da idade criados, `life_chat_envios` existe, "coca" -> Coca-Cola,
+"guaraná" -> Guaraná Antarctica (BR), "gatorade" no MX acha Gatorade,
+Guaraná Antarctica não aparece no MX, "frango" segue com o básico primeiro.
+**ai-proxy v4.5 publicada.**
 
 **Pendências**
-1. Aplicar as 5 migrações acima, nessa ordem, e publicar a ai-proxy v4.5.
-2. APK novo / chaves e e-mail / funções antigas do WhatsApp: seguram até o
+1. APK novo / chaves e e-mail / funções antigas do WhatsApp: seguram até o
    dono liberar (pedido de 27/10).
-3. Push: precisa do token do GitHub de novo.
+2. Push: precisa do token do GitHub de novo.
+3. Buscar "refrigerante" mostra primeiro os genéricos e depois as marcas
+   (dentro dos 20); se o dono quiser marca antes, é só mudar a ordem.
