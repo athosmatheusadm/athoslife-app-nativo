@@ -3517,3 +3517,11 @@ nada.
 ### 2026-10-27 — ai-proxy publicada (cartão da refeição no chat)
 - Dono autorizou; `ai-proxy` publicada com a nova tentativa que força o `registrar_alimentos` quando o Life promete o cartão sem montar (commit b52026e).
 - Consulta de gasto em `ai_audit_logs`: o log guarda só o total de tokens (entrada + saída somados); não há registro de `scan`/`vision` em produção ainda.
+
+### 2026-10-27 — limite do chat ampliado + histórico em camadas (falta publicar)
+- APLICADA: `athoslife_limite_chat_ampliado` (chat 10 grátis / 80 pago por dia; conferido no banco).
+- Novo `ai-proxy/historico.ts`: as 6 mensagens mais recentes vão inteiras; as anteriores (até 30) vão como uma linha por troca. O modelo escreve `[[RESUMO: ...]]` no fim da resposta, o servidor tira do texto e grava em `life_chat_mensagens.resumo`. Sem resumo, a mensagem entra cortada (90 letras). Desliga com o segredo `CONTEXTO_CAMADAS=0`.
+- `ai_audit_logs` passa a gravar entrada, saída, raciocínio, cache, modelo e versão do contexto (inclusive no scanner).
+- Medição: as 15 últimas mensagens do dono somam ~1.070 caracteres (~300 tokens). O peso está no `PROMPT_LIFE` (~11.500 caracteres, ~2.900 tokens) + ferramentas (~800). O próximo ganho de custo é dividir o roteiro por assunto.
+- Validado: `deno check`, 62 testes Deno.
+- PENDENTE: aplicar `db/athoslife_memoria_camadas_migration.sql` ANTES de publicar a `ai-proxy` (precisa deploy; autorização do dono).

@@ -33,6 +33,7 @@
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
+import { blocoConversaAnterior, dividirHistorico, extrairResumo, JANELA_TOTAL, REGRA_RESUMO, type MensagemSalva } from './historico.ts'
 import { acharNaBase, lerItens, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
 import { handleScan } from './scanner/analisar.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
@@ -56,6 +57,9 @@ const TETO_GLOBAL_TOKENS = Number(env('IA_TETO_TOKENS_DIA', '2000000'))
 const MAX_CORPO = 4_500_000 // ~3 MB de imagem em base64 + folga
 const MAX_MENSAGEM = 800
 const JANELA_HISTORICO = 15
+/** Histórico em camadas (27/10). CONTEXTO_CAMADAS=0 volta às 15 mensagens inteiras. */
+const CONTEXTO_CAMADAS = env('CONTEXTO_CAMADAS', '1') !== '0'
+const VERSAO_CONTEXTO = CONTEXTO_CAMADAS ? 'camadas-v1' : 'literal-15'
 /** Pausas do Life (dias congelados) em 30 dias — dono 12/10: só o Life oferece, com teto. */
 const MAX_PAUSAS_30_DIAS = 3
 
@@ -378,6 +382,15 @@ interface ResultadoGemini {
   tokens: number
   custo: number
   bloqueado: boolean
+  /** Tokens separados, como o Google devolve (só pro log de custo). */
+  uso?: UsoTokens
+}
+
+interface UsoTokens { entrada: number; saida: number; raciocinio: number; cache: number }
+
+function somarUso(a?: UsoTokens, b?: UsoTokens): UsoTokens | undefined {
+  if (!a || !b) return a ?? b
+  return { entrada: a.entrada + b.entrada, saida: a.saida + b.saida, raciocinio: a.raciocinio + b.raciocinio, cache: a.cache + b.cache }
 }
 
 /**
@@ -446,6 +459,12 @@ async function chamarGeminiUmaVez(
       tokens: Number(uso.totalTokenCount ?? entrada + saida),
       custo: (entrada * pe + saida * ps) / 1_000_000,
       bloqueado,
+      uso: {
+        entrada,
+        saida: Number(uso.candidatesTokenCount ?? 0),
+        raciocinio: Number(uso.thoughtsTokenCount ?? 0),
+        cache: Number(uso.cachedContentTokenCount ?? 0),
+      },
       status: res.status,
       erro: '',
     }
@@ -549,13 +568,19 @@ async function devolverCota(sb: Sb, userId: string, tipo: TipoCota) {
   if (error) console.warn('[cota] devolver falhou', error.message)
 }
 
-async function auditar(sb: Sb, userId: string, tipo: string, status: string, g?: ResultadoGemini) {
+async function auditar(sb: Sb, userId: string, tipo: string, status: string, g?: ResultadoGemini, versaoContexto?: string) {
   const { error } = await sb.from('ai_audit_logs').insert({
     user_id: userId,
     tipo_chamada: tipo,
     status,
     tokens_usados: g?.tokens ?? 0,
     custo_estimado: g?.custo ?? 0,
+    tokens_entrada: g?.uso?.entrada ?? null,
+    tokens_saida: g?.uso?.saida ?? null,
+    tokens_raciocinio: g?.uso?.raciocinio ?? null,
+    tokens_cache: g?.uso?.cache ?? null,
+    modelo: g ? MODELO : null,
+    versao_contexto: versaoContexto ?? null,
     data: new Date().toISOString(),
   })
   if (error) console.warn('[audit] falhou', error.message)
@@ -1067,15 +1092,18 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   // 3. Histórico (do banco, não do cliente) + contexto do usuário.
   const [histRes, contexto, pagoRes] = await Promise.all([
     sb.from('life_chat_mensagens')
-      .select('autor, texto')
+      .select('autor, texto, resumo')
       .eq('user_id', userId)
       .order('criado_em', { ascending: false })
-      .limit(JANELA_HISTORICO),
+      .limit(CONTEXTO_CAMADAS ? JANELA_TOTAL : JANELA_HISTORICO),
     montarContexto(sb, userId, loc.fuso),
     sb.rpc('is_premium_like', { p_user_id: userId }),
   ])
   const pago = pagoRes.data === true
-  const historico = ((histRes.data ?? []) as { autor: string; texto: string }[]).reverse()
+  const salvas = ((histRes.data ?? []) as MensagemSalva[]).reverse()
+    .map((m) => ({ ...m, texto: m.texto.replace(MARCA_CARTAO_SALVA, '').trim() }))
+  const camadas = CONTEXTO_CAMADAS ? dividirHistorico(salvas) : { literais: salvas, linhas: [] }
+  const historico = camadas.literais
 
   // 3b. Life adaptativo: memória (com consentimento), padrões, jeito de falar e check-in de hoje.
   const hojeLocal = hojeNoFuso(loc.fuso)
@@ -1092,8 +1120,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const conteudos: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
   for (const m of [...historico, { autor: 'usuario', texto: mensagem }]) {
     const role = m.autor === 'life' ? 'model' : 'user'
-    // Card/botão salvo é coisa do app — a IA não vê (nem copia) o uuid.
-    m.texto = m.texto.replace(MARCA_CARTAO_SALVA, '').trim()
+    // Card/botão salvo é coisa do app — a IA não vê (nem copia) o uuid (tirado acima).
     const ultimo = conteudos[conteudos.length - 1]
     if (ultimo?.role === role) ultimo.parts[0].text += `\n${m.texto}`
     else conteudos.push({ role, parts: [{ text: m.texto }] })
@@ -1121,6 +1148,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     `${PROMPT_LIFE}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
     linhaDiaLeve(corpo.dia_leve) +
     adaptativo +
+    (CONTEXTO_CAMADAS ? blocoConversaAnterior(camadas.linhas) + REGRA_RESUMO : '') +
     (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Acolha com calma, pergunte como a pessoa está e lembre da linha de apoio do país e de um profissional, sem alarmar.'
@@ -1144,20 +1172,21 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
       toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: ['registrar_alimentos'] } },
       generationConfig: configGeracao(400, 0.2),
     })
-    if (g2.ok && g2.chamadas.length) g = { ...g2, tokens: g.tokens + g2.tokens, custo: g.custo + g2.custo }
+    if (g2.ok && g2.chamadas.length) g = { ...g2, tokens: g.tokens + g2.tokens, custo: g.custo + g2.custo, uso: somarUso(g.uso, g2.uso) }
     // Nunca deixa "mandei pra conferir" sem cartão.
     else g = { ...g, texto: TXT_REGISTRO[loc.idioma].nada }
   }
 
   if (!g.ok) {
     await devolverCota(sb, userId, 'chat')
-    await auditar(sb, userId, 'chat', g.bloqueado ? 'bloqueado' : 'error', g)
+    await auditar(sb, userId, 'chat', g.bloqueado ? 'bloqueado' : 'error', g, VERSAO_CONTEXTO)
     return json({ error: 'ia_falhou' }, 502)
   }
 
   // 5. Ação pedida pelo modelo (o texto dele é ignorado: quem diz "pronto"
   //    é o servidor, depois de gravar) ou filtro de saída na resposta.
-  const marcas = extrairMarcasMemoria(g.texto.trim())
+  const { texto: semResumo, resumo } = extrairResumo(g.texto.trim())
+  const marcas = extrairMarcasMemoria(semResumo)
   let resposta = marcas.texto
   let status = 'ok'
   let acao: AcaoCliente | null = null
@@ -1196,9 +1225,10 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 
   await sb.from('life_chat_mensagens').insert([
     { user_id: userId, autor: 'usuario', texto: mensagem },
-    { user_id: userId, autor: 'life', texto: resposta.slice(0, 2000) },
+    // Resumo só quando a resposta é a do modelo (ferramenta/filtro trocam o texto).
+    { user_id: userId, autor: 'life', texto: resposta.slice(0, 2000), resumo: !feito && status === 'ok' ? resumo : null },
   ])
-  await auditar(sb, userId, 'chat', status, g)
+  await auditar(sb, userId, 'chat', status, g, VERSAO_CONTEXTO)
 
   return json({
     resposta,
@@ -2010,6 +2040,7 @@ const SCANNER_V2 = env('SCANNER_V2') === 'true'
 async function handleScanV2(sb: Sb, userId: string, corpo: Record<string, unknown>) {
   if (!SCANNER_V2) return json({ error: 'scanner_v2_off' }, 404)
   const loc = await lerLocalidade(sb, userId)
+  let uso: UsoTokens | undefined
   return handleScan({
     repo: repoSupabase(sb, userId),
     idioma: loc.idioma,
@@ -2021,6 +2052,7 @@ async function handleScanV2(sb: Sb, userId: string, corpo: Record<string, unknow
         contents: [{ parts: [{ inline_data: { mime_type: mime, data: imagem } }, { text: prompt }] }],
         generationConfig: configGeracao(3072, 0.1, true),
       }, timeoutMs)
+      uso = somarUso(uso, g.uso)
       return { ok: g.ok, texto: g.texto, tokens: g.tokens, custo: g.custo }
     },
     extrairJSON,
@@ -2030,7 +2062,7 @@ async function handleScanV2(sb: Sb, userId: string, corpo: Record<string, unknow
     },
     devolverCota: () => devolverCota(sb, userId, 'vision'),
     auditar: async (status, g) => {
-      await auditar(sb, userId, 'scan', status, g ? { ok: g.ok, texto: '', chamadas: [], tokens: g.tokens, custo: g.custo, bloqueado: false } : undefined)
+      await auditar(sb, userId, 'scan', status, g ? { ok: g.ok, texto: '', chamadas: [], tokens: g.tokens, custo: g.custo, bloqueado: false, uso } : undefined)
     },
     json,
     agora: () => Date.now(),
