@@ -8,8 +8,9 @@ import { dataLocalISO } from '@domain/rules/datas'
  *   1. Sono      → só se a pessoa cadastrou o horário de dormir/acordar
  *                  (Perfil > Notificações) E agora está dentro dele;
  *   2. Conquista → bateu a meta de calorias hoje OU desbloqueou uma
- *                  conquista hoje (vale até a meia-noite; o Life da Home
- *                  fica dourado junto — ver diaDeConquista);
+ *                  conquista hoje (vale até a meia-noite). No app, o Life
+ *                  da Home toca a animação dourada uma vez (celebração
+ *                  pendente), não fica dourado o dia todo;
  *   3. Normal    → todo o resto.
  *
  * Android: o plugin nativo `MascoteIcone` guarda os horários e troca sozinho,
@@ -46,8 +47,11 @@ const CHAVE_CONQUISTA = 'athos.icone.conquista'
 /** Data (YYYY-MM-DD) em que a última conquista da galeria foi desbloqueada. */
 const CHAVE_CONQUISTA_NOVA = 'athos.icone.conquistaNova'
 
-/** Disparado quando o dia vira (ou deixa de ser) "dia de conquista". */
-export const EVENTO_DIA_CONQUISTA = 'athos:dia-conquista'
+/** "1" enquanto o Life da Home ainda não tocou a animação da conquista nova. */
+const CHAVE_CELEBRAR = 'athos.life.celebrar'
+
+/** Disparado quando há conquista nova pra o Life da Home celebrar. */
+export const EVENTO_CELEBRAR = 'athos:life-celebrar'
 
 /** "23:30" → 1410 (minutos desde a meia-noite); null se inválido. */
 export function paraMinutos(hhmm: string): number | null {
@@ -107,14 +111,32 @@ function conquistaNovaHoje(): boolean {
   }
 }
 
-/** Meta de calorias batida ou conquista desbloqueada hoje: Life dourado. */
+/** Meta de calorias batida ou conquista desbloqueada hoje: ícone dourado. */
 export function diaDeConquista(): boolean {
   return metaHoje() || conquistaNovaHoje()
 }
 
-function avisarMudanca(): void {
-  window.dispatchEvent(new Event(EVENTO_DIA_CONQUISTA))
+function avisarMudanca(celebrar: boolean): void {
+  if (celebrar) {
+    try {
+      localStorage.setItem(CHAVE_CELEBRAR, '1')
+    } catch {
+      /* sem armazenamento: celebra só se a Home estiver aberta agora */
+    }
+    window.dispatchEvent(new Event(EVENTO_CELEBRAR))
+  }
   void atualizarIconeDoMascote()
+}
+
+/** A Home pega a celebração pendente (e ela deixa de estar pendente). */
+export function consumirCelebracao(): boolean {
+  try {
+    if (localStorage.getItem(CHAVE_CELEBRAR) !== '1') return false
+    localStorage.removeItem(CHAVE_CELEBRAR)
+    return true
+  } catch {
+    return false
+  }
 }
 
 let fila: Promise<unknown> = Promise.resolve()
@@ -147,7 +169,7 @@ export function marcarConquistaHoje(bateu: boolean): void {
   } catch {
     return
   }
-  avisarMudanca()
+  avisarMudanca(bateu)
 }
 
 /** Desbloqueou uma conquista da galeria (não se desfaz no mesmo dia). */
@@ -158,5 +180,5 @@ export function marcarConquistaDesbloqueadaHoje(): void {
   } catch {
     return
   }
-  avisarMudanca()
+  avisarMudanca(true)
 }

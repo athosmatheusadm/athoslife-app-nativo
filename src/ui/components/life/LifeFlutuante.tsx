@@ -31,6 +31,8 @@ export function LifeFlutuante(props: {
   aparecerDepoisDe?: number
   /** Hábitos: o Life fica roxo dos pés pra cima conforme o nível (0–100). */
   nivelHabitos?: number
+  /** Home: cada aumento toca a animação dourada da conquista. */
+  celebrar?: number
 }) {
   const { m } = useI18n()
   const [aberto, setAberto] = useState(false)
@@ -63,7 +65,7 @@ export function LifeFlutuante(props: {
           />
         )}
         {/* Em celular estreito (360 px) o Life menor não cobre "Jantar" e "+ Nova refeição". */}
-        <LifeMascote humor={props.humor} alt="" className="relative h-24 min-[380px]:h-32" nivelHabitos={props.nivelHabitos} />
+        <LifeMascote humor={props.humor} alt="" className="relative h-24 min-[380px]:h-32" nivelHabitos={props.nivelHabitos} celebrar={props.celebrar} />
         {/* Área de toque: o corpo do Life, não a imagem inteira. */}
         <button
           type="button"

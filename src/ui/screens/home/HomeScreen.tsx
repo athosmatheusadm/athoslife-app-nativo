@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSession } from '@app/SessionProvider'
 import { primeiroAcessoDoDiaNaHome } from '@app/ausencia'
-import { useDiaDeConquista } from '@app/CelebracaoConquistas'
+import { useCelebracaoNaHome } from '@app/CelebracaoConquistas'
 import { dataLocalISO } from '@domain/rules/datas'
 import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { TodayActivity } from './TodayActivity'
@@ -34,8 +34,8 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
     profile?.streakAtual ?? 0,
     profile?.maiorStreak ?? 0,
   )
-  // Meta batida ou conquista nova hoje: o Life da Home fica dourado.
-  const dourado = useDiaDeConquista()
+  // Meta batida ou conquista nova: o Life da Home toca a animação dourada uma vez.
+  const celebrar = useCelebracaoNaHome()
   if (!profile) return null
 
   return (
@@ -51,7 +51,7 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
         </div>
       </header>
 
-      {lifeNoTopo && <LifeSaudacao dourado={dourado} />}
+      {lifeNoTopo && <LifeSaudacao celebrar={celebrar} />}
 
       {/* O Life puxa assunto (máx. 1 por dia) e, uns segundos depois, o check-in. */}
       <AberturaLife />
@@ -76,7 +76,7 @@ export function HomeScreen({ onNavigate }: { onNavigate: (rota: string) => void 
       {/* O Life da Home junta tudo; fora do 1º acesso do dia, fica no canto.
           No 1º acesso ele está grande no topo e só vem pro canto depois que
           a saudação sai de vista. */}
-      <LifeFlutuante humor={dourado ? 'conquista' : 'normal'} foco="home" aparecerDepoisDe={lifeNoTopo ? 320 : 0} />
+      <LifeFlutuante humor="normal" celebrar={celebrar} foco="home" aparecerDepoisDe={lifeNoTopo ? 320 : 0} />
     </main>
   )
 }

@@ -21,6 +21,11 @@ import { useEffect, useRef, useState } from 'react'
  * public/life/vivo/foco.html (gerado por scripts/gerar_life_vivo.py) e este
  * componente só manda os comandos. O PNG fica na tela até a animação estar
  * pronta, e continua se o celular não abrir WebGL.
+ *
+ * Conquista (dono, 27/10): não é mais a imagem dourada parada. O Life vivo
+ * toca a animação "ouro" do protótipo — entra na pose da medalha, o dourado
+ * sobe dos pés e ele volta ao verde. `humor="conquista"` toca ao aparecer;
+ * `celebrar` (contador) toca de novo a cada aumento.
  */
 export type HumorLife =
   | 'normal'
@@ -43,6 +48,7 @@ const VIVO: Partial<Record<HumorLife, { v: string; ex?: string }>> = {
   feliz: { v: 'padrao', ex: 'feliz' },
   treino: { v: 'treino' },
   chef: { v: 'chef' },
+  conquista: { v: 'padrao' },
 }
 
 /*
@@ -61,6 +67,8 @@ export function LifeMascote(props: {
   estatico?: boolean
   /** 0–100: Life de Hábitos, o roxo sobe dos pés conforme os hábitos ficam pra trás. */
   nivelHabitos?: number | undefined
+  /** Cada aumento toca a animação dourada da conquista uma vez. */
+  celebrar?: number | undefined
 }) {
   const vivo = props.estatico ? undefined : VIVO[props.humor]
   if (!vivo) {
@@ -80,6 +88,7 @@ export function LifeMascote(props: {
       versao={versao}
       expressao={vivo.ex}
       nivelHabitos={props.nivelHabitos}
+      celebrar={(props.celebrar ?? 0) + (props.humor === 'conquista' ? 1 : 0)}
       className={props.className ?? 'h-24'}
       alt={props.alt ?? 'Life'}
     />
@@ -91,6 +100,7 @@ function LifeVivo(props: {
   versao: string
   expressao: string | undefined
   nivelHabitos: number | undefined
+  celebrar: number
   className: string
   alt: string
 }) {
@@ -134,6 +144,14 @@ function LifeVivo(props: {
     if (props.nivelHabitos !== undefined) enviar({ tipo: 'hab', valor: Math.round(props.nivelHabitos) })
   }, [props.nivelHabitos])
 
+  // Só manda depois do "pronto": antes disso o protótipo ainda não ouve.
+  const celebrados = useRef(0)
+  useEffect(() => {
+    if (!pronto || props.celebrar <= celebrados.current) return
+    celebrados.current = props.celebrar
+    enviar({ tipo: 'conquista' })
+  }, [pronto, props.celebrar])
+
   const mostrarVivo = pronto && !falhou
 
   return (
@@ -146,7 +164,8 @@ function LifeVivo(props: {
       onPointerDown={() => enviar({ tipo: 'toque' })}
     >
       <img
-        src={srcLife(props.humor)}
+        // Conquista: verde enquanto carrega (o dourado vem na animação); parado dourado se não houver WebGL.
+        src={srcLife(props.humor === 'conquista' && !falhou ? 'normal' : props.humor)}
         alt=""
         draggable={false}
         className={`absolute inset-0 h-full w-full object-contain object-bottom drop-shadow-xl transition-opacity duration-200 ${

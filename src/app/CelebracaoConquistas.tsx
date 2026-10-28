@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core'
 import { useSession } from './SessionProvider'
 import { conquistasRepository } from '@data/repositories/conquistasRepository'
 import { valeTentarRede } from '@data/offline/conexao'
-import { diaDeConquista, EVENTO_DIA_CONQUISTA } from '@data/native/iconeMascote'
+import { consumirCelebracao, EVENTO_CELEBRAR } from '@data/native/iconeMascote'
 import type { Conquista, NivelConquista } from '@domain/entities/conquista'
 import { AchievementToast } from '@ui/screens/achievements/AchievementToast'
 
@@ -14,8 +14,8 @@ import { AchievementToast } from '@ui/screens/achievements/AchievementToast'
  * o Life dourado nunca aparecia (teste do dono, 27/10). Agora, nas abas
  * raiz, o app confere ao abrir, ao voltar pro app e ao trocar de aba (no
  * máx. 1 vez a cada 90 s — a avaliação cruza várias tabelas). Conquista
- * nova: faixa com o Life dourado, e o dia vira "dia de conquista" (Life da
- * Home e ícone do app dourados até a meia-noite).
+ * nova: faixa com o Life dourado, o Life da Home toca a animação dourada
+ * uma vez e o ícone do app fica dourado até a meia-noite.
  */
 const INTERVALO_MS = 90_000
 const PESO_NIVEL: Record<NivelConquista, number> = { bronze: 0, prata: 1, ouro: 2, diamante: 3, lendario: 4 }
@@ -68,19 +68,19 @@ export function CelebracaoConquistas() {
   return <AchievementToast conquista={atual} onFechar={() => setAtual(null)} />
 }
 
-/** true no dia em que a pessoa bateu a meta ou ganhou conquista (Life dourado). */
-export function useDiaDeConquista(): boolean {
-  const [dourado, setDourado] = useState(diaDeConquista)
+/**
+ * Contador pro `celebrar` do Life da Home: sobe quando há conquista nova
+ * (ou meta batida) ainda não celebrada — na hora, ou ao voltar pra Home.
+ */
+export function useCelebracaoNaHome(): number {
+  const [vezes, setVezes] = useState(0)
   useEffect(() => {
-    const atualizar = () => setDourado(diaDeConquista())
-    atualizar()
-    window.addEventListener(EVENTO_DIA_CONQUISTA, atualizar)
-    // Passou da meia-noite com o app aberto: confere ao voltar pra tela.
-    document.addEventListener('visibilitychange', atualizar)
-    return () => {
-      window.removeEventListener(EVENTO_DIA_CONQUISTA, atualizar)
-      document.removeEventListener('visibilitychange', atualizar)
+    const pegar = () => {
+      if (consumirCelebracao()) setVezes((n) => n + 1)
     }
+    pegar()
+    window.addEventListener(EVENTO_CELEBRAR, pegar)
+    return () => window.removeEventListener(EVENTO_CELEBRAR, pegar)
   }, [])
-  return dourado
+  return vezes
 }

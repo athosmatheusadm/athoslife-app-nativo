@@ -3555,3 +3555,20 @@ Validado: typecheck e build. Não visto no aparelho.
 **Pendências:** testar no APK (vídeo no WebView, faixa dourada, ícone ao sair
 do app); APK novo / chaves e e-mail / funções do WhatsApp seguram até o dono
 liberar; push precisa do token do GitHub; conferir o `[[RESUMO]]` no chat real.
+
+## 2026-10-28 — Life dourado vira a animação do Life vivo
+
+Dono: o Life da Home ficou "travado no dourado" (imagem parada o dia todo) e
+devia usar a animação do Life vivo (entra na pose e o dourado sobe).
+- `LifeMascote`: `humor="conquista"` agora é o Life vivo tocando a ação
+  "ouro" do protótipo (pose da medalha, dourado sobe dos pés, volta ao
+  verde, ~4,4 s). Prop nova `celebrar` (contador): cada aumento toca de
+  novo. Sem WebGL fica a imagem dourada parada. Vale pra faixa da
+  conquista e pro topo da galeria.
+- Home: o Life não fica mais dourado o dia todo. Conquista nova ou meta
+  batida deixam uma celebração pendente (`athos.life.celebrar`); a Home
+  toca a animação uma vez, na hora ou quando a pessoa voltar pra ela
+  (`useCelebracaoNaHome`).
+- O ícone do app continua dourado até a meia-noite (regra do pacote do ícone).
+
+Validado: typecheck e build. Não visto no aparelho.
