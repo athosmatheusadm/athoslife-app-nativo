@@ -14,6 +14,7 @@ import { AiProxyError, estimarAlimento, type AlimentoEstimado } from '@data/ai/a
 import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { MAX_GRAMAS_ITEM, limitarGramas } from '@domain/rules/limites'
+import { LifeCozinhando } from '@ui/components/life/LifeCozinhando'
 
 /** Erro do "Life estima" em texto pra pessoa (busca da Dieta e scanner). */
 export function mensagemErroEstimar(e: unknown, t: Mensagens['dieta']['busca']['estimar'], semRede: string): string {
@@ -135,6 +136,11 @@ export function InlineFoodSearch(props: {
       {!buscando && termo.trim().length >= 2 && resultados.length === 0 && (
         <div className="py-3 text-center">
           <p className="text-micro text-content-low">{t.nada}</p>
+          {estimando && (
+            <div className="mt-3 flex justify-center">
+              <LifeCozinhando className="h-28" />
+            </div>
+          )}
           {pedirPlano ? (
             <PlanoParaEstimar />
           ) : (

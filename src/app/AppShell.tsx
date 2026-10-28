@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { BottomNav } from '@ui/components/BottomNav'
+import { CelebracaoConquistas } from './CelebracaoConquistas'
 
 /**
  * Casca das 5 abas raiz (Home, Dieta, Treinos, Hábitos, Scanner).
@@ -11,6 +12,7 @@ export function AppShell() {
     <div className="relative min-h-full">
       <Outlet />
       <BottomNav />
+      <CelebracaoConquistas />
     </div>
   )
 }

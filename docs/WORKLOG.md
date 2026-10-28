@@ -3526,3 +3526,32 @@ nada.
 - Validado: `deno check`, 62 testes Deno.
 - PENDENTE: aplicar `db/athoslife_memoria_camadas_migration.sql` ANTES de publicar a `ai-proxy` (precisa deploy; autorização do dono).
 - 27/10 (depois): dono autorizou. APLICADA `athoslife_memoria_camadas` (colunas conferidas) e `ai-proxy` publicada com o histórico em camadas. Falta: conferir no chat real se o `[[RESUMO]]` some do texto e é gravado, e ler os tokens separados no log.
+
+## 2026-10-27 (noite, 3) — Life cozinhando na espera da IA + Life dourado de verdade
+
+- **Vídeo do Life cozinhando** (do dono, `video life cozinhando.mp4` na raiz,
+  fora do git): recortado, sem som e comprimido em `public/life/cozinhando.mp4`
+  (113 KB) + 1º quadro `cozinhando.jpg`. `LifeCozinhando` (ui/components/life)
+  mostra o vídeo em loop num quadro arredondado preto. Tirar o fundo preto foi
+  testado e descartado: apagava a frigideira, o ouvido e o rabo. Com "reduzir
+  movimento" fica o quadro parado. Entra no Scanner enquanto a IA olha a
+  foto e enquanto busca o código de barras (no lugar do Life chef + rodinha),
+  e na estimativa da IA (Scanner "produto sem tabela" e busca da Dieta).
+- **Life dourado nunca aparecia:** as conquistas só eram avaliadas abrindo
+  Perfil > Conquistas e o `AchievementToast` não era usado em lugar nenhum.
+  Agora `CelebracaoConquistas` (montado no AppShell) avalia ao abrir, ao
+  voltar pro app e ao trocar de aba (máx. 1x a cada 90 s), via
+  `conquistasRepository.verificarNovas`. Conquista nova: faixa com o Life
+  dourado (a de nível mais alto, se vierem várias).
+- **Dia de conquista:** meta de calorias batida OU conquista desbloqueada
+  hoje deixam o Life da Home (saudação e flutuante) e o ícone do app
+  dourados até a meia-noite (`diaDeConquista` em iconeMascote.ts). Antes o
+  ícone só olhava a meta de calorias, e a Home ficava sempre "normal".
+  O ícone continua trocando só quando o app sai da tela (trocar com ele
+  aberto pode fechar o app).
+
+Validado: typecheck e build. Não visto no aparelho.
+
+**Pendências:** testar no APK (vídeo no WebView, faixa dourada, ícone ao sair
+do app); APK novo / chaves e e-mail / funções do WhatsApp seguram até o dono
+liberar; push precisa do token do GitHub; conferir o `[[RESUMO]]` no chat real.

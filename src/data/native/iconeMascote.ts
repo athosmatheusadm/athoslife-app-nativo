@@ -7,7 +7,9 @@ import { dataLocalISO } from '@domain/rules/datas'
  *
  *   1. Sono      → só se a pessoa cadastrou o horário de dormir/acordar
  *                  (Perfil > Notificações) E agora está dentro dele;
- *   2. Conquista → bateu a meta de calorias hoje (vale até a meia-noite);
+ *   2. Conquista → bateu a meta de calorias hoje OU desbloqueou uma
+ *                  conquista hoje (vale até a meia-noite; o Life da Home
+ *                  fica dourado junto — ver diaDeConquista);
  *   3. Normal    → todo o resto.
  *
  * Android: o plugin nativo `MascoteIcone` guarda os horários e troca sozinho,
@@ -41,6 +43,11 @@ const MascoteIcone = registerPlugin<MascoteIconePlugin>('MascoteIcone')
 /** Mesma chave de lembretesDiarios.ts: só existe depois que a pessoa salvou os horários. */
 const CHAVE_LEMBRETES = 'athoslife:lembretes-diarios'
 const CHAVE_CONQUISTA = 'athos.icone.conquista'
+/** Data (YYYY-MM-DD) em que a última conquista da galeria foi desbloqueada. */
+const CHAVE_CONQUISTA_NOVA = 'athos.icone.conquistaNova'
+
+/** Disparado quando o dia vira (ou deixa de ser) "dia de conquista". */
+export const EVENTO_DIA_CONQUISTA = 'athos:dia-conquista'
 
 /** "23:30" → 1410 (minutos desde a meia-noite); null se inválido. */
 export function paraMinutos(hhmm: string): number | null {
@@ -84,7 +91,7 @@ async function horarioSonoCadastrado(): Promise<HorarioSono | null> {
   }
 }
 
-function conquistaHoje(): boolean {
+function metaHoje(): boolean {
   try {
     return localStorage.getItem(CHAVE_CONQUISTA) === dataLocalISO()
   } catch {
@@ -92,12 +99,30 @@ function conquistaHoje(): boolean {
   }
 }
 
+function conquistaNovaHoje(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_CONQUISTA_NOVA) === dataLocalISO()
+  } catch {
+    return false
+  }
+}
+
+/** Meta de calorias batida ou conquista desbloqueada hoje: Life dourado. */
+export function diaDeConquista(): boolean {
+  return metaHoje() || conquistaNovaHoje()
+}
+
+function avisarMudanca(): void {
+  window.dispatchEvent(new Event(EVENTO_DIA_CONQUISTA))
+  void atualizarIconeDoMascote()
+}
+
 let fila: Promise<unknown> = Promise.resolve()
 
 async function aplicar(): Promise<void> {
   if (Capacitor.getPlatform() !== 'android') return
   const sono = await horarioSonoCadastrado()
-  const conquista = conquistaHoje()
+  const conquista = diaDeConquista()
   const ini = sono ? paraMinutos(sono.inicio) : null
   const fim = sono ? paraMinutos(sono.fim) : null
   await MascoteIcone.sincronizar({
@@ -116,12 +141,22 @@ export function atualizarIconeDoMascote(): Promise<void> {
 /** Meta do dia batida (ou desfeita, se a pessoa apagou comida e saiu da faixa). */
 export function marcarConquistaHoje(bateu: boolean): void {
   try {
-    const antes = conquistaHoje()
-    if (bateu === antes) return
+    if (bateu === metaHoje()) return
     if (bateu) localStorage.setItem(CHAVE_CONQUISTA, dataLocalISO())
     else localStorage.removeItem(CHAVE_CONQUISTA)
   } catch {
     return
   }
-  void atualizarIconeDoMascote()
+  avisarMudanca()
+}
+
+/** Desbloqueou uma conquista da galeria (não se desfaz no mesmo dia). */
+export function marcarConquistaDesbloqueadaHoje(): void {
+  try {
+    if (conquistaNovaHoje()) return
+    localStorage.setItem(CHAVE_CONQUISTA_NOVA, dataLocalISO())
+  } catch {
+    return
+  }
+  avisarMudanca()
 }

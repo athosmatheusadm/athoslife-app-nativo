@@ -11,6 +11,7 @@ import type { Metas, Objetivo } from '@domain/entities/profile'
 import { dataLocalISO } from '@domain/rules/datas'
 import { diasPausados } from '@data/lifePausa'
 import { texto, traducoesDe } from '@data/traducoesConteudo'
+import { marcarConquistaDesbloqueadaHoje } from '@data/native/iconeMascote'
 
 interface CatalogoRow {
   id: string
@@ -100,6 +101,18 @@ export const conquistasRepository = {
   },
 
   async avaliarNoServidor(metas: Metas): Promise<Conquista[]> {
+    return (await this.avaliarTudo(metas)).lista
+  },
+
+  /**
+   * Mesma avaliação, devolvendo só o que desbloqueou agora — a Home usa pra
+   * celebrar (Life dourado) sem a pessoa precisar abrir a galeria.
+   */
+  async verificarNovas(metas: Metas): Promise<Conquista[]> {
+    return (await this.avaliarTudo(metas)).novas
+  },
+
+  async avaliarTudo(metas: Metas): Promise<{ lista: Conquista[]; novas: Conquista[] }> {
     const userId = await usuarioId()
 
     const [
@@ -315,8 +328,11 @@ export const conquistasRepository = {
         .from('conquistas_user')
         .upsert(novasParaGravar, { onConflict: 'user_id,conquista_id', ignoreDuplicates: true })
       if (error) throw error
+      // Ganhou conquista hoje: o Life da Home e o ícone do app ficam dourados até a meia-noite.
+      marcarConquistaDesbloqueadaHoje()
     }
 
-    return resultado
+    const novasIds = new Set(novasParaGravar.map((n) => n.conquista_id))
+    return { lista: resultado, novas: resultado.filter((c) => novasIds.has(c.id)) }
   },
 }

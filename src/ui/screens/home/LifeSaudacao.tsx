@@ -7,10 +7,10 @@ import { useI18n } from '@/i18n/I18nProvider'
 
 /**
  * O Life na Home: normal no dia a dia, "resgate" (caneca "Cadê você?")
- * quando a pessoa volta depois de dias fora. Tocar abre o chat — o jeito
+ * quando a pessoa volta depois de dias fora, dourado no dia de conquista. Tocar abre o chat — o jeito
  * combinado com o dono de chegar no chat (sem botão "💬 Life").
  */
-export function LifeSaudacao() {
+export function LifeSaudacao({ dourado = false }: { dourado?: boolean }) {
   const { profile } = useSession()
   const { m } = useI18n()
   const [chatAberto, setChatAberto] = useState(false)
@@ -29,7 +29,7 @@ export function LifeSaudacao() {
         aria-label={m.home.lifeToque}
         className="flex w-full items-end gap-3 text-left transition-transform active:scale-[0.99]"
       >
-        <LifeMascote humor={resgate ? 'resgate' : 'normal'} className="h-32 flex-none" />
+        <LifeMascote humor={resgate ? 'resgate' : dourado ? 'conquista' : 'normal'} className="h-32 flex-none" />
         <span className="relative mb-4 flex-1 rounded-2xl rounded-bl-sm border border-surface-4 bg-surface-2 px-3.5 py-2.5">
           <span className="block text-sm font-semibold leading-snug text-content-hi">{fala}</span>
           <span className="mt-0.5 block text-micro text-content-low">{m.home.lifeToque}</span>

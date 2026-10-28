@@ -13,7 +13,7 @@ import { atualizarItemScan } from '@domain/rules/scanCalculo'
 import { temAcessoPremium } from '@domain/rules/access'
 import { refeicaoPeloHorario } from '@domain/rules/cozinha'
 import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
-import { LifeMascote } from '@ui/components/LifeMascote'
+import { LifeCozinhando } from '@ui/components/life/LifeCozinhando'
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
@@ -398,6 +398,11 @@ export function Scanner() {
             aria-label={t.nomeProduto}
             className="mt-2 min-h-12 w-full rounded-card border border-surface-4 bg-surface-1 px-3 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
           />
+          {estimando && (
+            <div className="mt-3 flex justify-center">
+              <LifeCozinhando className="h-32" />
+            </div>
+          )}
           {pedirPlano ? (
             <PlanoParaEstimar />
           ) : (
@@ -512,10 +517,9 @@ export function Scanner() {
       {etapa === 'analisando' && (
         <section className="flex flex-1 flex-col items-center justify-center text-center">
           {foto && (
-            <img src={foto.dataUrl} alt="" className="mb-5 h-48 w-48 rounded-3xl object-cover opacity-80" />
+            <img src={foto.dataUrl} alt="" className="mb-4 h-36 w-36 rounded-3xl object-cover opacity-80" />
           )}
-          <LifeMascote humor="chef" className="mb-3 h-28" />
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-surface-4 border-t-brand" />
+          <LifeCozinhando className="h-40" />
           <p className="mt-4 font-semibold text-content-hi" role="status">
             {origem === 'codigo' ? t.buscandoProduto : t.olhando}
           </p>
