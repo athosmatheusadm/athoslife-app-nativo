@@ -70,8 +70,8 @@ export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada' | 'contemRest
 async function conteudoLiberado() {
   const { idioma } = localidadeAtual()
   if (idioma !== 'pt-BR') {
-    // O banco só tem en/es por enquanto: os outros idiomas leem o inglês.
-    const r = await supabase.rpc('receitas_conteudo_liberado', { p_idioma: idioma === 'es' ? 'es' : 'en' })
+    // en/es/fr/hi no banco (db/athoslife_idiomas_fr_hi_conteudo_migration.sql).
+    const r = await supabase.rpc('receitas_conteudo_liberado', { p_idioma: idioma })
     if (!r.error) return r
   }
   return supabase.rpc('receitas_conteudo_liberado')

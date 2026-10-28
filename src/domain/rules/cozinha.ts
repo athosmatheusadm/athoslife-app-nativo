@@ -25,16 +25,16 @@ export interface ReceitaEstruturada {
   readonly extras: readonly { rotulo: string | null; texto: string }[]
 }
 
-// Rótulos em pt, en e es (o conteúdo traduzido segue o mesmo formato).
-const RE_ROTULO_INGREDIENTES = /^(INGREDIENTES|INGREDIENTS)/i
-const RE_ROTULO_PREPARO = /(PREPARO|PREPARATION|PREPARACI[OÓ]N)/i
+// Rótulos em pt, en, es, fr e hi (o conteúdo traduzido segue o mesmo formato).
+const RE_ROTULO_INGREDIENTES = /^(INGREDIENTES|INGREDIENTS|INGRÉDIENTS|सामग्री)/i
+const RE_ROTULO_PREPARO = /(PREPARO|PR[EÉ]PARATION|PREPARACI[OÓ]N|बनाने का तरीक़ा)/i
 const RE_ROTULO_DICA = /LIFE/i
-const RE_ROTULO_PORQUE = /^(POR QUE|SOBRE|ABOUT)/i
-const RE_ROTULO_MONTAGEM = /^(MONTAGEM|PRA SERVIR|TO SERVE|MONTAJE)/i
+const RE_ROTULO_PORQUE = /^(POR QUE|SOBRE|ABOUT|À PROPOS|इस डिश के बारे में)/i
+const RE_ROTULO_MONTAGEM = /^(MONTAGEM|PRA SERVIR|TO SERVE|MONTAJE|DRESSAGE|परोसने का तरीक़ा)/i
 
-/** Unidade "porção" em qualquer dos 3 idiomas — a tela traduz pra pessoa. */
+/** Unidade "porção" em qualquer idioma — a tela traduz pra pessoa. */
 export const PORCAO = 'porção'
-const SINONIMOS_PORCAO = new Set(['porção', 'serving', 'porción'])
+const SINONIMOS_PORCAO = new Set(['porção', 'serving', 'porción', 'portion', 'सर्विंग'])
 
 /** Tira o marcador "- " ou "1. " do começo da linha. */
 function semMarcador(linha: string): string {
