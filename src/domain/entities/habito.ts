@@ -175,11 +175,15 @@ const TERMOS_PROIBIDOS = [
   'champanhe', 'sake', 'conhaque', 'absinto', 'cerveza', 'cervezas', 'vino', 'vinos', 'borrachera', 'beer',
   'beers', 'alcohol', 'alcoholic', 'wine', 'liquor', 'booze', 'drunk', 'bebado', 'bebada', 'embriagar',
   'ressaca', 'hangover', 'drinks', 'bebedeira', 'happy hour', 'cocktail', 'coquetel', 'open bar',
+  'biere', 'bieres', 'vin', 'vins', 'pinard', 'alcoolise', 'alcoolisee', 'apero', 'aperitif', 'ivre',
+  'soiree arrosee', 'daru', 'daaru', 'sharab', 'sharaab',
   // tabaco / nicotina
   'cigarro', 'cigarros', 'cigarrinho', 'fumar', 'fumo', 'fumando', 'fumante', 'tabagismo', 'tabaco',
   'nicotina', 'vape', 'vapes', 'vaper', 'cigarro eletronico', 'pod de nicotina', 'narguile', 'charuto',
   'charutos', 'palheiro', 'cigarrillo', 'cigarrillos', 'cigarette', 'cigarettes', 'smoking', 'smoke',
   'tobacco', 'cigar', 'cigars', 'hookah', 'shisha', 'juul', 'snus',
+  'clope', 'clopes', 'tabac', 'fumer', 'cigare', 'cigares', 'chicha', 'bidi', 'beedi', 'gutka', 'gutkha',
+  'khaini', 'paan masala', 'pan masala', 'zarda',
   // drogas e remédio controlado
   'maconha', 'cannabis', 'marijuana', 'marihuana', 'weed', 'thc', 'cbd', 'haxixe', 'hashish', 'skunk',
   'cocaina', 'cocaine', 'crack', 'droga', 'drogas', 'drug', 'drugs', 'entorpecente', 'entorpecentes',
@@ -189,12 +193,15 @@ const TERMOS_PROIBIDOS = [
   'oxycodone', 'fentanil', 'fentanyl', 'tramadol', 'anfetamina', 'anfetaminas', 'amphetamine', 'ritalina',
   'venvanse', 'adderall', 'rivotril', 'clonazepam', 'zolpidem', 'benzo', 'benzodiazepina', 'benzodiazepinico',
   'porro', 'porros',
+  'drogue', 'drogues', 'beuh', 'shit', 'ganja', 'charas', 'afeem', 'afim', 'nasha',
   // apostas e jogos de azar
   'aposta', 'apostas', 'apostar', 'apostador', 'apuestas', 'bet', 'bets', 'betano', 'bet365', 'sportingbet',
   'sports betting', 'cassino', 'casino', 'gambling', 'jogo de azar', 'jogos de azar', 'juegos de azar',
   'jogo do bicho', 'tigrinho', 'fortune tiger', 'aviator', 'blaze', 'roleta', 'poker', 'poquer', 'slot',
   'slots', 'caca niquel', 'caca niqueis', 'loteria', 'loterias', 'mega sena', 'raspadinha', 'raspadinhas',
   'bingo',
+  'pari', 'paris sportifs', 'jeux d argent', 'jeu d argent', 'roulette', 'loto', 'grattage', 'satta', 'juaa',
+  'jua', 'teen patti', 'rummy', 'dream11',
   // conteúdo e vida sexual
   'pornografia', 'porno', 'porn', 'pornhub', 'xvideos', 'xxx', 'nsfw', 'hentai', 'onlyfans', 'putaria',
   'masturbacao', 'masturbar', 'masturbarse', 'masturbation', 'masturbate', 'punheta', 'siririca', 'nofap',
@@ -202,18 +209,29 @@ const TERMOS_PROIBIDOS = [
   'desnuda', 'erotico', 'erotica', 'fetiche', 'fetish', 'tesao', 'ejacular', 'ejaculacao', 'ejaculation',
   'retencao de semen', 'semen', 'prostituicao', 'prostituta', 'prostitution', 'garota de programa', 'camgirl',
   'orgia', 'tinder', 'grindr', 'viagra', 'sildenafila', 'tadalafila',
+  'pornographie', 'sexe', 'branlette', 'prostituee',
+]
+
+/** Hindi: procurado em qualquer parte do nome (o devanágari não separa palavra como o latim). */
+const TERMOS_PROIBIDOS_HI = [
+  'शराब', 'दारू', 'दारु', 'बियर', 'बीयर', 'वाइन', 'व्हिस्की', 'वोदका',
+  'सिगरेट', 'बीडी', 'तंबाकू', 'तम्बाकू', 'गुटखा', 'खैनी', 'पान मसाला', 'हुक्का', 'जर्दा',
+  'गांजा', 'चरस', 'अफीम', 'ड्रग', 'नशा', 'कोकीन', 'हेरोइन',
+  'जुआ', 'सट्टा', 'बेटिंग', 'कैसीनो', 'लॉटरी', 'लाटरी',
+  'पोर्न', 'सेक्स', 'अश्लील', 'हस्तमैथुन', 'वेश्या',
 ]
 
 function normalizarNome(t: string): string {
   return ` ${t
+    .replace(/œ/gi, 'oe')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[̀-ͯ\u093c]/g, '')
+    .replace(/[^a-z0-9\u0900-\u097f]+/g, ' ')
     .trim()} `
 }
 
 export function habitoNomeProibido(nome: string): boolean {
   const n = normalizarNome(nome)
-  return TERMOS_PROIBIDOS.some((t) => n.includes(` ${t} `))
+  return TERMOS_PROIBIDOS.some((t) => n.includes(` ${t} `)) || TERMOS_PROIBIDOS_HI.some((t) => n.includes(t))
 }

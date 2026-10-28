@@ -17,6 +17,8 @@ interface AlimentoRow {
   categoria: string | null
   nome_en?: string | null
   nome_es?: string | null
+  nome_fr?: string | null
+  nome_hi?: string | null
   regioes?: string[] | null
   gordura_preparo_pct?: number | null
   taco_id?: number | null
@@ -24,11 +26,13 @@ interface AlimentoRow {
   aliases?: string[] | null
 }
 
-/** Nome no idioma em uso. Sem coluna própria (fr), vai o inglês; sem tradução, o pt-BR. */
+/** Nome no idioma em uso. Sem tradução (marca regional), vai o inglês; sem ele, o pt-BR. */
 function nomeLocal(row: AlimentoRow): string {
   const { idioma } = localidadeAtual()
   if (idioma === 'pt-BR') return row.nome
   if (idioma === 'es') return row.nome_es || row.nome
+  if (idioma === 'fr') return row.nome_fr || row.nome_en || row.nome
+  if (idioma === 'hi') return row.nome_hi || row.nome_en || row.nome
   return row.nome_en || row.nome
 }
 
@@ -85,12 +89,24 @@ function baseCompleta(): Promise<AlimentoRow[]> {
   )
 }
 
-/** Sem acento, minúsculo e sem pontuação (igual normalizar_texto do banco): "acucar" acha "Açúcar", "coca cola" acha "Coca-Cola". */
+/**
+ * Sem acento, minúsculo e sem pontuação (igual normalizar_texto do banco):
+ * "acucar" acha "Açúcar", "coca cola" acha "Coca-Cola", "oeuf" acha "Œuf".
+ * Mantém o devanágari (hindi) e tira o nukta: "सफेद" acha "सफ़ेद".
+ */
 function normalizar(t: string): string {
-  return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  return t
+    .replace(/œ/gi, 'oe')
+    .replace(/æ/gi, 'ae')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f\u093c]/g, '')
+    .replace(/\u0901/g, '\u0902')
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0900-\u097f]+/g, ' ')
+    .trim()
 }
 
-/** Busca na base guardada — mesma ideia da RPC buscar_alimentos (pt/en/es, sem acento, só do país). */
+/** Busca na base guardada — mesma ideia da RPC buscar_alimentos (pt/en/es/fr/hi, sem acento, só do país). */
 function buscarNaBase(base: readonly AlimentoRow[], termo: string, limite: number): AlimentoBase[] {
   const palavras = normalizar(termo).split(/\s+/).filter(Boolean)
   const termoTodo = palavras.join(' ')
@@ -98,7 +114,7 @@ function buscarNaBase(base: readonly AlimentoRow[], termo: string, limite: numbe
   for (const row of base) {
     if (!valeNoPais(row)) continue
     const apelidos = (row.aliases ?? []).map(normalizar)
-    const nomes = [row.nome, row.nome_en, row.nome_es].filter((n): n is string => !!n).map(normalizar)
+    const nomes = [row.nome, row.nome_en, row.nome_es, row.nome_fr, row.nome_hi].filter((n): n is string => !!n).map(normalizar)
     const local = normalizar(nomeLocal(row))
     const peloNome = palavras.every((p) => nomes.some((n) => n.includes(p)))
     if (!peloNome && !apelidos.some((a) => a.includes(termoTodo))) continue
@@ -149,7 +165,7 @@ export const alimentosRepository = {
         const tipica = new Map((base ?? []).map((b) => [b.id, b.porcao_tipica_g ?? null]))
         // O RPC já traduziu `nome`; paraDominio não pode trocar de novo.
         return ((data ?? []) as AlimentoRow[]).map((r) =>
-          paraDominio({ ...r, nome_en: null, nome_es: null, porcao_tipica_g: tipica.get(r.id) ?? null }),
+          paraDominio({ ...r, nome_en: null, nome_es: null, nome_fr: null, nome_hi: null, porcao_tipica_g: tipica.get(r.id) ?? null }),
         )
       }
       if (!ehFalhaDeRede(error)) throw error
