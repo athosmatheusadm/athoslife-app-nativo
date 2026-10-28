@@ -1074,6 +1074,7 @@ export const es: Mensagens = {
       nomeRefeicao: 'Nombre de esta comida',
       nomeExemplo: 'Ej.: Post-entreno, Cena tardía…',
       erroNome: 'No se pudo guardar el nombre.',
+      erroIcone: 'No se pudo guardar el icono. Inténtalo de nuevo.',
     },
     busca: {
       unidades: (n: number) => (n === 1 ? '1 ud.' : `${n} uds.`),

@@ -3572,3 +3572,33 @@ devia usar a animação do Life vivo (entra na pose e o dourado sobe).
 - O ícone do app continua dourado até a meia-noite (regra do pacote do ícone).
 
 Validado: typecheck e build. Não visto no aparelho.
+
+## 2026-10-28 — Seletor orbital + francês (branch `idiomas-orbital`)
+
+Dono: novo seletor de idioma (pacote `ATHOSlife-seletor-orbital.zip`, raiz,
+fora do git) e **dois idiomas novos: francês e hindi** (Índia/Nepal vendem
+bem), com cultura, jeito de falar, costumes e comidas.
+- `SeletorIdiomaOrbital` (ui/components): porte React do componente do
+  pacote, mesma geometria/interação, cores pelos tokens do app; anel aberto
+  com raio 80 px (pacote: 96) a pedido do dono. Entrou na 1ª tela do
+  onboarding no lugar dos 3 botões.
+- **Francês** (`i18n/mensagens/fr.ts`, todas as chaves): Life trata por
+  "tu"; refeições da França (petit-déjeuner, déjeuner, goûter, dîner) e do
+  Québec via `TROCAS_POR_PAIS` (déjeuner, dîner, souper, collation).
+  Países novos no seletor: BE, LU, MA, SN, CI.
+- Sem francês no banco ainda: nomes de alimentos/exercícios, receitas e
+  traduções de conteúdo caem no **inglês** (antes caíam no pt).
+  Termos/Política em francês: por enquanto mostram o inglês.
+- `MealSheet`: texto fixo do erro do ícone foi pro dicionário (`erroIcone`).
+
+Validado: typecheck. Não visto no aparelho.
+
+**Pendências (idiomas):**
+1. Hindi (`hi.ts`) — próximo.
+2. **ai-proxy**: aceita só pt-BR/en/es; com `fr` o Life cai no português
+   (só responde em francês se a pessoa escrever em francês). Precisa do
+   jeito de falar de cada cultura + deploy (OK do dono).
+3. Banco: nomes em fr/hi (alimentos, exercícios, receitas, conquistas) e
+   comidas típicas de França/Québec/Índia/Nepal — migração com OK do dono.
+4. Termos e Política em francês e hindi.
+5. Frase de boas-vindas e Life da 1ª tela: dono achou as opções secas; refazer junto.

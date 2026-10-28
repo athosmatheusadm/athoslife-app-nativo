@@ -78,9 +78,10 @@ interface PlanoGeradoRow {
 
 function nomeNoIdioma(i: ItemSalvoRow): string {
   const { idioma } = localidadeAtual()
-  if (idioma === 'en') return i.nome_en || i.nome
+  if (idioma === 'pt-BR') return i.nome
   if (idioma === 'es') return i.nome_es || i.nome
-  return i.nome
+  // Sem coluna própria (fr): inglês.
+  return i.nome_en || i.nome
 }
 
 function codigoErroPlano(m: string): string {

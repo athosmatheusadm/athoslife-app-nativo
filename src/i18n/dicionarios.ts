@@ -3,18 +3,25 @@ import { localidadeAtual } from '@data/localidadeAtual'
 import { ptBR } from './mensagens/pt-BR'
 import { en } from './mensagens/en'
 import { es } from './mensagens/es'
+import { fr } from './mensagens/fr'
 import type { Mensagens } from './mensagens/tipo'
 
-export const DICIONARIOS: Record<Idioma, Mensagens> = { 'pt-BR': ptBR, en, es }
+export const DICIONARIOS: Record<Idioma, Mensagens> = { 'pt-BR': ptBR, en, es, fr }
 
 /**
  * Nome das refeições que muda de país pra país no mesmo idioma. No México o
  * almoço é "Comida" ("Almuerzo" lá é um café reforçado); o resto da América
  * Latina e a Espanha usam "Almuerzo". Troca só os textos que são exatamente
- * o nome da refeição.
+ * o nome da refeição. No Québec, "déjeuner" é o café da manhã, "dîner" o
+ * almoço e "souper" o jantar (na França: petit-déjeuner / déjeuner / dîner).
  */
 const TROCAS_POR_PAIS: Partial<Record<Idioma, Record<string, Record<string, string>>>> = {
   es: { MX: { Almuerzo: 'Comida' } },
+  fr: {
+    CA: {
+      'Petit-déjeuner': 'Déjeuner', 'Petit-déj': 'Déjeuner', Déjeuner: 'Dîner', Dîner: 'Souper', Goûter: 'Collation',
+    },
+  },
 }
 
 function trocarTextos<T>(v: T, trocas: Record<string, string>): T {

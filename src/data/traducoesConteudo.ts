@@ -12,7 +12,7 @@ import { localidadeAtual } from '@data/localidadeAtual'
  * Conteúdo curado não muda durante o uso: guarda em memória por tabela.
  */
 type Tabela = 'conquistas_catalogo' | 'exercicios_catalogo' | 'receitas_cozinha'
-type PorIdioma = Partial<Record<'en' | 'es', Record<string, unknown>>>
+type PorIdioma = Partial<Record<string, Record<string, unknown>>>
 
 const cache = new Map<Tabela, Promise<Map<string, PorIdioma>>>()
 
@@ -30,10 +30,13 @@ async function buscar(tabela: Tabela): Promise<Map<string, PorIdioma>> {
   return new Map(linhas.map((r) => [r.id, r.traducoes ?? {}]))
 }
 
-/** Campos traduzidos de cada linha no idioma atual (vazio em pt ou sem tradução). */
+/**
+ * Campos traduzidos de cada linha no idioma atual (vazio em pt ou sem
+ * tradução). Idioma que o banco ainda não tem (fr) cai no inglês.
+ */
 export async function traducoesDe(tabela: Tabela): Promise<(id: string) => Record<string, unknown>> {
   const { idioma } = localidadeAtual()
-  if (idioma !== 'en' && idioma !== 'es') return () => ({})
+  if (idioma === 'pt-BR') return () => ({})
   let p = cache.get(tabela)
   if (!p) {
     p = buscar(tabela)
@@ -42,7 +45,7 @@ export async function traducoesDe(tabela: Tabela): Promise<(id: string) => Recor
     p.catch(() => cache.delete(tabela))
   }
   const mapa = await p.catch(() => new Map<string, PorIdioma>())
-  return (id) => mapa.get(id)?.[idioma] ?? {}
+  return (id) => mapa.get(id)?.[idioma] ?? (idioma === 'es' ? undefined : mapa.get(id)?.en) ?? {}
 }
 
 /** Texto traduzido se existir e não for vazio; senão o original. */

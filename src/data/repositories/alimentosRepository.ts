@@ -24,12 +24,12 @@ interface AlimentoRow {
   aliases?: string[] | null
 }
 
-/** Nome no idioma em uso (sem tradução, fica o pt-BR). */
+/** Nome no idioma em uso. Sem coluna própria (fr), vai o inglês; sem tradução, o pt-BR. */
 function nomeLocal(row: AlimentoRow): string {
   const { idioma } = localidadeAtual()
-  if (idioma === 'en') return row.nome_en || row.nome
+  if (idioma === 'pt-BR') return row.nome
   if (idioma === 'es') return row.nome_es || row.nome
-  return row.nome
+  return row.nome_en || row.nome
 }
 
 /** Item regional (ex.: marca de suplemento só vendida no Brasil) fora do país some. */

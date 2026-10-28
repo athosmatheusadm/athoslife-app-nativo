@@ -69,8 +69,9 @@ export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada' | 'contemRest
  */
 async function conteudoLiberado() {
   const { idioma } = localidadeAtual()
-  if (idioma === 'en' || idioma === 'es') {
-    const r = await supabase.rpc('receitas_conteudo_liberado', { p_idioma: idioma })
+  if (idioma !== 'pt-BR') {
+    // O banco só tem en/es por enquanto: os outros idiomas leem o inglês.
+    const r = await supabase.rpc('receitas_conteudo_liberado', { p_idioma: idioma === 'es' ? 'es' : 'en' })
     if (!r.error) return r
   }
   return supabase.rpc('receitas_conteudo_liberado')

@@ -50,7 +50,7 @@ export function MealSheet(props: {
   const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(null)
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false)
   const macros = macrosRefeicao(refeicao.itens)
-  const { m, idioma } = useI18n()
+  const { m } = useI18n()
   const t = m.dieta.sheet
   const sugestoes = props.sugestoesPlano ?? []
 
@@ -133,7 +133,7 @@ export function MealSheet(props: {
               setErroIcone(false)
               void props.onMudarIcone!(icone).catch(() => setErroIcone(true)).finally(() => setSalvandoIcone(false))
             }} />}
-          {erroIcone && <p role="alert" className="mt-2 text-sm text-accent-danger">{idioma === 'en' ? "Couldn't save the icon. Try again." : idioma === 'es' ? 'No se pudo guardar el icono. Inténtalo de nuevo.' : 'Não deu para salvar o ícone. Tente novamente.'}</p>}
+          {erroIcone && <p role="alert" className="mt-2 text-sm text-accent-danger">{m.dieta.sheet.erroIcone}</p>}
           {editando && (
             <div className="mt-3 flex items-center justify-between gap-3">
               <p className="text-micro text-content-low">{t.dicaOrdem}</p>

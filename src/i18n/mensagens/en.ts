@@ -1074,6 +1074,7 @@ export const en: Mensagens = {
       nomeRefeicao: 'Name of this meal',
       nomeExemplo: 'E.g. Post-workout, Late snack…',
       erroNome: "Couldn't save the name.",
+      erroIcone: "Couldn't save the icon. Try again.",
     },
     busca: {
       unidades: (n: number) => (n === 1 ? '1 unit' : `${n} units`),

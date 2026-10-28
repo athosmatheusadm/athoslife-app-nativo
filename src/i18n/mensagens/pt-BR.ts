@@ -1088,6 +1088,7 @@ export const ptBR = {
       nomeRefeicao: 'Nome desta refeição',
       nomeExemplo: 'Ex.: Pós-treino, Ceia…',
       erroNome: 'Não deu pra salvar o nome.',
+      erroIcone: 'Não deu para salvar o ícone. Tente novamente.',
     },
     busca: {
       unidades: (n: number) => (n === 1 ? '1 un.' : `${n} un.`),
