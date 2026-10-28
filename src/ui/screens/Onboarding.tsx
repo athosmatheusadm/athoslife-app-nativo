@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { profileRepository } from '@data/repositories/profileRepository'
 import { pesoRepository } from '@data/repositories/pesoRepository'
-import { IDIOMAS, NOMES_IDIOMA } from '@domain/rules/localidade'
+import { IDIOMAS, NOMES_IDIOMA, normalizarIdioma } from '@domain/rules/localidade'
+import { SeletorIdiomaOrbital } from '@ui/components/SeletorIdiomaOrbital'
 import type { FrequenciaTreino } from '@domain/rules/metasIniciais'
 import { localidadeAtualDoAparelho, useI18n } from '@/i18n/I18nProvider'
 import { volume } from '@/i18n/formatos'
@@ -190,14 +191,14 @@ export function Onboarding({ previa = false }: { previa?: boolean } = {}) {
             <Titulo>{o.boasVindas.titulo}</Titulo>
             <Lead>{o.boasVindas.lead}</Lead>
           </div>
-          <Rotulo>{o.boasVindas.idioma}</Rotulo>
-          <Opcoes colunas={3}>
-            {IDIOMAS.map((i) => (
-              <Opcao key={i} selecionada={idioma === i} onClick={() => trocarIdioma(i)}>
-                {NOMES_IDIOMA[i]}
-              </Opcao>
-            ))}
-          </Opcoes>
+          <div className="mt-4">
+            <SeletorIdiomaOrbital
+              opcoes={IDIOMAS.map((i) => ({ id: i, nome: NOMES_IDIOMA[i] }))}
+              valor={idioma}
+              rotulo={o.boasVindas.idioma}
+              onEscolher={(i) => trocarIdioma(normalizarIdioma(i))}
+            />
+          </div>
           {rodape(o.boasVindas.botao)}
         </>
       )
