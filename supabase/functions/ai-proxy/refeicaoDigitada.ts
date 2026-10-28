@@ -7,7 +7,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 
 type Sb = SupabaseClient
-export type Idioma = 'pt-BR' | 'en' | 'es'
+export type Idioma = 'pt-BR' | 'en' | 'es' | 'fr' | 'hi'
 
 /** O que o modelo entendeu de cada alimento. */
 export interface ItemPedido {
@@ -42,6 +42,8 @@ const MEDIDAS: Record<string, number> = {
   'colher de cha': 5, teaspoon: 5, tsp: 5, cucharadita: 5,
   'colher de servir': 45, escumadeira: 80,
   concha: 120, ladle: 120, cucharon: 120,
+  cuillere: 15, 'cuillere a soupe': 15, 'cuillere a cafe': 5, louche: 120, tasse: 160, verre: 200, assiette: 300, bol: 300,
+  'चम्मच': 15, 'कटोरी': 150, 'कप': 160, 'गिलास': 200, 'प्लेट': 300, 'रोटी': 40, 'चपाती': 40,
   fatia: 25, fatias: 25, slice: 25, slices: 25, rebanada: 25, rebanadas: 25,
   xicara: 160, xicaras: 160, cup: 160, cups: 160, taza: 160, tazas: 160,
   copo: 200, copos: 200, glass: 200, vaso: 200, vasos: 200,
@@ -50,7 +52,7 @@ const MEDIDAS: Record<string, number> = {
 }
 
 function normalizar(t: string): string {
-  return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+  return t.normalize('NFD').replace(/[̀-ͯ\u093c]/g, '').toLowerCase().trim()
 }
 
 /** Valida o que veio do modelo (nunca confia: é dado, não instrução). */
@@ -205,5 +207,17 @@ export const TXT_REGISTRO: Record<Idioma, {
     faltando: (nomes) => `No encontré ${nomes}; puedes buscarlo en Dieta (ahí también lo estimo).`,
     nada: 'No encontré esos alimentos. Prueba con otro nombre o búscalo en Dieta (ahí también lo estimo).',
     restricao: (itens, r) => `Ojo: ${itens} puede tener ${r}, que está en tus restricciones.`,
+  },
+  fr: {
+    confira: (onde) => `Voilà ce que j’ai trouvé pour ${onde}. Vérifie les quantités et touche Noter.`,
+    faltando: (nomes) => `Je n’ai pas trouvé ${nomes} ; tu peux le chercher dans Alimentation (là, je l’estime aussi).`,
+    nada: 'Je n’ai pas trouvé ces aliments. Essaie un autre nom, ou cherche dans Alimentation (là, je l’estime aussi).',
+    restricao: (itens, r) => `Attention : ${itens} peut contenir ${r}, qui fait partie de tes restrictions.`,
+  },
+  hi: {
+    confira: (onde) => `${onde} के लिए यह मिला। मात्रा जाँचें और "दर्ज करें" दबाएँ।`,
+    faltando: (nomes) => `${nomes} लिस्ट में नहीं मिला; डाइट में खोज सकते हैं (वहाँ मैं अंदाज़ा भी लगाता हूँ)।`,
+    nada: 'ये खाने लिस्ट में नहीं मिले। दूसरे नाम से कोशिश करें, या डाइट में खोजें (वहाँ मैं अंदाज़ा भी लगाता हूँ)।',
+    restricao: (itens, r) => `ध्यान दें: ${itens} में ${r} हो सकता है, जो आपके परहेज़ में है।`,
   },
 }

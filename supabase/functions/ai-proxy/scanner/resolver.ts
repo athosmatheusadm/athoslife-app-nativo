@@ -60,7 +60,12 @@ export function semelhanca(a: string, b: string): number {
 }
 
 export function paraBase(a: AlimentoCatalogo, idioma: string): BaseNutricional {
-  const nome = idioma === 'en' ? a.nomeEn || a.nome : idioma === 'es' ? a.nomeEs || a.nome : a.nome
+  const nome =
+    idioma === 'en' ? a.nomeEn || a.nome
+    : idioma === 'es' ? a.nomeEs || a.nome
+    : idioma === 'fr' ? a.nomeFr || a.nomeEn || a.nome
+    : idioma === 'hi' ? a.nomeHi || a.nomeEn || a.nome
+    : a.nome
   return {
     alimentoId: a.id,
     nome,

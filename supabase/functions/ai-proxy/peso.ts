@@ -7,7 +7,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 
 type Sb = SupabaseClient
-export type Idioma = 'pt-BR' | 'en' | 'es'
+export type Idioma = 'pt-BR' | 'en' | 'es' | 'fr' | 'hi'
 
 import { KG_MAX, KG_MIN, lerComandoPeso, type ComandoPeso } from '../_shared/pesoComando.ts'
 
@@ -71,6 +71,40 @@ const TXT = {
     agoraUltima: (dia: string, kg: string) => `Ahora el último es el del ${dia}: ${kg} kg.`,
     nadaPraMexer: 'Aún no tienes pesajes para cambiar. Cuando quieras, solo dime: "hoy peso 80 kg".',
     semBase: 'Para hacer la cuenta, dime cuánto pesas hoy: "hoy peso 80 kg".',
+  },
+  fr: {
+    confirmar: (kg: string) => `Je note ${kg} kg comme ton poids du jour ? Si oui, dis-moi « je pèse ${kg} kg ».`,
+    anotado: (kg: string) => `J’ai noté ${kg} kg aujourd’hui.`,
+    anterior: (kg: string, dia: string) => `À la pesée précédente (${dia}), c’était ${kg} kg.`,
+    faltam: (kg: string, meta: string) => `Encore ${kg} kg avant ton objectif de ${meta} kg.`,
+    chegou: (meta: string) => `Tu es à ton objectif de ${meta} kg. 🎉`,
+    metaNova: (kg: string) => `Objectif mis à jour : ${kg} kg. Il apparaît comme ligne de repère sur ton graphique de poids.`,
+    semHistorico: 'Tu n’as pas encore de pesée. Quand tu veux, dis-le-moi : « je pèse 80 kg ».',
+    historico: 'Tes dernières pesées :',
+    variacao: (kg: string, dias: number) => `Écart sur ${dias} jours : ${kg} kg.`,
+    falhou: 'Je n’ai pas pu enregistrer pour l’instant. On réessaie dans un moment ?',
+    corrigido: (dia: string, de: string, para: string) => `J’ai corrigé la pesée du ${dia} : de ${de} kg à ${para} kg.`,
+    apagado: (dia: string, kg: string) => `J’ai supprimé la pesée du ${dia} (${kg} kg).`,
+    agoraUltima: (dia: string, kg: string) => `Maintenant, la dernière est celle du ${dia} : ${kg} kg.`,
+    nadaPraMexer: 'Tu n’as pas encore de pesée à modifier. Quand tu veux, dis-le-moi : « je pèse 80 kg ».',
+    semBase: 'Pour faire le calcul, dis-moi combien tu pèses aujourd’hui : « je pèse 80 kg ».',
+  },
+  hi: {
+    confirmar: (kg: string) => `आज का वज़न ${kg} kg लिख दूँ? अगर हाँ, तो बताइए "मेरा वज़न ${kg} kg है"।`,
+    anotado: (kg: string) => `आज ${kg} kg लिख लिया।`,
+    anterior: (kg: string, dia: string) => `पिछली बार (${dia}) ${kg} kg था।`,
+    faltam: (kg: string, meta: string) => `आपके ${meta} kg के लक्ष्य तक ${kg} kg बाकी।`,
+    chegou: (meta: string) => `आप अपने ${meta} kg के लक्ष्य पर हैं। 🎉`,
+    metaNova: (kg: string) => `लक्ष्य अपडेट: ${kg} kg। यह आपके वज़न के ग्राफ़ में गाइड लाइन बनकर दिखेगा।`,
+    semHistorico: 'अभी कोई वज़न दर्ज नहीं। जब चाहें बताइए: "मेरा वज़न 80 kg है"।',
+    historico: 'आपके पिछले वज़न:',
+    variacao: (kg: string, dias: number) => `${dias} दिनों में बदलाव: ${kg} kg।`,
+    falhou: 'अभी सेव नहीं हो सका। थोड़ी देर में फिर कोशिश करें?',
+    corrigido: (dia: string, de: string, para: string) => `${dia} का वज़न ठीक कर दिया: ${de} kg से ${para} kg।`,
+    apagado: (dia: string, kg: string) => `${dia} का वज़न (${kg} kg) मिटा दिया।`,
+    agoraUltima: (dia: string, kg: string) => `अब आख़िरी वज़न ${dia} का है: ${kg} kg।`,
+    nadaPraMexer: 'अभी बदलने के लिए कोई वज़न नहीं है। जब चाहें बताइए: "मेरा वज़न 80 kg है"।',
+    semBase: 'हिसाब लगाने के लिए बताइए आज आपका वज़न कितना है: "मेरा वज़न 80 kg है"।',
   },
 } as const
 

@@ -103,7 +103,7 @@ async function carregarCatalogo(sb: Sb): Promise<Catalogo> {
   // PostgREST corta em 1000 linhas por resposta: pagina.
   for (let de = 0; ; de += 1000) {
     const { data, error } = await sb.from('alimentos')
-      .select('id, nome, nome_en, nome_es, categoria, porcao_g, calorias, proteina, carboidrato, gordura, preparo, aliases, porcao_tipica_g, representacao, gordura_preparo_pct, densidade_g_ml, taco_id, scanner')
+      .select('id, nome, nome_en, nome_es, nome_fr, nome_hi, categoria, porcao_g, calorias, proteina, carboidrato, gordura, preparo, aliases, porcao_tipica_g, representacao, gordura_preparo_pct, densidade_g_ml, taco_id, scanner')
       .order('id').range(de, de + 999)
     if (error) throw new Error(`catalogo: ${error.message}`)
     linhas.push(...(data ?? []))
@@ -122,6 +122,8 @@ async function carregarCatalogo(sb: Sb): Promise<Catalogo> {
     nome: String(r.nome),
     nomeEn: (r.nome_en as string | null) ?? null,
     nomeEs: (r.nome_es as string | null) ?? null,
+    nomeFr: (r.nome_fr as string | null) ?? null,
+    nomeHi: (r.nome_hi as string | null) ?? null,
     categoria: (r.categoria as string | null) ?? null,
     porcaoG: Number(r.porcao_g) || 100,
     kcal: numOuNull(r.calorias),

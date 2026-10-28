@@ -44,6 +44,9 @@ export interface AlimentoCatalogo {
   nome: string
   nomeEn: string | null
   nomeEs: string | null
+  /** Opcionais: linhas antigas/fixtures sem fr/hi caem no inglês. */
+  nomeFr?: string | null
+  nomeHi?: string | null
   categoria: string | null
   porcaoG: number
   kcal: number | null

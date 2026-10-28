@@ -5,7 +5,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 
 type Sb = SupabaseClient
-export type Idioma = 'pt-BR' | 'en' | 'es'
+export type Idioma = 'pt-BR' | 'en' | 'es' | 'fr' | 'hi'
 
 /** Hábitos "construir" (aumentar). Igual a CATEGORIAS_CONSTRUIR do app e a public.categoria_construir no banco. */
 const CATEGORIAS_CONSTRUIR = new Set(['leitura', 'sono', 'agua', 'meditar', 'caminhar', 'verduras', 'construir'])
@@ -126,22 +126,22 @@ export function blocoPadroes(linhas: string[]): string {
 // CHECK-IN v3 — vocabulário fixo; o servidor deriva energia/agradável.
 // ================================================================
 export const SENTIMENTOS: Record<string, { e: number; a: number; rotulo: Record<Idioma, string> }> = {
-  irritado: { e: 4, a: 1, rotulo: { 'pt-BR': 'irritado', en: 'irritated', es: 'irritado' } },
-  agitado: { e: 4, a: 2, rotulo: { 'pt-BR': 'agitado', en: 'restless', es: 'agitado' } },
-  empolgado: { e: 4, a: 3, rotulo: { 'pt-BR': 'empolgado', en: 'excited', es: 'entusiasmado' } },
-  animado: { e: 4, a: 4, rotulo: { 'pt-BR': 'animado', en: 'upbeat', es: 'animado' } },
-  estressado: { e: 3, a: 1, rotulo: { 'pt-BR': 'estressado', en: 'stressed', es: 'estresado' } },
-  ansioso: { e: 3, a: 2, rotulo: { 'pt-BR': 'ansioso', en: 'anxious', es: 'ansioso' } },
-  motivado: { e: 3, a: 3, rotulo: { 'pt-BR': 'motivado', en: 'motivated', es: 'motivado' } },
-  feliz: { e: 3, a: 4, rotulo: { 'pt-BR': 'feliz', en: 'happy', es: 'feliz' } },
-  desanimado: { e: 2, a: 1, rotulo: { 'pt-BR': 'desanimado', en: 'down', es: 'desanimado' } },
-  entediado: { e: 2, a: 2, rotulo: { 'pt-BR': 'entediado', en: 'bored', es: 'aburrido' } },
-  tranquilo: { e: 2, a: 3, rotulo: { 'pt-BR': 'tranquilo', en: 'calm', es: 'tranquilo' } },
-  grato: { e: 2, a: 4, rotulo: { 'pt-BR': 'grato', en: 'grateful', es: 'agradecido' } },
-  esgotado: { e: 1, a: 1, rotulo: { 'pt-BR': 'esgotado', en: 'drained', es: 'agotado' } },
-  cansado: { e: 1, a: 2, rotulo: { 'pt-BR': 'cansado', en: 'tired', es: 'cansado' } },
-  relaxado: { e: 1, a: 3, rotulo: { 'pt-BR': 'relaxado', en: 'relaxed', es: 'relajado' } },
-  em_paz: { e: 1, a: 4, rotulo: { 'pt-BR': 'em paz', en: 'at peace', es: 'en paz' } },
+  irritado: { e: 4, a: 1, rotulo: { 'pt-BR': 'irritado', en: 'irritated', es: 'irritado', fr: 'agacé', hi: 'चिढ़ा हुआ' } },
+  agitado: { e: 4, a: 2, rotulo: { 'pt-BR': 'agitado', en: 'restless', es: 'agitado', fr: 'agité', hi: 'बेचैन' } },
+  empolgado: { e: 4, a: 3, rotulo: { 'pt-BR': 'empolgado', en: 'excited', es: 'entusiasmado', fr: 'surexcité', hi: 'बहुत उत्साहित' } },
+  animado: { e: 4, a: 4, rotulo: { 'pt-BR': 'animado', en: 'upbeat', es: 'animado', fr: 'de bonne humeur', hi: 'ख़ुशमिज़ाज' } },
+  estressado: { e: 3, a: 1, rotulo: { 'pt-BR': 'estressado', en: 'stressed', es: 'estresado', fr: 'stressé', hi: 'तनाव में' } },
+  ansioso: { e: 3, a: 2, rotulo: { 'pt-BR': 'ansioso', en: 'anxious', es: 'ansioso', fr: 'anxieux', hi: 'घबराया हुआ' } },
+  motivado: { e: 3, a: 3, rotulo: { 'pt-BR': 'motivado', en: 'motivated', es: 'motivado', fr: 'motivé', hi: 'मोटिवेटेड' } },
+  feliz: { e: 3, a: 4, rotulo: { 'pt-BR': 'feliz', en: 'happy', es: 'feliz', fr: 'heureux', hi: 'ख़ुश' } },
+  desanimado: { e: 2, a: 1, rotulo: { 'pt-BR': 'desanimado', en: 'down', es: 'desanimado', fr: 'découragé', hi: 'उदास' } },
+  entediado: { e: 2, a: 2, rotulo: { 'pt-BR': 'entediado', en: 'bored', es: 'aburrido', fr: 'qui s’ennuie', hi: 'बोर' } },
+  tranquilo: { e: 2, a: 3, rotulo: { 'pt-BR': 'tranquilo', en: 'calm', es: 'tranquilo', fr: 'tranquille', hi: 'शांत' } },
+  grato: { e: 2, a: 4, rotulo: { 'pt-BR': 'grato', en: 'grateful', es: 'agradecido', fr: 'reconnaissant', hi: 'शुक्रगुज़ार' } },
+  esgotado: { e: 1, a: 1, rotulo: { 'pt-BR': 'esgotado', en: 'drained', es: 'agotado', fr: 'épuisé', hi: 'थककर चूर' } },
+  cansado: { e: 1, a: 2, rotulo: { 'pt-BR': 'cansado', en: 'tired', es: 'cansado', fr: 'fatigué', hi: 'थका हुआ' } },
+  relaxado: { e: 1, a: 3, rotulo: { 'pt-BR': 'relaxado', en: 'relaxed', es: 'relajado', fr: 'détendu', hi: 'रिलैक्स' } },
+  em_paz: { e: 1, a: 4, rotulo: { 'pt-BR': 'em paz', en: 'at peace', es: 'en paz', fr: 'serein', hi: 'सुकून में' } },
 }
 export const ETIQUETAS = ['sono', 'trabalho', 'treino', 'comida', 'familia', 'relacionamento', 'saude', 'dinheiro', 'nada'] as const
 const ROTULO_ETIQUETA: Record<(typeof ETIQUETAS)[number], string> = {
@@ -180,11 +180,21 @@ const ETIQUETA_IDIOMA: Record<Exclude<Idioma, 'pt-BR'>, Record<(typeof ETIQUETAS
     sono: 'sueño', trabalho: 'trabajo o estudio', treino: 'entrenamiento', comida: 'comida', familia: 'familia y amigos',
     relacionamento: 'pareja', saude: 'salud', dinheiro: 'dinero', nada: 'nada en especial',
   },
+  fr: {
+    sono: 'sommeil', trabalho: 'boulot ou études', treino: 'entraînement', comida: 'nourriture', familia: 'famille et amis',
+    relacionamento: 'couple', saude: 'santé', dinheiro: 'argent', nada: 'rien de précis',
+  },
+  hi: {
+    sono: 'नींद', trabalho: 'काम या पढ़ाई', treino: 'वर्कआउट', comida: 'खाना', familia: 'परिवार और दोस्त',
+    relacionamento: 'रिश्ता', saude: 'सेहत', dinheiro: 'पैसा', nada: 'कुछ ख़ास नहीं',
+  },
 }
 const CHECKIN_DO_MOMENTO: Record<Idioma, Record<Momento, string>> = {
   'pt-BR': { manha: 'Check-in da manhã', tarde: 'Check-in da tarde', noite: 'Check-in da noite' },
   en: { manha: 'Morning check-in', tarde: 'Afternoon check-in', noite: 'Evening check-in' },
   es: { manha: 'Check-in de la mañana', tarde: 'Check-in de la tarde', noite: 'Check-in de la noche' },
+  fr: { manha: 'Check-in du matin', tarde: 'Check-in de l’après-midi', noite: 'Check-in du soir' },
+  hi: { manha: 'सुबह का चेक-इन', tarde: 'दोपहर का चेक-इन', noite: 'रात का चेक-इन' },
 }
 
 export function resumoCheckin(c: CheckinValido, idioma: Idioma = 'pt-BR'): string {
@@ -231,6 +241,16 @@ const PADRAO_CHECKIN: Record<Idioma, (c: CheckinValido) => string> = {
     if (c.agradavel <= 1) return 'Día pesado, ¿no? No hace falta resolver nada ahora. Aquí estoy si quieres hablar.'
     if (c.agradavel === 2) return c.energia >= 3 ? 'Mucha cosa en la cabeza. Respira hondo; aquí estoy si quieres desahogarte.' : 'Modo ahorro hoy. Ve a tu ritmo.'
     return c.energia <= 2 ? 'Con calma. Buena forma de llevar el día. 🌱' : '¡Bien! Aprovecha esa energía hoy.'
+  },
+  fr: (c) => {
+    if (c.agradavel <= 1) return 'Journée lourde, hein ? Pas besoin de tout régler maintenant. Je suis là si tu veux parler.'
+    if (c.agradavel === 2) return c.energia >= 3 ? 'Beaucoup de choses en tête. Respire un bon coup ; je suis là si tu veux vider ton sac.' : 'Mode économie aujourd’hui. Vas-y à ton rythme.'
+    return c.energia <= 2 ? 'Tout en douceur. Une bonne façon de vivre la journée. 🌱' : 'Top ! Profite de cette énergie aujourd’hui.'
+  },
+  hi: (c) => {
+    if (c.agradavel <= 1) return 'भारी दिन है, है ना? अभी कुछ सुलझाने की ज़रूरत नहीं। बात करनी हो तो मैं यहीं हूँ।'
+    if (c.agradavel === 2) return c.energia >= 3 ? 'दिमाग़ में बहुत कुछ चल रहा है। एक गहरी साँस लीजिए; मन हल्का करना हो तो मैं यहीं हूँ।' : 'आज बैटरी थोड़ी कम है। अपनी रफ़्तार से चलिए।'
+    return c.energia <= 2 ? 'आराम से। दिन बिताने का अच्छा तरीक़ा। 🌱' : 'बढ़िया! आज इस एनर्जी का पूरा मज़ा लीजिए।'
   },
 }
 export const respostaCheckinPadrao = (c: CheckinValido, idioma: Idioma) => PADRAO_CHECKIN[idioma](c)
@@ -285,6 +305,22 @@ const TXT_ABERTURA: Record<Idioma, {
     marco: (n, h) => `¡${n} días firme en "${h}"! Es muchísimo. ¿Cómo lo estás llevando?`,
     pesado: 'Los últimos días parecieron más pesados. Sin prisa: si quieres hablar, aquí estoy.',
     voltou: (nome) => `¡${nome ? `${nome}, qué` : 'Qué'} bueno verte por aquí! Sin presión: ¿empezamos suave hoy?`,
+  },
+  fr: {
+    eventoHoje: (t) => `C’est le grand jour : ${t.charAt(0).toLowerCase() + t.slice(1)} ! Je croise les doigts pour toi 🍀`,
+    eventoAmanha: (t) => `C’est demain : ${t.charAt(0).toLowerCase() + t.slice(1)}. Comment tu te sens ?`,
+    eventoOntem: (t) => `Alors, c’était comment hier (${t.charAt(0).toLowerCase() + t.slice(1)}) ? Raconte !`,
+    marco: (n, h) => `${n} jours que tu tiens bon sur « ${h} » ! C’est énorme. Comment ça se passe pour toi ?`,
+    pesado: 'Les derniers jours avaient l’air plus lourds. Aucune pression : si tu veux parler, je suis là.',
+    voltou: (nome) => `${nome ? `${nome}, content` : 'Content'} de te revoir ! Sans pression : on reprend en douceur aujourd’hui ?`,
+  },
+  hi: {
+    eventoHoje: (t) => `आज वह दिन है: ${t}! आपके लिए दुआ कर रहा हूँ 🍀`,
+    eventoAmanha: (t) => `कल वह दिन है: ${t}। कैसा महसूस कर रहे हैं?`,
+    eventoOntem: (t) => `तो, कल कैसा रहा (${t})? बताइए!`,
+    marco: (n, h) => `"${h}" में ${n} दिन से डटे हुए हैं! यह बहुत बड़ी बात है। आपके लिए कैसा चल रहा है?`,
+    pesado: 'पिछले कुछ दिन थोड़े भारी लगे। कोई जल्दी नहीं: बात करनी हो तो मैं यहीं हूँ।',
+    voltou: (nome) => `${nome ? `${nome}, आपको` : 'आपको'} यहाँ देखकर अच्छा लगा! कोई दबाव नहीं: आज हल्के से शुरू करें?`,
   },
 }
 

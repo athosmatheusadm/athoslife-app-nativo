@@ -105,7 +105,7 @@ type Sb = SupabaseClient
 // Localidade do usuário (profiles.idioma/pais/fuso — globalização
 // 2026-09-28). Tudo que era "Brasil fixo" passa por aqui.
 // ----------------------------------------------------------------
-type Idioma = 'pt-BR' | 'en' | 'es'
+type Idioma = 'pt-BR' | 'en' | 'es' | 'fr' | 'hi'
 
 interface Localidade {
   idioma: Idioma
@@ -128,7 +128,8 @@ function fusoValido(f: unknown): string {
 
 async function lerLocalidade(sb: Sb, userId: string): Promise<Localidade> {
   const { data } = await sb.from('profiles').select('idioma, pais, fuso, unidades').eq('id', userId).maybeSingle()
-  const idioma: Idioma = data?.idioma === 'en' || data?.idioma === 'es' ? data.idioma : 'pt-BR'
+  const bruto = data?.idioma
+  const idioma: Idioma = bruto === 'en' || bruto === 'es' || bruto === 'fr' || bruto === 'hi' ? bruto : 'pt-BR'
   return {
     idioma,
     pais: typeof data?.pais === 'string' && /^[A-Z]{2}$/.test(data.pais) ? data.pais : null,
@@ -170,12 +171,14 @@ function tempoAteRenovar(fuso: string): string {
   return `${String(Math.floor(falta / 60)).padStart(2, '0')}:${String(falta % 60).padStart(2, '0')}`
 }
 
+/** Sem acento e minúsculo; mantém o devanágari (hindi/nepalês) sem nukta. */
 function normalizar(texto: string): string {
   return texto
+    .replace(/œ/gi, 'oe')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/[̀-ͯ\u093c]/g, '')
+    .replace(/[^a-z0-9\u0900-\u097f ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -209,6 +212,16 @@ const TERMOS_CRISE = [
   // es
   'suicidarme', 'quitarme la vida', 'matarme', 'quiero morir', 'no quiero vivir',
   'hacerme dano', 'cortarme', 'autolesion', 'acabar con mi vida', 'mejor sin mi',
+  // fr
+  'me suicider', 'me tuer', 'envie de mourir', 'je veux mourir', 'mettre fin a mes jours',
+  'mettre fin a ma vie', 'en finir avec la vie', 'me faire du mal', 'me scarifier', 'scarification',
+  'automutilation', 'plus envie de vivre', 'mieux sans moi', 'me pendre', 'me jeter du',
+  // hi / ne (devanágari, sem nukta) e hinglish
+  'आत्महत्या', 'खुदकुशी', 'मरना चाहता', 'मरना चाहती', 'मर जाना चाहता', 'मर जाना चाहती',
+  'जीना नहीं चाहता', 'जीना नहीं चाहती', 'खुद को मार', 'अपनी जान ले', 'खुद को नुकसान',
+  'खुद को चोट', 'खुद को काट', 'मर्न मन', 'बाँच्न मन छैन', 'बाच्न मन छैन',
+  'aatmhatya', 'atmahatya', 'khudkushi', 'marna chahta', 'marna chahti', 'jeena nahi chahta',
+  'jeena nahi chahti', 'khud ko maar',
 ]
 
 // Sensível (pode ser só desabafo): a IA responde, mas com instrução extra de cuidado.
@@ -223,6 +236,12 @@ const TERMOS_SENSIVEIS = [
   // es
   'ya no aguanto', 'odio mi vida', 'odio mi cuerpo', 'provocarme el vomito',
   'laxantes para adelgazar', 'dejar de comer', 'atracon',
+  // fr
+  'je n en peux plus', 'disparaitre', 'je me deteste', 'je deteste mon corps', 'je deteste ma vie',
+  'me faire vomir', 'laxatifs pour maigrir', 'ne plus manger', 'crise de boulimie', 'hyperphagie',
+  // hi
+  'अब और नहीं', 'खुद से नफरत', 'अपने शरीर से नफरत', 'उल्टी करके', 'भूखा रहना', 'भूखी रहना',
+  'खाना छोड़ दिया', 'ab aur nahi', 'ulti karke', 'bhookha rehna',
 ]
 
 // Linha de apoio emocional por país. Sem país conhecido: findahelpline.com
@@ -240,16 +259,39 @@ const LINHAS_APOIO: Record<string, string> = {
   AR: '📞 Centro de Asistencia al Suicida — 135 (CABA y GBA) o (011) 5275-1135\n🚑 Emergencias — 911',
   CO: '📞 Línea 192, opción 4 (salud mental)\n🚑 Emergencias — 123',
   CL: '📞 *4141 — línea de prevención del suicidio (gratuita, 24 h)\n🚑 Emergencias — 131',
+  FR: '📞 3114 — numéro national de prévention du suicide (gratuit, 24 h/24)\n🚑 Urgences — 15 ou 112',
+  BE: '📞 Centre de Prévention du Suicide — 0800 32 123 (gratuit, 24 h/24)\n🚑 Urgences — 112',
+  CH: '📞 La Main Tendue — 143 (24 h/24)\n🚑 Urgences — 144 ou 112',
+  LU: '📞 SOS Détresse — 45 45 45\n🚑 Urgences — 112',
+  IN: '📞 Tele-MANAS — 14416 (free, 24/7)\n🚑 Emergency — 112',
+  NP: '📞 1166 — suicide prevention helpline (24/7)\n🚑 Ambulance — 102, Police — 100',
+}
+
+/** Mesmo país, outro idioma: a linha no idioma da pessoa. */
+const LINHAS_APOIO_IDIOMA: Partial<Record<Idioma, Record<string, string>>> = {
+  fr: {
+    CA: '📞 1 866 APPELLE (1 866 277-3553) ou le 988 — en français, gratuit, 24 h/24\n🚑 Urgences — 911',
+  },
+  hi: {
+    IN: '📞 टेली-मानस — 14416 (मुफ़्त, 24 घंटे)\n🚑 आपातकाल — 112',
+    NP: '📞 1166 — आत्महत्या रोकथाम हेल्पलाइन (24 घंटे)\n🚑 एम्बुलेंस — 102, पुलिस — 100',
+  },
 }
 
 const LINHA_GENERICA: Record<Idioma, string> = {
   'pt-BR': '📞 findahelpline.com — linhas de apoio gratuitas do seu país\n🚑 Ligue para a emergência local',
   en: '📞 findahelpline.com — free helplines in your country\n🚑 Call your local emergency number',
   es: '📞 findahelpline.com — líneas de ayuda gratuitas de tu país\n🚑 Llama al número de emergencias local',
+  fr: '📞 findahelpline.com — lignes d’écoute gratuites de ton pays\n🚑 Appelle le numéro d’urgence local',
+  hi: '📞 findahelpline.com — आपके देश की मुफ़्त हेल्पलाइन\n🚑 स्थानीय आपातकालीन नंबर पर कॉल करें',
 }
 
 function linhaApoio(loc: Localidade): string {
+  const noIdioma = loc.pais ? LINHAS_APOIO_IDIOMA[loc.idioma]?.[loc.pais] : undefined
+  if (noIdioma) return noIdioma
   if (loc.pais && LINHAS_APOIO[loc.pais]) return LINHAS_APOIO[loc.pais]
+  // Sem país salvo: hindi é quase sempre Índia.
+  if (!loc.pais && loc.idioma === 'hi') return LINHAS_APOIO_IDIOMA.hi!.IN
   // Sem país salvo: quem fala pt-BR quase sempre está no Brasil.
   if (!loc.pais && loc.idioma === 'pt-BR') return LINHAS_APOIO.BR
   return LINHA_GENERICA[loc.idioma]
@@ -264,6 +306,22 @@ Please reach out to someone right now:
 ${linha}
 
 If you can, ask someone you trust to stay with you. You don't have to go through this alone.`
+  }
+  if (loc.idioma === 'fr') {
+    return `Merci de m’en avoir parlé, et ce que tu ressens est sérieux. Je suis une IA et je ne peux pas t’aider comme tu le mérites en ce moment.
+
+S’il te plaît, parle à quelqu’un tout de suite :
+${linha}
+
+Si tu peux, demande à une personne de confiance de rester avec toi. Tu n’as pas à traverser ça seul(e).`
+  }
+  if (loc.idioma === 'hi') {
+    return `मुझे सच में अच्छा लगा कि आपने मुझे बताया, और जो आप महसूस कर रहे हैं वह गंभीर है। मैं एक AI हूँ और अभी आपकी उस तरह मदद नहीं कर सकता जिसके आप हक़दार हैं।
+
+कृपया अभी किसी से बात करें:
+${linha}
+
+हो सके तो किसी भरोसेमंद इंसान को अपने पास रहने को कहें। आपको यह अकेले नहीं झेलना है।`
   }
   if (loc.idioma === 'es') {
     return `Me alegra mucho que me lo hayas contado, y lo que sientes es serio. Soy una IA y no puedo ayudarte como mereces ahora.
@@ -292,11 +350,11 @@ function acharTermo(texto: string, termos: string[]): string | null {
 // receita, não prescrição — antes o filtro trocava a resposta inteira. Agora
 // verbo + quantidade só barra se a MESMA frase falar de suplemento/remédio,
 // ou se a unidade for de farmácia (mg, cápsula, comprimido, dose, scoop).
-const VERBO_DOSE = /\b(tome|tomar|toma|use|usar|consuma|consumir|ingira|ingerir|suplemente|take|use|consume|have|usa|consume)\b/i
-const QTD_DOSE = /\b\d+([.,]\d+)?\s?(g|mg|mcg|µg|ui|iu|ml|gramas?|grams?|gramos?|miligramas?|milligrams?|miligramos?|comprimidos?|c[aá]psulas?|capsules?|pills?|pastillas?|tablets?|doses?|dosis|scoops?|colher(es)?|tablespoons?|teaspoons?|cucharadas?|cucharaditas?)\b/i
-const UNIDADE_FARMACIA = /\b\d+([.,]\d+)?\s?(mg|mcg|µg|ui|iu|miligramas?|milligrams?|miligramos?|comprimidos?|c[aá]psulas?|capsules?|pills?|pastillas?|tablets?|doses?|dosis|scoops?)\b/i
+const VERBO_DOSE = /\b(tome|tomar|toma|use|usar|consuma|consumir|ingira|ingerir|suplemente|take|use|consume|have|usa|consume|prends|prenez|prendre|utilise|consomme)\b|लें|लीजिए|खाएँ|खाइए|पिएँ|पीजिए/i
+const QTD_DOSE = /\b\d+([.,]\d+)?\s?(g|mg|mcg|µg|ui|iu|ml|gramas?|grams?|gramos?|miligramas?|milligrams?|miligramos?|comprimidos?|c[aá]psulas?|capsules?|pills?|pastillas?|tablets?|doses?|dosis|scoops?|colher(es)?|tablespoons?|teaspoons?|cucharadas?|cucharaditas?|g[eé]lules?|comprim[eé]s?|cuill[eè]res?)\b|\d+([.,]\d+)?\s?(ग्राम|मिलीग्राम|गोली|गोलियाँ|कैप्सूल|खुराक|स्कूप|चम्मच)/i
+const UNIDADE_FARMACIA = /\b\d+([.,]\d+)?\s?(mg|mcg|µg|ui|iu|miligramas?|milligrams?|miligramos?|comprimidos?|c[aá]psulas?|capsules?|pills?|pastillas?|tablets?|doses?|dosis|scoops?|g[eé]lules?|comprim[eé]s?)\b|\d+([.,]\d+)?\s?(मिलीग्राम|गोली|गोलियाँ|कैप्सूल|खुराक|स्कूप)/i
 // "vitamina de banana" é bebida; só vitamina com letra (D, B12...) conta.
-const TERMOS_SUPLEMENTO = /\b(whey|creatina|creatine|cafe[ií]na|caffeine|pr[eé][- ]?treino|pre[- ]?workout|pre[- ]?entreno|bcaa|glutamina|glutamine|col[aá]geno|collagen|[oô]mega[- ]?3|multivitam\w*|vitamina\s+(a|b\d*|c|d\d?|e|k\d?)|vitamin\s+(a|b\d*|c|d\d?|e|k\d?)|melatonina|melatonin|termog[eê]nico|thermogenic|albumina|beta[- ]?alanina|beta[- ]?alanine|case[ií]na|casein|hipercal[oó]rico|mass gainer|zma|suplementos?|supplements?|rem[eé]dios?|medicamentos?|medications?|medicines?|f[aá]rmacos?|anabolizantes?|esteroides?|steroids?)\b/i
+const TERMOS_SUPLEMENTO = /\b(whey|creatina|creatine|cafe[ií]na|caffeine|pr[eé][- ]?treino|pre[- ]?workout|pre[- ]?entreno|bcaa|glutamina|glutamine|col[aá]geno|collagen|[oô]mega[- ]?3|multivitam\w*|vitamina\s+(a|b\d*|c|d\d?|e|k\d?)|vitamin\s+(a|b\d*|c|d\d?|e|k\d?)|melatonina|melatonin|termog[eê]nico|thermogenic|albumina|beta[- ]?alanina|beta[- ]?alanine|case[ií]na|casein|hipercal[oó]rico|mass gainer|zma|suplementos?|supplements?|rem[eé]dios?|medicamentos?|medications?|medicines?|f[aá]rmacos?|anabolizantes?|esteroides?|steroids?|m[eé]dicaments?|compl[eé]ments?|cr[eé]atine|st[eé]ro[iï]des?)\b|दवा|दवाई|सप्लीमेंट|क्रिएटिन|व्हे|प्रोटीन पाउडर|विटामिन|स्टेरॉयड/i
 
 function violaDose(frase: string): boolean {
   if (!VERBO_DOSE.test(frase) || !QTD_DOSE.test(frase)) return false
@@ -314,6 +372,12 @@ const PADROES_PRESCRICAO: RegExp[] = [
   // es
   /\b(debes|deber[ií]as|tienes que|necesitas)\s+(comer|consumir)\b[^.!?\n]{0,30}?\b\d{3,4}\s?(kcal|calor[ií]as)\b/i,
   /\b(haz|hacer)\s+\d+\s*(x|series\s+de)\s*\d+/i,
+  // fr
+  /\b(tu\s+dois|tu\s+devrais|il\s+faut\s+que\s+tu)\s+(manger|consommer)\b[^.!?\n]{0,30}?\b\d{3,4}\s?(kcal|calories)\b/i,
+  /\b(fais|faire)\s+\d+\s*(x|s[eé]ries?\s+de)\s*\d+/i,
+  // hi
+  /(रोज़|रोज|दिन में)\s*\d{3,4}\s?(kcal|कैलोरी)\s*(ही\s*)?(खाएँ|खाइए|खानी चाहिए|लें)/i,
+  /\d+\s*(x|सेट)\s*\d+\s*(रेप्स|बार)?\s*(करें|कीजिए)/i,
 ]
 
 const RESPOSTA_SEM_PRESCRICAO: Record<Idioma, string> = {
@@ -321,6 +385,8 @@ const RESPOSTA_SEM_PRESCRICAO: Record<Idioma, string> = {
     'Essa parte — quanto tomar, quantas calorias comer ou que carga e séries usar — eu não posso definir pra você. Quem faz isso com segurança é um nutricionista ou educador físico. Mas posso te ajudar a comparar alimentos, ver os macros de algo ou pensar numa troca 😉',
   en: "That part — how much to take, how many calories to eat, or what weight and sets to use — isn't something I can set for you. A dietitian or fitness professional can do that safely. But I can help you compare foods, check the macros of something, or think of a swap 😉",
   es: 'Esa parte — cuánto tomar, cuántas calorías comer o qué peso y series usar — no la puedo definir por ti. Eso lo hace con seguridad un nutricionista o un entrenador. Pero puedo ayudarte a comparar alimentos, ver los macros de algo o pensar en un cambio 😉',
+  fr: 'Ça — combien en prendre, combien de calories manger ou quelle charge et combien de séries — je ne peux pas le fixer pour toi. Un diététicien ou un coach diplômé peut le faire en toute sécurité. Mais je peux t’aider à comparer des aliments, voir les macros de quelque chose ou trouver un échange 😉',
+  hi: 'यह हिस्सा — कितना लेना है, कितनी कैलोरी खानी है या कितना वज़न और कितने सेट — मैं आपके लिए तय नहीं कर सकता। यह काम डाइटिशियन या फ़िटनेस प्रोफ़ेशनल सुरक्षित तरीक़े से करते हैं। पर मैं खानों की तुलना करने, किसी चीज़ के मैक्रो देखने या कोई बदलाव सोचने में मदद कर सकता हूँ 😉',
 }
 
 function violaPrescricao(resposta: string): boolean {
@@ -347,8 +413,13 @@ const TAREFA_FORA = new RegExp([
   // es
   '\\b(escrib|redact|haz|crea|genera)\\w*\\s+(me\\s+)?(un|una|el|la|mi)?\\s*(ensayo|redaccion|codigo|programa|poema|cancion|historia|cuento|carta|correo|curriculum|articulo)\\b',
   '\\b(traduce|traducir|traduceme)\\b', '\\btarea de (la escuela|matematicas)\\b',
+  // fr
+  '\\b(ecri|redige|fais|cree|genere)\\w*\\s+(moi\\s+)?(un|une|le|la|mon|ma)?\\s*(dissertation|code|programme|script|site|poeme|chanson|histoire|lettre|mail|cv|article)\\b',
+  '\\b(tradui|traduction|devoirs)\\w*\\b',
+  // hi (hinglish)
+  '\\b(homework|assignment|essay)\\s+(likh|bana)\\w*\\b',
 ].join('|'))
-const TEMA_DO_APP = /\b(comida\w*|aliment\w*|refeic\w*|receita\w*|rotulo\w*|ingrediente\w*|caloria\w*|kcal|macros?|proteina\w*|dieta\w*|nutri\w*|treino\w*|exercicio\w*|academia|musculo\w*|habito\w*|sono|dormir|agua|peso|suplemento\w*|saude|food|meals?|recipes?|labels?|calories?|protein|diet|workouts?|exercises?|gym|habits?|sleep|water|weight|health|recetas?|etiqueta|entrenamiento|ejercicios?|sueno|salud)\b/
+const TEMA_DO_APP = /\b(comida\w*|aliment\w*|refeic\w*|receita\w*|rotulo\w*|ingrediente\w*|caloria\w*|kcal|macros?|proteina\w*|dieta\w*|nutri\w*|treino\w*|exercicio\w*|academia|musculo\w*|habito\w*|sono|dormir|agua|peso|suplemento\w*|saude|food|meals?|recipes?|labels?|calories?|protein|diet|workouts?|exercises?|gym|habits?|sleep|water|weight|health|recetas?|etiqueta|entrenamiento|ejercicios?|sueno|salud|repas|recettes?|entrainement|sommeil|eau|poids|sante|musculation)\b|खाना|डाइट|वर्कआउट|कसरत|जिम|प्रोटीन|कैलोरी|नींद|पानी|वज़न|वजन|सेहत|आदत/
 
 function pedidoForaDoTema(msg: string): boolean {
   if (CODIGO_CRU.test(msg)) return true
@@ -364,6 +435,8 @@ const RESPOSTA_FORA_DO_TEMA: Record<Idioma, string> = {
   'pt-BR': 'Nisso aí eu não consigo ajudar 😅 Sou o Life e fico no seu dia a dia: comida, treino, hábitos, sono e como você tá. Quer ver alguma coisa disso?',
   en: "I can't help with that one 😅 I'm Life, and I stick to your day-to-day: food, workouts, habits, sleep and how you're doing. Want to look at any of that?",
   es: 'Con eso no puedo ayudarte 😅 Soy Life y me quedo en tu día a día: comida, entrenamiento, hábitos, sueño y cómo estás. ¿Vemos algo de eso?',
+  fr: 'Là-dessus, je ne peux pas t’aider 😅 Moi, c’est Life, et je reste sur ton quotidien : repas, entraînement, habitudes, sommeil et comment tu vas. On regarde un de ces sujets ?',
+  hi: 'इसमें मैं मदद नहीं कर सकता 😅 मैं Life हूँ और आपकी रोज़ की ज़िंदगी में साथ देता हूँ: खाना, वर्कआउट, आदतें, नींद और आप कैसे हैं। इनमें से कुछ देखें?',
 }
 
 // ================================================================
@@ -739,6 +812,18 @@ const NOME_IDIOMA: Record<Idioma, string> = {
   'pt-BR': 'português do Brasil',
   en: 'inglês (English)',
   es: 'espanhol (español)',
+  fr: 'francês (français)',
+  hi: 'hindi (हिन्दी, em devanágari)',
+}
+
+/**
+ * Jeito de falar e costumes de cada idioma novo (dono, 28/10: "culturas,
+ * modo de falar, gírias, manias, costumes e principalmente comidas"). Só
+ * entra no prompt de quem usa o idioma — não pesa no custo dos outros.
+ */
+const CULTURA_IDIOMA: Partial<Record<Idioma, string>> = {
+  fr: `JEITO DE FALAR (francês): trate por "tu", tom de coach próximo e animado, sem gíria pesada nem anglicismo forçado ("Allez !", "Bien joué !", "T’inquiète", "C’est parti", "nickel", "top"). Na França: petit-déjeuner leve (tartine, café, às vezes viennoiserie), déjeuner é a refeição principal (12h–13h30, entrée-plat-dessert, cantine), goûter às 16h30 (fruta, yaourt, pain-chocolat), dîner 19h30–20h30. Pão, queijo e vinho fazem parte da cultura: não demonize, fale de porção (e álcool o app não acompanha). No Québec: "bon matin", "c’est correct", "pantoute", "faque"; déjeuner = café da manhã, dîner = almoço (meio-dia), souper = jantar (17h30–18h30); poutine, pâté chinois, tourtière, fèves au lard, sirop d’érable; inverno longo. Bélgica: frites, gaufres; Suíça: fondue, rösti; Marrocos: couscous, tajine, chá de menta, Ramadã; Senegal e Costa do Marfim: thiéboudienne, yassa, mafé, attiéké, alloco.`,
+  hi: `JEITO DE FALAR (hindi): use "आप", tom caloroso e respeitoso de um amigo que entende de saúde ("शाबाश!", "बहुत बढ़िया", "चलिए", "कोई बात नहीं", "जी"). Misture as palavras em inglês que o indiano usa no dia a dia, escritas em devanágari (वर्कआउट, प्रोटीन, जिम, डाइट, कैलोरी). Se a pessoa escrever em hinglish (hindi em letras latinas), responda em hinglish no mesmo estilo; se escrever em nepalês, responda em nepalês. Muitos indianos são vegetarianos (alguns sem ovo; jainistas sem alho, cebola e raízes): NUNCA presuma carne — ofereça primeiro a opção veg; proteína veg: paneer, dal, chana, rajma, soya chunks, dahi, sprouts, besan. Rotina: chai de manhã e à tarde (o açúcar do chai e o excesso de óleo/ghee são as alavancas mais comuns), nashta (poha, upma, paratha; idli/dosa no sul), lunch thali (dal, sabzi, roti, chawal, dahi), snacks da tarde (samosa, pakora, namkeen, bhel), dinner tarde (20h–21h30). Jejuns (Navratri, Ekadashi, Karva Chauth, Ramadã) e festas com mithai (Diwali, Holi): acolha, sem sermão. Nepal: dal bhat tarkari duas vezes ao dia, momo, chiura, sel roti nas festas (Dashain, Tihar).`,
 }
 
 /**
@@ -753,8 +838,8 @@ function blocoCultura(loc: Localidade): string {
     : loc.pais === 'US' ? 'USDA FoodData Central' : 'a tabela nacional de composição de alimentos do país (ou USDA, se não houver)'
   return `
 
-IDIOMA: responda SEMPRE em ${NOME_IDIOMA[loc.idioma]}${loc.idioma === 'es' && pais ? `, no jeito de falar de ${pais}` : ''}, mesmo que estas instruções estejam em português. Se a pessoa escrever em outro idioma, acompanhe o idioma dela. Os exemplos acima são só de tom — adapte, não traduza ao pé da letra.
-
+IDIOMA: responda SEMPRE em ${NOME_IDIOMA[loc.idioma]}${(loc.idioma === 'es' || loc.idioma === 'fr') && pais ? `, no jeito de falar de ${pais}` : ''}, mesmo que estas instruções estejam em português. Se a pessoa escrever em outro idioma, acompanhe o idioma dela. Os exemplos acima são só de tom — adapte, não traduza ao pé da letra.
+${CULTURA_IDIOMA[loc.idioma] ? `\n${CULTURA_IDIOMA[loc.idioma]}\n` : ''}
 CULTURA: ${pais ? `a pessoa mora em ${pais}` : 'o país da pessoa não é conhecido — não presuma'}. Fale de comidas, refeições, horários e costumes típicos de lá, com gírias e expressões naturais desse lugar (nunca gíria de outro país). Unidades: ${loc.unidades === 'imperial' ? 'libras, onças e pés (imperial)' : 'quilos, gramas, litros e centímetros'}. Valores nutricionais: referência ${tabela}. Respeite práticas religiosas e culturais de alimentação (jejum do Ramadã, halal, kosher, vegetarianismo, jejuns religiosos, etc.) quando a pessoa trouxer ou estiverem nas restrições — sem presumir religião ou dieta de ninguém.
 
 LINHA DE APOIO DO PAÍS:
@@ -788,18 +873,18 @@ type CodigoAlergeno =
 // `nome`: como fica salvo em profiles.restricoes quando a pessoa aceita
 // guardar pelo chat (no idioma dela; todos casam de novo com a própria regex).
 const SINONIMOS_ALERGENO: { re: RegExp; codigos: CodigoAlergeno[]; nome: Record<Idioma, string> }[] = [
-  { re: /\b(lactose|lactosa|leite|laticinios?|lacteos?|dairy|milk|leche)\b/, codigos: ['lactose'], nome: { 'pt-BR': 'lactose', en: 'lactose', es: 'lactosa' } },
-  { re: /\b(gluten|celiac\w*|trigo|wheat)\b/, codigos: ['gluten'], nome: { 'pt-BR': 'glúten', en: 'gluten', es: 'gluten' } },
-  { re: /\b(ovos?|eggs?|huevos?)\b/, codigos: ['ovo'], nome: { 'pt-BR': 'ovo', en: 'eggs', es: 'huevo' } },
-  { re: /\b(amendoim|peanuts?|mani|cacahuetes?)\b/, codigos: ['amendoim'], nome: { 'pt-BR': 'amendoim', en: 'peanuts', es: 'maní' } },
-  { re: /\b(castanhas?|nozes|noz|amendoas?|nuts|frutos secos|nueces|almendras?)\b/, codigos: ['castanhas'], nome: { 'pt-BR': 'castanhas', en: 'tree nuts', es: 'frutos secos' } },
+  { re: /\b(lactose|lactosa|leite|laticinios?|lacteos?|dairy|milk|leche|lait|laitiers?)\b|लैक्टोज|दूध|डेयरी/, codigos: ['lactose'], nome: { 'pt-BR': 'lactose', en: 'lactose', es: 'lactosa', fr: 'lactose', hi: 'लैक्टोज़' } },
+  { re: /\b(gluten|celiac\w*|coeliaque|trigo|wheat|ble)\b|ग्लूटेन|गेहूं/, codigos: ['gluten'], nome: { 'pt-BR': 'glúten', en: 'gluten', es: 'gluten', fr: 'gluten', hi: 'ग्लूटेन' } },
+  { re: /\b(ovos?|eggs?|huevos?|oeufs?)\b|अंडा|अंडे/, codigos: ['ovo'], nome: { 'pt-BR': 'ovo', en: 'eggs', es: 'huevo', fr: 'œufs', hi: 'अंडा' } },
+  { re: /\b(amendoim|peanuts?|mani|cacahuetes?|arachides?)\b|मूंगफली|पीनट/, codigos: ['amendoim'], nome: { 'pt-BR': 'amendoim', en: 'peanuts', es: 'maní', fr: 'arachide', hi: 'मूंगफली' } },
+  { re: /\b(castanhas?|nozes|noz|amendoas?|nuts|frutos secos|nueces|almendras?|noix|amandes?|fruits a coque)\b|बादाम|काजू|अखरोट/, codigos: ['castanhas'], nome: { 'pt-BR': 'castanhas', en: 'tree nuts', es: 'frutos secos', fr: 'fruits à coque', hi: 'मेवे' } },
   // "soy" sozinho é soja em inglês, mas "soy alérgica" é "eu sou" em espanhol.
-  { re: /\b(soja|tofu|soy(?! (alergic\w*|intoleran\w*|celiac\w*|vegan\w*|vegetarian\w*|de|muy|una?)\b))\b/, codigos: ['soja'], nome: { 'pt-BR': 'soja', en: 'soy', es: 'soja' } },
-  { re: /\b(peixes?|fish|pescados?)\b/, codigos: ['peixe'], nome: { 'pt-BR': 'peixe', en: 'fish', es: 'pescado' } },
-  { re: /\b(frutos do mar|camarao|crustaceos?|seafood|shellfish|shrimp|mariscos?|camarones?)\b/, codigos: ['frutos_mar'], nome: { 'pt-BR': 'frutos do mar', en: 'seafood', es: 'mariscos' } },
-  { re: /\b(gergelim|sesamo|sesame)\b/, codigos: ['gergelim'], nome: { 'pt-BR': 'gergelim', en: 'sesame', es: 'sésamo' } },
-  { re: /\bvegetarian\w*\b/, codigos: ['carne', 'peixe', 'frutos_mar'], nome: { 'pt-BR': 'vegetariano', en: 'vegetarian', es: 'vegetariano' } },
-  { re: /\bvegan\w*\b/, codigos: ['carne', 'peixe', 'frutos_mar', 'ovo', 'lactose', 'mel'], nome: { 'pt-BR': 'vegano', en: 'vegan', es: 'vegano' } },
+  { re: /\b(soja|tofu|soy(?! (alergic\w*|intoleran\w*|celiac\w*|vegan\w*|vegetarian\w*|de|muy|una?)\b))\b/, codigos: ['soja'], nome: { 'pt-BR': 'soja', en: 'soy', es: 'soja', fr: 'soja', hi: 'सोया' } },
+  { re: /\b(peixes?|fish|pescados?|poissons?)\b|मछली/, codigos: ['peixe'], nome: { 'pt-BR': 'peixe', en: 'fish', es: 'pescado', fr: 'poisson', hi: 'मछली' } },
+  { re: /\b(frutos do mar|camarao|crustaceos?|seafood|shellfish|shrimp|mariscos?|camarones?|fruits de mer|crevettes?)\b|झींगा|सी फूड/, codigos: ['frutos_mar'], nome: { 'pt-BR': 'frutos do mar', en: 'seafood', es: 'mariscos', fr: 'fruits de mer', hi: 'सी-फ़ूड' } },
+  { re: /\b(gergelim|sesamo|sesame)\b|तिल/, codigos: ['gergelim'], nome: { 'pt-BR': 'gergelim', en: 'sesame', es: 'sésamo', fr: 'sésame', hi: 'तिल' } },
+  { re: /\bvegetarien\w*\b|\bvegetarian\w*\b|शाकाहारी/, codigos: ['carne', 'peixe', 'frutos_mar'], nome: { 'pt-BR': 'vegetariano', en: 'vegetarian', es: 'vegetariano', fr: 'végétarien', hi: 'शाकाहारी' } },
+  { re: /\bvegan\w*\b|वीगन/, codigos: ['carne', 'peixe', 'frutos_mar', 'ovo', 'lactose', 'mel'], nome: { 'pt-BR': 'vegano', en: 'vegan', es: 'vegano', fr: 'vegan', hi: 'वीगन' } },
 ]
 
 const ROTULO_ALERGENO: Record<CodigoAlergeno, string> = {
@@ -911,6 +996,8 @@ const RESPOSTA_RECEITA_NO_CHEF: Record<Idioma, string> = {
   'pt-BR': 'Essa eu monto certinha pra você no "Monte sua receita com o Life" 👨‍🍳 — lá sai com ingredientes, preparo e macros.\n[[CHEF]]',
   en: 'I\'ll put that one together properly in "Build your recipe with Life" 👨‍🍳 — with ingredients, steps and macros.\n[[CHEF]]',
   es: 'Esa te la armo bien en "Arma tu receta con Life" 👨‍🍳 — con ingredientes, preparación y macros.\n[[CHEF]]',
+  fr: 'Celle-là, je te la prépare bien dans « Crée ta recette avec Life » 👨‍🍳 — avec ingrédients, préparation et macros.\n[[CHEF]]',
+  hi: 'यह मैं "Life के साथ अपनी रेसिपी बनाएँ" में ठीक से बना देता हूँ 👨‍🍳 — सामग्री, तरीक़ा और मैक्रो के साथ।\n[[CHEF]]',
 }
 
 // ---------- guardar no perfil a restrição dita no chat (v3.10) ----------
@@ -1569,6 +1656,8 @@ const NOME_FIXO: Record<Idioma, Record<TipoFixo, string>> = {
   'pt-BR': { cafe: 'café da manhã', almoco: 'almoço', lanche: 'lanche', jantar: 'jantar' },
   en: { cafe: 'breakfast', almoco: 'lunch', lanche: 'snack', jantar: 'dinner' },
   es: { cafe: 'desayuno', almoco: 'almuerzo', lanche: 'merienda', jantar: 'cena' },
+  fr: { cafe: 'petit-déjeuner', almoco: 'déjeuner', lanche: 'goûter', jantar: 'dîner' },
+  hi: { cafe: 'नाश्ता', almoco: 'दोपहर का खाना', lanche: 'शाम का स्नैक', jantar: 'रात का खाना' },
 }
 const ART_ES: Record<TipoFixo, string> = { cafe: 'el', almoco: 'el', lanche: 'la', jantar: 'la' }
 
@@ -1578,6 +1667,8 @@ function rotuloDia(dia: string, hoje: string, idioma: Idioma): string {
     'pt-BR': ['hoje', 'ontem', `${d}/${m}`],
     en: ['today', 'yesterday', `${m}/${d}`],
     es: ['hoy', 'ayer', `${d}/${m}`],
+    fr: ['aujourd’hui', 'hier', `${d}/${m}`],
+    hi: ['आज', 'कल', `${d}/${m}`],
   }
   const [h, o, data] = tabela[idioma]
   return dia === hoje ? h : dia === somarDias(hoje, -1) ? o : data
@@ -1588,6 +1679,8 @@ function frase(ref: RefResolvida, hoje: string, idioma: Idioma): string {
   const dia = rotuloDia(ref.dia, hoje, idioma)
   if (idioma === 'en') return ref.tipo === 'extra' ? `"${ref.nome}" from ${dia}` : `the ${NOME_FIXO.en[ref.tipo]} from ${dia}`
   if (idioma === 'es') return ref.tipo === 'extra' ? `"${ref.nome}" de ${dia}` : `${ART_ES[ref.tipo]} ${NOME_FIXO.es[ref.tipo]} de ${dia}`
+  if (idioma === 'fr') return ref.tipo === 'extra' ? `« ${ref.nome} » (${dia})` : `le ${NOME_FIXO.fr[ref.tipo]} (${dia})`
+  if (idioma === 'hi') return ref.tipo === 'extra' ? `${dia} का "${ref.nome}"` : `${dia} का ${NOME_FIXO.hi[ref.tipo]}`
   return ref.tipo === 'extra' ? `a refeição "${ref.nome}" de ${dia}` : `o ${NOME_FIXO['pt-BR'][ref.tipo]} de ${dia}`
 }
 
@@ -1670,6 +1763,50 @@ const TXT = {
     restricaoNao: 'Está bien, no lo guardé.',
     escolha: { adicionar: 'Agregar', substituir: 'Reemplazar', forcar: 'Copiar igual', salvar: 'Guardar en el perfil', cancelar: 'Dejarlo así' },
   },
+  fr: {
+    pronto: (o: string, d: string, n: number, kcal: number) =>
+      `C’est fait ! J’ai copié ${o} vers ${d} (${n} ${n === 1 ? 'aliment' : 'aliments'}, ~${kcal} kcal).`,
+    ocupado: (d: string, n: number) => `${cap(d)} a déjà ${n} ${n === 1 ? 'aliment' : 'aliments'}. J’ajoute ou je remplace ?`,
+    vazia: (o: string) => `Je n’ai rien trouvé de noté pour ${o}. Qu’est-ce que tu as mangé ?`,
+    ambigua: (nome: string) => `J’ai trouvé plusieurs repas appelés « ${nome} » ce jour-là. Lequel ?`,
+    restricao: (itens: string, r: string) => `Avant de copier : ${itens} peut contenir ${r}, qui fait partie de tes restrictions. Je copie quand même ?`,
+    futuro: 'Pour l’instant, je ne note qu’aujourd’hui ou les jours passés.',
+    naoEntendi: 'Je n’ai pas compris quel repas répéter. Dis-moi lequel (et de quel jour) et je l’ajoute.',
+    falhou: 'Je n’ai pas pu le noter pour l’instant — rien n’a changé. Réessaie dans un moment.',
+    cancelado: 'OK, j’ai laissé comme c’était.',
+    expirou: 'Cette question date un peu. Si tu veux toujours, redemande-moi.',
+    andamento: 'Je termine de le noter — ça apparaît dans un instant.',
+    pausa: 'Ça marche. Aujourd’hui, je me fais discret : pas de rappel ni de message de ma part jusqu’à demain. Si tu veux parler, appelle-moi.',
+    pausaFalhou: 'Je n’ai pas pu mettre en pause pour l’instant. Réessaie dans un moment.',
+    pausaLimite: 'Ce mois-ci a déjà eu quelques jours de pause, alors aujourd’hui je reste là sans rien geler. Si la série casse, ce n’est pas grave — elle repart, et je suis avec toi.',
+    salvarRestricao: (l: string) => `Tu veux que je garde dans ton profil que tu évites ${l} ? Comme ça, je m’en souviens toujours dans les idées et les recettes.`,
+    restricaoSalva: (l: string) => `C’est gardé dans ton profil : ${l}. J’en tiendrai compte dans les idées et les recettes 👍`,
+    restricaoFalhou: 'Je n’ai pas pu le garder pour l’instant — rien n’a changé. Réessaie dans un moment.',
+    restricaoNao: 'Pas de souci, je ne l’ai pas gardé.',
+    escolha: { adicionar: 'Ajouter', substituir: 'Remplacer', forcar: 'Copier quand même', salvar: 'Garder dans le profil', cancelar: 'Laisser comme ça' },
+  },
+  hi: {
+    pronto: (o: string, d: string, n: number, kcal: number) =>
+      `हो गया! मैंने ${o} को ${d} में कॉपी कर दिया (${n} ${n === 1 ? 'चीज़' : 'चीज़ें'}, ~${kcal} kcal)।`,
+    ocupado: (d: string, n: number) => `${d} में पहले से ${n} ${n === 1 ? 'चीज़' : 'चीज़ें'} हैं। साथ में जोड़ूँ या बदल दूँ?`,
+    vazia: (o: string) => `${o} में कुछ दर्ज नहीं मिला। आपने क्या खाया?`,
+    ambigua: (nome: string) => `उस दिन "${nome}" नाम के एक से ज़्यादा खाने मिले। कौन-सा?`,
+    restricao: (itens: string, r: string) => `कॉपी करने से पहले: ${itens} में ${r} हो सकता है, जो आपके परहेज़ में है। फिर भी कॉपी करूँ?`,
+    futuro: 'अभी मैं सिर्फ़ आज या बीते दिनों में दर्ज करता हूँ।',
+    naoEntendi: 'समझ नहीं आया कौन-सा खाना दोहराना है। बताइए कौन-सा (और किस दिन का), मैं जोड़ देता हूँ।',
+    falhou: 'अभी दर्ज नहीं हो सका — कुछ नहीं बदला। थोड़ी देर में फिर कोशिश करें।',
+    cancelado: 'ठीक है, जैसा था वैसा छोड़ दिया।',
+    expirou: 'यह सवाल थोड़ा पुराना हो गया। अगर अब भी चाहिए, तो फिर से कहिए।',
+    andamento: 'दर्ज कर रहा हूँ — बस अभी दिख जाएगा।',
+    pausa: 'पक्का। आज मैं चुप रहूँगा: कल तक मेरी तरफ़ से कोई रिमाइंडर या मैसेज नहीं। बात करनी हो तो बस बुला लीजिए।',
+    pausaFalhou: 'अभी रोक नहीं सका। थोड़ी देर में फिर कोशिश करें।',
+    pausaLimite: 'इस महीने पहले ही कुछ दिन रोक लग चुकी है, इसलिए आज मैं कुछ जमाए बिना यहीं रहूँगा। स्ट्रीक टूटे तो कोई बात नहीं — फिर शुरू होगी, और मैं आपके साथ हूँ।',
+    salvarRestricao: (l: string) => `क्या मैं आपकी प्रोफ़ाइल में सेव कर दूँ कि आप ${l} नहीं खाते? इससे मैं आइडिया और रेसिपी में हमेशा याद रखूँगा।`,
+    restricaoSalva: (l: string) => `आपकी प्रोफ़ाइल में सेव कर दिया: ${l}। आइडिया और रेसिपी में इसका ध्यान रखूँगा 👍`,
+    restricaoFalhou: 'अभी सेव नहीं हो सका — कुछ नहीं बदला। थोड़ी देर में फिर कोशिश करें।',
+    restricaoNao: 'ठीक है, सेव नहीं किया।',
+    escolha: { adicionar: 'साथ में जोड़ें', substituir: 'बदल दें', forcar: 'फिर भी कॉपी करें', salvar: 'प्रोफ़ाइल में सेव करें', cancelar: 'ऐसे ही रहने दें' },
+  },
 } satisfies Record<Idioma, unknown>
 
 // ---------- resolução ----------
@@ -1678,13 +1815,16 @@ const SINONIMOS_REFEICAO: Record<string, TipoFixo> = {
   almoco: 'almoco', lunch: 'almoco', almuerzo: 'almoco',
   lanche: 'lanche', 'lanche da tarde': 'lanche', snack: 'lanche', merienda: 'lanche',
   jantar: 'jantar', janta: 'jantar', dinner: 'jantar', cena: 'jantar', 'la cena': 'jantar',
+  'petit dejeuner': 'cafe', 'petit dej': 'cafe', dejeuner: 'almoco', gouter: 'lanche', diner: 'jantar', souper: 'jantar',
+  'नाश्ता': 'cafe', 'नाश्ते': 'cafe', 'लंच': 'almoco', 'दोपहर का खाना': 'almoco', 'स्नैक': 'lanche', 'शाम का स्नैक': 'lanche',
+  'डिनर': 'jantar', 'रात का खाना': 'jantar', nashta: 'cafe',
 }
 
 function resolverDia(arg: unknown, hoje: string): string | null {
   const t = normalizar(String(arg ?? ''))
-  if (['hoje', 'today', 'hoy'].includes(t)) return hoje
-  if (['ontem', 'yesterday', 'ayer'].includes(t)) return somarDias(hoje, -1)
-  if (['anteontem', 'antes de ontem', 'day before yesterday', 'anteayer'].includes(t)) return somarDias(hoje, -2)
+  if (['hoje', 'today', 'hoy', 'aujourd hui', 'आज', 'aaj'].includes(t)) return hoje
+  if (['ontem', 'yesterday', 'ayer', 'hier', 'कल', 'kal'].includes(t)) return somarDias(hoje, -1)
+  if (['anteontem', 'antes de ontem', 'day before yesterday', 'anteayer', 'avant hier', 'परसों', 'parso'].includes(t)) return somarDias(hoje, -2)
   const iso = String(arg ?? '').trim()
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso) && !Number.isNaN(Date.parse(iso))) return iso
   return null
@@ -1696,7 +1836,7 @@ type Resolucao =
 
 async function resolverRefeicao(sb: Sb, userId: string, dia: string, arg: unknown, criarSeFaltar: boolean): Promise<Resolucao> {
   const cru = texto(arg, 60).trim()
-  const n = normalizar(cru).replace(/^(o|a|the|el|la) /, '')
+  const n = normalizar(cru).replace(/^(o|a|the|el|la|le|l) /, '')
   const fixo = SINONIMOS_REFEICAO[n]
   if (fixo) return { ok: true, ref: { tipo: fixo, extraId: null, nome: '', dia } }
   const { data } = await sb.from('refeicoes_extra').select('id, nome').eq('user_id', userId).eq('data', dia)
@@ -1710,19 +1850,19 @@ async function resolverRefeicao(sb: Sb, userId: string, dia: string, arg: unknow
 // Restrição × itens copiados (os itens só guardam o nome: é um aviso por texto).
 const TERMOS_RESTRICAO: { chaves: string[]; rotulo: Record<Idioma, string>; termos: string[] }[] = [
   {
-    chaves: ['lactose', 'sem lactose', 'sem_lactose', 'leite', 'lacteos', 'dairy', 'lactosa'],
-    rotulo: { 'pt-BR': 'lactose', en: 'lactose', es: 'lactosa' },
-    termos: ['leite', 'queijo', 'iogurte', 'requeijao', 'manteiga', 'cottage', 'creme de leite', 'nata', 'whey', 'milk', 'cheese', 'yogurt', 'butter', 'leche', 'queso', 'yogur', 'mantequilla'],
+    chaves: ['lactose', 'sem lactose', 'sem_lactose', 'leite', 'lacteos', 'dairy', 'lactosa', 'sans lactose', 'lait', 'लैक्टोज', 'दूध'],
+    rotulo: { 'pt-BR': 'lactose', en: 'lactose', es: 'lactosa', fr: 'lactose', hi: 'लैक्टोज़' },
+    termos: ['leite', 'queijo', 'iogurte', 'requeijao', 'manteiga', 'cottage', 'creme de leite', 'nata', 'whey', 'milk', 'cheese', 'yogurt', 'butter', 'leche', 'queso', 'yogur', 'mantequilla', 'lait', 'fromage', 'yaourt', 'beurre', 'creme', 'दूध', 'पनीर', 'दही', 'घी', 'मक्खन', 'चीज', 'लस्सी', 'छाछ', 'व्हे'],
   },
   {
-    chaves: ['gluten', 'sem gluten', 'sem_gluten', 'celiaco', 'celiaca', 'trigo'],
-    rotulo: { 'pt-BR': 'glúten', en: 'gluten', es: 'gluten' },
-    termos: ['pao', 'macarrao', 'trigo', 'centeio', 'cevada', 'biscoito', 'bolo', 'pizza', 'aveia', 'bread', 'pasta', 'wheat', 'pan', 'galleta'],
+    chaves: ['gluten', 'sem gluten', 'sem_gluten', 'celiaco', 'celiaca', 'trigo', 'sans gluten', 'ble', 'coeliaque', 'ग्लूटेन', 'गेहूं'],
+    rotulo: { 'pt-BR': 'glúten', en: 'gluten', es: 'gluten', fr: 'gluten', hi: 'ग्लूटेन' },
+    termos: ['pao', 'macarrao', 'trigo', 'centeio', 'cevada', 'biscoito', 'bolo', 'pizza', 'aveia', 'bread', 'pasta', 'wheat', 'pan', 'galleta', 'pain', 'pates', 'baguette', 'croissant', 'gateau', 'रोटी', 'चपाती', 'पराठा', 'नान', 'ब्रेड', 'मैदा', 'आटा', 'गेहूं', 'पाव', 'समोसा'],
   },
   {
-    chaves: ['vegetariano', 'vegetariana', 'vegano', 'vegana', 'vegetarian', 'vegan'],
-    rotulo: { 'pt-BR': 'carne', en: 'meat', es: 'carne' },
-    termos: ['frango', 'carne', 'patinho', 'peixe', 'atum', 'tilapia', 'salmao', 'sardinha', 'camarao', 'presunto', 'bacon', 'linguica', 'peru', 'chicken', 'beef', 'fish', 'tuna', 'ham', 'pollo', 'pescado', 'jamon'],
+    chaves: ['vegetariano', 'vegetariana', 'vegano', 'vegana', 'vegetarian', 'vegan', 'vegetarien', 'vegetarienne', 'शाकाहारी', 'वीगन'],
+    rotulo: { 'pt-BR': 'carne', en: 'meat', es: 'carne', fr: 'viande', hi: 'मांस' },
+    termos: ['frango', 'carne', 'patinho', 'peixe', 'atum', 'tilapia', 'salmao', 'sardinha', 'camarao', 'presunto', 'bacon', 'linguica', 'peru', 'chicken', 'beef', 'fish', 'tuna', 'ham', 'pollo', 'pescado', 'jamon', 'poulet', 'boeuf', 'viande', 'poisson', 'thon', 'jambon', 'dinde', 'चिकन', 'मटन', 'मछली', 'कीमा', 'मांस', 'बीफ', 'झींगा'],
   },
 ]
 

@@ -3602,3 +3602,43 @@ Validado: typecheck. Não visto no aparelho.
    comidas típicas de França/Québec/Índia/Nepal — migração com OK do dono.
 4. Termos e Política em francês e hindi.
 5. Frase de boas-vindas e Life da 1ª tela: dono achou as opções secas; refazer junto.
+
+## 2026-10-28 (2) — Hindi, banco em fr/hi, comidas típicas e Life com cultura
+
+Dono: além do francês, **hindi** (Índia/Nepal vendem bem) e "fazer as
+coisas no banco também, pra não ter um em português e outro em francês".
+- **Hindi** (`i18n/mensagens/hi.ts`, todas as chaves): "आप", inglês do dia a
+  dia em devanágari; refeições nashta / lunch / snacks / dinner; alternativas
+  indianas no hábito (nimbu pani, chaas, nariyal pani). Nepal (NP) nos países.
+- **Banco — APLICADO** (com o pedido do dono):
+  - `athoslife_idiomas_fr_hi_conteudo_migration.sql`: 26 conquistas,
+    100 exercícios e 25 receitas (vitrine + modo de preparo) em fr/hi;
+    `receitas_conteudo_liberado` aceita fr/hi. Rótulos das seções em fr/hi
+    reconhecidos em `domain/rules/cozinha.ts`.
+  - `athoslife_idiomas_fr_hi_alimentos_migration.sql`: `nome_fr`/`nome_hi`
+    em 1.570 alimentos; **`normalizar_texto` mantém o devanágari** (antes
+    uma busca em hindi virava espaço e casava com tudo) e troca œ→oe;
+    `buscar_alimentos` em fr/hi; apelidos padrão (चावल, अंडा, pain, lait…);
+    `habito_nome_proibido` com termos fr, hindi e hinglish (testado: não
+    bloqueia "गरम पानी पीना", "Joint mobility").
+  - `athoslife_comidas_tipicas_in_np_fr_qc_migration.sql`: 79 comidas
+    (roti, paneer, dal tadka, idli, dosa, chole, biryani, chai, momo, dal
+    bhat, sel roti, quiche, ratatouille, poutine, tourtière…), valores IFCT
+    2017 / Ciqual / USDA, nomes nos 5 idiomas e apelidos em hinglish.
+- **App**: busca offline, alergias (मूंगफली, arachide…) e filtro de hábitos
+  reconhecem fr/hi (testado com Deno: 14 casos).
+- **ai-proxy (PRECISA DEPLOY)**: idioma fr/hi aceito; crise e termos
+  sensíveis em fr/hi/hinglish; linhas de apoio FR 3114, BE, CH, LU, Québec
+  em francês, Índia Tele-MANAS 14416 (em hindi), Nepal 1166; filtro de
+  prescrição e "fora do tema" em fr/hi; jeito de falar/costumes/comidas de
+  cada cultura no prompt (só entra pra quem usa o idioma); textos fixos
+  (peso, check-in, abertura, cartão da refeição, copiar refeição); leitor de
+  peso sem IA entende "je pèse 80 kg" e "मेरा वज़न 80 kg है"; scanner mostra
+  o nome em fr/hi. 64 testes Deno ok.
+
+Validado: typecheck, build, deno check, 64 testes Deno, migrações testadas
+com rollback antes de aplicar e conferidas depois.
+
+**Pendências:** deploy da ai-proxy (OK do dono); Termos/Política em fr/hi
+(mostram inglês); frase de boas-vindas + Life da 1ª tela (refazer com o
+dono); push (token do GitHub).

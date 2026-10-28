@@ -14,19 +14,20 @@ export type ComandoPeso =
   /** Só o número ("82", "80 kg"): provável peso, mas o Life pergunta antes de anotar. */
   | { tipo: 'confirmar'; kg: number }
 
+// Também tira o nukta do hindi ("वज़न" = "वजन") e troca o apóstrofo por espaço ("j’ai").
 const norm = (t: string) =>
-  t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim()
+  t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f\u093c]/g, '').replace(/['’]/g, ' ').replace(/\s+/g, ' ').trim()
 
 export const KG_MIN = 25
 export const KG_MAX = 350
 const LB_POR_KG = 2.20462
 
 // Número de peso (70, 80,5, 80.5) com unidade opcional logo depois.
-const NUMERO = /(\d{2,3}(?:[.,]\d{1,2})?)\s*(kg|kgs|quilos?|kilos?|lbs?|libras?|pounds?)?(?![\d.,]*\s*(?:g\b|gramas?|grams?|gramos?|kcal|cal\b|ml|l\b|litros?|liters?|passos|steps|pasos|min|reps?|x\b|%))/
+const NUMERO = /(\d{2,3}(?:[.,]\d{1,2})?)\s*(kg|kgs|quilos?|kilos?|lbs?|libras?|pounds?|किलो|केजी)?(?![\d.,]*\s*(?:g\b|gramas?|grams?|gramos?|kcal|cal\b|ml|l\b|litros?|liters?|passos|steps|pasos|min|reps?|x\b|%))/
 
 // Assunto que NÃO é o peso do corpo — "meta de 150 g de proteína" não muda a meta.
 const OUTRO_ASSUNTO =
-  /\b(proteina|protein|carbo\w*|gordura|fat|grasa|caloria\w*|calorie\w*|kcal|agua|water|litros?|passos|steps|pasos|carga|supino|agachamento|halter|barra|bench|squat|serie|series|sets?|reps?|repeticoes|sono|sleep|horas?|hours?|anos|years?|anos de idade|idade|age|edad|febre|fever|fiebre|graus|degrees|grados|dias|days|minutos?|minutes?|reais|dolares|dollars|pesos mexicanos|batimentos|bpm|pressao)\b/
+  /\b(proteina|protein|carbo\w*|gordura|fat|grasa|caloria\w*|calorie\w*|kcal|agua|water|litros?|passos|steps|pasos|carga|supino|agachamento|halter|barra|bench|squat|serie|series|sets?|reps?|repeticoes|sono|sleep|horas?|hours?|anos|years?|anos de idade|idade|age|edad|febre|fever|fiebre|graus|degrees|grados|dias|days|minutos?|minutes?|reais|dolares|dollars|pesos mexicanos|batimentos|bpm|pressao|proteines?|glucides|lipides|eau|pas|repetitions|heures|jours|ans)\b|प्रोटीन|कैलोरी|पानी|कदम|घंटे|साल|दिन/
 
 const REGISTRAR = [
   /\b(pesei|me pesei|to pesando|tou pesando|estou pesando|t[oô] com|estou com|pesando hoje|acordei com|amanheci com)\b/,
@@ -37,6 +38,8 @@ const REGISTRAR = [
   /\bbalanca (deu|marcou|mostrou)\b/,
   /\b(i weigh|i weighed|weighed in at|weighed|my weight is|my weight today|log (my )?weight|record (my )?weight|scale (says|said|showed))\b/,
   /\b(me pese|peso hoy|hoy peso|mi peso (es|hoy|actual)|registr\w* (mi )?peso|anot\w* (mi )?peso|la bascula (marco|dio))\b/,
+  /\b(je pese|j ai pese|je me suis pese\w*|mon poids (est|aujourd hui|actuel|du jour)|note (mon )?poids|la balance (affiche|indique|dit|a dit))\b/,
+  /मेरा वजन|आज वजन|आज मेरा वजन|वजन आज|वजन दर्ज|वजन लिख|\b(mera weight|mera wajan|mera vajan|aaj weight)\b/,
 ]
 
 const META = [
@@ -45,39 +48,47 @@ const META = [
   /\b(goal|target)\b/,
   /\b(want to (reach|get to|weigh))\b/,
   /\b(quiero llegar|llegar a|quiero pesar)\b/,
+  /\b(objectif|cible|je veux peser|atteindre)\b/,
+  /लक्ष्य|टारगेट|गोल/,
 ]
 
 const HISTORICO = [
   /\b(historico|evolucao|pesagens|ultimas pesagens|quanto eu pesava|meus pesos)\b/,
   /\b(history|weigh-ins|past weights|weight log|weight progress|how much did i weigh)\b/,
   /\b(historial|evolucion|pesajes|cuanto pesaba)\b/,
+  /\b(historique|evolution|pesees|combien je pesais)\b/,
+  /इतिहास|पिछले वजन|पुराने वजन/,
 ]
 // Corrigir/apagar mexem só na ÚLTIMA pesagem (sem data na frase).
 const CORRIGIR = [
   /\b(corrig\w*|alter\w*|mud\w*|troc\w*|edit\w*|ajust\w*|errei|errado|na verdade)\b/,
   /\b(fix|change|correct|edit|wrong|actually)\b/,
   /\b(correg\w*|cambi\w*|modific\w*|equivoqu\w*|en realidad)\b/,
+  /\b(corrig\w*|chang\w*|erreur|en fait|trompe)\b/,
+  /ठीक कर|बदल|गलत/,
 ]
 const APAGAR = [
   /\b(apag\w*|exclu\w*|remov\w*|delet\w*|desfaz\w*|tira a|tira o|tirar a|tirar o)\b/,
   /\b(delete|remove|erase|undo)\b/,
   /\b(borr\w*|elimin\w*|quit\w*|deshac\w*)\b/,
+  /\b(supprim\w*|efface\w*|enleve|annule)\b/,
+  /मिटा|हटा|डिलीट/,
 ]
 // "tô com 81", "acordei com 81,5", "peso 79": o jeito da frase já diz que é o
 // peso do corpo, mesmo sem "kg" (outros assuntos já foram descartados antes).
-const ESTADO_DO_CORPO = /(\b(t[oô]|tou|estou|acordei|amanheci) com\b|^peso:? \d|\b(i'?m at|woke up at|amaneci con|estoy en)\b)/
+const ESTADO_DO_CORPO = /(\b(t[oô]|tou|estou|acordei|amanheci) com\b|^peso:? \d|\b(i'?m at|woke up at|amaneci con|estoy en|je suis a|je fais)\b)/
 // Só o número, com ou sem unidade: "82", "80 kg", "81,5kg".
-const SO_NUMERO = /^(\d{2,3}(?:[.,]\d{1,2})?)\s*(kg|kgs|quilos?|kilos?|lbs?|libras?|pounds?)?[.!]?$/
+const SO_NUMERO = /^(\d{2,3}(?:[.,]\d{1,2})?)\s*(kg|kgs|quilos?|kilos?|lbs?|libras?|pounds?|किलो|केजी)?[.!।]?$/
 // "errei, é 81,2" logo depois de anotar: correção curta.
-const CORRECAO_CURTA = /^(errei|ops|opa|oops|me equivoque|equivoque|na verdade|actually|wrong)\b/
+const CORRECAO_CURTA = /^(errei|ops|opa|oops|me equivoque|equivoque|na verdade|actually|wrong|en fait|oups)\b/
 
-const FALA_DE_PESO = /\b(peso|pesagem|pesagens|pesaje|weigh-in|pesava|pesos|pesei|pesando|balanca|weight|weigh|weighed|weigh-ins|scale|pesajes|pesaba|pese|bascula)\b/
+const FALA_DE_PESO = /\b(peso|pesagem|pesagens|pesaje|weigh-in|pesava|pesos|pesei|pesando|balanca|weight|weigh|weighed|weigh-ins|scale|pesajes|pesaba|pese|bascula|poids|pesee|pesees|balance|pesais)\b|वजन|वेट/
 
 // Variação: "perdi 1 kg", "emagreci 2 quilos", "ganhei meio quilo", "lost 2 lbs".
-const PERDEU = /\b(perdi|emagreci|eliminei|sequei|baixei|desci|lost|dropped|shed|perdi|baje|adelgace|elimine)\b/
-const GANHOU = /\b(ganhei|engordei|aumentei|subi|gained|put on|gane|engorde|aumente)\b/
+const PERDEU = /\b(perdi|emagreci|eliminei|sequei|baixei|desci|lost|dropped|shed|perdi|baje|adelgace|elimine|perdu|maigri)\b|घटा|कम हुआ|कम किया/
+const GANHOU = /\b(ganhei|engordei|aumentei|subi|gained|put on|gane|engorde|aumente|pris|grossi)\b|बढ/
 const NUM_PALAVRA: Record<string, number> = { um: 1, uma: 1, un: 1, una: 1, one: 1, a: 1, dois: 2, duas: 2, dos: 2, two: 2, tres: 3, three: 3 }
-const DELTA = /(\d{1,2}(?:[.,]\d{1,2})?|\d{3,4}|um|uma|un|una|one|a|dois|duas|dos|two|tres|three|meio|medio|half a?)\s*(kg|kgs|quilos?|kilos?|kilogramos?|lbs?|libras?|pounds?|g\b|gramas?|gramos?|grams?)(\s*e\s*meio|\s*y\s*medio|\s*and a half)?/
+const DELTA = /(\d{1,2}(?:[.,]\d{1,2})?|\d{3,4}|um|uma|un|una|one|a|dois|duas|dos|two|tres|three|meio|medio|half a?)\s*(kg|kgs|quilos?|kilos?|kilogramos?|lbs?|libras?|pounds?|किलो|g\b|gramas?|gramos?|grams?)(\s*e\s*meio|\s*y\s*medio|\s*and a half)?/
 // Na variação "gordura" ainda é o corpo ("perdi 1 kg de gordura"); carga/supino não.
 const OUTRO_ASSUNTO_VAR = /\b(proteina|protein|carbo\w*|caloria\w*|calorie\w*|kcal|agua|water|passos|steps|pasos|carga|supino|agachamento|halter|barra|bench|squat|serie|series|sets?|reps?|repeticoes)\b/
 
@@ -101,6 +112,7 @@ function lerKg(m: RegExpMatchArray): number | null {
   const valor = Number((m[1] ?? '').replace(',', '.'))
   if (!Number.isFinite(valor)) return null
   const lb = m[2] !== undefined && /^(lb|lbs|libra|libras|pound|pounds)$/.test(m[2])
+  // किलो/केजी = kg
   const kg = lb ? valor / LB_POR_KG : valor
   if (kg < KG_MIN || kg > KG_MAX) return null
   return Math.round(kg * 10) / 10
