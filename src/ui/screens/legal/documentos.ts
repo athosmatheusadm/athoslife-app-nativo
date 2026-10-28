@@ -543,6 +543,6 @@ const politicaEs: Documento = {
   ],
 }
 
-// fr: em inglês até a versão francesa ser escrita (pendente no WORKLOG, 28/10).
-export const TERMOS: Record<Idioma, Documento> = { 'pt-BR': termosPt, en: termsEn, es: terminosEs, fr: termsEn }
-export const POLITICA: Record<Idioma, Documento> = { 'pt-BR': politicaPt, en: privacyEn, es: politicaEs, fr: privacyEn }
+// fr/hi: em inglês até as versões próprias serem escritas (pendente no WORKLOG, 28/10).
+export const TERMOS: Record<Idioma, Documento> = { 'pt-BR': termosPt, en: termsEn, es: terminosEs, fr: termsEn, hi: termsEn }
+export const POLITICA: Record<Idioma, Documento> = { 'pt-BR': politicaPt, en: privacyEn, es: politicaEs, fr: privacyEn, hi: privacyEn }

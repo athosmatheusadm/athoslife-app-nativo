@@ -4,9 +4,10 @@ import { ptBR } from './mensagens/pt-BR'
 import { en } from './mensagens/en'
 import { es } from './mensagens/es'
 import { fr } from './mensagens/fr'
+import { hi } from './mensagens/hi'
 import type { Mensagens } from './mensagens/tipo'
 
-export const DICIONARIOS: Record<Idioma, Mensagens> = { 'pt-BR': ptBR, en, es, fr }
+export const DICIONARIOS: Record<Idioma, Mensagens> = { 'pt-BR': ptBR, en, es, fr, hi }
 
 /**
  * Nome das refeições que muda de país pra país no mesmo idioma. No México o

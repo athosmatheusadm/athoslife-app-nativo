@@ -7,7 +7,7 @@
  * ver db/athoslife_globalizacao_onboarding_migration.sql).
  */
 
-export const IDIOMAS = ['pt-BR', 'en', 'es', 'fr'] as const
+export const IDIOMAS = ['pt-BR', 'en', 'es', 'fr', 'hi'] as const
 export type Idioma = (typeof IDIOMAS)[number]
 
 export type Unidades = 'metrico' | 'imperial'
@@ -29,7 +29,7 @@ export interface Localidade {
 export const PAISES = [
   'BR', 'PT', 'US', 'CA', 'GB', 'IE', 'AU', 'NZ', 'ES', 'MX', 'AR', 'CO', 'CL',
   'PE', 'UY', 'PY', 'BO', 'EC', 'VE', 'CR', 'PA', 'GT', 'DO', 'PR', 'AO', 'MZ',
-  'ZA', 'IN', 'DE', 'FR', 'IT', 'NL', 'CH', 'JP', 'BE', 'LU', 'MA', 'SN', 'CI',
+  'ZA', 'IN', 'DE', 'FR', 'IT', 'NL', 'CH', 'JP', 'BE', 'LU', 'MA', 'SN', 'CI', 'NP',
 ] as const
 
 /** Países que usam libra/pé/onça no dia a dia. */
@@ -40,6 +40,7 @@ export const NOMES_IDIOMA: Record<Idioma, string> = {
   en: 'English',
   es: 'Español',
   fr: 'Français',
+  hi: 'हिन्दी',
 }
 
 /** "pt-PT", "pt" -> pt-BR; "en-GB" -> en; "es-MX" -> es; "fr-CA" -> fr; resto -> en. */
@@ -50,6 +51,7 @@ export function idiomaSuportado(tag: string | null | undefined): Idioma | null {
   if (base === 'en') return 'en'
   if (base === 'es') return 'es'
   if (base === 'fr') return 'fr'
+  if (base === 'hi') return 'hi'
   return null
 }
 
