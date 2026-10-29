@@ -15,7 +15,7 @@ name: APK de teste (instalar no celular)
 # Mudança em código NATIVO (plugin Kotlin, manifest, widget) exige rodar de
 # novo e reinstalar — a atualização ao vivo só cobre as telas.
 #
-# Secrets necessários: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+# Secrets necessários: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_RC_GOOGLE_KEY (RevenueCat)
 
 on:
   workflow_dispatch:
@@ -57,6 +57,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_RC_GOOGLE_KEY: ${{ secrets.VITE_RC_GOOGLE_KEY }}
         run: npm run build
 
       - name: Sincronizar Capacitor

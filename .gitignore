@@ -22,3 +22,9 @@ tsconfig.tsbuildinfo
 
 # Fotos pessoais do benchmark do scanner
 scripts/scanner-benchmark/dados/
+
+# Credenciais (nunca commitar)
+*firebase-adminsdk*.json
+*serviceAccount*.json
+*credenciais*.docx
+ATHOSlife_Firebase_configuracao.docx

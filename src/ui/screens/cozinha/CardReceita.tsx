@@ -5,14 +5,13 @@ import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Receita } from '@domain/entities/receita'
 import { CategoryIcon } from './CategoryIcon'
-import { slugReceita } from '@domain/rules/cozinha'
 
 /**
  * Foto da receita curada. As imagens moram no app em
- * `public/receitas/<slug-do-título>.webp` (ex.: salada-que-mata-a-fome.webp).
+ * `public/receitas/<slug-do-título-em-pt>.webp` (ex.: salada-que-mata-a-fome.webp).
  * Enquanto a foto não existe, mostra o duotone da categoria sobre o degradê.
  */
-export function FotoReceita(props: { receita: Pick<Receita, 'titulo' | 'categoria' | 'corTema'>; className: string; emojiClassName?: string }) {
+export function FotoReceita(props: { receita: Pick<Receita, 'foto' | 'categoria' | 'corTema'>; className: string; emojiClassName?: string }) {
   const [falhou, setFalhou] = useState(false)
   const { receita } = props
   return (
@@ -22,7 +21,7 @@ export function FotoReceita(props: { receita: Pick<Receita, 'titulo' | 'categori
     >
       {!falhou ? (
         <img
-          src={`/receitas/${slugReceita(receita.titulo)}.webp`}
+          src={`/receitas/${receita.foto}.webp`}
           alt=""
           loading="lazy"
           onError={() => setFalhou(true)}

@@ -7,6 +7,7 @@ import type { TemaSazonal } from '@domain/rules/temasSazonais'
 import type { Macros } from '@domain/entities/food'
 import { localidadeAtual } from '@data/localidadeAtual'
 import { texto, traducoesDe } from '@data/traducoesConteudo'
+import { slugReceita } from '@domain/rules/cozinha'
 
 /** Linha crua de receitas_cozinha. */
 interface ReceitaRow {
@@ -43,6 +44,7 @@ function paraDominio(row: ReceitaRow, trad: Record<string, unknown> = {}): Recei
   return {
     id: row.id,
     titulo: texto(trad, 'titulo', row.titulo),
+    foto: slugReceita(row.titulo),
     subtitulo: texto(trad, 'subtitulo', row.subtitulo),
     categoria: row.categoria as CategoriaReceita,
     macros: macrosDe(row),

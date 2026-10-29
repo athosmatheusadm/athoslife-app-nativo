@@ -44,6 +44,8 @@ export const CATEGORIA_META: Record<
 export interface Receita {
   readonly id: string
   readonly titulo: string
+  /** Nome do arquivo da foto (`public/receitas/<foto>.webp`), tirado do título em pt — não muda com o idioma. */
+  readonly foto: string
   readonly subtitulo: string | null
   readonly categoria: CategoriaReceita
   readonly macros: Macros
