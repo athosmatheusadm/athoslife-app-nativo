@@ -9,7 +9,7 @@ import { StatusConexao } from '@ui/components/StatusConexao'
 import { Login } from '@ui/screens/Login'
 import { RecuperarSenha } from '@ui/screens/RecuperarSenha'
 import { Consentimento } from '@ui/screens/Consentimento'
-import { Onboarding } from '@ui/screens/Onboarding'
+import { OnboardingNovo } from '@ui/screens/OnboardingNovo'
 import { Home } from '@ui/screens/Home'
 import { Dieta } from '@ui/screens/Dieta'
 import { Treinos } from '@ui/screens/Treinos'
@@ -56,7 +56,7 @@ export const router = createBrowserRouter([
       // Fora do RequireAnon: validar o código já abre sessão (ver RecuperarSenha).
       { path: '/recuperar-senha', element: <RecuperarSenha /> },
       { path: '/consentimento', element: <RequireEtapaInicial etapa="consentimento"><Consentimento /></RequireEtapaInicial> },
-      { path: '/onboarding', element: <RequireEtapaInicial etapa="onboarding"><Onboarding /></RequireEtapaInicial> },
+      { path: '/onboarding', element: <RequireEtapaInicial etapa="onboarding"><OnboardingNovo /></RequireEtapaInicial> },
       // Públicas: abrem do Consentimento (antes do aceite) e do Perfil > Sobre.
       { path: '/termos', element: <DocumentoLegal tipo="termos" /> },
       { path: '/politica-de-privacidade', element: <DocumentoLegal tipo="politica" /> },
@@ -66,7 +66,7 @@ export const router = createBrowserRouter([
         ? [
             { path: '/prototipo/onboarding', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingConversa')).OnboardingConversa }) },
             // Onboarding de verdade, sem conta e sem gravar (avaliação do dono, 27/10).
-            { path: '/previa/onboarding', element: <Onboarding previa /> },
+            { path: '/previa/onboarding', element: <OnboardingNovo previa /> },
             { path: '/prototipo/onboarding-essencial', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingEssencial')).OnboardingEssencial }) },
           ]
         : []),

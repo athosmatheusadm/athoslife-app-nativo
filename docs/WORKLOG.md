@@ -3723,3 +3723,38 @@ Validado: typecheck e build.
   Scripts conferidos com `node --check`; não visto num navegador (WSL sem as
   bibliotecas do Chromium). O contador decorativo "3/10" dentro dos módulos
   continua fixo. Aprovado → portar as telas para o app (branch própria).
+
+## 2026-10-29 (4) — Onboarding definitivo (branch `onboarding-novo`)
+
+Dono aprovou o `ATHOSlife-onboarding-completo.html` + a tela Treino da prévia:
+"sensacional, esse é o definitivo". Pediu só o fim: "Concluir e entrar no
+app" no lugar de baixar as respostas.
+- **`public/onboarding/`**: o HTML dele roda inteiro (CSS, Life vivo WebGL,
+  réguas, sono, hábitos, água) num iframe. Mudanças no HTML: imagens base64
+  viraram `img/*.webp` (24); tela **Treino** (vezes por semana + onde) depois
+  de "Seu corpo", com Life Treino, validação e linha na revisão; fr e hi na
+  órbita; números no formato do idioma; idade 18–100 com a mensagem do app;
+  revisão sem "Prévia concluída" e botão **Concluir e entrar no app**;
+  espaço entre letras desligado no hindi (separava o devanágari).
+- **`textos.js` + `i18n.js`**: a página continua escrita em pt; a camada de
+  tradução troca cada texto visível/placeholder/aria (inclusive o que os
+  scripts escrevem depois) para en/es/fr/hi. Os VALORES ficam em pt e o app
+  lê como códigos. ~330 textos; conferido com passeio automático em todas as
+  telas nos 5 idiomas (o que sobrou igual em es são palavras iguais).
+- **`ponte.js`** ⇄ **`OnboardingNovo.tsx`**: idioma/unidades/nome pela URL;
+  trocar idioma na órbita troca o do app; Voltar do Android volta uma tela;
+  "Concluir" grava com `profileRepository.concluirOnboarding` (mesmo
+  `DadosOnboarding` de antes) + 1º peso, e abre a Home; erro de rede/servidor
+  aparece na revisão. `respostasNovo.ts` converte as respostas (frequência de
+  treino entra nas calorias; ar livre = casa; alergia digitada vira lista).
+- Onboarding antigo (`Onboarding.tsx`, `onboarding/estado.ts`,
+  `componentes.tsx`) removido; `/previa/onboarding` abre o novo sem gravar.
+
+Validado: typecheck, build, 4 testes Deno da conversão (com respostas reais
+da página), passeio automático pt/en/es/fr/hi e teste de ponta a ponta no app
+(Chrome do Windows): troca de idioma chega no app e o fim entrega os dados.
+**Não visto no celular** (WebGL no WebView, safe area, Voltar do Android).
+
+**Pendências:** APK pra testar; push + PR desta branch (token do GitHub);
+textos novos de `m.onboarding.*` que só o antigo usava ficaram no dicionário
+(limpar depois).
