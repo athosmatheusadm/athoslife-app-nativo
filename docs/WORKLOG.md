@@ -3696,3 +3696,30 @@ RevenueCat (`VITE_RC_GOOGLE_KEY` no .env e no GitHub Actions,
   iniciais — perguntar ao dono antes.
 
 Validado: typecheck e build.
+
+## 2026-10-29 (3) — segredos no Supabase, ícone, prévia do onboarding
+
+- **Segredos gravados** (dono autorizou): `RC_SECRET_KEY`, `RC_WEBHOOK_AUTH`
+  (gerado; o dono cola no webhook do RevenueCat como Authorization) e
+  `FIREBASE_SERVICE_ACCOUNT` (JSON da conta de serviço, para um futuro envio
+  de push). Testado: `rc-webhook` com senha errada 401, com a certa 200;
+  a `sk_` responde na API do RevenueCat.
+- **Por que o ícone não troca (diagnóstico, sem aparelho no ADB):**
+  1. Só o APK de 25/10 (`scanner-life-vivo`) tem a troca de ícone; os de
+     22/10 (story) e 24/10 não têm. A atualização ao vivo não leva código
+     nativo. Conquista desbloqueada deixando o ícone dourado (27/10) não está
+     em APK nenhum.
+  2. No APK de 25/10 o dourado só vem com calorias entre 90% e 110% da meta,
+     conferidas quando a Home carrega; o sono só se os horários de dormir e
+     acordar estiverem salvos em Perfil > Notificações.
+  3. A troca só acontece quando o app sai da tela (de propósito).
+  4. Alguns launchers (Samsung/Xiaomi) demoram a redesenhar, ou tiram o atalho
+     da tela inicial quando o alias muda; na gaveta de apps aparece certo.
+  → Precisa de APK novo para testar.
+- **Prévia do onboarding novo:** cópia do HTML do dono com a tela "Treino"
+  (vezes por semana + onde treina) depois de "Seu corpo", no mesmo visual,
+  com validação, Life Treino e linha na revisão:
+  `ATHOSlife-onboarding-completo-PREVIA-com-treino.html` (raiz, fora do git).
+  Scripts conferidos com `node --check`; não visto num navegador (WSL sem as
+  bibliotecas do Chromium). O contador decorativo "3/10" dentro dos módulos
+  continua fixo. Aprovado → portar as telas para o app (branch própria).
