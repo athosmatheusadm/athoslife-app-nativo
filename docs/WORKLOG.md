@@ -3758,3 +3758,21 @@ da página), passeio automático pt/en/es/fr/hi e teste de ponta a ponta no app
 **Pendências:** APK pra testar; push + PR desta branch (token do GitHub);
 textos novos de `m.onboarding.*` que só o antigo usava ficaram no dicionário
 (limpar depois).
+
+### 2026-10-29 — fim do dia: pendências pra próxima sessão
+- Tudo commitado e **só no PC** (sem token do GitHub). Branch atual:
+  `onboarding-novo` (156a6b9), que contém `idiomas-orbital` ←
+  `revisao-completa-ajustes` ← `scanner-life-vivo` ← `correcoes-teste-apk`.
+  Próxima: push de todas + PR pra `main`.
+- GitHub: criar o secret `VITE_RC_GOOGLE_KEY` (mesmo valor do `.env`).
+- RevenueCat: dono cola URL + senha do webhook (Authorization) e confere o
+  entitlement `premium` nos produtos de teste. Se a senha se perdeu, gerar
+  outra e regravar `RC_WEBHOOK_AUTH`.
+- Firebase: falta o `google-services.json` (app Android `br.com.athoslife.app`)
+  e decidir quais pushes (sugestão: resgate após 2–3 dias + avisos de
+  assinatura). Depois: plugin de push, tabela de tokens (migração) e função
+  `enviar-push`.
+- APK novo para testar: onboarding no WebView, paywall (Test Store), ícone
+  do mascote, Life dourado, vídeo do Life cozinhando.
+- Dono decide se "Jiló" em hindi fica करेला.
+- Frase de boas-vindas: resolvida pelo onboarding novo (texto do dono).
