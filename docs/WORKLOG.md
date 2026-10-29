@@ -3670,3 +3670,29 @@ Validado: typecheck, build, deno check, 71 testes Deno.
 RevenueCat (`VITE_RC_GOOGLE_KEY` no .env e no GitHub Actions,
 `RC_SECRET_KEY` e `RC_WEBHOOK_AUTH` no Supabase), `google-services.json`
 (FCM), `facebookAppId`, SMTP Brevo e URL de produção no Supabase Auth.
+
+## 2026-10-29 (2) — fotos da Cozinha, chaves do RevenueCat/Firebase
+
+- **Fotos que faltavam** (pacote `ATHOSlife_imagens_receitas_Claude_Code.zip`,
+  raiz, fora do git): "Chips Crocantes de Batata Doce com Alecrim" e "Chá
+  Calmante de Camomila e Cidreira" em `public/receitas/` (800×800 webp,
+  como as outras; PNG original 1254×1254, sem esticar).
+- **Bug:** a foto saía do título TRADUZIDO, então em en/es/fr/hi nenhuma
+  receita achava a foto. Agora `Receita.foto` vem do título em pt.
+- **Credenciais:** `ATHOSlife_RevenueCat_credenciais.docx`, o docx do
+  Firebase e `athoslife-89511-firebase-adminsdk-*.json` (conta de serviço,
+  projeto `athoslife-89511`) entraram no `.gitignore` — não estavam.
+- `VITE_RC_GOOGLE_KEY` no `.env` local com a chave **test_** (Test Store do
+  RevenueCat; trocar pela `goog_` antes da Play) e nos dois workflows do
+  Android (falta criar o secret no GitHub).
+- **Bloqueado pelo modo automático:** gravar no Supabase `RC_SECRET_KEY`,
+  `RC_WEBHOOK_AUTH` e `FIREBASE_SERVICE_ACCOUNT`. Precisa autorização do dono.
+- Firebase: veio a conta de serviço (servidor). Para push no Android ainda
+  falta o `google-services.json` (Firebase > app Android
+  `br.com.athoslife.app`) e uma função que envie o push (não existe ainda).
+- **Onboarding novo** (`ATHOSlife-onboarding-completo.html`, 10 telas, Life
+  vivo trocando de versão): NÃO portado ainda. Ele tira as perguntas de
+  treino (frequência, local, tipo) e de rotina, que alimentam as metas
+  iniciais — perguntar ao dono antes.
+
+Validado: typecheck e build.
