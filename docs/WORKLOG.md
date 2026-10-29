@@ -3642,3 +3642,31 @@ com rollback antes de aplicar e conferidas depois.
 **Pendências:** deploy da ai-proxy (OK do dono); Termos/Política em fr/hi
 (mostram inglês); frase de boas-vindas + Life da 1ª tela (refazer com o
 dono); push (token do GitHub).
+
+## 2026-10-29 — ai-proxy fr/hi publicada + Termos/Política em fr/hi
+
+Dono: "faz o deploy da ia proxy e do que ficou faltando da sessão anterior".
+- **ai-proxy publicada** (versão 33, branch `idiomas-orbital`): Life em
+  francês e hindi, crise e linhas de apoio FR/BE/CH/LU/QC/IN/NP, filtros
+  fr/hi, cultura no prompt, peso fr/hi, nome fr/hi no scanner. Antes:
+  `deno check` + 71 testes Deno ok; colunas `nome_fr`/`nome_hi` conferidas
+  no banco (1.649 alimentos com hindi). Sem login responde 401 (ok).
+- **Histórico em camadas conferido no banco:** 2 das 4 respostas do Life
+  desde 27/10 gravaram `resumo`, nenhuma deixou `[[RESUMO` no texto. Log
+  de tokens separado funciona: ~5.700 de entrada e ~20–80 de saída por
+  mensagem (`camadas-v1`). A entrada é quase toda o roteiro do Life —
+  dividir o `PROMPT_LIFE` continua sendo o próximo ganho de custo.
+- **Termos e Política em francês e hindi** (`legal/documentos.ts`):
+  tradução fiel do inglês (mesmas seções, mesmos [campos] a preencher),
+  francês com "tu", menu "Profil > Confidentialité et données" e CNIL como
+  exemplo de autoridade; hindi com "आप". `VERSAO_DOCUMENTOS` não mudou
+  (só tradução). Precisa revisão de advogado, como as outras versões.
+
+Validado: typecheck, build, deno check, 71 testes Deno.
+
+**Pendências:** push das branches `revisao-completa-ajustes` e
+`idiomas-orbital` (token do GitHub) + PR pra `main`; frase de boas-vindas
++ Life da 1ª tela (refazer com o dono); APK novo pra testar; chaves do
+RevenueCat (`VITE_RC_GOOGLE_KEY` no .env e no GitHub Actions,
+`RC_SECRET_KEY` e `RC_WEBHOOK_AUTH` no Supabase), `google-services.json`
+(FCM), `facebookAppId`, SMTP Brevo e URL de produção no Supabase Auth.
