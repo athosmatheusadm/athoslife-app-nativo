@@ -3813,3 +3813,37 @@ Live Activity precisa de APK.
 3. Do que o dono autorizou e ficou pra próxima: apagar dados de teste do
    gráfico, Jiló em hindi, limpar textos do onboarding antigo, modo claro no
    Onboarding/Consentimento, "Leaked password protection", push + PR com o token.
+
+## 2026-10-30 (2) — deploy da ai-proxy, rede lenta, limpeza e GitHub
+
+Dono: "termine o que você começou" + autorizou o deploy da ai-proxy e mandou
+o token do GitHub (usado só na hora, não fica salvo no PC).
+- **ai-proxy publicada** (versão 35): timeout do check-in 15→6 s. Conferido
+  que a função sobe (responde `not_authenticated` com a chave anon).
+- **Rede lenta (`lerComCache`):** com cópia guardada, a tela espera a rede
+  no máximo 2,5 s; passou disso mostra a cópia e a resposta grava por trás
+  pra próxima leitura. Sem cópia, espera a rede como antes. A busca de trás
+  não grava se um registro mexeu na cópia enquanto ela estava no ar
+  (`versoes` em cache.ts), então não "apaga" o que a pessoa acabou de fazer.
+  7 testes isolados (rede rápida, lenta, sem cópia, falha por trás, registro
+  no meio) passaram; não há executor de testes JS no projeto.
+- **Textos do onboarding antigo:** bloco `onboarding` dos 5 idiomas ficou só
+  com os 6 textos ainda usados (erroIdade, treino.casa/academia,
+  confirmar.*). ~600 linhas a menos.
+- **Jiló em hindi:** करेला é outro legume (melão-de-são-caetano); virou
+  कड़वा बैंगन ("berinjela amarga"), igual aos outros idiomas.
+- **Modo claro no Consentimento:** já segue o tema (só tokens). Escuro é o
+  padrão do app; o onboarding novo é o HTML do dono e fica como ele fez.
+- **Bloqueado pelo modo automático (precisa do dono):** apagar os dados de
+  teste (120 itens `[teste]` em itens_refeicao + 19 pesos com
+  created_at=2000-01-01, todos da conta matheusecomerc; a pesagem real de
+  27/09 fica) e ligar "Leaked password protection" (`password_hibp_enabled`).
+
+Validado: typecheck, build, 71 testes Deno das Edge Functions, 7 testes do
+cache. Não visto no aparelho.
+
+**Pendências**
+1. Dono: apagar dados de teste + ligar proteção de senha vazada (ou liberar).
+2. APK pra testar no celular (onboarding no WebView, Live Activity, paywall).
+3. Secret `VITE_RC_GOOGLE_KEY` no GitHub; RevenueCat webhook; Firebase.
+4. Trocar o token do GitHub (foi colado no chat).

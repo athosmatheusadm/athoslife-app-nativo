@@ -218,7 +218,7 @@ window.ATHOS_TEXTOS = {
   'Fígado': ['Liver', 'Hígado', 'Foie', 'कलेजी'],
   'Coentro': ['Cilantro', 'Cilantro', 'Coriandre', 'धनिया'],
   'Pimentão': ['Bell pepper', 'Pimiento', 'Poivron', 'शिमला मिर्च'],
-  'Jiló': ['Bitter eggplant', 'Berenjena amarga', 'Aubergine amère', 'करेला'],
+  'Jiló': ['Bitter eggplant', 'Berenjena amarga', 'Aubergine amère', 'कड़वा बैंगन'],
   'Berinjela': ['Eggplant', 'Berenjena', 'Aubergine', 'बैंगन'],
   'Leite': ['Milk', 'Leche', 'Lait', 'दूध'],
 

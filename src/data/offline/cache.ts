@@ -16,6 +16,20 @@ import { usuarioId } from './usuario'
  */
 const chaveCache = (uid: string, chave: string) => `${uid}:c:${chave}`
 
+/**
+ * Com cópia guardada, quanto a tela espera a rede antes de mostrar a cópia.
+ * A busca segue por trás e grava a resposta pra próxima leitura.
+ */
+const ESPERA_REDE_COM_COPIA_MS = 2_500
+
+/**
+ * Quantas vezes cada cópia foi mexida por registro (`mexerNoCache`). A busca
+ * que terminou por trás só grava se ninguém mexeu na cópia enquanto ela
+ * estava no ar — senão apagaria o que a pessoa acabou de registrar.
+ */
+const versoes = new Map<string, number>()
+const versao = (k: string) => versoes.get(k) ?? 0
+
 interface Opcoes<T> {
   /**
    * O que devolver sem rede quando nunca houve cópia. Pra listas "do dia",
@@ -51,11 +65,34 @@ export async function lerComCache<T>(chave: string, buscar: () => Promise<T>, op
     // servidor não — melhor mostrar a cópia que "apagar" o que a pessoa fez.
     const salvoAntes = (await pendentes(uid)) > 0 ? await lerLocal<T>(k) : undefined
     if (salvoAntes !== undefined) return opcoes.ajustarCopia ? opcoes.ajustarCopia(salvoAntes) : salvoAntes
-    try {
-      const valor = await buscar()
+    const antes = versao(k)
+    const gravar = async (valor: T) => {
+      if (versao(k) !== antes) return
       await gravarLocal(k, valor)
       if (opcoes.validadeMs) await gravarLocal(kEm, Date.now())
-      return valor
+    }
+    const copiaGuardada = await lerLocal<T>(k)
+    const pedido = buscar()
+    try {
+      if (copiaGuardada === undefined) {
+        const valor = await pedido
+        await gravar(valor)
+        return valor
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const demorou = new Promise<'demorou'>((ok) => {
+        timer = setTimeout(() => ok('demorou'), ESPERA_REDE_COM_COPIA_MS)
+      })
+      const r = await Promise.race([pedido.then((valor) => ({ valor })), demorou]).finally(() => clearTimeout(timer))
+      if (r !== 'demorou') {
+        await gravar(r.valor)
+        return r.valor
+      }
+      // Rede lenta: mostra a cópia agora e deixa a resposta chegar por trás.
+      pedido.then(gravar).catch((e) => {
+        if (ehFalhaDeRede(e)) marcarFalhaDeRede()
+      })
+      return opcoes.ajustarCopia ? opcoes.ajustarCopia(copiaGuardada) : copiaGuardada
     } catch (e) {
       if (!ehFalhaDeRede(e)) throw e
       marcarFalhaDeRede()
@@ -80,7 +117,10 @@ export async function lerDoCache<T>(chave: string): Promise<T | undefined> {
 export async function mexerNoCache<T>(chave: string, fn: (atual: T | undefined) => T | undefined): Promise<void> {
   const k = chaveCache(await usuarioId(), chave)
   const novo = fn(await lerLocal<T>(k))
-  if (novo !== undefined) await gravarLocal(k, novo)
+  if (novo !== undefined) {
+    versoes.set(k, versao(k) + 1)
+    await gravarLocal(k, novo)
+  }
 }
 
 /** Lança se der pra afirmar que não há rede (pra ações que só existem online). */
