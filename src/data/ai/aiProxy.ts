@@ -2,6 +2,7 @@ import { diaLeveHoje } from '@data/diaLeve'
 import { supabase } from '@data/supabase/client'
 import { lerComCache } from '@data/offline/cache'
 import { usuarioId } from '@data/offline/usuario'
+import { dataLocalISO } from '@domain/rules/datas'
 import { ehFalhaDeRede, marcarFalhaDeRede, marcarRespostaDoServidor, valeTentarRede } from '@data/offline/conexao'
 import type { BaseScan, ResultadoVisao, VarianteOleo } from '@domain/entities/food'
 
@@ -400,18 +401,26 @@ export async function responderAcaoLife(id: string, escolha: EscolhaAcao): Promi
   return { resposta: cru.resposta, acao: cru.acao ?? null }
 }
 
-/** Últimas mensagens da conversa (RLS: só as do próprio usuário). */
+/**
+ * Mensagens de HOJE da conversa (RLS: só as do próprio usuário). O chat
+ * abre limpo a cada dia (dono, 30/10: "não precisa ficar mostrando msg
+ * passadas"); o Life continua lembrando — o ai-proxy lê o histórico e o
+ * resumo direto do banco.
+ */
 export async function carregarHistoricoChat(limite = 30): Promise<MensagemChat[]> {
   const userId = await usuarioId().catch(() => null)
   if (!userId) return []
-  // Guardado no aparelho: sem rede, a conversa continua aparecendo.
+  const inicioDoDia = new Date()
+  inicioDoDia.setHours(0, 0, 0, 0)
+  // Guardado no aparelho: sem rede, a conversa de hoje continua aparecendo.
   const data = await lerComCache(
-    `life:chat:${limite}`,
+    `life:chat:${dataLocalISO(inicioDoDia)}:${limite}`,
     async () => {
       const { data: rows, error } = await supabase
         .from('life_chat_mensagens')
         .select('autor, texto')
         .eq('user_id', userId)
+        .gte('criado_em', inicioDoDia.toISOString())
         .order('criado_em', { ascending: false })
         .limit(limite)
         .returns<MensagemChat[]>()

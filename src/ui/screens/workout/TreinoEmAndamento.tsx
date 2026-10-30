@@ -287,6 +287,11 @@ function Controles(props: { sessao: SessaoTreino; agora: number; aplicar: Aplica
           mais={toque((x) => ajustarCarga(x, PASSO_CARGA_KG))}
           rotuloMenos={c.menosCarga}
           rotuloMais={c.maisCarga}
+          digitar={{
+            atual: s.cargaKg,
+            rotulo: c.digitarCarga,
+            aoMudar: (kg) => aplicar((x) => ({ ...x, cargaKg: kg })),
+          }}
         />
         <Ajuste
           valor={`${s.reps ?? 0} ${c.reps}`}
@@ -322,15 +327,57 @@ function BotaoCtl(props: { onClick: () => void; destaque?: boolean; children: st
   )
 }
 
-function Ajuste(props: { valor: string; menos: () => void; mais: () => void; rotuloMenos: string; rotuloMais: string }) {
+/**
+ * −/+ com o valor no meio. Com `digitar`, tocar no valor abre o teclado
+ * numérico: de 2,5 em 2,5 kg, chegar a 80 kg eram 32 toques (dono, 30/10).
+ */
+function Ajuste(props: {
+  valor: string
+  menos: () => void
+  mais: () => void
+  rotuloMenos: string
+  rotuloMais: string
+  digitar?: { atual: number | null; rotulo: string; aoMudar: (n: number | null) => void }
+}) {
+  const [rascunho, setRascunho] = useState<string | null>(null)
+  const d = props.digitar
+  function confirmar() {
+    if (!d || rascunho === null) return
+    const n = Number(rascunho.replace(',', '.'))
+    if (rascunho.trim() === '') d.aoMudar(null)
+    else if (Number.isFinite(n) && n >= 0 && n <= 999) d.aoMudar(n === 0 ? null : Math.round(n * 10) / 10)
+    setRascunho(null)
+  }
   return (
     <div className="flex items-center rounded-pill border border-surface-4">
       <button type="button" onClick={props.menos} aria-label={props.rotuloMenos} className="grid h-11 w-10 place-items-center text-lg font-bold text-content-mid active:scale-90">
         −
       </button>
-      <span className="min-w-[4.5rem] text-center font-mono text-sm font-semibold tabular-nums text-content-hi" aria-live="polite">
-        {props.valor}
-      </span>
+      {d && rascunho !== null ? (
+        <input
+          autoFocus
+          inputMode="decimal"
+          aria-label={d.rotulo}
+          value={rascunho}
+          onChange={(e) => setRascunho(e.target.value.replace(/[^\d.,]/g, ''))}
+          onBlur={confirmar}
+          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+          className="w-[4.5rem] bg-transparent text-center font-mono text-sm font-semibold tabular-nums text-content-hi outline-none"
+        />
+      ) : d ? (
+        <button
+          type="button"
+          aria-label={`${props.valor}. ${d.rotulo}`}
+          onClick={() => setRascunho(d.atual === null ? '' : String(d.atual))}
+          className="min-h-11 min-w-[4.5rem] text-center font-mono text-sm font-semibold tabular-nums text-content-hi underline decoration-content-low/40 decoration-dotted underline-offset-4"
+        >
+          {props.valor}
+        </button>
+      ) : (
+        <span className="min-w-[4.5rem] text-center font-mono text-sm font-semibold tabular-nums text-content-hi" aria-live="polite">
+          {props.valor}
+        </span>
+      )}
       <button type="button" onClick={props.mais} aria-label={props.rotuloMais} className="grid h-11 w-10 place-items-center text-lg font-bold text-content-mid active:scale-90">
         +
       </button>

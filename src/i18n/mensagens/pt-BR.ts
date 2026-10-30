@@ -1239,6 +1239,7 @@ export const ptBR = {
         maisSeg: 'Mais tempo',
         reps: 'reps',
         semCarga: 'sem carga',
+        digitarCarga: 'Digitar a carga em kg',
       },
       encerrar: 'Encerrar',
       parar: 'Parar',

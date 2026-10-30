@@ -3776,3 +3776,40 @@ textos novos de `m.onboarding.*` que só o antigo usava ficaram no dicionário
   do mascote, Life dourado, vídeo do Life cozinhando.
 - Dono decide se "Jiló" em hindi fica करेला.
 - Frase de boas-vindas: resolvida pelo onboarding novo (texto do dono).
+
+## 2026-10-30 — streak, Life roxo, chat do dia, Live Activity, check-in
+
+Dono autorizou tudo das pendências menos Firebase, RevenueCat e paywall
+(token do GitHub vem depois). Pedidos dele e o que foi feito:
+- **Streak da Home não contava:** as colunas `streak_atual`/`maior_streak` e
+  o trigger `handle_streak_on_open` nunca existiram no banco (card sempre 0).
+  `db/athoslife_streak_abertura_migration.sql` **APLICADA**: colunas (sem
+  GRANT UPDATE, app só lê), `streak_dia`, trigger no fuso do usuário e ponto
+  de partida pelos dias seguidos com registro (dono começou em 7). Testado
+  com bloco que desfaz: ontem +1, mesmo dia igual, buraco volta a 1 e recorde fica.
+- **Life roxo em hábito novo:** `statusHabito`/`nivelBemEstar` tratavam 0 dias
+  como recaída. Agora roxo só até 3 dias depois de uma recaída de verdade;
+  hábito sem recaída começa verde.
+- **Chat mostrava msg de dias atrás:** `carregarHistoricoChat` só traz as de
+  hoje. O Life continua lembrando (ai-proxy lê histórico/resumo do banco).
+- **Live Activity "dentro de outro quadrado" e peso espremido:** no Android
+  12+ a moldura do sistema sobrava ~24 dp pro número entre − e + ("80 kg"
+  encolhia). Número agora numa linha própria, −/+ em pílulas largas embaixo,
+  padding 14→10, OK 60→52 dp; moldura (DecoratedCustomViewStyle) só no 12+.
+  No app (TreinoEmAndamento) tocar na carga abre o teclado pra digitar
+  (de 2,5 em 2,5 kg eram 32 toques até 80 kg). Texto `digitarCarga` nos 5 idiomas.
+- **Check-in demorando:** Gemini responde em ~1,5 s mas às vezes trava e a
+  pessoa esperava 15 s (22 e 26/10). Timeout do check-in 15→6 s (cai na
+  resposta pronta). **Precisa deploy da ai-proxy.**
+
+Validado: só `npm run typecheck` (abaixo). Não visto no aparelho; layout da
+Live Activity precisa de APK.
+
+**Pendências**
+1. Deploy da ai-proxy (timeout do check-in).
+2. Lentidão geral: `lerComCache` espera sempre a rede quando há conexão; ideia
+   pronta (não aplicada): se a rede não responder em ~2,5 s e houver cópia,
+   mostrar a cópia e atualizar por trás.
+3. Do que o dono autorizou e ficou pra próxima: apagar dados de teste do
+   gráfico, Jiló em hindi, limpar textos do onboarding antigo, modo claro no
+   Onboarding/Consentimento, "Leaked password protection", push + PR com o token.

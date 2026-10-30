@@ -1225,6 +1225,7 @@ export const en: Mensagens = {
         maisSeg: 'More time',
         reps: 'reps',
         semCarga: 'no weight',
+        digitarCarga: 'Type the weight in kg',
       },
       encerrar: 'Finish',
       parar: 'Stop',

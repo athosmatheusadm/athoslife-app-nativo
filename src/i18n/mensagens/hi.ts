@@ -1232,6 +1232,7 @@ export const hi: Mensagens = {
         maisSeg: 'ज़्यादा समय',
         reps: 'रेप्स',
         semCarga: 'बिना वज़न',
+        digitarCarga: 'वज़न kg में लिखें',
       },
       encerrar: 'ख़त्म करें',
       parar: 'रोकें',

@@ -10,7 +10,7 @@
     android:layout_height="wrap_content"
     android:background="@drawable/athos_la_card"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="10dp">
 
     <!-- cabeçalho: miniatura, nome + série + segmentos, chip de status -->
     <LinearLayout
@@ -203,46 +203,50 @@
                 android:textColor="@color/athos_la_texto_baixo"
                 android:textSize="11sp" />
 
+            <!-- número numa linha só dele: dentro da moldura do Android 12+
+                 o espaço entre − e + não cabia "80 kg" (dono, 30/10) -->
+            <TextView
+                android:id="@+id/la_valor_a"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:layout_marginBottom="5dp"
+                android:autoSizeMaxTextSize="22sp"
+                android:autoSizeMinTextSize="15sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif-medium"
+                android:fontFeatureSettings="tnum"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textColor="@color/athos_la_texto"
+                android:textSize="22sp" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/la_a_menos"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:background="@drawable/athos_la_circulo"
+                    android:layout_width="0dp"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/athos_la_pilula"
                     android:gravity="center"
                     android:text="−"
                     android:textColor="@color/athos_la_texto"
-                    android:textSize="17sp" />
-
-                <TextView
-                    android:id="@+id/la_valor_a"
-                    android:layout_width="0dp"
-                    android:layout_height="30dp"
-                    android:layout_weight="1"
-                    android:autoSizeMaxTextSize="21sp"
-                    android:autoSizeMinTextSize="12sp"
-                    android:autoSizeTextType="uniform"
-                    android:fontFamily="sans-serif-medium"
-                    android:fontFeatureSettings="tnum"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:textColor="@color/athos_la_texto"
-                    android:textSize="21sp" />
+                    android:textSize="19sp" />
 
                 <TextView
                     android:id="@+id/la_a_mais"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:background="@drawable/athos_la_circulo"
+                    android:layout_width="0dp"
+                    android:layout_height="34dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/athos_la_pilula"
                     android:gravity="center"
                     android:text="+"
                     android:textColor="@color/athos_la_texto"
-                    android:textSize="17sp" />
+                    android:textSize="19sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -268,52 +272,56 @@
                 android:textColor="@color/athos_la_texto_baixo"
                 android:textSize="11sp" />
 
+            <!-- número numa linha só dele: dentro da moldura do Android 12+
+                 o espaço entre − e + não cabia "80 kg" (dono, 30/10) -->
+            <TextView
+                android:id="@+id/la_valor_b"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:layout_marginBottom="5dp"
+                android:autoSizeMaxTextSize="22sp"
+                android:autoSizeMinTextSize="15sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif-medium"
+                android:fontFeatureSettings="tnum"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textColor="@color/athos_la_texto"
+                android:textSize="22sp" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/la_b_menos"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:background="@drawable/athos_la_circulo"
+                    android:layout_width="0dp"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/athos_la_pilula"
                     android:gravity="center"
                     android:text="−"
                     android:textColor="@color/athos_la_texto"
-                    android:textSize="17sp" />
-
-                <TextView
-                    android:id="@+id/la_valor_b"
-                    android:layout_width="0dp"
-                    android:layout_height="30dp"
-                    android:layout_weight="1"
-                    android:autoSizeMaxTextSize="21sp"
-                    android:autoSizeMinTextSize="12sp"
-                    android:autoSizeTextType="uniform"
-                    android:fontFamily="sans-serif-medium"
-                    android:fontFeatureSettings="tnum"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:textColor="@color/athos_la_texto"
-                    android:textSize="21sp" />
+                    android:textSize="19sp" />
 
                 <TextView
                     android:id="@+id/la_b_mais"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:background="@drawable/athos_la_circulo"
+                    android:layout_width="0dp"
+                    android:layout_height="34dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/athos_la_pilula"
                     android:gravity="center"
                     android:text="+"
                     android:textColor="@color/athos_la_texto"
-                    android:textSize="17sp" />
+                    android:textSize="19sp" />
             </LinearLayout>
         </LinearLayout>
 
         <FrameLayout
             android:id="@+id/la_ok"
-            android:layout_width="60dp"
+            android:layout_width="52dp"
             android:layout_height="match_parent"
             android:background="@drawable/athos_la_ok">
 

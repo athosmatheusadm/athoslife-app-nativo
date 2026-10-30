@@ -1225,6 +1225,7 @@ export const es: Mensagens = {
         maisSeg: 'Más tiempo',
         reps: 'reps',
         semCarga: 'sin peso',
+        digitarCarga: 'Escribir el peso en kg',
       },
       encerrar: 'Terminar',
       parar: 'Parar',

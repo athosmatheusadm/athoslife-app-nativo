@@ -2459,7 +2459,9 @@ async function handleCheckin(sb: Sb, userId: string, corpo: Record<string, unkno
         systemInstruction: { parts: [{ text: sistema }] },
         contents: [{ role: 'user', parts: [{ text: promptCheckin(c) }] }],
         generationConfig: configGeracao(160, 0.7),
-      }, 15_000)
+        // Normal é ~1,5 s; quando o Gemini trava, a pessoa ficava 15 s olhando
+        // "salvando" (logs de 22 e 26/10). Passou de 6 s, vai a resposta pronta.
+      }, 6_000)
       let txt = g.ok ? extrairMarcasMemoria(g.texto.trim()).texto.replace(MARCA_FORA, '').trim() : ''
       if (!txt || txt.length > 300 || violaPrescricao(txt)) {
         txt = respostaCheckinPadrao(c, loc.idioma)

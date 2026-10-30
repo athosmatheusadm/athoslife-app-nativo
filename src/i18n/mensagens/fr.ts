@@ -1231,6 +1231,7 @@ export const fr: Mensagens = {
         maisSeg: 'Plus de temps',
         reps: 'rép.',
         semCarga: 'sans charge',
+        digitarCarga: 'Saisir la charge en kg',
       },
       encerrar: 'Terminer',
       parar: 'Arrêter',

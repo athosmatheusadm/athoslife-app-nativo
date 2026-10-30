@@ -100,8 +100,13 @@ function diasEntre(deISO: string, ateISO: string): number {
 }
 
 /** "Atenção" é alerta sóbrio (streak recente, mais frágil), nunca punição. */
-export function statusHabito(h: Pick<Habito, 'streakAtual'>): StatusHabito {
-  return h.streakAtual <= 3 ? 'atencao' : 'firme'
+/**
+ * Roxo é só para quem acabou de tropeçar (até 3 dias depois da recaída).
+ * Hábito novo, sem recaída nenhuma, começa verde: começo não é recaída
+ * (dono, 30/10 — o Life ficava roxo desde o 1º dia).
+ */
+export function statusHabito(h: Pick<Habito, 'streakAtual' | 'ultimaRecaida'>): StatusHabito {
+  return h.ultimaRecaida !== null && h.streakAtual <= 3 ? 'atencao' : 'firme'
 }
 
 export function progressoConquista(streak: number, meta: number): number {
@@ -119,11 +124,16 @@ export function faltamParaConquista(streak: number, meta: number): number {
  * "Termômetro" do Life: nível agregado de bem-estar do usuário nos hábitos,
  * 0 (preocupante, roxo) a 100 (tranquilo, verde). Usa só o streak — que já
  * zera sozinho numa recaída (ver habitosRepository) — sem inventar peso novo.
- * 14 dias (mesmo marco de proximaConquista) conta como "tranquilo total".
+ * 14 dias depois da recaída (mesmo marco de proximaConquista) volta ao
+ * "tranquilo total". Hábito sem recaída nenhuma conta como tranquilo: o
+ * começo de um hábito não é motivo de preocupação.
  */
-export function nivelBemEstar(habitos: readonly Habito[]): number {
+export function nivelBemEstar(habitos: readonly Pick<Habito, 'streakAtual' | 'ultimaRecaida'>[]): number {
   if (habitos.length === 0) return 100
-  const soma = habitos.reduce((acc, h) => acc + Math.min(100, (h.streakAtual / 14) * 100), 0)
+  const soma = habitos.reduce(
+    (acc, h) => acc + (h.ultimaRecaida === null ? 100 : Math.min(100, (h.streakAtual / 14) * 100)),
+    0,
+  )
   return Math.round(soma / habitos.length)
 }
 

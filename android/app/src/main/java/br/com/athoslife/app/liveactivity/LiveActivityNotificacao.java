@@ -65,7 +65,6 @@ final class LiveActivityNotificacao {
                 .setColor(ContextCompat.getColor(ctx, R.color.athos_la_lima))
                 .setContentTitle(e.concluida() ? ctx.getString(R.string.la_concluido) : e.nome())
                 .setContentText(subtitulo(ctx, e))
-                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(pequeno)
                 .setCustomBigContentView(grande)
                 .setContentIntent(aoTocar)
@@ -76,6 +75,12 @@ final class LiveActivityNotificacao {
                 .setCategory(NotificationCompat.CATEGORY_PROGRESS)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        // Android 12+ sempre põe a moldura do sistema; antes dele, a moldura
+        // só encolhia o card do mockup (dono, 30/10: "dentro de outro quadrado").
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            b.setStyle(new NotificationCompat.DecoratedCustomViewStyle());
+        }
 
         try {
             nm.notify(ID, b.build());
