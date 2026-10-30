@@ -1,0 +1,278 @@
+/*
+ * Versão clara do onboarding (pedido do dono, 30/10). O HTML dele é escuro e
+ * fica intacto; isto só vale com `html.tema-claro`, que o ponte.js liga quando
+ * o app está no modo claro (Perfil > Acessibilidade > Tema, ou Automático com
+ * o celular claro). Mesmas cores do modo claro do app (src/ui/theme/globals.css):
+ * fundo branco, verde #16a34a, textos #111814 / #57606c.
+ */
+
+html.tema-claro {
+  color-scheme: light;
+  --ob-bg: #ffffff;
+  --ob-ink: #111814;
+  --ob-muted: #57606c;
+  --ob-green: #15803d;
+  --ob-line: #dce2dd;
+}
+html.tema-claro body {
+  background: #f4f7f5;
+}
+
+/* ------------------------------------------------------------ telas gerais */
+html.tema-claro .ob-progress {
+  background: #e3e8e4;
+}
+html.tema-claro .ob-progress div {
+  background: #16a34a;
+}
+html.tema-claro .ob-field textarea,
+html.tema-claro .ob-tag-form input,
+html.tema-claro .ob-tag-form button {
+  background: #f6f8f6;
+  border-color: #cfd8d1;
+}
+html.tema-claro .ob-options input:checked + span,
+html.tema-claro .ob-tile input:checked + span,
+html.tema-claro .ob-chips button.on {
+  background: #16a34a14;
+}
+html.tema-claro #ob-next {
+  background: #16a34a;
+  color: #ffffff;
+}
+html.tema-claro #ob-error,
+html.tema-claro #ob-save-error {
+  color: #c2410c;
+}
+html.tema-claro .ob-meal-number input {
+  border-bottom-color: #b9c3bc;
+  color: var(--ob-ink);
+}
+html.tema-claro .ob-supp-search {
+  border-bottom-color: #b9c3bc;
+}
+html.tema-claro .ob-supp-search input {
+  color: var(--ob-ink);
+}
+html.tema-claro #ob-supp-results {
+  background: #ffffff;
+  border-color: #dce2dd;
+  box-shadow: 0 8px 24px #11181414;
+}
+html.tema-claro #ob-supp-results button {
+  color: var(--ob-ink);
+  border-bottom-color: #e6ebe7;
+}
+html.tema-claro #ob-supp-results button:hover {
+  background: #16a34a10;
+}
+html.tema-claro .ob-supp-row small {
+  color: #6b7580;
+}
+html.tema-claro .ob-footer {
+  background: linear-gradient(#ffffff00, #fffffff2 22px, #ffffff);
+}
+html.tema-claro .ob-bubble,
+html.tema-claro .ob-bubble::before {
+  background: #f1f5f2;
+  border-color: #dce2dd;
+  color: var(--ob-ink);
+}
+html.tema-claro .lv-shadow i {
+  background: radial-gradient(closest-side, #0003, #0000);
+}
+html.tema-claro .ob-tile span {
+  background: #f6f8f6;
+}
+html.tema-claro .ob-chips button {
+  border-color: #b9c3bc;
+  color: #374151;
+}
+html.tema-claro .ob-chips button.on.neg {
+  border-color: #e11d48;
+  background: #e11d4810;
+  color: #be123c;
+}
+html.tema-claro .ob-orbit athos-language-orbit {
+  --athos-orbit-bg: #ffffff;
+  --athos-orbit-accent: #16a34a;
+}
+
+/* ------------------------------------------- seletor de idioma, réguas, sono */
+html.tema-claro #athos-orbit-preview,
+html.tema-claro #athos-body-rulers-swipe,
+html.tema-claro #athos-sleep-dial,
+html.tema-claro #athos-water-life {
+  color-scheme: light;
+}
+html.tema-claro #athos-orbit-preview .ao-surface {
+  --ao-bg: #ffffff;
+  --ao-ink: #111814;
+  --ao-muted: #57606c;
+  --ao-line: #cfd8d1;
+  --ao-lime: #16a34a;
+  --ao-dot: #a7b2aa;
+  --ao-tag: #ffffff;
+}
+html.tema-claro #athos-body-rulers-swipe .br-app {
+  --br-bg: #ffffff;
+  --br-panel: #f6f8f6;
+  --br-text: #111814;
+  --br-muted: #57606c;
+  --br-accent: #16a34a;
+  --br-line: #dce2dd;
+  --br-tape: #e8f6ec;
+  --br-tick: #78866b;
+}
+html.tema-claro #athos-body-rulers-swipe .br-continue {
+  background: #16a34a;
+  color: #ffffff;
+}
+html.tema-claro #athos-sleep-dial .sd-surface {
+  --sd-bg: #ffffff;
+  --sd-ink: #111814;
+  --sd-muted: #57606c;
+  --sd-line: #dce2dd;
+  --sd-accent: #16a34a;
+  --sd-center: #f6f8f6;
+}
+
+/* ----------------------------------------------------------------- hábitos */
+html.tema-claro #athos-habits-test .ah-app {
+  background: #ffffff;
+  color: #111814;
+}
+html.tema-claro #athos-habits-test header span,
+html.tema-claro #athos-habits-test .ah-eyebrow,
+html.tema-claro #athos-habits-test .ah-none[aria-pressed="true"],
+html.tema-claro #athos-habits-test form button {
+  color: #15803d;
+}
+html.tema-claro #athos-habits-test .ah-add[aria-pressed="true"] {
+  color: #15803d;
+  border-color: #16a34a;
+}
+html.tema-claro #athos-habits-test small,
+html.tema-claro #athos-habits-test .ah-sub,
+html.tema-claro #athos-habits-test .ah-count,
+html.tema-claro #athos-habits-test .ah-prev,
+html.tema-claro #athos-habits-test .ah-next,
+html.tema-claro #athos-habits-test .ah-hint,
+html.tema-claro #athos-habits-test .ah-description,
+html.tema-claro #athos-habits-test .ah-selected,
+html.tema-claro #athos-habits-test .ah-none,
+html.tema-claro #athos-habits-test .ah-back,
+html.tema-claro #athos-habits-test .ah-feedback {
+  color: #57606c;
+}
+html.tema-claro #athos-habits-test .ah-progress {
+  background: #e3e8e4;
+}
+html.tema-claro #athos-habits-test .ah-progress div,
+html.tema-claro #athos-habits-test .ah-dash {
+  background: #16a34a;
+}
+html.tema-claro #athos-habits-test input:focus-visible {
+  outline-color: #16a34a;
+}
+html.tema-claro #athos-habits-test .ah-add {
+  border-color: #b9c3bc;
+}
+html.tema-claro #athos-habits-test .ah-selected {
+  border-top-color: #dce2dd;
+}
+html.tema-claro #athos-habits-test .ah-chips button {
+  border-color: #cfd8d1;
+  color: #374151;
+}
+html.tema-claro #athos-habits-test .ah-continue {
+  background: #16a34a;
+  color: #ffffff;
+}
+html.tema-claro #athos-habits-test input {
+  background: #f6f8f6;
+  border-color: #cfd8d1;
+  color: #111814;
+}
+
+/* -------------------------------------------------------------------- água */
+html.tema-claro #athos-water-life .aw-app {
+  background: radial-gradient(#eaf6fb 0%, #f5fafc 37%, #ffffff 80%);
+  color: #111814;
+}
+html.tema-claro #athos-water-life header strong span,
+html.tema-claro #athos-water-life .aw-unknown,
+html.tema-claro #athos-water-life .aw-form button,
+html.tema-claro #athos-water-life .aw-stress input:checked + span {
+  color: #15803d;
+}
+html.tema-claro #athos-water-life .aw-step,
+html.tema-claro #athos-water-life .aw-eyebrow,
+html.tema-claro #athos-water-life .aw-intro,
+html.tema-claro #athos-water-life .aw-edit svg,
+html.tema-claro #athos-water-life .aw-helper,
+html.tema-claro #athos-water-life .aw-form label,
+html.tema-claro #athos-water-life .aw-stress label,
+html.tema-claro #athos-water-life .aw-status,
+html.tema-claro #athos-water-life .aw-footer button {
+  color: #57606c;
+}
+html.tema-claro #athos-water-life .aw-progress {
+  background: #16a34a;
+}
+html.tema-claro #athos-water-life input:focus-visible,
+html.tema-claro #athos-water-life .aw-stress input:focus-visible + span {
+  outline-color: #16a34a;
+}
+html.tema-claro #athos-water-life .aw-form input {
+  background: #f6f8f6;
+  border-color: #cfd8d1;
+  color: #111814;
+}
+html.tema-claro #athos-water-life .aw-error {
+  color: #c2410c;
+}
+html.tema-claro #athos-water-life .aw-finish {
+  background: #16a34a;
+  color: #ffffff;
+}
+html.tema-claro #athos-water-life .aw-floor {
+  background: radial-gradient(ellipse, #0b3a5226, transparent 70%);
+}
+html.tema-claro #athos-water-life .aw-vessel {
+  filter: drop-shadow(0 6px 5px #0b3a521f);
+}
+/* O copo era desenhado em traços claros sobre o escuro: no branco ganha contorno azul. */
+html.tema-claro #athos-water-life .aw-vessel [stroke="#c7e4f1"],
+html.tema-claro #athos-water-life .aw-vessel [stroke="#e8f7ff"],
+html.tema-claro #athos-water-life .aw-vessel [stroke="#ceecfa"],
+html.tema-claro #athos-water-life .aw-vessel [stroke="#d0f2ff"] {
+  stroke: #6fa9c4;
+}
+html.tema-claro #athos-water-life .aw-vessel [fill="#121e25"] {
+  fill: #dff1f9;
+}
+html.tema-claro #athos-water-life .aw-vessel [fill="#d0f2ff"] {
+  fill: #9fd3ea;
+}
+
+/* ----------------------------------------- ajustes vistos no passeio (30/10) */
+/* O HTML pinta o texto de todos os módulos de branco (#f5f7f7). */
+html.tema-claro #athos-habits-test {
+  color-scheme: light;
+}
+html.tema-claro #athos-orbit-preview .ao-surface,
+html.tema-claro #athos-body-rulers-swipe .br-app,
+html.tema-claro #athos-sleep-dial .sd-surface,
+html.tema-claro #athos-habits-test .ah-app,
+html.tema-claro #athos-water-life .aw-app {
+  color: #111814;
+}
+html.tema-claro .ob-field input {
+  background: #f6f8f6;
+  border-color: #cfd8d1;
+}
+/* Hábito marcado: o script pinta de verde-claro direto no elemento. */
+html.tema-claro #athos-habits-test .ah-current[style*="165, 249, 98"] {
+  color: #15803d !important;
+}

@@ -19,8 +19,11 @@ import { paraDadosOnboarding, type RespostasNovo } from './onboarding/respostasN
  * grava nada; no fim recarrega a página.
  */
 
-/** Fundo da página do onboarding (--ob-bg do HTML do dono): emenda com a barra de status. */
-const FUNDO_ONBOARDING = '#12191d'
+/**
+ * Fundo da página do onboarding (--ob-bg do HTML do dono; branco na versão
+ * clara, public/onboarding/claro.css): emenda com a barra de status.
+ */
+const FUNDO_ONBOARDING = 'bg-[#12191d] [.tema-claro_&]:bg-white'
 
 type MensagemPagina =
   | { origem: 'athos-onboarding'; tipo: 'pronto' | 'sair' }
@@ -95,7 +98,7 @@ export function OnboardingNovo({ previa = false }: { previa?: boolean } = {}) {
   }, [navigate, previa, trocarIdioma])
 
   return (
-    <main className="fixed inset-0 flex flex-col pb-safe-b pt-safe-t" style={{ background: FUNDO_ONBOARDING }}>
+    <main className={`fixed inset-0 flex flex-col pb-safe-b pt-safe-t ${FUNDO_ONBOARDING}`}>
       <iframe ref={frame} src={src} title="ATHOSlife" className="w-full flex-1 border-0" />
     </main>
   )

@@ -3847,3 +3847,31 @@ cache. Não visto no aparelho.
 2. APK pra testar no celular (onboarding no WebView, Live Activity, paywall).
 3. Secret `VITE_RC_GOOGLE_KEY` no GitHub; RevenueCat webhook; Firebase.
 4. Trocar o token do GitHub (foi colado no chat).
+
+## 2026-10-30 (3) — app segue o celular e onboarding com versão clara
+
+Dono perguntou se o modo claro/escuro acompanha o celular (não acompanhava)
+e pediu as duas opções:
+- **Tema padrão = Automático** (`ui/theme/tema.ts`): sem escolha salva, segue
+  o celular. Escuro/Claro agora ficam salvos (antes "escuro" = sem chave),
+  então quem tinha escolhido Escuro antes passa a Automático uma vez.
+  Consentimento já usava tokens e segue junto.
+- **Onboarding claro** como camada separada, o HTML do dono continua igual:
+  `public/onboarding/claro.css` (só com `html.tema-claro`; cores do modo
+  claro do app) + `tema.js` no `<head>` (sem piscar escuro): dentro do app
+  copia a classe do `<html>` do app e acompanha ao vivo; aberta sozinha segue
+  o celular; `?tema=claro|escuro` força. Fundo em volta do iframe
+  (`OnboardingNovo.tsx`) também troca.
+- Validado: passeio automático completo no claro (53 telas, sem erro de
+  script, dados entregues no fim) e no escuro (igual a antes); teste do
+  iframe trocando de tema ao vivo; typecheck e build.
+
+**Ícone do mascote:** código conferido (3 alias, troca ao sair do app,
+alarmes de sono/meia-noite) e sem erro aparente. O APK do dono não troca
+porque é anterior a 25/10 ou recebeu o código só pela atualização ao vivo
+(que não leva código nativo). Precisa de APK novo; o dourado vem com
+calorias 90–110% da meta ou conquista desbloqueada no dia, o sono só com
+horários salvos em Perfil > Notificações, e a troca acontece ao sair do app.
+
+**Pendências:** APK novo (ícone, onboarding claro/escuro no WebView, Live
+Activity, paywall); o resto segue do bloco anterior.

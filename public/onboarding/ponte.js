@@ -5,7 +5,7 @@
  * Página -> app: pronto | idioma { idioma } | concluir { dados } | sair (voltar na 1ª tela)
  * App -> página: voltar | salvando { texto } | erro { texto }
  *
- * Parâmetros da URL: idioma, unidades (metric|imperial), nome.
+ * Parâmetros da URL: idioma, unidades (metric|imperial), nome. Tema claro/escuro: tema.js.
  */
 ;(function () {
   'use strict'
