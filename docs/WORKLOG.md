@@ -3961,5 +3961,4 @@ oferecer a pausa justo no momento pesado. Mudanças no `PROMPT_LIFE`:
 - Resposta fixa de crise (CVV etc.): tirado "sou uma IA e não consigo te
   ajudar"; agora "você importa" + "eu continuo aqui do seu lado", 5 idiomas.
 
-Validado: 71 testes Deno, deno check. **Precisa deploy da ai-proxy**
-(bloqueado pelo modo automático; aguardando o dono autorizar).
+Validado: 71 testes Deno, deno check. **ai-proxy publicada (versão 36)** com autorização do dono.
