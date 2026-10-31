@@ -3875,3 +3875,26 @@ horários salvos em Perfil > Notificações, e a troca acontece ao sair do app.
 
 **Pendências:** APK novo (ícone, onboarding claro/escuro no WebView, Live
 Activity, paywall); o resto segue do bloco anterior.
+
+## 2026-10-30 (4) — água travada e selo "sem internet" preso
+
+Relato do teste: água "travou, não deixava colocar nada"; selo de offline
+ficou preso na tela do dono.
+- **Causa comum:** o fetch do Supabase só cortava `/rest/`. A renovação da
+  sessão (`/auth/`) em sinal ruim ficava pendurada e o supabase-js segura
+  todo pedido ao banco esperando a sessão → gravação nunca terminava, a fila
+  (`rodando`) ficava presa e tudo que espera por ela também.
+  - `client.ts`: corte de 15 s em `/auth/v1/`.
+  - `fila.ts`: teto de 20 s por operação (`executar`); passou disso vai pra
+    fila e repete depois (idempotente). Teste simulando servidor mudo: antes
+    preso pra sempre, agora fila em 20 s e o 2º gole na hora.
+- **Selo preso:** só uma resposta do servidor tirava o "sem internet"; numa
+  tela parada nada perguntava. `sincronia.ts`: enquanto offline, testa
+  `/auth/v1/health` a cada 10 s e ao voltar pro app (`testarConexao`).
+- **Card de água otimista** (`useAgua.ts`): o número sobe no toque; o "−"
+  espera o gole otimista virar registro de verdade.
+- Widget da tela inicial (Android): código revisado, sem causa achada;
+  quadros pequenos (232×320). Falta saber do testador se era o widget ou o
+  card e a marca do celular.
+
+Validado: typecheck, build, teste do servidor mudo. Não visto no aparelho.

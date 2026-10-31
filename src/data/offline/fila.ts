@@ -59,7 +59,23 @@ export function novoId(): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }
 
-async function executar(o: Operacao): Promise<{ error: unknown }> {
+/**
+ * Teto de uma gravação inteira (sessão + pedido). Os cortes do fetch
+ * (client.ts) já resolvem quase sempre; isto garante que nenhuma gravação
+ * prenda a fila — e tudo que espera por ela — se algo travar no meio.
+ * Repetir depois é seguro (operações idempotentes, ver acima).
+ */
+const TEMPO_MAX_OPERACAO_MS = 20_000
+
+function executar(o: Operacao): Promise<{ error: unknown }> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const teto = new Promise<{ error: unknown }>((ok) => {
+    timer = setTimeout(() => ok({ error: new Error('operation timed out') }), TEMPO_MAX_OPERACAO_MS)
+  })
+  return Promise.race([executarSemTeto(o), teto]).finally(() => clearTimeout(timer))
+}
+
+async function executarSemTeto(o: Operacao): Promise<{ error: unknown }> {
   try {
     if (o.op === 'rpc') return await supabase.rpc(o.fn, o.args)
     if (o.op === 'upsert') {
