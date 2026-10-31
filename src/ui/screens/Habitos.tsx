@@ -6,6 +6,7 @@ import { cancelarLembrete } from '@data/notifications/habitReminders'
 import type { Habito } from '@domain/entities/habito'
 import { LifeMascote } from '@ui/components/LifeMascote'
 import { useI18n } from '@/i18n/I18nProvider'
+import { temAcessoPremium } from '@domain/rules/access'
 import { HabitsScreen } from './habits/HabitsScreen'
 import { avisar, vibrar } from '@ui/feedback'
 
@@ -41,7 +42,6 @@ export function Habitos() {
     <HabitsScreen
       habitos={habitos}
       carregando={carregando}
-      maiorStreak={profile.maiorStreak}
       insightIA={null}
       onRegistrarTropeco={(habitoId) => {
         void habitosRepository
@@ -71,6 +71,9 @@ export function Habitos() {
         recarregar()
       }}
       onCriarHabito={async (params) => {
+        // A regra é do banco (limitar_habitos_gratis); conferir aqui evita
+        // aceitar offline um hábito que o servidor recusaria depois.
+        if (!temAcessoPremium(profile) && habitos.length >= 1) throw new Error('limite_habitos_gratis')
         await habitosRepository.criar(params)
         recarregar()
       }}

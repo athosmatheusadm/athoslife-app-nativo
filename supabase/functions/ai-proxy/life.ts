@@ -5,7 +5,11 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 
 type Sb = SupabaseClient
-export type Idioma = 'pt-BR' | 'en' | 'es'
+export type Idioma = 'pt-BR' | 'en' | 'es' | 'fr' | 'hi'
+
+/** Hábitos "construir" (aumentar). Igual a CATEGORIAS_CONSTRUIR do app e a public.categoria_construir no banco. */
+const CATEGORIAS_CONSTRUIR = new Set(['leitura', 'sono', 'agua', 'meditar', 'caminhar', 'verduras', 'construir'])
+export const ehConstruir = (categoria: string | null) => categoria !== null && CATEGORIAS_CONSTRUIR.has(categoria)
 
 const norm = (t: string) =>
   t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
@@ -25,6 +29,7 @@ export interface Lembranca { categoria: CategoriaMemoria; texto: string; data: s
 const MARCA_LEMBRAR = /\[\[\s*LEMBRAR\s*:\s*([^\]|]+?)\s*\|\s*([^\]|]+?)\s*(?:\|\s*(\d{4}-\d{2}-\d{2})\s*)?\]\]/gi
 const MARCA_ESQUECER = /\[\[\s*ESQUECER\s*:\s*([^\]]+?)\s*\]\]/gi
 const MARCA_QUALQUER = /\[\[\s*(LEMBRAR|ESQUECER)\b[^\]]*\]\]/gi
+const MARCA_ABERTA_NO_FIM = /\[\[\s*(LEMBRAR|ESQUECER)\b[^\]]*\]?$/i
 
 export function extrairMarcasMemoria(resposta: string): { texto: string; lembrar: Lembranca[]; esquecer: string[] } {
   const lembrar: Lembranca[] = []
@@ -36,7 +41,9 @@ export function extrairMarcasMemoria(resposta: string): { texto: string; lembrar
     lembrar.push({ categoria, texto: m[2].trim().slice(0, 200), data })
   }
   for (const m of resposta.matchAll(MARCA_ESQUECER)) esquecer.push(m[1].trim().slice(0, 120))
-  const texto = resposta.replace(MARCA_QUALQUER, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+  // Resposta cortada no limite de tokens pode deixar "[[LEMBRAR: rotina | Trab" sem fechar: some também.
+  const texto = resposta.replace(MARCA_QUALQUER, '').replace(MARCA_ABERTA_NO_FIM, '')
+    .replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
   return { texto, lembrar: lembrar.slice(0, 2), esquecer: esquecer.slice(0, 2) }
 }
 
@@ -119,22 +126,22 @@ export function blocoPadroes(linhas: string[]): string {
 // CHECK-IN v3 — vocabulário fixo; o servidor deriva energia/agradável.
 // ================================================================
 export const SENTIMENTOS: Record<string, { e: number; a: number; rotulo: Record<Idioma, string> }> = {
-  irritado: { e: 4, a: 1, rotulo: { 'pt-BR': 'irritado', en: 'irritated', es: 'irritado' } },
-  agitado: { e: 4, a: 2, rotulo: { 'pt-BR': 'agitado', en: 'restless', es: 'agitado' } },
-  empolgado: { e: 4, a: 3, rotulo: { 'pt-BR': 'empolgado', en: 'excited', es: 'entusiasmado' } },
-  animado: { e: 4, a: 4, rotulo: { 'pt-BR': 'animado', en: 'upbeat', es: 'animado' } },
-  estressado: { e: 3, a: 1, rotulo: { 'pt-BR': 'estressado', en: 'stressed', es: 'estresado' } },
-  ansioso: { e: 3, a: 2, rotulo: { 'pt-BR': 'ansioso', en: 'anxious', es: 'ansioso' } },
-  motivado: { e: 3, a: 3, rotulo: { 'pt-BR': 'motivado', en: 'motivated', es: 'motivado' } },
-  feliz: { e: 3, a: 4, rotulo: { 'pt-BR': 'feliz', en: 'happy', es: 'feliz' } },
-  desanimado: { e: 2, a: 1, rotulo: { 'pt-BR': 'desanimado', en: 'down', es: 'desanimado' } },
-  entediado: { e: 2, a: 2, rotulo: { 'pt-BR': 'entediado', en: 'bored', es: 'aburrido' } },
-  tranquilo: { e: 2, a: 3, rotulo: { 'pt-BR': 'tranquilo', en: 'calm', es: 'tranquilo' } },
-  grato: { e: 2, a: 4, rotulo: { 'pt-BR': 'grato', en: 'grateful', es: 'agradecido' } },
-  esgotado: { e: 1, a: 1, rotulo: { 'pt-BR': 'esgotado', en: 'drained', es: 'agotado' } },
-  cansado: { e: 1, a: 2, rotulo: { 'pt-BR': 'cansado', en: 'tired', es: 'cansado' } },
-  relaxado: { e: 1, a: 3, rotulo: { 'pt-BR': 'relaxado', en: 'relaxed', es: 'relajado' } },
-  em_paz: { e: 1, a: 4, rotulo: { 'pt-BR': 'em paz', en: 'at peace', es: 'en paz' } },
+  irritado: { e: 4, a: 1, rotulo: { 'pt-BR': 'irritado', en: 'irritated', es: 'irritado', fr: 'agacé', hi: 'चिढ़ा हुआ' } },
+  agitado: { e: 4, a: 2, rotulo: { 'pt-BR': 'agitado', en: 'restless', es: 'agitado', fr: 'agité', hi: 'बेचैन' } },
+  empolgado: { e: 4, a: 3, rotulo: { 'pt-BR': 'empolgado', en: 'excited', es: 'entusiasmado', fr: 'surexcité', hi: 'बहुत उत्साहित' } },
+  animado: { e: 4, a: 4, rotulo: { 'pt-BR': 'animado', en: 'upbeat', es: 'animado', fr: 'de bonne humeur', hi: 'ख़ुशमिज़ाज' } },
+  estressado: { e: 3, a: 1, rotulo: { 'pt-BR': 'estressado', en: 'stressed', es: 'estresado', fr: 'stressé', hi: 'तनाव में' } },
+  ansioso: { e: 3, a: 2, rotulo: { 'pt-BR': 'ansioso', en: 'anxious', es: 'ansioso', fr: 'anxieux', hi: 'घबराया हुआ' } },
+  motivado: { e: 3, a: 3, rotulo: { 'pt-BR': 'motivado', en: 'motivated', es: 'motivado', fr: 'motivé', hi: 'मोटिवेटेड' } },
+  feliz: { e: 3, a: 4, rotulo: { 'pt-BR': 'feliz', en: 'happy', es: 'feliz', fr: 'heureux', hi: 'ख़ुश' } },
+  desanimado: { e: 2, a: 1, rotulo: { 'pt-BR': 'desanimado', en: 'down', es: 'desanimado', fr: 'découragé', hi: 'उदास' } },
+  entediado: { e: 2, a: 2, rotulo: { 'pt-BR': 'entediado', en: 'bored', es: 'aburrido', fr: 'qui s’ennuie', hi: 'बोर' } },
+  tranquilo: { e: 2, a: 3, rotulo: { 'pt-BR': 'tranquilo', en: 'calm', es: 'tranquilo', fr: 'tranquille', hi: 'शांत' } },
+  grato: { e: 2, a: 4, rotulo: { 'pt-BR': 'grato', en: 'grateful', es: 'agradecido', fr: 'reconnaissant', hi: 'शुक्रगुज़ार' } },
+  esgotado: { e: 1, a: 1, rotulo: { 'pt-BR': 'esgotado', en: 'drained', es: 'agotado', fr: 'épuisé', hi: 'थककर चूर' } },
+  cansado: { e: 1, a: 2, rotulo: { 'pt-BR': 'cansado', en: 'tired', es: 'cansado', fr: 'fatigué', hi: 'थका हुआ' } },
+  relaxado: { e: 1, a: 3, rotulo: { 'pt-BR': 'relaxado', en: 'relaxed', es: 'relajado', fr: 'détendu', hi: 'रिलैक्स' } },
+  em_paz: { e: 1, a: 4, rotulo: { 'pt-BR': 'em paz', en: 'at peace', es: 'en paz', fr: 'serein', hi: 'सुकून में' } },
 }
 export const ETIQUETAS = ['sono', 'trabalho', 'treino', 'comida', 'familia', 'relacionamento', 'saude', 'dinheiro', 'nada'] as const
 const ROTULO_ETIQUETA: Record<(typeof ETIQUETAS)[number], string> = {
@@ -153,7 +160,7 @@ export function validarCheckin(corpo: Record<string, unknown>, horaLocal: number
   if (!s) return null
   const momento: Momento = corpo.momento === 'manha' || corpo.momento === 'tarde' || corpo.momento === 'noite'
     ? corpo.momento
-    : horaLocal < 12 ? 'manha' : horaLocal < 18 ? 'tarde' : 'noite'
+    : horaLocal < 5 ? 'noite' : horaLocal < 12 ? 'manha' : horaLocal < 18 ? 'tarde' : 'noite'
   const etiquetas = Array.isArray(corpo.etiquetas)
     ? [...new Set(corpo.etiquetas.filter((x): x is string => typeof x === 'string' && (ETIQUETAS as readonly string[]).includes(x)))].slice(0, 6)
     : []
@@ -173,11 +180,21 @@ const ETIQUETA_IDIOMA: Record<Exclude<Idioma, 'pt-BR'>, Record<(typeof ETIQUETAS
     sono: 'sueño', trabalho: 'trabajo o estudio', treino: 'entrenamiento', comida: 'comida', familia: 'familia y amigos',
     relacionamento: 'pareja', saude: 'salud', dinheiro: 'dinero', nada: 'nada en especial',
   },
+  fr: {
+    sono: 'sommeil', trabalho: 'boulot ou études', treino: 'entraînement', comida: 'nourriture', familia: 'famille et amis',
+    relacionamento: 'couple', saude: 'santé', dinheiro: 'argent', nada: 'rien de précis',
+  },
+  hi: {
+    sono: 'नींद', trabalho: 'काम या पढ़ाई', treino: 'वर्कआउट', comida: 'खाना', familia: 'परिवार और दोस्त',
+    relacionamento: 'रिश्ता', saude: 'सेहत', dinheiro: 'पैसा', nada: 'कुछ ख़ास नहीं',
+  },
 }
 const CHECKIN_DO_MOMENTO: Record<Idioma, Record<Momento, string>> = {
   'pt-BR': { manha: 'Check-in da manhã', tarde: 'Check-in da tarde', noite: 'Check-in da noite' },
   en: { manha: 'Morning check-in', tarde: 'Afternoon check-in', noite: 'Evening check-in' },
   es: { manha: 'Check-in de la mañana', tarde: 'Check-in de la tarde', noite: 'Check-in de la noche' },
+  fr: { manha: 'Check-in du matin', tarde: 'Check-in de l’après-midi', noite: 'Check-in du soir' },
+  hi: { manha: 'सुबह का चेक-इन', tarde: 'दोपहर का चेक-इन', noite: 'रात का चेक-इन' },
 }
 
 export function resumoCheckin(c: CheckinValido, idioma: Idioma = 'pt-BR'): string {
@@ -203,6 +220,7 @@ export const REGRAS_CHECKIN = `
 AGORA É UM CHECK-IN, NÃO UMA CONVERSA:
 - Responda com UMA frase curta (no máximo 25 palavras), acolhendo o sentimento do jeito de um amigo. Pode usar o que você já sabe dela, se encaixar.
 - Sentimento pesado (agradável 1 ou 2): acolha sem tentar consertar e sem dica; pode dizer que está por aqui se ela quiser conversar.
+- Varie o fechamento. "Tô por aqui"/"tô aqui" no máximo de vez em quando, nunca se uma resposta recente já usou; muitas vezes acolher já basta, sem frase de fechamento. Não repita o começo nem o fim das suas últimas respostas de check-in.
 - Sentimento bom: celebre de leve.
 - Não faça pergunta, não dê conselho de comida/treino, não fale de metas nem de registros. Sem marcas [[...]].`
 
@@ -223,6 +241,16 @@ const PADRAO_CHECKIN: Record<Idioma, (c: CheckinValido) => string> = {
     if (c.agradavel <= 1) return 'Día pesado, ¿no? No hace falta resolver nada ahora. Aquí estoy si quieres hablar.'
     if (c.agradavel === 2) return c.energia >= 3 ? 'Mucha cosa en la cabeza. Respira hondo; aquí estoy si quieres desahogarte.' : 'Modo ahorro hoy. Ve a tu ritmo.'
     return c.energia <= 2 ? 'Con calma. Buena forma de llevar el día. 🌱' : '¡Bien! Aprovecha esa energía hoy.'
+  },
+  fr: (c) => {
+    if (c.agradavel <= 1) return 'Journée lourde, hein ? Pas besoin de tout régler maintenant. Je suis là si tu veux parler.'
+    if (c.agradavel === 2) return c.energia >= 3 ? 'Beaucoup de choses en tête. Respire un bon coup ; je suis là si tu veux vider ton sac.' : 'Mode économie aujourd’hui. Vas-y à ton rythme.'
+    return c.energia <= 2 ? 'Tout en douceur. Une bonne façon de vivre la journée. 🌱' : 'Top ! Profite de cette énergie aujourd’hui.'
+  },
+  hi: (c) => {
+    if (c.agradavel <= 1) return 'भारी दिन है, है ना? अभी कुछ सुलझाने की ज़रूरत नहीं। बात करनी हो तो मैं यहीं हूँ।'
+    if (c.agradavel === 2) return c.energia >= 3 ? 'दिमाग़ में बहुत कुछ चल रहा है। एक गहरी साँस लीजिए; मन हल्का करना हो तो मैं यहीं हूँ।' : 'आज बैटरी थोड़ी कम है। अपनी रफ़्तार से चलिए।'
+    return c.energia <= 2 ? 'आराम से। दिन बिताने का अच्छा तरीक़ा। 🌱' : 'बढ़िया! आज इस एनर्जी का पूरा मज़ा लीजिए।'
   },
 }
 export const respostaCheckinPadrao = (c: CheckinValido, idioma: Idioma) => PADRAO_CHECKIN[idioma](c)
@@ -260,7 +288,7 @@ const TXT_ABERTURA: Record<Idioma, {
     eventoOntem: (t) => `E aí, como foi ontem (${t.charAt(0).toLowerCase() + t.slice(1)})? Quero saber!`,
     marco: (n, h) => `${n} dias firme em "${h}"! Isso é muito. Como tá sendo pra você?`,
     pesado: 'Os últimos dias pareceram mais pesados. Sem pressa nenhuma: se quiser conversar, tô aqui.',
-    voltou: (nome) => `${nome ? `${nome}, que` : 'Que'} bom te ver por aqui! Sem cobrança: bora começar leve hoje?`,
+    voltou: (nome) => `${nome ? `${nome}, que` : 'Que'} bom te ver por aqui! No seu ritmo: bora começar leve hoje?`,
   },
   en: {
     eventoHoje: (t) => `Today's the day: ${t.charAt(0).toLowerCase() + t.slice(1)}! Rooting for you 🍀`,
@@ -278,13 +306,31 @@ const TXT_ABERTURA: Record<Idioma, {
     pesado: 'Los últimos días parecieron más pesados. Sin prisa: si quieres hablar, aquí estoy.',
     voltou: (nome) => `¡${nome ? `${nome}, qué` : 'Qué'} bueno verte por aquí! Sin presión: ¿empezamos suave hoy?`,
   },
+  fr: {
+    eventoHoje: (t) => `C’est le grand jour : ${t.charAt(0).toLowerCase() + t.slice(1)} ! Je croise les doigts pour toi 🍀`,
+    eventoAmanha: (t) => `C’est demain : ${t.charAt(0).toLowerCase() + t.slice(1)}. Comment tu te sens ?`,
+    eventoOntem: (t) => `Alors, c’était comment hier (${t.charAt(0).toLowerCase() + t.slice(1)}) ? Raconte !`,
+    marco: (n, h) => `${n} jours que tu tiens bon sur « ${h} » ! C’est énorme. Comment ça se passe pour toi ?`,
+    pesado: 'Les derniers jours avaient l’air plus lourds. Aucune pression : si tu veux parler, je suis là.',
+    voltou: (nome) => `${nome ? `${nome}, content` : 'Content'} de te revoir ! Sans pression : on reprend en douceur aujourd’hui ?`,
+  },
+  hi: {
+    eventoHoje: (t) => `आज वह दिन है: ${t}! आपके लिए दुआ कर रहा हूँ 🍀`,
+    eventoAmanha: (t) => `कल वह दिन है: ${t}। कैसा महसूस कर रहे हैं?`,
+    eventoOntem: (t) => `तो, कल कैसा रहा (${t})? बताइए!`,
+    marco: (n, h) => `"${h}" में ${n} दिन से डटे हुए हैं! यह बहुत बड़ी बात है। आपके लिए कैसा चल रहा है?`,
+    pesado: 'पिछले कुछ दिन थोड़े भारी लगे। कोई जल्दी नहीं: बात करनी हो तो मैं यहीं हूँ।',
+    voltou: (nome) => `${nome ? `${nome}, आपको` : 'आपको'} यहाँ देखकर अच्छा लगा! कोई दबाव नहीं: आज हल्के से शुरू करें?`,
+  },
 }
 
 export function escolherAbertura(d: DadosAbertura): { motivo: string; texto: string } | null {
   if (d.pausadoHoje || !d.puxarConversa || d.jaFalouHoje) return null
   const t = TXT_ABERTURA[d.idioma]
   const recente = (motivo: string, dias: number) => d.motivosRecentes.some((m) => m.motivo === motivo && diff(m.dia, d.hoje) < dias)
-  const primeiroNome = d.nome?.trim().split(/\s+/)[0] ?? null
+  // Nome como a pessoa digitou pode vir em minúscula ("matheus") — sai "Matheus".
+  const nome0 = d.nome?.trim().split(/\s+/)[0] || null
+  const primeiroNome = nome0 ? nome0.charAt(0).toLocaleUpperCase() + nome0.slice(1) : null
 
   const evHoje = d.eventos.find((e) => e.data === d.hoje)
   if (evHoje && !recente(`evento:${evHoje.texto}`, 2)) return { motivo: `evento:${evHoje.texto}`.slice(0, 120), texto: t.eventoHoje(evHoje.texto) }
@@ -320,7 +366,7 @@ interface HabitoBruto {
 
 /** Mesma regra do contexto do Life: construir = sequência ainda válida; evitar = dias desde o último tropeço. */
 export function diasFirme(h: HabitoBruto, hoje: string): number {
-  if (h.categoria === 'leitura') {
+  if (ehConstruir(h.categoria)) {
     return h.ultimo_checkin && diff(h.ultimo_checkin, hoje) <= 1 ? h.streak_atual ?? 0 : 0
   }
   const base = Math.max(Date.parse(h.criado_em), h.ultima_recaida ? Date.parse(h.ultima_recaida) : 0)
@@ -365,9 +411,14 @@ export async function linhaCheckinsHoje(sb: Sb, userId: string, hoje: string): P
 /** Grava o que o modelo marcou. Devolve se faltou consentimento para algo que valia guardar. */
 export async function aplicarMarcasMemoria(
   sb: Sb, userId: string, consentimento: boolean | null, marcas: { lembrar: Lembranca[]; esquecer: string[] },
-): Promise<{ sugerirMemoria: boolean; guardadas: number; esquecidas: number }> {
+): Promise<{ sugerirMemoria: boolean; pendentes: Lembranca[]; guardadas: number; esquecidas: number }> {
   const validas = marcas.lembrar.filter((l) => memoriaPermitida(l))
-  if (consentimento !== true) return { sugerirMemoria: consentimento === null && validas.length > 0, guardadas: 0, esquecidas: 0 }
+  if (consentimento !== true) {
+    // Ainda não decidiu: o app pergunta e, se ela aceitar, guarda ESTA lembrança
+    // também (antes ela se perdia e a memória só valia dali pra frente).
+    const pergunta = consentimento === null && validas.length > 0
+    return { sugerirMemoria: pergunta, pendentes: pergunta ? validas : [], guardadas: 0, esquecidas: 0 }
+  }
   let guardadas = 0, esquecidas = 0
   for (const l of validas) {
     const { data, error } = await sb.rpc('life_guardar_memoria', { p_user_id: userId, p_texto: l.texto, p_categoria: l.categoria, p_data: l.data })
@@ -379,7 +430,7 @@ export async function aplicarMarcasMemoria(
     if (error) console.warn('[memoria] esquecer falhou', error.message)
     else if (data) esquecidas++
   }
-  return { sugerirMemoria: false, guardadas, esquecidas }
+  return { sugerirMemoria: false, pendentes: [], guardadas, esquecidas }
 }
 
 export async function dadosAbertura(sb: Sb, userId: string, hoje: string, idioma: Idioma): Promise<DadosAbertura> {

@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
+  PASSO_CARGA_KG,
+  PASSO_SEGUNDOS,
+  adicionarDescanso,
+  ajustarCarga,
+  ajustarReps,
+  ajustarSegundos,
+  cancelarCronometro,
+  confirmarSerie,
+  formatarCarga,
+  iniciarCronometro,
+  pausarCronometro,
+  pularDescanso,
+  retomarCronometro,
+  type SessaoTreino,
+  emPreparo,
+  pausado,
   exercicioAtual,
   formatarRelogio,
   indiceSerie,
@@ -15,18 +33,21 @@ import { avisar, vibrar } from '@ui/feedback'
  * Faixa de "treino em andamento" no topo da tela de Treino.
  *
  * Decisão do dono (2026-09-27): a tela de Treino continua a mesma de sempre;
- * "Começar treino" só liga a sessão que alimenta a Live Activity — o card com
- * peso/reps/descanso aparece na TELA DE BLOQUEIO, não dentro do app. Aqui fica
- * só o status (tempo, série/descanso) e o "Encerrar", que abre o resumo.
+ * "Começar treino" liga a sessão que alimenta a Live Activity (o card na tela
+ * de bloqueio). Relatório do teste do APK (24/10): sem a notificação (o
+ * Android 13+ pergunta e a pessoa pode negar), não havia como registrar
+ * série nenhuma. Por isso a faixa também tem os mesmos controles do card:
+ * carga/reps, confirmar série, cronômetro e descanso.
  */
 export function TreinoEmAndamento() {
-  const { sessao, agora, finalizar, descartar } = useSessaoTreino()
+  const { sessao, agora, finalizar, descartar, aplicar } = useSessaoTreino()
   const [relogio, setRelogio] = useState(() => Date.now())
   const [painel, setPainel] = useState<null | 'resumo' | 'parar'>(null)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState(false)
   const { m, idioma } = useI18n()
   const tx = m.treino.andamento
+  const navigate = useNavigate()
   // Voltar do Android fecha a janela de Parar/Resumo antes de qualquer coisa.
   useFecharNoVoltar(painel !== null, () => setPainel(null))
 
@@ -46,13 +67,17 @@ export function TreinoEmAndamento() {
   } else if (sessao.status === 'descanso') {
     status = tx.descanso(formatarRelogio(segundosRestantes(sessao.descansoFimEm, t)))
     cor = 'bg-accent-energy'
+  } else if (pausado(sessao)) {
+    status = tx.pausado(ex.nome, formatarRelogio(segundosRestantes(sessao.cronometroFimEm, sessao.cronometroPausadoEm!)))
+  } else if (emPreparo(sessao, t)) {
+    status = tx.preparo(ex.nome, segundosRestantes(sessao.cronometroInicioEm, t))
   } else if (sessao.status === 'cronometro') {
     status = `${ex.nome} · ${formatarRelogio(segundosRestantes(sessao.cronometroFimEm, t))}`
   } else {
     status = tx.serieDe(ex.nome, indiceSerie(ex) + 1, ex.alvo.length)
   }
 
-  async function salvar() {
+  async function salvar(story = false) {
     setSalvando(true)
     setErro(false)
     try {
@@ -63,6 +88,8 @@ export function TreinoEmAndamento() {
         vibrar.sucesso()
         avisar.ok(tx.salvo)
       }
+      // O editor lê o treino recém-salvo do histórico (com recorde pessoal).
+      if (story && salvou) navigate('/story', { state: { modo: 'gym' } })
     } catch {
       setErro(true)
     } finally {
@@ -75,7 +102,7 @@ export function TreinoEmAndamento() {
 
   return (
     <>
-      <div className="mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-brand/40 bg-brand/10 p-3">
+      <div className="mx-4 mb-2 flex items-center gap-3 rounded-2xl border border-brand/40 bg-brand/10 p-3">
         <span className="relative flex h-2.5 w-2.5 flex-none">
           <span className={`absolute inset-0 rounded-full opacity-60 motion-safe:animate-ping ${cor}`} />
           <span className={`relative h-2.5 w-2.5 rounded-full ${cor}`} />
@@ -85,7 +112,6 @@ export function TreinoEmAndamento() {
             {tx.titulo(formatarRelogio((t - sessao.iniciadoEm) / 1000))}
           </div>
           <div className="truncate text-sm text-content-mid" aria-live="polite">{status}</div>
-          <div className="text-micro text-content-low">{tx.bloqueio}</div>
         </div>
         <div className="flex flex-none flex-col gap-1.5">
           <button
@@ -103,6 +129,9 @@ export function TreinoEmAndamento() {
           </button>
         </div>
       </div>
+      {sessao.status !== 'concluida' && ex && (
+        <Controles sessao={sessao} agora={t} aplicar={aplicar} />
+      )}
 
       {painel === 'parar' && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={tx.pararTitulo}>
@@ -160,6 +189,16 @@ export function TreinoEmAndamento() {
             >
               {salvando ? tx.salvando : nada ? tx.fechar : tx.salvar}
             </button>
+            {!nada && (
+              <button
+                onClick={() => void salvar(true)}
+                disabled={salvando}
+                className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-pill border border-surface-4 text-sm font-semibold text-content-hi active:bg-content-hi/5 disabled:opacity-60"
+              >
+                <ActivityIcon icone="camera" tile={false} cor="inherit" className="h-5 w-5" />
+                {m.story.postar}
+              </button>
+            )}
             {sessao.status !== 'concluida' && (
               <button
                 onClick={() => setPainel(null)}
@@ -185,5 +224,163 @@ export function TreinoEmAndamento() {
         </div>
       )}
     </>
+  )
+}
+
+type Aplicar = ReturnType<typeof useSessaoTreino>['aplicar']
+
+/** Os controles do card da tela de bloqueio, dentro do app. */
+function Controles(props: { sessao: SessaoTreino; agora: number; aplicar: Aplicar }) {
+  const { sessao: s, aplicar } = props
+  const { m } = useI18n()
+  const tx = m.treino.andamento
+  const c = tx.ctl
+  const ex = exercicioAtual(s)
+  if (!ex) return null
+  const toque = (fn: Parameters<Aplicar>[0]) => () => {
+    vibrar.leve()
+    aplicar(fn)
+  }
+
+  let corpo: JSX.Element
+  if (s.status === 'descanso') {
+    corpo = (
+      <div className="flex gap-2">
+        <BotaoCtl onClick={toque((x, agora) => adicionarDescanso(x, 15, agora))}>{c.mais15}</BotaoCtl>
+        <BotaoCtl destaque onClick={toque((x) => pularDescanso(x))}>{c.pular}</BotaoCtl>
+      </div>
+    )
+  } else if (s.status === 'cronometro') {
+    corpo = emPreparo(s, props.agora) ? (
+      <div className="flex gap-2">
+        <BotaoCtl onClick={toque((x) => cancelarCronometro(x))}>{c.cancelar}</BotaoCtl>
+      </div>
+    ) : (
+      <div className="flex gap-2">
+        {pausado(s) ? (
+          <BotaoCtl onClick={toque(retomarCronometro)}>{c.retomar}</BotaoCtl>
+        ) : (
+          <BotaoCtl onClick={toque(pausarCronometro)}>{c.pausar}</BotaoCtl>
+        )}
+        <BotaoCtl destaque onClick={toque(confirmarSerie)}>{c.concluir}</BotaoCtl>
+      </div>
+    )
+  } else if (ex.medida === 'tempo') {
+    corpo = (
+      <div className="flex items-center gap-2">
+        <Ajuste
+          valor={`${s.segundos ?? 30} s`}
+          menos={toque((x) => ajustarSegundos(x, -PASSO_SEGUNDOS))}
+          mais={toque((x) => ajustarSegundos(x, PASSO_SEGUNDOS))}
+          rotuloMenos={c.menosSeg}
+          rotuloMais={c.maisSeg}
+        />
+        <BotaoCtl destaque onClick={toque(iniciarCronometro)}>{c.iniciar}</BotaoCtl>
+      </div>
+    )
+  } else {
+    corpo = (
+      <div className="flex flex-wrap items-center gap-2">
+        <Ajuste
+          valor={s.cargaKg === null ? c.semCarga : `${formatarCarga(s.cargaKg)} kg`}
+          menos={toque((x) => ajustarCarga(x, -PASSO_CARGA_KG))}
+          mais={toque((x) => ajustarCarga(x, PASSO_CARGA_KG))}
+          rotuloMenos={c.menosCarga}
+          rotuloMais={c.maisCarga}
+          digitar={{
+            atual: s.cargaKg,
+            rotulo: c.digitarCarga,
+            aoMudar: (kg) => aplicar((x) => ({ ...x, cargaKg: kg })),
+          }}
+        />
+        <Ajuste
+          valor={`${s.reps ?? 0} ${c.reps}`}
+          menos={toque((x) => ajustarReps(x, -1))}
+          mais={toque((x) => ajustarReps(x, 1))}
+          rotuloMenos={c.menosReps}
+          rotuloMais={c.maisReps}
+        />
+        <BotaoCtl destaque onClick={toque(confirmarSerie)}>{c.confirmar}</BotaoCtl>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-4 mb-4 rounded-2xl border border-surface-4 bg-surface-2 p-3">
+      {corpo}
+      <p className="mt-2 text-micro text-content-low">{tx.bloqueio}</p>
+    </div>
+  )
+}
+
+function BotaoCtl(props: { onClick: () => void; destaque?: boolean; children: string }) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={`min-h-11 flex-1 rounded-pill px-3 text-sm font-bold active:scale-95 ${
+        props.destaque ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-hi active:bg-content-hi/5'
+      }`}
+    >
+      {props.children}
+    </button>
+  )
+}
+
+/**
+ * −/+ com o valor no meio. Com `digitar`, tocar no valor abre o teclado
+ * numérico: de 2,5 em 2,5 kg, chegar a 80 kg eram 32 toques (dono, 30/10).
+ */
+function Ajuste(props: {
+  valor: string
+  menos: () => void
+  mais: () => void
+  rotuloMenos: string
+  rotuloMais: string
+  digitar?: { atual: number | null; rotulo: string; aoMudar: (n: number | null) => void }
+}) {
+  const [rascunho, setRascunho] = useState<string | null>(null)
+  const d = props.digitar
+  function confirmar() {
+    if (!d || rascunho === null) return
+    const n = Number(rascunho.replace(',', '.'))
+    if (rascunho.trim() === '') d.aoMudar(null)
+    else if (Number.isFinite(n) && n >= 0 && n <= 999) d.aoMudar(n === 0 ? null : Math.round(n * 10) / 10)
+    setRascunho(null)
+  }
+  return (
+    <div className="flex items-center rounded-pill border border-surface-4">
+      <button type="button" onClick={props.menos} aria-label={props.rotuloMenos} className="grid h-11 w-10 place-items-center text-lg font-bold text-content-mid active:scale-90">
+        −
+      </button>
+      {d && rascunho !== null ? (
+        <input
+          autoFocus
+          inputMode="decimal"
+          aria-label={d.rotulo}
+          value={rascunho}
+          onChange={(e) => setRascunho(e.target.value.replace(/[^\d.,]/g, ''))}
+          onBlur={confirmar}
+          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+          className="w-[4.5rem] bg-transparent text-center font-mono text-sm font-semibold tabular-nums text-content-hi outline-none"
+        />
+      ) : d ? (
+        <button
+          type="button"
+          aria-label={`${props.valor}. ${d.rotulo}`}
+          onClick={() => setRascunho(d.atual === null ? '' : String(d.atual))}
+          className="min-h-11 min-w-[4.5rem] text-center font-mono text-sm font-semibold tabular-nums text-content-hi underline decoration-content-low/40 decoration-dotted underline-offset-4"
+        >
+          {props.valor}
+        </button>
+      ) : (
+        <span className="min-w-[4.5rem] text-center font-mono text-sm font-semibold tabular-nums text-content-hi" aria-live="polite">
+          {props.valor}
+        </span>
+      )}
+      <button type="button" onClick={props.mais} aria-label={props.rotuloMais} className="grid h-11 w-10 place-items-center text-lg font-bold text-content-mid active:scale-90">
+        +
+      </button>
+    </div>
   )
 }

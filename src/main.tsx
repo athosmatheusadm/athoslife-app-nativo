@@ -2,10 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SplashScreen } from '@capacitor/splash-screen'
 import App from './App'
+import '@fontsource-variable/inter'
 import '@ui/theme/globals.css'
-import { acompanharModoDoCelular } from '@ui/theme/modoClaroEscuro'
+import { iniciarTema } from '@ui/theme/tema'
 
-acompanharModoDoCelular()
+iniciarTema()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('Elemento #root não encontrado')

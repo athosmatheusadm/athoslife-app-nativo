@@ -25,16 +25,16 @@ export interface ReceitaEstruturada {
   readonly extras: readonly { rotulo: string | null; texto: string }[]
 }
 
-// Rótulos em pt, en e es (o conteúdo traduzido segue o mesmo formato).
-const RE_ROTULO_INGREDIENTES = /^(INGREDIENTES|INGREDIENTS)/i
-const RE_ROTULO_PREPARO = /(PREPARO|PREPARATION|PREPARACI[OÓ]N)/i
+// Rótulos em pt, en, es, fr e hi (o conteúdo traduzido segue o mesmo formato).
+const RE_ROTULO_INGREDIENTES = /^(INGREDIENTES|INGREDIENTS|INGRÉDIENTS|सामग्री)/i
+const RE_ROTULO_PREPARO = /(PREPARO|PR[EÉ]PARATION|PREPARACI[OÓ]N|बनाने का तरीक़ा)/i
 const RE_ROTULO_DICA = /LIFE/i
-const RE_ROTULO_PORQUE = /^(POR QUE|SOBRE|ABOUT)/i
-const RE_ROTULO_MONTAGEM = /^(MONTAGEM|PRA SERVIR|TO SERVE|MONTAJE)/i
+const RE_ROTULO_PORQUE = /^(POR QUE|SOBRE|ABOUT|À PROPOS|इस डिश के बारे में)/i
+const RE_ROTULO_MONTAGEM = /^(MONTAGEM|PRA SERVIR|TO SERVE|MONTAJE|DRESSAGE|परोसने का तरीक़ा)/i
 
-/** Unidade "porção" em qualquer dos 3 idiomas — a tela traduz pra pessoa. */
+/** Unidade "porção" em qualquer idioma — a tela traduz pra pessoa. */
 export const PORCAO = 'porção'
-const SINONIMOS_PORCAO = new Set(['porção', 'serving', 'porción'])
+const SINONIMOS_PORCAO = new Set(['porção', 'serving', 'porción', 'portion', 'सर्विंग'])
 
 /** Tira o marcador "- " ou "1. " do começo da linha. */
 function semMarcador(linha: string): string {
@@ -175,30 +175,46 @@ export const KCAL_MINIMA_SUGESTAO = 150
 
 /**
  * Escolhe até `max` receitas que cabem no que falta do dia. Só considera
- * as liberadas (sugestão trancada frustra). Cabe = até 10% acima das kcal
+ * as liberadas (sugestão trancada frustra) e sem alérgeno da pessoa. Cabe = até 10% acima das kcal
  * que faltam. Entre as que cabem, ganha quem cobre mais da proteína que
  * falta por caloria — proteína é o macro que mais fica pra trás.
+ *
+ * Variedade (dono, 24/10: "sempre mostra a mesma receita"): a nota ganha um
+ * sorteio que muda a cada turno do dia (manhã/tarde/noite). Continua só
+ * receita que cabe, mas não é sempre a mesma campeã.
  */
 export function receitasQueFechamODia(
   receitas: readonly Receita[],
   restante: Macros,
   max = 3,
+  agora: Date = new Date(),
 ): Receita[] {
   if (restante.calorias < KCAL_MINIMA_SUGESTAO) return []
   const teto = restante.calorias * 1.1
+  const turno = `${agora.getFullYear()}-${agora.getMonth()}-${agora.getDate()}-${Math.floor(agora.getHours() / 8)}`
   return receitas
     // Um chá de 5 kcal não "fecha" o dia de ninguém: precisa ocupar ao menos 20% do que falta.
-    .filter((r) => !r.bloqueada && r.macros.calorias >= restante.calorias * 0.2 && r.macros.calorias <= teto)
+    .filter((r) => !r.bloqueada && r.contemRestricao.length === 0 && r.macros.calorias >= restante.calorias * 0.2 && r.macros.calorias <= teto)
     .map((r) => {
       const prot = restante.proteina > 0 ? Math.min(r.macros.proteina / restante.proteina, 1) : 0
       const ocupa = r.macros.calorias / restante.calorias
       // Receita que usa ~40–90% do que falta "fecha" melhor que um chá de 5 kcal.
       const encaixe = ocupa >= 0.4 && ocupa <= 1.1 ? 1 : ocupa
-      return { r, nota: prot * 2 + encaixe }
+      return { r, nota: prot * 2 + encaixe + sorteio(`${turno}:${r.id}`) * 1.5 }
     })
     .sort((a, b) => b.nota - a.nota)
     .slice(0, max)
     .map((x) => x.r)
+}
+
+/** Número de 0 a 1 que depende só do texto (mesmo turno = mesma ordem, sem pular na tela). */
+function sorteio(texto: string): number {
+  let h = 2166136261
+  for (let i = 0; i < texto.length; i++) {
+    h ^= texto.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return (h >>> 0) / 4294967295
 }
 
 export function macrosRestantes(metas: Macros, consumido: Macros): Macros {
@@ -213,6 +229,7 @@ export function macrosRestantes(metas: Macros, consumido: Macros): Macros {
 /** Refeição mais provável pelo horário — o padrão do "Registrar na refeição". */
 export function refeicaoPeloHorario(agora: Date = new Date()): 'cafe' | 'almoco' | 'lanche' | 'jantar' {
   const h = agora.getHours()
+  if (h < 5) return 'jantar' // madrugada: ceia/jantar tardio, não café
   if (h < 10) return 'cafe'
   if (h < 15) return 'almoco'
   if (h < 18) return 'lanche'

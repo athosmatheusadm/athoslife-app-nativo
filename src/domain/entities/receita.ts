@@ -1,3 +1,5 @@
+import type { Alergeno } from '@domain/rules/alergias'
+import type { TemaSazonal } from '@domain/rules/temasSazonais'
 /**
  * Entidades da Cozinha ATHOSlife.
  *
@@ -42,6 +44,8 @@ export const CATEGORIA_META: Record<
 export interface Receita {
   readonly id: string
   readonly titulo: string
+  /** Nome do arquivo da foto (`public/receitas/<foto>.webp`), tirado do título em pt — não muda com o idioma. */
+  readonly foto: string
   readonly subtitulo: string | null
   readonly categoria: CategoriaReceita
   readonly macros: Macros
@@ -51,6 +55,12 @@ export interface Receita {
   readonly destaque: boolean
   readonly conteudo: string | null
   readonly ordem: number
+  /** Chaves de `receitas_cozinha.alergenos` (amendoim, gluten, lactose...). */
+  readonly alergenos: readonly string[]
+  /** Datas em que a receita entra no expositor (natal, pascoa...). Vazio = receita de sempre. */
+  readonly temas: readonly TemaSazonal[]
+  /** Calculado no serviço: alérgenos da receita que batem com as restrições da pessoa. */
+  readonly contemRestricao: readonly Alergeno[]
   /** Calculado no serviço: premium && usuário não tem acesso. */
   readonly bloqueada: boolean
   /** Calculado no serviço: está nas favoritas do usuário. */

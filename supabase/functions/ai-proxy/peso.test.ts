@@ -71,3 +71,52 @@ Deno.test('texto do histórico', () => {
   assertEquals(t.includes('Variação em 14 dias: −1,4 kg.'), true)
   assertEquals(textoHistorico([], 'en').startsWith('You have no weigh-ins'), true)
 })
+
+Deno.test('variação: perdi/ganhei vira pesagem de hoje', () => {
+  assertEquals(lerComandoPeso('perdi um kg'), { tipo: 'variar', deltaKg: -1 })
+  assertEquals(lerComandoPeso('Life, perdi 1 kg essa semana!'), { tipo: 'variar', deltaKg: -1 })
+  assertEquals(lerComandoPeso('emagreci 2,5 quilos'), { tipo: 'variar', deltaKg: -2.5 })
+  assertEquals(lerComandoPeso('perdi meio quilo'), { tipo: 'variar', deltaKg: -0.5 })
+  assertEquals(lerComandoPeso('perdi um quilo e meio'), { tipo: 'variar', deltaKg: -1.5 })
+  assertEquals(lerComandoPeso('perdi 1kg de gordura'), { tipo: 'variar', deltaKg: -1 })
+  assertEquals(lerComandoPeso('ganhei 800 g'), { tipo: 'variar', deltaKg: 0.8 })
+  assertEquals(lerComandoPeso('engordei 2 kg'), { tipo: 'variar', deltaKg: 2 })
+  assertEquals(lerComandoPeso('I lost 2 kg'), { tipo: 'variar', deltaKg: -2 })
+  assertEquals(lerComandoPeso('perdí un kilo'), { tipo: 'variar', deltaKg: -1 })
+  // carga do treino e meta não são variação do corpo
+  assertEquals(lerComandoPeso('ganhei 5 kg no supino'), null)
+  assertEquals(lerComandoPeso('quero perder 5 kg'), null)
+  assertEquals(lerComandoPeso('perdi o treino hoje'), null)
+})
+
+Deno.test('frases do relatório do APK (24/10) e número sozinho', () => {
+  assertEquals(lerComandoPeso('hoje tô com 81'), { tipo: 'registrar', kg: 81 })
+  assertEquals(lerComandoPeso('peso 79'), { tipo: 'registrar', kg: 79 })
+  assertEquals(lerComandoPeso('acordei com 81,5kg'), { tipo: 'registrar', kg: 81.5 })
+  assertEquals(lerComandoPeso('errei, é 81,2'), { tipo: 'corrigir', kg: 81.2 })
+  assertEquals(lerComandoPeso('80 kg'), { tipo: 'confirmar', kg: 80 })
+  assertEquals(lerComandoPeso('82'), { tipo: 'confirmar', kg: 82 })
+  // continua ignorando o que não é o peso do corpo
+  assertEquals(lerComandoPeso('tô com 40 graus de febre'), null)
+  assertEquals(lerComandoPeso('tô com 30 anos'), null)
+  assertEquals(lerComandoPeso('corri 45 minutos'), null)
+})
+
+// fr / hi (28/10): as frases que o app escreve no chat e as mais comuns.
+Deno.test('peso: francês', () => {
+  assertEquals(lerComandoPeso('Je pèse 80 kg'), { tipo: 'registrar', kg: 80 })
+  assertEquals(lerComandoPeso('je pese 78,5 kg'), { tipo: 'registrar', kg: 78.5 })
+  assertEquals(lerComandoPeso('mon objectif est 72 kg'), { tipo: 'meta', kg: 72 })
+  assertEquals(lerComandoPeso('j’ai perdu 1 kg'), { tipo: 'variar', deltaKg: -1 })
+  assertEquals(lerComandoPeso('historique de mon poids'), { tipo: 'historico' })
+  assertEquals(lerComandoPeso('supprime ma dernière pesée'), { tipo: 'apagar' })
+  assertEquals(lerComandoPeso('mon objectif de protéines est 150 g'), null)
+})
+Deno.test('peso: hindi', () => {
+  assertEquals(lerComandoPeso('मेरा वज़न 80 kg है'), { tipo: 'registrar', kg: 80 })
+  assertEquals(lerComandoPeso('मेरा वजन 76 किलो है'), { tipo: 'registrar', kg: 76 })
+  assertEquals(lerComandoPeso('मेरा लक्ष्य 70 kg है'), { tipo: 'meta', kg: 70 })
+  assertEquals(lerComandoPeso('मेरा 2 किलो वजन घटा'), { tipo: 'variar', deltaKg: -2 })
+  assertEquals(lerComandoPeso('mera weight 81 kg hai'), { tipo: 'registrar', kg: 81 })
+  assertEquals(lerComandoPeso('82'), { tipo: 'confirmar', kg: 82 })
+})

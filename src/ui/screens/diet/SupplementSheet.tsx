@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { alimentosRepository } from '@data/repositories/alimentosRepository'
 import { escalarMacros } from '@domain/rules/foodReconciliation'
 import { FavoritoStar, MacroChips } from './InlineFoodSearch'
@@ -7,6 +8,7 @@ import type { ItemRefeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { ActivityIcon, type ActivityIconKey, type UiIconKey } from '@ui/components/ActivityIcon'
+import { limitarGramas } from '@domain/rules/limites'
 
 interface Grupo {
   nome: string
@@ -196,8 +198,8 @@ export function SupplementSheet(props: {
                   <span className="block text-micro text-content-low">{m.dieta.busca.referencia(a.porcaoG)}</span>
                 </span>
                 <span className="flex-none text-right">
-                  <span className="block text-sm font-bold text-brand">{a.calorias} kcal</span>
-                  <span className="block text-micro text-macro-proteina">{m.dieta.busca.prot(a.proteina)}</span>
+                  <span className="block text-sm font-bold text-brand">{fmtKcal(a.calorias)} kcal</span>
+                  <span className="block text-micro text-macro-proteina">{m.dieta.busca.prot(fmtG(a.proteina))}</span>
                 </span>
               </button>
             </li>
@@ -344,12 +346,12 @@ function DoseSuplemento(props: {
           type="number"
           inputMode="numeric"
           value={gramas}
-          onChange={(e) => setGramas(Math.max(0, Number(e.target.value) || 0))}
+          onChange={(e) => setGramas(limitarGramas(Number(e.target.value)))}
           aria-label="g"
           className="min-h-12 w-24 rounded-xl border border-surface-4 bg-surface-3 px-3 text-center text-base font-bold text-content-hi focus:border-brand focus:outline-none"
         />
         <span className="text-sm font-semibold text-content-low">g</span>
-        <span className="ml-3 text-sm font-bold text-brand">{m.calorias} kcal</span>
+        <span className="ml-3 text-sm font-bold text-brand">{fmtKcal(m.calorias)} kcal</span>
       </div>
 
       <button

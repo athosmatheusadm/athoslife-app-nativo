@@ -12,7 +12,8 @@ import {
   type PesoDia,
   type ResumoEnergiaPeso,
 } from '@domain/rules/energiaPeso'
-import { numero } from '@/i18n/formatos'
+import { diaMes, numero } from '@/i18n/formatos'
+import { formatarPeso, formatarPesoUnidade } from '@domain/entities/weight'
 import { useI18n } from '@/i18n/I18nProvider'
 
 /**
@@ -87,7 +88,7 @@ function useLargura<T extends HTMLElement>() {
   return [ref, w] as const
 }
 
-const dataCurta = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
+const dataCurta = diaMes
 
 function xDe(i: number, total: number, largura: number) {
   return M.esq + ((largura - M.esq - M.dir) / total) * (i + 0.5)
@@ -132,7 +133,7 @@ export function EnergiaPesoGrafico({ periodo, onPeriodo }: {
   function frase(r: ResumoEnergiaPeso): string {
     const c = r.comparacao
     if (c.tipo !== 'ok') return t[c.tipo]
-    const direcao = t.direcao[c.direcao](fmt(Math.abs(c.kgPorSemana), 1))
+    const direcao = t.direcao[c.direcao](formatarPesoUnidade(Math.abs(c.kgPorSemana)))
     const base = t.resumo(periodo, fmt(c.mediaKcal), c.metaKcal ? fmt(c.metaKcal) : null, direcao)
     if (c.alinhado === null) return base
     return `${base} ${c.alinhado ? t.alinhado : t.desalinhado}`
@@ -182,7 +183,6 @@ export function EnergiaPesoGrafico({ periodo, onPeriodo }: {
           >
             {frase(resumo)}
           </p>
-          <p className="mt-1.5 text-micro text-content-low">{t.nota}</p>
           <TabelaDados resumo={resumo} fmt={fmt} />
         </>
       )}
@@ -311,7 +311,7 @@ function GraficoKcal({ resumo, largura, foco, setFoco, fmt }: GraficoProps) {
   )
 }
 
-function GraficoPeso({ resumo, largura, foco, setFoco, fmt, meta }: GraficoProps & { readonly meta: number | null }) {
+function GraficoPeso({ resumo, largura, foco, setFoco, meta }: GraficoProps & { readonly meta: number | null }) {
   const { m } = useI18n()
   const t = m.home.energiaPeso
   const H = 112
@@ -342,7 +342,7 @@ function GraficoPeso({ resumo, largura, foco, setFoco, fmt, meta }: GraficoProps
         width={largura}
         height={H}
         role="img"
-        aria-label={temDados ? t.ariaPeso(pesos.length, fmt(ultimo.peso, 1)) : t.semPesagem(total)}
+        aria-label={temDados ? t.ariaPeso(pesos.length, formatarPesoUnidade(ultimo.peso)) : t.semPesagem(total)}
         className="block overflow-visible text-brand"
         onPointerMove={(e) => setFoco(alvoFoco(e, total, largura))}
         onPointerDown={(e) => setFoco(alvoFoco(e, total, largura))}
@@ -366,7 +366,7 @@ function GraficoPeso({ resumo, largura, foco, setFoco, fmt, meta }: GraficoProps
               strokeLinecap="round"
             />
             <text x={M.esq} y={yMeta - 5} className="fill-current text-micro font-semibold tabular-nums">
-              {m.home.peso.linhaMeta(`${fmt(meta, 1)} kg`) + setaMeta}
+              {m.home.peso.linhaMeta(formatarPesoUnidade(meta)) + setaMeta}
             </text>
           </g>
         )}
@@ -405,7 +405,7 @@ function GraficoPeso({ resumo, largura, foco, setFoco, fmt, meta }: GraficoProps
         ))}
         {ultimo && (
           <text x={largura - M.dir + 4} y={y(ultimo.peso) + 4} className="fill-content-hi text-micro font-semibold tabular-nums">
-            {fmt(ultimo.peso, 1)}
+            {formatarPeso(ultimo.peso)}
           </text>
         )}
         {marcas.map((i) => (
@@ -459,7 +459,7 @@ function Dica({ resumo, indice, largura, fmt }: Omit<GraficoProps, 'foco' | 'set
       {p && (
         <span className="flex items-center gap-1.5">
           <i className="inline-block h-2 w-2 rounded-sm bg-brand" />
-          {fmt(p.peso, 1)} kg
+          {formatarPesoUnidade(p.peso)}
         </span>
       )}
     </div>
@@ -471,6 +471,7 @@ function TabelaDados({ resumo, fmt }: Pick<GraficoProps, 'resumo' | 'fmt'>) {
   return (
     <details className="mt-2 text-micro text-content-mid">
       <summary className="flex min-h-11 cursor-pointer items-center text-content-low">{t.verTabela}</summary>
+      <p className="mb-2 text-content-low">{t.nota}</p>
       <table className="w-full border-collapse tabular-nums">
         <thead>
           <tr className="text-left text-content-low">
@@ -486,7 +487,7 @@ function TabelaDados({ resumo, fmt }: Pick<GraficoProps, 'resumo' | 'fmt'>) {
               <tr key={d.data} className="border-t border-surface-3">
                 <td className="py-1">{dataCurta(d.data)}</td>
                 <td className="py-1">{d.kcal === null ? '—' : `${fmt(d.kcal)} kcal`}</td>
-                <td className="py-1">{p ? `${fmt(p.peso, 1)} kg` : '—'}</td>
+                <td className="py-1">{p ? formatarPesoUnidade(p.peso) : '—'}</td>
               </tr>
             )
           })}

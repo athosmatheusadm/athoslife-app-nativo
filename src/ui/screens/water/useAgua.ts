@@ -6,6 +6,9 @@ import { EVENTO_AGUA_MUDOU } from '@app/IntegracoesNativas'
 import type { AguaDoDia } from '@domain/entities/water'
 import { useSession } from '@app/SessionProvider'
 
+/** Gole mostrado antes de a gravação terminar (troca pelo de verdade ao recarregar). */
+const ID_OTIMISTA = 'otimista-'
+
 interface UseAguaResult {
   readonly estado: AguaDoDia | null
   readonly carregando: boolean
@@ -54,19 +57,30 @@ export function useAgua(metaMl: number): UseAguaResult {
 
   const adicionar = useCallback(
     async (ml: number) => {
+      // O número sobe no toque; a gravação (rede, sessão, fila) vem depois.
+      setEstado((atual) =>
+        atual && {
+          ...atual,
+          totalMl: atual.totalMl + ml,
+          registros: [{ id: `${ID_OTIMISTA}${Date.now()}`, quantidadeMl: ml, criadoEm: new Date() }, ...atual.registros],
+        },
+      )
       try {
         await aguaRepository.adicionar(ml)
-        await recarregar()
       } catch {
+        await recarregar() // desfaz o número otimista
         setErro('Não consegui registrar agora. Tenta de novo.')
+        return
       }
+      await recarregar()
     },
     [recarregar],
   )
 
   const desfazerUltimo = useCallback(async () => {
     const ultimo = estado?.registros[0]
-    if (!ultimo) return
+    // Gole ainda sendo gravado: espera o id de verdade.
+    if (!ultimo || ultimo.id.startsWith(ID_OTIMISTA)) return
     try {
       await aguaRepository.remover(ultimo.id)
       await recarregar()

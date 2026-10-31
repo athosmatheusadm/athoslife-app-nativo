@@ -1,5 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
-import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core'
+import { fmtKcal } from '@domain/rules/formatoNumero'
 import { macrosRefeicao, resumoRefeicao, type Refeicao } from '@domain/entities/meal'
 import { useI18n } from '@/i18n/I18nProvider'
 
@@ -24,8 +24,6 @@ export function MealAccordion(props: {
   sugestaoPlano?: { resumo: string; kcal: number } | null
   onAbrir: () => void
   onToggleConcluida: () => void
-  /** Só pra refeições extras (as únicas arrastáveis) — liga o ícone de handle ao dnd-kit. */
-  dragHandleProps?: { attributes: DraggableAttributes; listeners: DraggableSyntheticListeners } | null
 }) {
   const { refeicao } = props
   const { m } = useI18n()
@@ -36,21 +34,10 @@ export function MealAccordion(props: {
   // Agora linha, puxador e ✓ são irmãos, cada um com ≥ 48px.
   return (
     <div className="flex items-stretch overflow-hidden rounded-2xl border border-surface-4 bg-surface-2">
-      {props.dragHandleProps && (
-        <span
-          {...props.dragHandleProps.attributes}
-          {...props.dragHandleProps.listeners}
-          aria-label={m.dieta.arrastar(refeicao.nome)}
-          className="flex w-9 flex-none touch-none items-center justify-center text-content-low active:bg-content-hi/5"
-        >
-          ⋮⋮
-        </span>
-      )}
-
       <button
         type="button"
         onClick={props.onAbrir}
-        className={`flex min-h-16 min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors active:bg-content-hi/5 ${props.dragHandleProps ? 'pl-1' : 'pl-4'}`}
+        className={`flex min-h-16 min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors active:bg-content-hi/5 pl-4`}
       >
         <ActivityIcon icone={refeicao.icone ?? refeicao.tipo} />
 
@@ -64,9 +51,9 @@ export function MealAccordion(props: {
         </span>
 
         {props.sugestaoPlano ? (
-          <span className="flex-none text-sm font-semibold tabular-nums text-content-low">~{props.sugestaoPlano.kcal} kcal</span>
+          <span className="flex-none text-sm font-semibold tabular-nums text-content-low">~{fmtKcal(props.sugestaoPlano.kcal)} kcal</span>
         ) : (
-          <span className="flex-none text-sm font-bold tabular-nums text-content-mid">{totalKcal} kcal</span>
+          <span className="flex-none text-sm font-bold tabular-nums text-content-mid">{fmtKcal(totalKcal)} kcal</span>
         )}
       </button>
 

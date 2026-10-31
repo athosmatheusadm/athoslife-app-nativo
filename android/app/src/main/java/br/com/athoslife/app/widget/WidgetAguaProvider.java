@@ -12,6 +12,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import java.text.NumberFormat;
@@ -22,17 +23,24 @@ import br.com.athoslife.app.R;
 
 /**
  * Widget de hidratação da tela inicial (athoslife-widget-hidratacao.html):
- *  - Life: abre o app; muda de humor (azul hidratado / desidratado abaixo de
- *    40% da meta / desidratado apagado sem água nenhuma).
+ *  - Life: abre o app. Animado (quadros gravados do life_agua.html: respira
+ *    e pisca em loop) e com a expressão da faixa da meta: seco triste sem
+ *    água, seco com sede abaixo de 40%, depois hidratado feliz, piscadinha
+ *    (quase lá, 75%) e refrescado (meta batida).
  *  - Copos (5): cada um = 1/5 da meta; toque soma o volume do copo.
  *  - Câmera: abre o app direto no scanner.
  *  - Botão de volume ("..." do HTML): 250 ml -> 500 ml -> 1 L.
  */
 public class WidgetAguaProvider extends AppWidgetProvider {
+    private static final String TAG = "WidgetAgua";
     static final String ACAO_COPO = "br.com.athoslife.app.WIDGET_AGUA_COPO";
     static final String ACAO_VOLUME = "br.com.athoslife.app.WIDGET_AGUA_VOLUME";
 
     private static final int[] COPOS = {R.id.wg_copo_0, R.id.wg_copo_1, R.id.wg_copo_2, R.id.wg_copo_3, R.id.wg_copo_4};
+    /** Quadros do Life por faixa (drawable athos_wg_life_<faixa>_NN). */
+    static final int QUADROS = 20;
+    private static final String[] FAIXAS = {"vazio", "sede", "indo", "quase", "meta"};
+
     private static final int[] NIVEIS = {
             R.drawable.athos_wg_copo_0, R.drawable.athos_wg_copo_25, R.drawable.athos_wg_copo_50,
             R.drawable.athos_wg_copo_75, R.drawable.athos_wg_copo_100};
@@ -45,24 +53,39 @@ public class WidgetAguaProvider extends AppWidgetProvider {
 
     @Override
     public void onReceive(Context ctx, Intent intent) {
-        super.onReceive(ctx, intent);
-        String acao = intent.getAction();
-        if (ACAO_COPO.equals(acao)) {
-            WidgetAguaEstado.somarCopo(ctx);
-            atualizarTodos(ctx);
-            WidgetAguaPlugin.avisarFila();
-        } else if (ACAO_VOLUME.equals(acao)) {
-            WidgetAguaEstado.trocarVolume(ctx);
-            atualizarTodos(ctx);
+        // Erro aqui derruba o processo calado e o widget fica parado na tela:
+        // registra e segue (o próximo toque ou abertura do app redesenha).
+        try {
+            super.onReceive(ctx, intent);
+            String acao = intent.getAction();
+            if (ACAO_COPO.equals(acao)) {
+                WidgetAguaEstado.somarCopo(ctx);
+                atualizarTodos(ctx);
+                WidgetAguaPlugin.avisarFila();
+            } else if (ACAO_VOLUME.equals(acao)) {
+                WidgetAguaEstado.trocarVolume(ctx);
+                atualizarTodos(ctx);
+            }
+        } catch (RuntimeException e) {
+            Log.e(TAG, "falha ao tratar toque no widget", e);
         }
     }
 
-    static void atualizarTodos(Context ctx) {
-        AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
-        int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, WidgetAguaProvider.class));
-        if (ids.length == 0) return;
-        RemoteViews v = montar(ctx, WidgetAguaEstado.carregar(ctx));
-        mgr.updateAppWidget(ids, v);
+    /**
+     * Redesenha o widget com o estado atual (e os toques ligados de novo).
+     * Público: a troca do ícone do mascote também chama — mudar o alias do
+     * launcher faz alguns launchers recarregarem o widget sem os toques.
+     */
+    public static void atualizarTodos(Context ctx) {
+        try {
+            AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
+            int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, WidgetAguaProvider.class));
+            if (ids == null || ids.length == 0) return;
+            RemoteViews v = montar(ctx, WidgetAguaEstado.carregar(ctx));
+            mgr.updateAppWidget(ids, v);
+        } catch (RuntimeException e) {
+            Log.e(TAG, "falha ao redesenhar o widget", e);
+        }
     }
 
     private static RemoteViews montar(Context ctx, WidgetAguaEstado e) {
@@ -90,15 +113,13 @@ public class WidgetAguaProvider extends AppWidgetProvider {
         v.setTextViewText(R.id.wg_volume, e.copoMl >= 1000 ? "1 L" : e.copoMl + "\nml");
         v.setOnClickPendingIntent(R.id.wg_volume, broadcast(ctx, ACAO_VOLUME, 20));
 
-        // Humor do Life.
-        String humor = e.humor();
-        if ("hydrated".equals(humor)) {
-            v.setImageViewResource(R.id.wg_life, R.drawable.athos_widget_life);
-            v.setInt(R.id.wg_life, "setImageAlpha", 255);
-        } else {
-            // Life desidratado (rachado) — imagem do dono, 2026-09-28.
-            v.setImageViewResource(R.id.wg_life, R.drawable.athos_widget_life_seco);
-            v.setInt(R.id.wg_life, "setImageAlpha", "empty".equals(humor) ? 140 : 255);
+        // Life da faixa da meta: troca os 20 quadros do ViewFlipper.
+        String faixa = FAIXAS[e.faixa()];
+        for (int i = 0; i < QUADROS; i++) {
+            int quadro = ctx.getResources().getIdentifier(
+                    String.format(Locale.ROOT, "athos_wg_life_%s_%02d", faixa, i), "drawable", ctx.getPackageName());
+            int filho = ctx.getResources().getIdentifier("wg_life_" + i, "id", ctx.getPackageName());
+            if (quadro != 0 && filho != 0) v.setImageViewResource(filho, quadro);
         }
 
         v.setOnClickPendingIntent(R.id.wg_life, abrirApp(ctx, "athoslife://abrir/home", 30));
@@ -109,7 +130,12 @@ public class WidgetAguaProvider extends AppWidgetProvider {
     }
 
     private static PendingIntent broadcast(Context ctx, String acao, int codigo) {
-        Intent it = new Intent(ctx, WidgetAguaProvider.class).setAction(acao);
+        // FOREGROUND: o toque vai pra fila rápida de broadcasts. Na fila normal,
+        // com o celular ocupado ou economizando bateria (Samsung/Xiaomi), o
+        // toque podia demorar muito ou não chegar e o widget parecia travado.
+        // INCLUDE_STOPPED: entrega mesmo com o app "parado" pelo sistema.
+        Intent it = new Intent(ctx, WidgetAguaProvider.class).setAction(acao)
+                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         return PendingIntent.getBroadcast(ctx, codigo, it, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 

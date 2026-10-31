@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { fmtKcal } from '@domain/rules/formatoNumero'
 import { useFoodSearch } from './useFoodSearch'
 import { escalarMacros } from '@domain/rules/foodReconciliation'
 import type { AlimentoBase } from '@domain/entities/food'
@@ -171,7 +172,7 @@ function PortionView(props: {
           disabled={gramas <= 0}
           className="w-full rounded-card bg-brand py-4 font-bold text-brand-ink transition-transform active:scale-[0.98] disabled:opacity-40"
         >
-          Adicionar {macros.calorias} kcal
+          Adicionar {fmtKcal(macros.calorias)} kcal
         </button>
       </div>
     </main>

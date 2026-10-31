@@ -53,3 +53,33 @@ export function Historico(props: { itens: readonly Resposta[] }) {
     </>
   )
 }
+
+/**
+ * Texto do Life com o pouco de formatação que ele usa: **negrito** vira
+ * negrito de verdade (antes apareciam os asteriscos), quebras de linha
+ * viram parágrafos e "* item" no começo da linha vira "• item".
+ */
+export function TextoLife(props: { texto: string }) {
+  const linhas = props.texto.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim().split('\n')
+  return (
+    <>
+      {linhas.map((linha, i) => (
+        <span key={i} className={linha.trim() === '' ? 'block h-2' : 'block'}>
+          {partesNegrito(linha.replace(/^\s*[*-]\s+/, '• '))}
+        </span>
+      ))}
+    </>
+  )
+}
+
+function partesNegrito(linha: string): ReactNode[] {
+  return linha.split(/(\*\*[^*\n]+\*\*|__[^_\n]+__)/g).map((p, i) =>
+    /^(\*\*|__).+(\*\*|__)$/.test(p) ? (
+      <strong key={i} className="font-bold text-content-hi">
+        {p.slice(2, -2)}
+      </strong>
+    ) : (
+      p.replace(/\*\*/g, '')
+    ),
+  )
+}

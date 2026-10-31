@@ -3,8 +3,11 @@ import { useSession } from '@app/SessionProvider'
 import { ProgressRing } from '@ui/components/ProgressRing'
 import { macrosRepository } from '@data/repositories/macrosRepository'
 import { passosRepository } from '@data/repositories/passosRepository'
+import { aoMudarDiaLeve } from '@data/diaLeve'
 import { profileRepository } from '@data/repositories/profileRepository'
 import { useAgua } from '@ui/screens/water/useAgua'
+import { widgetAgua } from '@data/native/widgetAgua'
+import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { ATALHOS_AGUA_ML, formatarVolume, progressoAgua } from '@domain/entities/water'
 import { calcularProgresso, type Metas } from '@domain/entities/profile'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -56,6 +59,18 @@ export function TodayActivity({ metas }: { metas: Metas }) {
       ativo = false
     }
   }, [metas.passos])
+
+  // Dia leve muda a meta de passos de hoje.
+  useEffect(
+    () =>
+      aoMudarDiaLeve(() => {
+        void passosRepository.doDia(metas.passos).then((p) => {
+          setPassos(p.passos)
+          setPassosMeta(p.meta)
+        }).catch(() => {})
+      }),
+    [metas.passos],
+  )
 
   const totalAgua = agua.estado?.totalMl ?? 0
 
@@ -113,8 +128,8 @@ export function TodayActivity({ metas }: { metas: Metas }) {
   const rotuloErroAgua = agua.erro ? t.agua.erroRegistrar : null
   const discos = [
     { id: 'agua' as const, tom: 'agua' as const, pct: progressoAgua(totalAgua, metas.aguaMl), valor: formatarVolume(totalAgua), unidade: `/${formatarVolume(metas.aguaMl)}`, rotulo: t.atividade.agua, meta: formatarVolume(metas.aguaMl) },
-    { id: 'calorias' as const, tom: 'calorias' as const, pct: calcularProgresso(kcal, metas.kcal), valor: String(kcal), unidade: `/${metas.kcal}`, rotulo: t.atividade.calorias, meta: String(metas.kcal) },
-    { id: 'proteina' as const, tom: 'proteina' as const, pct: calcularProgresso(prot, metas.proteina), valor: `${prot}g`, unidade: `/${metas.proteina}g`, rotulo: t.atividade.proteinas, meta: `${metas.proteina}g` },
+    { id: 'calorias' as const, tom: 'calorias' as const, pct: calcularProgresso(kcal, metas.kcal), valor: fmtKcal(kcal), unidade: `/${fmtKcal(metas.kcal)}`, rotulo: t.atividade.calorias, meta: String(metas.kcal) },
+    { id: 'proteina' as const, tom: 'proteina' as const, pct: calcularProgresso(prot, metas.proteina), valor: `${fmtG(prot)}g`, unidade: `/${fmtG(metas.proteina)}g`, rotulo: t.atividade.proteinas, meta: `${fmtG(metas.proteina)}g` },
     { id: 'passos' as const, tom: 'passos' as const, pct: pctPassos, valor: formatarPassos(passos), unidade: `/${formatarPassos(passosMeta)}`, rotulo: t.atividade.passos, meta: formatarPassos(passosMeta) },
   ]
 
@@ -263,6 +278,7 @@ export function TodayActivity({ metas }: { metas: Metas }) {
                     </li>
                   ))}
                 </ul>
+                <WidgetNaTela />
               </div>
             )}
 
@@ -379,4 +395,37 @@ function estadoTemRegistros(estado: { registros: readonly unknown[] } | null): b
 function formatarPassos(n: number): string {
   if (n < 1000) return String(n)
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(n / 1000)}k`
+}
+
+/**
+ * "Adicionar à tela inicial": o widget de água existe no APK, mas o Android
+ * não coloca sozinho e quase ninguém acha na lista (relatório do APK). Só
+ * aparece quando o celular aceita o pedido e o widget ainda não está lá.
+ */
+function WidgetNaTela() {
+  const t = useI18n().m.home.agua
+  const [mostrar, setMostrar] = useState(false)
+
+  useEffect(() => {
+    let vivo = true
+    void widgetAgua.podeOferecerNaTela().then((v) => vivo && setMostrar(v))
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  if (!mostrar) return null
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void widgetAgua.colocarNaTela().then((pedido) => {
+          if (pedido) setMostrar(false)
+        })
+      }}
+      className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-pill border border-accent-water/40 text-sm font-semibold text-accent-water active:scale-[0.98]"
+    >
+      📲 {t.widgetNaTela}
+    </button>
+  )
 }

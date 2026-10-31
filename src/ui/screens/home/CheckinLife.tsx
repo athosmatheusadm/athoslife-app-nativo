@@ -14,9 +14,11 @@ import {
   type Momento,
   type Sentimento,
 } from '@domain/rules/checkinLife'
+import { sugereDiaLeve } from '@domain/rules/diaLeve'
 import { useI18n } from '@/i18n/I18nProvider'
 import { vibrar } from '@ui/feedback'
 import { LifeChatSheet } from '@ui/components/life/LifeChatSheet'
+import { OfertaDiaLeve } from './OfertaDiaLeve'
 
 /** Segundos depois de abrir a Home até a faixa chegar (protótipo v2: nada na abertura). */
 const ATRASO_MS = 3000
@@ -164,6 +166,9 @@ export function CheckinLife() {
         {resposta && (
           <div role="status" className="pb-1.5 text-sm leading-relaxed text-content-mid">
             <p>{resposta.texto}</p>
+            {palavra && sugereDiaLeve(palavra, tags) && (
+              <OfertaDiaLeve etiquetas={tags} metaPassos={profile?.metas.passos ?? 0} />
+            )}
             {resposta.convite && (
               <button
                 type="button"

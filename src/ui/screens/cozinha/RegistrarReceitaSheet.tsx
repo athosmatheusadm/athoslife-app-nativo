@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import type { Macros } from '@domain/entities/food'
@@ -97,7 +98,7 @@ export function RegistrarReceitaSheet(props: {
         </div>
 
         <p className="mt-5 text-center text-micro text-content-low">
-          {macros.calorias} {t.kcal} · {macros.proteina}g {t.prot} · {macros.carboidrato}g {t.carb} · {macros.gordura}g {t.gord}
+          {fmtKcal(macros.calorias)} {t.kcal} · {fmtG(macros.proteina)} g {t.prot} · {fmtG(macros.carboidrato)} g {t.carb} · {fmtG(macros.gordura)} g {t.gord}
         </p>
 
         {estado === 'feito' ? (

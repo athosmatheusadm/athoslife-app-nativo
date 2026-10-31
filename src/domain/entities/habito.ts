@@ -47,7 +47,9 @@ export interface Habito {
 }
 
 /** Categorias hoje classificadas como "hábito a construir" (aumentar). */
-const CATEGORIAS_CONSTRUIR = new Set(['leitura'])
+// Igual a ehConstruir (ai-proxy/life.ts) e public.categoria_construir (banco).
+// 'construir' = "Outro" dentro de Construir (antes virava "evitar" ao recarregar).
+const CATEGORIAS_CONSTRUIR = new Set(['leitura', 'sono', 'agua', 'meditar', 'caminhar', 'verduras', 'construir'])
 
 export function tipoDaCategoria(categoria: string | null): TipoHabito {
   return categoria !== null && CATEGORIAS_CONSTRUIR.has(categoria) ? 'construir' : 'evitar'
@@ -98,8 +100,13 @@ function diasEntre(deISO: string, ateISO: string): number {
 }
 
 /** "Atenção" é alerta sóbrio (streak recente, mais frágil), nunca punição. */
-export function statusHabito(h: Pick<Habito, 'streakAtual'>): StatusHabito {
-  return h.streakAtual <= 3 ? 'atencao' : 'firme'
+/**
+ * Roxo é só para quem acabou de tropeçar (até 3 dias depois da recaída).
+ * Hábito novo, sem recaída nenhuma, começa verde: começo não é recaída
+ * (dono, 30/10 — o Life ficava roxo desde o 1º dia).
+ */
+export function statusHabito(h: Pick<Habito, 'streakAtual' | 'ultimaRecaida'>): StatusHabito {
+  return h.ultimaRecaida !== null && h.streakAtual <= 3 ? 'atencao' : 'firme'
 }
 
 export function progressoConquista(streak: number, meta: number): number {
@@ -117,11 +124,16 @@ export function faltamParaConquista(streak: number, meta: number): number {
  * "Termômetro" do Life: nível agregado de bem-estar do usuário nos hábitos,
  * 0 (preocupante, roxo) a 100 (tranquilo, verde). Usa só o streak — que já
  * zera sozinho numa recaída (ver habitosRepository) — sem inventar peso novo.
- * 14 dias (mesmo marco de proximaConquista) conta como "tranquilo total".
+ * 14 dias depois da recaída (mesmo marco de proximaConquista) volta ao
+ * "tranquilo total". Hábito sem recaída nenhuma conta como tranquilo: o
+ * começo de um hábito não é motivo de preocupação.
  */
-export function nivelBemEstar(habitos: readonly Habito[]): number {
+export function nivelBemEstar(habitos: readonly Pick<Habito, 'streakAtual' | 'ultimaRecaida'>[]): number {
   if (habitos.length === 0) return 100
-  const soma = habitos.reduce((acc, h) => acc + Math.min(100, (h.streakAtual / 14) * 100), 0)
+  const soma = habitos.reduce(
+    (acc, h) => acc + (h.ultimaRecaida === null ? 100 : Math.min(100, (h.streakAtual / 14) * 100)),
+    0,
+  )
   return Math.round(soma / habitos.length)
 }
 
@@ -173,11 +185,15 @@ const TERMOS_PROIBIDOS = [
   'champanhe', 'sake', 'conhaque', 'absinto', 'cerveza', 'cervezas', 'vino', 'vinos', 'borrachera', 'beer',
   'beers', 'alcohol', 'alcoholic', 'wine', 'liquor', 'booze', 'drunk', 'bebado', 'bebada', 'embriagar',
   'ressaca', 'hangover', 'drinks', 'bebedeira', 'happy hour', 'cocktail', 'coquetel', 'open bar',
+  'biere', 'bieres', 'vin', 'vins', 'pinard', 'alcoolise', 'alcoolisee', 'apero', 'aperitif', 'ivre',
+  'soiree arrosee', 'daru', 'daaru', 'sharab', 'sharaab',
   // tabaco / nicotina
   'cigarro', 'cigarros', 'cigarrinho', 'fumar', 'fumo', 'fumando', 'fumante', 'tabagismo', 'tabaco',
   'nicotina', 'vape', 'vapes', 'vaper', 'cigarro eletronico', 'pod de nicotina', 'narguile', 'charuto',
   'charutos', 'palheiro', 'cigarrillo', 'cigarrillos', 'cigarette', 'cigarettes', 'smoking', 'smoke',
   'tobacco', 'cigar', 'cigars', 'hookah', 'shisha', 'juul', 'snus',
+  'clope', 'clopes', 'tabac', 'fumer', 'cigare', 'cigares', 'chicha', 'bidi', 'beedi', 'gutka', 'gutkha',
+  'khaini', 'paan masala', 'pan masala', 'zarda',
   // drogas e remédio controlado
   'maconha', 'cannabis', 'marijuana', 'marihuana', 'weed', 'thc', 'cbd', 'haxixe', 'hashish', 'skunk',
   'cocaina', 'cocaine', 'crack', 'droga', 'drogas', 'drug', 'drugs', 'entorpecente', 'entorpecentes',
@@ -187,12 +203,15 @@ const TERMOS_PROIBIDOS = [
   'oxycodone', 'fentanil', 'fentanyl', 'tramadol', 'anfetamina', 'anfetaminas', 'amphetamine', 'ritalina',
   'venvanse', 'adderall', 'rivotril', 'clonazepam', 'zolpidem', 'benzo', 'benzodiazepina', 'benzodiazepinico',
   'porro', 'porros',
+  'drogue', 'drogues', 'beuh', 'shit', 'ganja', 'charas', 'afeem', 'afim', 'nasha',
   // apostas e jogos de azar
   'aposta', 'apostas', 'apostar', 'apostador', 'apuestas', 'bet', 'bets', 'betano', 'bet365', 'sportingbet',
   'sports betting', 'cassino', 'casino', 'gambling', 'jogo de azar', 'jogos de azar', 'juegos de azar',
   'jogo do bicho', 'tigrinho', 'fortune tiger', 'aviator', 'blaze', 'roleta', 'poker', 'poquer', 'slot',
   'slots', 'caca niquel', 'caca niqueis', 'loteria', 'loterias', 'mega sena', 'raspadinha', 'raspadinhas',
   'bingo',
+  'pari', 'paris sportifs', 'jeux d argent', 'jeu d argent', 'roulette', 'loto', 'grattage', 'satta', 'juaa',
+  'jua', 'teen patti', 'rummy', 'dream11',
   // conteúdo e vida sexual
   'pornografia', 'porno', 'porn', 'pornhub', 'xvideos', 'xxx', 'nsfw', 'hentai', 'onlyfans', 'putaria',
   'masturbacao', 'masturbar', 'masturbarse', 'masturbation', 'masturbate', 'punheta', 'siririca', 'nofap',
@@ -200,18 +219,29 @@ const TERMOS_PROIBIDOS = [
   'desnuda', 'erotico', 'erotica', 'fetiche', 'fetish', 'tesao', 'ejacular', 'ejaculacao', 'ejaculation',
   'retencao de semen', 'semen', 'prostituicao', 'prostituta', 'prostitution', 'garota de programa', 'camgirl',
   'orgia', 'tinder', 'grindr', 'viagra', 'sildenafila', 'tadalafila',
+  'pornographie', 'sexe', 'branlette', 'prostituee',
+]
+
+/** Hindi: procurado em qualquer parte do nome (o devanágari não separa palavra como o latim). */
+const TERMOS_PROIBIDOS_HI = [
+  'शराब', 'दारू', 'दारु', 'बियर', 'बीयर', 'वाइन', 'व्हिस्की', 'वोदका',
+  'सिगरेट', 'बीडी', 'तंबाकू', 'तम्बाकू', 'गुटखा', 'खैनी', 'पान मसाला', 'हुक्का', 'जर्दा',
+  'गांजा', 'चरस', 'अफीम', 'ड्रग', 'नशा', 'कोकीन', 'हेरोइन',
+  'जुआ', 'सट्टा', 'बेटिंग', 'कैसीनो', 'लॉटरी', 'लाटरी',
+  'पोर्न', 'सेक्स', 'अश्लील', 'हस्तमैथुन', 'वेश्या',
 ]
 
 function normalizarNome(t: string): string {
   return ` ${t
+    .replace(/œ/gi, 'oe')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[̀-ͯ\u093c]/g, '')
+    .replace(/[^a-z0-9\u0900-\u097f]+/g, ' ')
     .trim()} `
 }
 
 export function habitoNomeProibido(nome: string): boolean {
   const n = normalizarNome(nome)
-  return TERMOS_PROIBIDOS.some((t) => n.includes(` ${t} `))
+  return TERMOS_PROIBIDOS.some((t) => n.includes(` ${t} `)) || TERMOS_PROIBIDOS_HI.some((t) => n.includes(t))
 }

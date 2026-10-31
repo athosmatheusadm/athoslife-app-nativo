@@ -4,7 +4,8 @@ import { useI18n } from '@/i18n/I18nProvider'
 import { cozinhaService } from '@domain/services/cozinhaService'
 import { estruturarGerada } from '@domain/rules/cozinha'
 import type { ReceitaCriada } from '@domain/entities/receita'
-import { capturarFoto, type OrigemFoto } from '@data/ai/photoCapture'
+import { CameraNegadaError, capturarFoto, type OrigemFoto } from '@data/ai/photoCapture'
+import { avisar } from '@ui/feedback'
 import { CabecalhoCozinha } from './CabecalhoCozinha'
 import { ReceitaView } from './ReceitaView'
 
@@ -38,7 +39,10 @@ export function CriacaoScreen() {
   async function porFoto(origem: OrigemFoto) {
     if (!criacao) return
     setEscolhendo(false)
-    const foto = await capturarFoto(origem)
+    const foto = await capturarFoto(origem).catch((e: unknown) => {
+      if (e instanceof CameraNegadaError) avisar.erro(m.comum.cameraNegada)
+      return null
+    })
     if (!foto) return
     setEstadoFoto('enviando')
     try {

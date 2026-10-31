@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { fmtKcal } from '@domain/rules/formatoNumero'
 import { useSession } from '@app/SessionProvider'
 import { avisarPlanoAplicado } from '@app/eventosLife'
 import { alimentosRepository } from '@data/repositories/alimentosRepository'
@@ -672,7 +673,7 @@ function PreviaDieta(props: {
                 return (
                   <li key={ii} className="flex items-center gap-2 text-sm">
                     <span className="min-w-0 flex-1 text-content-hi">
-                      {a.nome} <span className="text-micro text-content-low">· {quantidade(m, it.gramas, a.porcaoG)} · {mac.calorias} kcal</span>
+                      {a.nome} <span className="text-micro text-content-low">· {quantidade(m, it.gramas, a.porcaoG)} · {fmtKcal(mac.calorias)} kcal</span>
                     </span>
                     {it.opcoes.length > 1 && (
                       <button

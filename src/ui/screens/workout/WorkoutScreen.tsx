@@ -13,6 +13,8 @@ import {
 import { treinoPlanoRepository } from '@data/repositories/treinoPlanoRepository'
 import { ExerciseIcon } from '@ui/components/ExerciseIcon'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
+import { BotaoStory } from '@ui/components/story/BotaoStory'
+import { CardDiaLeve, useDiaLeve } from './CardDiaLeve'
 import { ExerciseCard } from './ExerciseCard'
 import { AddExercisePanel } from './AddExercisePanel'
 import { TreinoEmAndamento } from './TreinoEmAndamento'
@@ -45,6 +47,7 @@ export function WorkoutScreen() {
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
   const [painelAberto, setPainelAberto] = useState(false)
   const { sessao, iniciar } = useSessaoTreino()
+  const diaLeve = useDiaLeve()
   const [recarga, setRecarga] = useState(0)
   const { m, idioma } = useI18n()
   const t = m.treino
@@ -183,7 +186,10 @@ export function WorkoutScreen() {
           <h1 className="text-2xl font-extrabold text-content-hi">{t.titulo}</h1>
           <p className="text-sm text-content-low">{t.subtitulo}</p>
         </div>
-        <ProfileAvatar />
+        <div className="flex items-center gap-2">
+          <BotaoStory modo="gym" />
+          <ProfileAvatar />
+        </div>
       </header>
 
       {/* Seletor de local */}
@@ -205,8 +211,9 @@ export function WorkoutScreen() {
         ))}
       </div>
 
-      {/* Tira de dias da semana */}
-      <div className="mb-4 flex gap-2 overflow-x-auto sem-barra px-4 pb-1">
+      {/* Tira de dias da semana: os 7 cabem na largura (antes o domingo sumia
+          à direita); com texto grande, ainda rola de lado. */}
+      <div className="mb-4 flex gap-1.5 overflow-x-auto sem-barra px-4 pb-1">
         {DIAS_SEMANA.map((d) => {
           const ehHoje = d.id === diaSemanaHoje()
           const ativo = d.id === dia
@@ -217,7 +224,7 @@ export function WorkoutScreen() {
               key={d.id}
               onClick={() => setDia(d.id)}
               aria-pressed={ativo}
-              className={`flex min-h-12 w-14 flex-none flex-col items-center justify-center rounded-xl py-1.5 text-xs font-bold capitalize transition-colors active:scale-95 ${
+              className={`flex min-h-12 min-w-[2.75rem] flex-1 flex-col items-center justify-center rounded-xl py-1.5 text-xs font-bold capitalize transition-colors active:scale-95 ${
                 ativo ? 'bg-brand text-brand-ink' : 'border border-surface-4 text-content-mid'
               }`}
             >
@@ -230,6 +237,8 @@ export function WorkoutScreen() {
         })}
       </div>
 
+      {!sessao && ehHojeSel && diaLeve && <CardDiaLeve treino={diaLeve} local={local} diaSemana={dia} />}
+
       {sessao ? (
         <TreinoEmAndamento />
       ) : (
@@ -240,7 +249,7 @@ export function WorkoutScreen() {
           <button
             onClick={() => {
               vibrar.leve()
-              iniciar({ itens, local, diaSemana: dia })
+              iniciar({ itens, local, diaSemana: dia, leve: diaLeve === 'leve' })
             }}
             className="mx-4 mb-4 min-h-14 w-[calc(100%-2rem)] rounded-2xl border border-brand/50 bg-brand/10 py-3 text-sm font-extrabold text-brand active:scale-[0.98]"
           >

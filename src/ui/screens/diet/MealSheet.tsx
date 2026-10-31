@@ -1,4 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
+import { fmtG, fmtKcal } from '@domain/rules/formatoNumero'
 import { ActivityIconPicker, MEAL_ICONS, type UiIconKey } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
@@ -43,11 +44,13 @@ export function MealSheet(props: {
   const { refeicao } = props
   const [modo, setModo] = useState<Modo>('menu')
   const [salvandoIcone, setSalvandoIcone] = useState(false)
+  // Nome e ícone da refeição extra ficam recolhidos: abertos, empurravam a lista pra baixo.
+  const [editando, setEditando] = useState(false)
   const [erroIcone, setErroIcone] = useState(false)
   const [itemSelecionadoId, setItemSelecionadoId] = useState<string | null>(null)
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false)
   const macros = macrosRefeicao(refeicao.itens)
-  const { m, idioma } = useI18n()
+  const { m } = useI18n()
   const t = m.dieta.sheet
   const sugestoes = props.sugestoesPlano ?? []
 
@@ -83,7 +86,7 @@ export function MealSheet(props: {
           <div className="flex items-center gap-3">
             <ActivityIcon icone={refeicao.icone ?? refeicao.tipo} />
             <span className="min-w-0 flex-1 truncate text-xl font-bold text-content-hi">{refeicao.nome}</span>
-            <span className="text-sm font-bold tabular-nums text-brand">{macros.calorias} kcal</span>
+            <span className="text-sm font-bold tabular-nums text-brand">{fmtKcal(macros.calorias)} kcal</span>
             <button
               type="button"
               role="checkbox"
@@ -104,7 +107,18 @@ export function MealSheet(props: {
             </button>
           </div>
 
-          {props.onRenomear && (
+          {(props.onRenomear || props.onMudarIcone) && !editando && (
+            <button
+              type="button"
+              onClick={() => setEditando(true)}
+              className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-pill border border-surface-4 px-3.5 text-micro font-semibold text-content-mid active:bg-content-hi/5"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+              {t.editar}
+            </button>
+          )}
+
+          {editando && props.onRenomear && (
             <NomeExtraInput
               key={refeicao.nome}
               valorInicial={refeicao.nome}
@@ -113,13 +127,25 @@ export function MealSheet(props: {
             />
           )}
 
-          {props.onMudarIcone && <ActivityIconPicker valor={refeicao.icone ?? 'tigela'} opcoes={MEAL_ICONS} disabled={salvandoIcone}
+          {editando && props.onMudarIcone && <ActivityIconPicker valor={refeicao.icone ?? 'tigela'} opcoes={MEAL_ICONS} disabled={salvandoIcone}
             onChange={(icone) => {
               setSalvandoIcone(true)
               setErroIcone(false)
               void props.onMudarIcone!(icone).catch(() => setErroIcone(true)).finally(() => setSalvandoIcone(false))
             }} />}
-          {erroIcone && <p role="alert" className="mt-2 text-sm text-accent-danger">{idioma === 'en' ? "Couldn't save the icon. Try again." : idioma === 'es' ? 'No se pudo guardar el icono. Inténtalo de nuevo.' : 'Não deu para salvar o ícone. Tente novamente.'}</p>}
+          {erroIcone && <p role="alert" className="mt-2 text-sm text-accent-danger">{m.dieta.sheet.erroIcone}</p>}
+          {editando && (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-micro text-content-low">{t.dicaOrdem}</p>
+              <button
+                type="button"
+                onClick={() => setEditando(false)}
+                className="min-h-11 flex-none rounded-pill bg-brand px-5 text-sm font-bold text-surface-1 active:scale-95"
+              >
+                {t.pronto}
+              </button>
+            </div>
+          )}
 
           {/* Itens já registrados — toca pra selecionar, ⧉ copia, 🗑 exclui (com Desfazer) */}
           <ul className="mt-3 border-t border-surface-3 pt-1">
@@ -136,7 +162,7 @@ export function MealSheet(props: {
                     <span className="min-w-0 flex-1 truncate text-content-hi">{item.nome}</span>
                     <span className="flex-none text-content-low">{item.quantidade}</span>
                     <span className="w-16 flex-none text-right font-medium tabular-nums text-content-mid">
-                      {item.calorias} kcal
+                      {fmtKcal(item.calorias)} kcal
                     </span>
                   </button>
                   {selecionado && (
@@ -193,7 +219,7 @@ export function MealSheet(props: {
                     <span className="flex min-w-0 flex-1 items-center gap-3 opacity-70">
                       <span className="min-w-0 flex-1 truncate text-content-hi">{item.nome}</span>
                       <span className="flex-none text-content-low">{item.quantidade}</span>
-                      <span className="w-14 flex-none text-right tabular-nums text-content-mid">{item.calorias} kcal</span>
+                      <span className="w-14 flex-none text-right tabular-nums text-content-mid">{fmtKcal(item.calorias)} kcal</span>
                     </span>
                     <button
                       type="button"
@@ -212,9 +238,9 @@ export function MealSheet(props: {
 
           {refeicao.itens.length > 0 && (
             <div className="mt-3 flex border-y border-surface-3 py-3 text-center">
-              <MacroCell v={`${macros.proteina}g`} l={m.dieta.macroLongo.proteina} cor="text-macro-proteina" />
-              <MacroCell v={`${macros.carboidrato}g`} l={m.dieta.macroLongo.carbo} cor="text-macro-carbo" />
-              <MacroCell v={`${macros.gordura}g`} l={m.dieta.macroLongo.gordura} cor="text-macro-gordura" />
+              <MacroCell v={`${fmtG(macros.proteina)}g`} l={m.dieta.macroLongo.proteina} cor="text-macro-proteina" />
+              <MacroCell v={`${fmtG(macros.carboidrato)}g`} l={m.dieta.macroLongo.carbo} cor="text-macro-carbo" />
+              <MacroCell v={`${fmtG(macros.gordura)}g`} l={m.dieta.macroLongo.gordura} cor="text-macro-gordura" />
               <MacroCell v={String(macros.calorias)} l={m.dieta.macroLongo.calorias} cor="text-brand" />
             </div>
           )}

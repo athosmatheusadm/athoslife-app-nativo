@@ -1,5 +1,10 @@
+import { diaLeveHoje } from '@data/diaLeve'
 import { supabase } from '@data/supabase/client'
-import type { ResultadoVisao } from '@domain/entities/food'
+import { lerComCache } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
+import { dataLocalISO } from '@domain/rules/datas'
+import { ehFalhaDeRede, marcarFalhaDeRede, marcarRespostaDoServidor, valeTentarRede } from '@data/offline/conexao'
+import type { BaseScan, ResultadoVisao, VarianteOleo } from '@domain/entities/food'
 
 /**
  * Cliente do Edge Function `ai-proxy`.
@@ -23,6 +28,8 @@ export type AiProxyErro =
   | { tipo: 'image_too_dark' }
   | { tipo: 'image_too_large' }
   | { tipo: 'proxy_error'; detalhe: string }
+  /** Sem internet: a IA só existe no servidor. */
+  | { tipo: 'sem_conexao' }
 
 export class AiProxyError extends Error {
   readonly info: AiProxyErro
@@ -54,22 +61,33 @@ interface RespostaVisaoCrua {
 }
 
 export async function chamar<T>(
-  tipo: 'vision' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura',
+  tipo: 'vision' | 'scan' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura',
   payload: Record<string, unknown>,
 ): Promise<T> {
-  const { data: sessao } = await supabase.auth.getSession()
+  if (!valeTentarRede()) throw new AiProxyError({ tipo: 'sem_conexao' })
+  const { data: sessao, error: erroSessao } = await supabase.auth.getSession()
   const token = sessao.session?.access_token
-  if (!token) throw new AiProxyError({ tipo: 'not_authenticated' })
+  if (!token) {
+    // Token vencido sem conseguir renovar por falta de rede ≠ deslogado.
+    throw new AiProxyError({ tipo: erroSessao && ehFalhaDeRede(erroSessao) ? 'sem_conexao' : 'not_authenticated' })
+  }
 
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ tipo, ...payload }),
-  })
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ tipo, ...payload }),
+    })
+    marcarRespostaDoServidor()
+  } catch {
+    marcarFalhaDeRede()
+    throw new AiProxyError({ tipo: 'sem_conexao' })
+  }
 
   if (res.ok) return res.json() as Promise<T>
 
@@ -110,6 +128,79 @@ export async function analisarFoto(base64: string, mime = 'image/jpeg'): Promise
   }
 }
 
+// ---------------------------------------------------------------- scanner v1.1
+
+/** Item como a ai-proxy devolve (`tipo: 'scan'`). Nutrientes já arredondados. */
+export interface ItemScanCru {
+  itemId: string
+  nomeVisto: string
+  resolucao: 'matched' | 'needs_choice' | 'unresolved'
+  base: BaseScan | null
+  candidatos: BaseScan[]
+  gramas: number | null
+  faixa: { min: number; max: number } | null
+  variante: VarianteOleo | null
+  varianteOrigem: 'padrao' | 'visual' | null
+  nutrientes: { kcal: number | null; proteina: number | null; carboidrato: number | null; gordura: number | null } | null
+  motivos: string[]
+  incluir: boolean
+}
+
+export interface RespostaScan {
+  scan_id: string
+  revisao: number
+  status: 'ready' | 'needs_review' | 'committed' | 'processing'
+  titulo?: string
+  parcial?: boolean
+  itens?: ItemScanCru[]
+}
+
+const espera = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Foto -> resultado editável. O mesmo `requestId` com a mesma foto devolve
+ * o resultado já pronto sem gastar outro scan — então dá pra repetir com
+ * segurança se a internet cair no meio. Se ainda estiver processando,
+ * consulta o status por até ~25 s.
+ */
+export async function analisarScan(base64: string, mime: string, requestId: string): Promise<RespostaScan> {
+  const enviar = () => chamar<RespostaScan>('scan', { op: 'analisar', request_id: requestId, image: base64, mime_type: mime })
+  let r: RespostaScan
+  try {
+    r = await enviar()
+  } catch (e) {
+    if (e instanceof AiProxyError) throw e
+    await espera(1500) // queda de rede: tenta uma vez com o mesmo pedido
+    r = await enviar()
+  }
+  for (let i = 0; r.status === 'processing' && i < 10; i++) {
+    await espera(2500)
+    r = await chamar<RespostaScan>('scan', { op: 'status', scan_id: r.scan_id })
+  }
+  if (r.status === 'processing') throw new AiProxyError({ tipo: 'proxy_error', detalhe: 'analysis_timeout' })
+  return r
+}
+
+export async function confirmarScan(params: {
+  scanId: string
+  revisao: number
+  commitKey: string
+  data: string
+  alvo: { tipo: string; extraId?: string }
+  itens: { itemId: string; alimentoId: string | null; gramas: number; variante: VarianteOleo | null; incluir: boolean }[]
+}): Promise<number> {
+  const r = await chamar<{ ok: boolean; itens: number }>('scan', {
+    op: 'confirmar',
+    scan_id: params.scanId,
+    revisao: params.revisao,
+    commit_key: params.commitKey,
+    data: params.data,
+    alvo: { tipo: params.alvo.tipo, extra_id: params.alvo.extraId },
+    itens: params.itens.map((i) => ({ item_id: i.itemId, alimento_id: i.alimentoId, gramas: i.gramas, variante: i.variante, incluir: i.incluir })),
+  })
+  return r.itens
+}
+
 /** Alimento estimado pelo Life (fora da base). Macros POR PORÇÃO. */
 export interface AlimentoEstimado {
   nome: string
@@ -123,7 +214,8 @@ export interface AlimentoEstimado {
 
 /**
  * Life estima um alimento/produto que não está na base (busca da Dieta ou
- * código de barras desconhecido). Gasta 1 mensagem da cota do chat.
+ * código de barras desconhecido). Cota própria 'estimar': grátis 1/semana,
+ * pago 20/dia (não gasta mensagem do chat).
  * `null` = não reconheceu como comida (e não gastou cota).
  */
 export async function estimarAlimento(nome: string): Promise<AlimentoEstimado | null> {
@@ -184,6 +276,30 @@ export type AcaoLife =
   | { tipo: 'escolha'; id: string; opcoes: { valor: EscolhaAcao; rotulo: string }[] }
   /** Pesagem ou meta gravada pelo chat (sem IA, sem cota) — recarrega o card "Meu peso". */
   | { tipo: 'peso_atualizado' }
+  /**
+   * Refeição digitada ("almocei arroz e feijão", ai-proxy v4.5): alimentos já
+   * achados na base. O chat mostra o cartão de conferência; só grava quando a
+   * pessoa confirma.
+   */
+  | {
+      tipo: 'registrar_itens'
+      dia: string
+      refeicao: { tipo: 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'; extraId: string | null; nome: string }
+      itens: ItemRegistroLife[]
+    }
+
+/** Um alimento do cartão de conferência (macros da base valem pra `porcaoG`). */
+export interface ItemRegistroLife {
+  alimentoId: string
+  nome: string
+  gramas: number
+  porcaoG: number
+  calorias: number
+  proteina: number
+  carboidrato: number
+  gordura: number
+  unidadeG: number | null
+}
 
 export interface RespostaChat {
   resposta: string
@@ -192,6 +308,26 @@ export interface RespostaChat {
   acao: AcaoLife | null
   /** A pessoa contou algo que valia lembrar e ainda não decidiu sobre a memória (v4.0). */
   sugerirMemoria: boolean
+  /** O que motivou o convite: o app guarda se ela aceitar (v4.5). */
+  memoriaPendente: readonly LembrancaPendente[]
+}
+
+const CATEGORIAS_LEMBRANCA = ['gosto', 'rotina', 'objetivo', 'evento', 'pessoa', 'estilo', 'contexto'] as const
+export interface LembrancaPendente {
+  readonly categoria: (typeof CATEGORIAS_LEMBRANCA)[number]
+  readonly texto: string
+  readonly data: string | null
+}
+
+function lerPendentes(v: unknown): LembrancaPendente[] {
+  if (!Array.isArray(v)) return []
+  return v.flatMap((x) => {
+    const o = (x ?? {}) as Record<string, unknown>
+    const categoria = CATEGORIAS_LEMBRANCA.find((c) => c === o.categoria)
+    const texto = typeof o.texto === 'string' ? o.texto.trim().slice(0, 200) : ''
+    if (!categoria || texto.length < 3) return []
+    return [{ categoria, texto, data: typeof o.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.data) ? o.data : null }]
+  }).slice(0, 2)
 }
 
 /**
@@ -212,12 +348,26 @@ export async function enviarMensagemChat(
   foco: FocoLife = 'home',
   idEnvio: string = crypto.randomUUID(),
 ): Promise<RespostaChat> {
-  const cru = await chamar<{ resposta: string; restantes: number | null; acao?: AcaoLife; sugerir_memoria?: boolean }>('chat', {
+  const diaLeve = await diaLeveHoje()
+  const cru = await chamar<{
+    resposta: string
+    restantes: number | null
+    acao?: AcaoLife
+    sugerir_memoria?: boolean
+    memoria_pendente?: unknown
+  }>('chat', {
     mensagem,
     foco,
     id_envio: idEnvio,
+    ...(diaLeve ? { dia_leve: diaLeve } : {}),
   })
-  return { resposta: cru.resposta, restantes: cru.restantes, acao: cru.acao ?? null, sugerirMemoria: cru.sugerir_memoria === true }
+  return {
+    resposta: cru.resposta,
+    restantes: cru.restantes,
+    acao: cru.acao ?? null,
+    sugerirMemoria: cru.sugerir_memoria === true,
+    memoriaPendente: lerPendentes(cru.memoria_pendente),
+  }
 }
 
 /** Check-in v3 (ai-proxy v4.0): o servidor grava e o Life responde numa frase. Sem cota do chat. */
@@ -251,20 +401,35 @@ export async function responderAcaoLife(id: string, escolha: EscolhaAcao): Promi
   return { resposta: cru.resposta, acao: cru.acao ?? null }
 }
 
-/** Últimas mensagens da conversa (RLS: só as do próprio usuário). */
+/**
+ * Mensagens de HOJE da conversa (RLS: só as do próprio usuário). O chat
+ * abre limpo a cada dia (dono, 30/10: "não precisa ficar mostrando msg
+ * passadas"); o Life continua lembrando — o ai-proxy lê o histórico e o
+ * resumo direto do banco.
+ */
 export async function carregarHistoricoChat(limite = 30): Promise<MensagemChat[]> {
-  const { data: sessao } = await supabase.auth.getSession()
-  const userId = sessao.session?.user.id
+  const userId = await usuarioId().catch(() => null)
   if (!userId) return []
-  const { data, error } = await supabase
-    .from('life_chat_mensagens')
-    .select('autor, texto')
-    .eq('user_id', userId)
-    .order('criado_em', { ascending: false })
-    .limit(limite)
-    .returns<MensagemChat[]>()
-  if (error) throw error
-  return (data ?? []).reverse()
+  const inicioDoDia = new Date()
+  inicioDoDia.setHours(0, 0, 0, 0)
+  // Guardado no aparelho: sem rede, a conversa de hoje continua aparecendo.
+  const data = await lerComCache(
+    `life:chat:${dataLocalISO(inicioDoDia)}:${limite}`,
+    async () => {
+      const { data: rows, error } = await supabase
+        .from('life_chat_mensagens')
+        .select('autor, texto')
+        .eq('user_id', userId)
+        .gte('criado_em', inicioDoDia.toISOString())
+        .order('criado_em', { ascending: false })
+        .limit(limite)
+        .returns<MensagemChat[]>()
+      if (error) throw error
+      return rows ?? []
+    },
+    { padrao: [] },
+  )
+  return [...data].reverse()
 }
 
 /** Quanto do chat ainda dá pra usar hoje, pra mostrar antes de enviar. */
@@ -273,7 +438,7 @@ export async function cotaChatHoje(): Promise<{ usados: number; limite: number }
 }
 
 /** Uso de hoje de um recurso de IA (chat, vision = scanner). */
-export async function cotaIaHoje(tipo: 'chat' | 'vision'): Promise<{ usados: number; limite: number } | null> {
+export async function cotaIaHoje(tipo: 'chat' | 'vision' | 'estimar'): Promise<{ usados: number; limite: number } | null> {
   const { data, error } = await supabase.rpc('cota_ia_status', { p_tipo: tipo })
   const linha = (data as { usados_hoje: number; limite_hoje: number }[] | null)?.[0]
   if (error || !linha) return null

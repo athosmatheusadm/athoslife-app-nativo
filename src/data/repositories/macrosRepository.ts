@@ -1,4 +1,6 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
 import { itensRefeicaoRepository } from './itensRefeicaoRepository'
 import { dataLocalISO } from '@domain/rules/datas'
 
@@ -29,21 +31,27 @@ const ZERO: MacrosDoDia = { kcal: 0, proteina: 0, carboidrato: 0, gordura: 0 }
  */
 export const macrosRepository = {
   async doDia(data: Date = new Date()): Promise<MacrosDoDia> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    const userId = await usuarioId()
 
     const dataStr = dataLocalISO(data)
-    const [{ data: row, error }, manuais] = await Promise.all([
-      supabase
-        .from('macros_diarios')
-        .select('total_kcal, total_prot, total_carbo, total_gord')
-        .eq('user_id', userId)
-        .eq('data', dataStr)
-        .maybeSingle<MacrosRow>(),
+    const [row, manuais] = await Promise.all([
+      // Só a tabela antiga do scanner — não muda offline (o scanner novo grava em itens_refeicao).
+      lerComCache(
+        `macros-scanner-antigo:${dataStr}`,
+        async () => {
+          const { data: linha, error } = await supabase
+            .from('macros_diarios')
+            .select('total_kcal, total_prot, total_carbo, total_gord')
+            .eq('user_id', userId)
+            .eq('data', dataStr)
+            .maybeSingle<MacrosRow>()
+          if (error) throw error
+          return linha
+        },
+        { padrao: null },
+      ),
       itensRefeicaoRepository.macrosDoDia(data),
     ])
-
-    if (error) throw error
 
     const base: MacrosDoDia = row
       ? {

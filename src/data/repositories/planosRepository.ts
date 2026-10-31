@@ -1,4 +1,6 @@
 import { supabase } from '@data/supabase/client'
+import { exigirRede, lerComCache } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
 import { paraEnvio, type PlanoTreinoGerado } from '@domain/rules/geradorTreino'
 import {
   paraEnvioDieta,
@@ -76,9 +78,10 @@ interface PlanoGeradoRow {
 
 function nomeNoIdioma(i: ItemSalvoRow): string {
   const { idioma } = localidadeAtual()
-  if (idioma === 'en') return i.nome_en || i.nome
+  if (idioma === 'pt-BR') return i.nome
   if (idioma === 'es') return i.nome_es || i.nome
-  return i.nome
+  // Sem coluna própria (fr): inglês.
+  return i.nome_en || i.nome
 }
 
 function codigoErroPlano(m: string): string {
@@ -100,9 +103,11 @@ function codigoErroPlano(m: string): string {
  */
 export const planosRepository = {
   async triagemVigente(): Promise<TriagemVigente | null> {
-    const { data, error } = await supabase.rpc('triagem_vigente')
-    if (error) throw error
-    const row = (Array.isArray(data) ? data[0] : data) as TriagemRow | undefined
+    const row = await lerComCache('triagem:vigente', async () => {
+      const { data, error } = await supabase.rpc('triagem_vigente')
+      if (error) throw error
+      return ((Array.isArray(data) ? data[0] : data) as TriagemRow | undefined) ?? null
+    })
     return row ? paraDominio(row) : null
   },
 
@@ -117,8 +122,8 @@ export const planosRepository = {
     dataNascimento: string
     ciente: boolean
   }): Promise<TriagemVigente> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    exigirRede()
+    const userId = await usuarioId()
     const { error } = await supabase.from('triagens_saude').insert({
       user_id: userId,
       versao: VERSAO_TRIAGEM,
@@ -144,8 +149,8 @@ export const planosRepository = {
    * (a anterior fica no histórico, nada é alterado).
    */
   async declararCiente(): Promise<TriagemVigente> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    exigirRede()
+    const userId = await usuarioId()
     const { data: ultima, error: e1 } = await supabase
       .from('triagens_saude')
       .select('versao, respostas, data_nascimento')
@@ -171,8 +176,57 @@ export const planosRepository = {
     return vigente
   },
 
+  /**
+   * Quem digitou a data de nascimento errada pode corrigir uma vez: o banco
+   * aceita até duas datas diferentes por conta (a terceira trava de vez).
+   */
+  async podeCorrigirNascimento(): Promise<boolean> {
+    const userId = await usuarioId()
+    const { data, error } = await supabase
+      .from('triagens_saude')
+      .select('data_nascimento')
+      .eq('user_id', userId)
+      .returns<{ data_nascimento: string }[]>()
+    if (error) return false
+    return new Set((data ?? []).map((r) => r.data_nascimento)).size < 2
+  },
+
+  /** Grava uma linha NOVA igual à última, só com a data de nascimento corrigida. */
+  async corrigirNascimento(dataNascimento: string): Promise<TriagemVigente> {
+    exigirRede()
+    const userId = await usuarioId()
+    const { data: ultima, error: e1 } = await supabase
+      .from('triagens_saude')
+      .select('versao, respostas, ciente_orientacao, ciente_versao')
+      .eq('user_id', userId)
+      .order('criado_em', { ascending: false })
+      .limit(1)
+      .maybeSingle<{ versao: string; respostas: Record<string, boolean>; ciente_orientacao: boolean; ciente_versao: string | null }>()
+    if (e1) throw e1
+    if (!ultima) throw new Error('triagem_necessaria')
+    const { error } = await supabase.from('triagens_saude').insert({
+      user_id: userId,
+      versao: ultima.versao,
+      respostas: ultima.respostas,
+      data_nascimento: dataNascimento,
+      declaracao_versao: DECLARACAO_VERSAO,
+      declaracao_aceita: true,
+      ciente_orientacao: ultima.ciente_orientacao,
+      ciente_versao: ultima.ciente_versao,
+    })
+    if (error) {
+      if (error.message.includes('data_nascimento_invalida')) throw new Error('data_nascimento_invalida')
+      throw error
+    }
+    const vigente = await this.triagemVigente()
+    if (!vigente) throw new Error('triagem_nao_encontrada')
+    return vigente
+  },
+
   /** Troca a ficha do local pelo plano. O servidor revalida tudo; erro vem com o motivo. */
   async aplicarPlanoTreino(plano: PlanoTreinoGerado): Promise<string> {
+    // O servidor revalida a triagem de saúde: só com rede.
+    exigirRede()
     const { data, error } = await supabase.rpc('aplicar_plano_treino', paraEnvio(plano))
     if (error) throw new Error(codigoErroPlano(error.message))
     return String(data)
@@ -180,6 +234,7 @@ export const planosRepository = {
 
   /** Metas + cardápio de referência. O servidor recalcula e confere tudo; erro vem com o motivo. */
   async aplicarPlanoDieta(plano: PlanoDietaGerado): Promise<string> {
+    exigirRede()
     const { data, error } = await supabase.rpc('aplicar_plano_dieta', paraEnvioDieta(plano))
     if (error) throw new Error(codigoErroPlano(error.message))
     return String(data)
@@ -187,14 +242,21 @@ export const planosRepository = {
 
   /** Último plano de dieta aplicado (ou null). */
   async ultimoPlanoDieta(): Promise<PlanoDietaSalvo | null> {
-    const { data, error } = await supabase
-      .from('planos_gerados')
-      .select('id, criado_em, parametros, plano')
-      .eq('tipo', 'dieta')
-      .order('criado_em', { ascending: false })
-      .limit(1)
-      .maybeSingle<PlanoGeradoRow>()
-    if (error) throw error
+    const data = await lerComCache(
+      'plano:dieta',
+      async () => {
+        const { data: row, error } = await supabase
+          .from('planos_gerados')
+          .select('id, criado_em, parametros, plano')
+          .eq('tipo', 'dieta')
+          .order('criado_em', { ascending: false })
+          .limit(1)
+          .maybeSingle<PlanoGeradoRow>()
+        if (error) throw error
+        return row
+      },
+      { padrao: null },
+    )
     if (!data) return null
     return {
       id: data.id,

@@ -2768,3 +2768,1197 @@ Revisados os 8 arquivos que o dono trouxe de outra sessão com o Claude.
 1. Deploy da ai-proxy v4.2.
 2. Scanner: dono decidir as fotos de referência (pesadas) pra etapa 1.
 3. Demais pendências do bloco de 17/10 continuam.
+
+### 2026-10-21 (cont.) — scanner v1.1, etapa 2 (motor) + TACO como referência — branch `scanner-v1-1`
+
+Base: `ATHOSlife_Scanner_Especificacao_Tecnica_v1.1.md`. Dono pediu TACO como
+referência.
+
+- **TACO** (`db/athoslife_taco_referencia_migration.sql`): tabela `taco` (597
+  itens, TACO 4ª ed. NEPA/UNICAMP 2011, por 100 g; dados via
+  github.com/raulfdm/taco-api, "Tr"→0, "*"/NA→null) + `alimentos.taco_id`.
+  279 alimentos ligados (casamento por nome+preparo, revisado à mão; ambíguos
+  fora: "Laranja", "Uva", "Alface", "Leite de coco"...) + variações "— porção"
+  herdam = 334. **Os macros desses alimentos passam a ser os da TACO** (69
+  mudam > 20%, ex.: batata inglesa cozida 77→52/100 g, café coado 2→18/200 g,
+  virado à paulista 450→921/300 g). Backup em `alimentos_antes_taco` + bloco de
+  desfazer no fim do arquivo.
+- **Catálogo do scanner** (`db/athoslife_scanner_v1_migration.sql`, rodar
+  DEPOIS da TACO): preparo, porção típica, prato montado × prato inteiro, óleo
+  de preparo caseiro (arroz 2,5%, feijão 1,5%, grelhados 2% — estimativa da
+  equipe, só onde a base não tem óleo), densidade de bebida, medidas caseiras
+  (`alimentos_medidas`, 112 estimativas da equipe = só sinalizam revisão),
+  `scan_jobs`, `scan_correcoes`, `scan_nao_resolvidos` (sem user_id) e RPC
+  `scanner_confirmar` (transação única, commit_key idempotente).
+- Testado no banco real num bloco que se desfaz sozinho: as duas migrações
+  rodam; nada foi aplicado.
+- **ai-proxy v4.3** (`supabase/functions/ai-proxy/scanner/`): `{tipo:'scan',
+  op: analisar|status|confirmar}`. Gemini só reconhece (o que é, preparo,
+  gramas, medida caseira, âncoras, óleo visível); nutriente vem do catálogo,
+  calculado no servidor. 1 chamada normal, no máximo 2. request_id + hash da
+  foto = idempotente; cota devolvida uma vez em falha; lease com tentativa.
+  **Desligado** até o segredo `SCANNER_V2=true` (sem ele o app usa o
+  `vision` antigo sozinho). `SCANNER_VOCAB_MAX` (padrão 600 nomes no prompt;
+  ~600 tokens por 100 nomes, conta no teto diário).
+- App: scanner tenta o v1.1 e cai no antigo se desligado; foto 1280 px/0,82.
+  No card do item (layout mantido): "Qual é?" com candidatos, busca na base
+  quando não achou, preparo Sem óleo/Caseiro/Bastante óleo com a premissa
+  escrita, aviso de porção, selo "TACO". Item sem alimento não salva (não vira
+  zero). Correção recalcula no aparelho, sem IA; o servidor refaz a conta ao
+  salvar. Textos pt/en/es.
+- Benchmark: `scripts/scanner-benchmark/` (README com o protocolo das fotos
+  pesadas, `rodar.mjs` v1×v2, métricas e portas G1/G2). Fotos ficam fora do git.
+- Validação: 46 testes Deno (27 do scanner: porta G0 + fluxo com banco em
+  memória), deno check, 13 testes node (inclui app × servidor dando o mesmo
+  número), tsc, vite build. **Nenhum teste com o Gemini de verdade nem no
+  aparelho ainda.**
+
+**Pendências**
+1. Dono aprovar e rodar as migrações (TACO primeiro) — muda números da Dieta.
+2. Deploy da ai-proxy (v4.2 peso + v4.3 scanner) e, pra testar, `SCANNER_V2=true`.
+3. Fotos pesadas (30 pro piloto) → rodar o benchmark v1×v2 (portas G1/G2).
+4. Ver a tela nova no aparelho (dono não viu o visual dos chips).
+5. Depois: rótulo e texto pelo mesmo motor; job de reconciliação de leases;
+   incluir `scan_jobs` no "Baixar meus dados".
+
+### 2026-10-21 (fim) — prévia do scanner, story analisado, specs salvas
+
+- Prévia interativa da revisão do scanner novo (prato de exemplo, números
+  TACO): https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ — cópia em
+  `docs/previas/previa-scanner.html`.
+- Especificações salvas no repo: `docs/specs/SCANNER_ESPECIFICACAO_v1.1.md`,
+  `docs/specs/STORY_STUDIO_INTEGRACAO_v3.md` (guia original do zip) e
+  `docs/specs/STORY_STUDIO_ANALISE.md` (o que serve e o que quebraria).
+- Corrigido o que eu disse ao dono: a mesma foto/prato em outro dia **gasta**
+  scan e tokens; só a repetição do mesmo envio (rede caiu) não gasta.
+  Custo estimado ~R$ 0,03 por foto (medir no benchmark).
+- **Push bloqueado de novo** (token do GitHub não fica salvo). Tudo está em
+  commits locais: `main` tem o peso v4.2; a branch `scanner-v1-1` tem peso +
+  scanner + estes docs.
+
+**Pendências pra próxima sessão**
+1. Token do GitHub → `git push` da `main` e da branch `scanner-v1-1` (abrir PR).
+2. Dono decidir: aplicar TACO no banco? publicar ai-proxy? escopo do story
+   (proposta: Alimentação + Musculação)? Facebook App ID.
+3. Fotos pesadas (30) pro benchmark do scanner.
+
+### 2026-10-21 (noite) — TACO aplicada no banco; scanner com a foto em tela cheia
+
+- **TACO aplicada no banco de produção** (dono aprovou: a nutricionista que
+  viu o app elogiou a tabela). `taco` = 597, 333 alimentos ligados, backup
+  em `alimentos_antes_taco` (333). Ex.: batata inglesa cozida agora 52 kcal/100 g.
+  Desfazer: bloco no fim de `db/athoslife_taco_referencia_migration.sql`.
+  A migração do scanner (`athoslife_scanner_v1_migration.sql`) **não** foi aplicada.
+- Prévia do scanner refeita como o dono pediu: a foto ocupa a tela inteira,
+  os itens viram linhas de vidro translúcidas (nome · gramas · kcal) e o ajuste
+  abre só ao tocar na linha (um por vez). Foto de exemplo = bowl de frango
+  (`docs/previas/prato.webp`). Mesmo link:
+  https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ
+- Story: o dono quer conversar antes. Nada a fazer até lá.
+
+**Pendências**
+1. Dono aprovar o visual novo da prévia → levar para `ScannerScreen` (app).
+2. Aplicar a migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
+3. Token do GitHub → push da `main` e da `scanner-v1-1`.
+4. Fotos pesadas para o benchmark.
+
+### 2026-10-21 (noite, cont.) — scanner com o visual aprovado (foto em tela cheia + vidro) — branch `scanner-v1-1`
+
+Dono aprovou a prévia (https://claude.ai/artifact/ETuzXLT8sttmojbwtaFWgQ) e
+pediu pra levar ao app.
+
+- **Revisão** (`scanner/RevisaoScanner.tsx`, portal em tela cheia): foto do
+  prato no fundo; no código de barras, foto do produto nítida no meio + cópia
+  borrada no fundo. Painel de vidro: total grande, uma linha por item (✓ ·
+  nome · g · kcal), toque abre o ajuste (− / +, macros, `ExtrasScan`, porção
+  do rótulo × 100 g). Item sem alimento = borda dourada + "qual é?" e o botão
+  vira "Falta escolher: X". ← e o voltar do Android: 1º toque avisa, 2º descarta.
+- **Câmera própria do código** (`scanner/CameraCodigo.tsx` +
+  `data/native/codigoBarras.ts`): sai o leitor pronto do Google
+  (`BarcodeScanner.scan`), entra `startScan` com a câmera atrás da WebView
+  (`html.barcode-scanner-active` deixa o app transparente, globals.css).
+  Mira com cantos verdes + laser, lanterna (se o aparelho tiver), "Digitar o
+  número". Leu: vibra, mira verde, busca o produto. **Agora o Android pede a
+  permissão de câmera** na 1ª vez (já está no Manifest).
+- Botão "Ler código de barras" com ícone, subtítulo e selo GRÁTIS; "Prefere
+  digitar o número?" como link.
+- `.tema-escuro` e `.vidro` em globals.css: o vidro é sempre escuro, mesmo
+  no modo claro. Textos novos em pt/en/es (`scanner.vidro`).
+- Validação: tsc e vite build. **Não testado no aparelho** (câmera atrás da
+  WebView só dá pra ver no APK).
+
+**Pendências**
+1. APK novo → testar: permissão da câmera, imagem aparecendo atrás (se ficar
+   tela preta, algum fundo não ficou transparente), lanterna, leitura, revisão
+   no claro e no escuro.
+2. Migração do scanner + deploy da ai-proxy (v4.2 + v4.3) + `SCANNER_V2=true`.
+3. Token do GitHub → push da `main` e da `scanner-v1-1` (abrir PR).
+
+### 2026-10-21 (noite, cont.) — créditos, licenças, formulário da Play, idade mínima
+
+- **Créditos** (dono pediu letra miúda, verde claro, sem negrito): Sobre →
+  "Dados nutricionais: Tabela TACO (NEPA/UNICAMP) e Open Food Facts (licença
+  ODbL)"; na revisão do código de barras, "Rótulo via Open Food Facts". pt/en/es.
+- **Licenças de código aberto:** Perfil → Sobre → nova tela
+  (`legal/Licencas.tsx`). Lista gerada por `node scripts/gerar-licencas.mjs`
+  (40 pacotes de produção: 38 MIT, 1 Apache-2.0, 1 0BSD) → rodar de novo
+  quando mudar `package.json`. Obs.: o tailwind cita "Inter", mas a fonte
+  não é empacotada; no Android o app usa a fonte do sistema.
+- **Formulário de segurança de dados da Play:** `docs/legal/PLAY_SEGURANCA_DADOS.md`.
+- **Idade mínima × Gemini (pesquisado):** os termos do Gemini API (vigentes
+  desde 23/03/2026) e os do Vertex AI (Google Cloud, "Age Restrictions")
+  proíbem usar a IA em app "directed towards or likely to be accessed by
+  individuals under the age of 18". O app aceita 16+ → conflito. Dono decide:
+  18+ ou trocar o provedor da IA. A chave do Gemini está no plano grátis
+  (Google pode treinar com os dados); a Política diz o contrário → passar
+  pro pago antes do lançamento ou ajustar o texto.
+- Bloqueado pelo auto mode: migração do scanner, deploy da ai-proxy e
+  `SCANNER_V2` (comando pronto no chat de 21/10).
+
+**Pendências**
+1. Dono: idade mínima / provedor de IA; chave Gemini paga antes do lançamento.
+2. Política: incluir RevenueCat; preencher razão social/CNPJ/DPO; publicar na web
+   + página de exclusão de conta (exigência da Play).
+3. Migração do scanner + deploy ai-proxy + `SCANNER_V2=true`; push (token GitHub).
+- **Decisão do dono: continua o Gemini e o app passa a ser 18+.** Onboarding
+  só aceita 18–100 (`onboarding/estado.ts`, aviso em pt/en/es); Termos e
+  Política dizem 18+ (sem a regra de responsável legal);
+  `VERSAO_DOCUMENTOS` = v2.3-2026-10-21. Obs.: editar a idade em Perfil →
+  Conta não valida o mínimo (o plano já bloqueia menor de idade na triagem).
+
+### 2026-10-21 (noite, fim) — scanner publicado no Supabase
+
+- `bash scripts/publicar-scanner.sh` (dono autorizou): migração do scanner
+  aplicada (4 tabelas, 112 medidas, RPC `scanner_confirmar`), **ai-proxy
+  publicada** (v4.2 peso + v4.3 scanner; versão 24 no Supabase, ACTIVE) e
+  `SCANNER_V2=true`. O APK atual continua usando o scanner antigo; o novo
+  (tela de vidro + câmera própria) só no próximo APK.
+
+**Pendências**
+1. Token do GitHub → push da `main` e da `scanner-v1-1` + PR → APK pelo Actions.
+2. Testar no aparelho: scanner novo com Gemini de verdade, câmera do código,
+   modo claro/escuro.
+3. Política: RevenueCat, dados da empresa/DPO, página web + exclusão de conta.
+4. Chave do Gemini no plano pago antes de abrir pro público.
+5. Story: dono quer conversar.
+
+### 2026-10-21 (madrugada) — tema, peso por variação, hábitos construir
+
+- **Tema** em Perfil → Acessibilidade: Escuro (padrão), Claro, Automático.
+  `ui/theme/tema.ts` (antes modoClaroEscuro.ts) põe `.tema-claro` no <html>;
+  globals.css trocou o `@media (prefers-color-scheme: light)` por essa classe.
+- **Peso pelo chat v4.4** (`peso.ts`): "perdi 1 kg", "emagreci 2,5 quilos",
+  "ganhei meio quilo", "I lost 2 kg", "perdí un kilo" → pesagem de hoje =
+  última pesagem ± variação (sem IA, sem cota). Antes ia pra IA e o gráfico
+  não mudava (bug relatado pelo dono). "ganhei 5 kg no supino" e "quero perder
+  5 kg" continuam fora.
+- **Hábitos (bug relatado):** Construir + "Outro" gravava categoria null e o
+  hábito voltava como "evitar". Agora Construir tem Dormir melhor, Beber água,
+  Ler mais, Meditar, Caminhar, Comer verduras e Outro (= categoria
+  'construir'). Mesma lista no app (`habito.ts`), no Life (`life.ts`
+  `ehConstruir`) e no banco (`db/athoslife_habitos_construir_categorias_migration.sql`,
+  função `categoria_construir` + `handle_recaida`). O hábito "dormir melhor"
+  que o dono já criou continua como "evitar": apagar e criar de novo.
+- `scripts/supabase.sh` (migrar / deploy / segredo) pra publicar com 1 linha.
+- Validação: tsc, 47 testes Deno, deno check.
+- **Publicado:** migração dos hábitos + ai-proxy (v4.4) via `scripts/supabase.sh`.
+- Refeição sem imagens / "pontinhos" na lista: aguardando print do dono.
+- **Refeição extra (bug relatado):** nome + grade de 16 ícones ficavam sempre
+  abertos no sheet → agora recolhidos atrás de "Editar nome e ícone" (com
+  "Pronto" e a dica de como reordenar). O puxador "⋮⋮" (aparecia como "::")
+  saiu: reordenar = segurar o card ~0,35 s e arrastar (PointerSensor com
+  delay); toque curto abre a refeição. Testar no aparelho se o arraste por
+  toque longo não abre o sheet ao soltar. pt/en/es.
+
+### 2026-10-21 (madrugada, cont.) — Story Studio dentro do app — branch `story-studio`
+
+Dono aprovou a prévia (https://claude.ai/artifact/Fbq4t5GNHWFSdEbGmWUjfL).
+Escopo: Alimentação + Musculação (Corrida/Jiu-Jitsu depois).
+
+- Tela `/story` (`ui/screens/story/StoryScreen.tsx`): foto da pessoa 9:16 em
+  tela cheia, números arrastáveis, toque = tamanho/cor/ocultar, painéis
+  Dados/Modelos (um por vez), desfazer, faixas do Instagram ao arrastar.
+  Modelo em `domain/entities/story.ts` (posições em %, tamanhos em fração da
+  largura → tela usa `cqw`, export usa ×1080). `exportarStory.ts` desenha o
+  JPEG 1080×1920.
+- Entradas (símbolo = câmera pequena, pedido do dono): cabeçalho da refeição
+  na Dieta (com itens) e "Postar no Story" no resumo do fim do treino (salva
+  e abre o editor com volume/séries/duração/exercícios + grupo principal).
+- Android: `story/AthosInstagramPlugin.java` (do zip V3, pacote
+  `br.com.athoslife.app.story`), **1 linha** no MainActivity (Live Activity e
+  widget continuam), `<queries>` do Instagram no Manifest,
+  `plugins.AthosInstagram.facebookAppId: ''` no capacitor.config.ts.
+  Sem App ID (hoje) "Postar nos Stories" abre o menu de compartilhar.
+  No navegador: menu do navegador ou baixa o arquivo.
+- Textos pt/en/es (`story`). Validação: tsc e vite build. **Não testado no
+  aparelho** (plugin nativo, exportação no WebView).
+
+**Pendências**
+1. Dono: Facebook App ID (junto com o webhook do RevenueCat) → preencher
+   `facebookAppId` e testar o Instagram direto.
+2. APK pra testar arrastar, foto da galeria, exportação e compartilhar.
+3. Recorde pessoal no Story de treino (precisa histórico por exercício).
+4. Dono quer alinhar algo da Live Activity antes de fechar.
+
+### 2026-10-22 — Live Activity nova (mockup de 22/10) e Story no formato do V2 — branch `story-studio`
+
+**Live Activity** (dono aprovou a prévia no localhost, feita a partir de
+`athoslife-live-activity-mockup.html`):
+- Layouts `athos_la_grande`/`athos_la_pequeno` refeitos: miniatura do
+  exercício (halter/prancha), "Série 2 de 4" + segmentos, chip de status
+  (Em série / Pronto / Preparo / Descanso), card verde-escuro com brilho lima
+  no canto (laranja no descanso).
+  - Série com reps: dois steppers (peso com "kg" pequeno, reps) + botão ✓.
+  - Série por tempo: anel + −5s/+5s + Iniciar; **preparo de 3 s** (3, 2, 1)
+    com Cancelar; depois "Segure firme" com relógio e Concluir.
+  - Descanso: relógio laranja grande, "a seguir: 80 kg × 10" (ou próximo
+    exercício), +15s, Pular e barra de progresso.
+- Textos em `res/values{,-en,-es}/athos_live_textos.xml` (antes eram fixos em pt).
+- Redesenho: a cada 1 s no preparo, a cada 5 s no descanso/prancha (barra e
+  anel andam), e na hora exata do fim. Só com o processo vivo; o relógio em
+  si (Chronometer) anda sozinho.
+- App: `PREPARO_SEG = 3` em `sessaoTreino.ts` (`cronometroInicioEm` = fim do
+  preparo), `emPreparo()`, ação `cancelar` vinda da Live Activity, status
+  "prepare-se: 3" no card do treino em andamento (pt/en/es).
+- Posição na tela de bloqueio é decisão do celular (Samsung embaixo, Pixel
+  logo abaixo do relógio). Sem vidro desfocado (notificação não faz).
+
+**Story** — o dono quer o formato do protótipo dele
+(`ATHOS_Story_Editor_Unificado_V2.html`, na raiz, não commitar), **sem Corrida e
+Jiu-Jitsu por enquanto**, com a entrada que ele aprovou:
+- Editor refeito (`StoryScreen.tsx` + `storyCanvas.ts`, motor portado do V2):
+  canvas 1080×1920, foto primeiro ("Comece pela sua foto."), Foto · Adicionar ·
+  Modelos · Ajustes, tocar no elemento abre opacidade / cor do Life / cores /
+  Texto / Outro lado / Ocultar / Excluir, puxar o canto redimensiona, campo
+  personalizado, modelos (Só a foto, Na base, Minimalista, Editorial), ajustes
+  da foto (luz, zoom, posição, sombra), desfazer. Exporta JPEG pro plugin do
+  Instagram (sem App ID: menu de compartilhar). Sem vídeo (o V2 só fazia
+  prévia de vídeo e exportava PNG).
+- Dados reais, sem número de exemplo: Musculação = último treino salvo
+  (`treinoHistoricoRepository.ultimoParaStory`: foco, volume, séries, duração,
+  volume por exercício no gráfico e **recorde pessoal** comparando a maior
+  carga com os treinos anteriores); Alimentação = total do dia
+  (`macrosRepository.doDia`, kcal com "≈").
+- Entradas: câmera discreta no cabeçalho de Início (abas) / Dieta (food) /
+  Treino (gym); convite "Seu dia rendeu! 🔥" na Home (Life feliz) só em dia
+  bom (meta de kcal 90–110%, treino feito ou sequência recorde ≥ 3),
+  dispensável por dia; "Postar no Story" do fim do treino continua (abre
+  depois de salvar). **A câmera saiu do sheet da refeição.**
+- Textos pt/en/es (`story`). `exportarStory.ts` removido.
+- Validação: tsc e vite build. **Nada testado no aparelho**; Java da Live
+  Activity sem compilar aqui (sem JDK/SDK no PC) → conferir no build do Actions.
+
+**Pendências**
+1. Token do GitHub → push de `main`, `scanner-v1-1` e `story-studio` + PR → APK.
+2. No APK: Live Activity (os 4 estados, preparo, botões com tela bloqueada,
+   textos en/es), Story (foto da galeria, cantos, exportar, Instagram/menu).
+3. Facebook App ID → `facebookAppId` (Instagram direto).
+4. Story: Corrida e Jiu-Jitsu quando o app registrar esses treinos.
+5. Live Activity fase 2: pausar/retomar e card "Exercício concluído".
+
+### 2026-10-22 (cont.) — Dia leve no check-in — branch `story-studio`
+
+Bug relatado pelo dono: check-in "cansado" + sono → o Life só falava, sem
+aliviar nada. Agora (regras em `domain/rules/diaLeve.ts`):
+- **Quando:** palavra de pouca energia e pouco agradável (cansado, esgotado,
+  desanimado, entediado) ou energia baixa + etiqueta sono/saúde. Card logo
+  abaixo da resposta do Life ("Noite ruim? 😴" / "Dia puxado?") →
+  "Deixar mais leve" / "Manter como está" (some até amanhã).
+- **Treino (a pessoa escolhe):** treino leve (1 série a menos, mín. 2, carga
+  −20% em passos de 0,5 kg) ou caminhada de 20 min no lugar ("Fiz a
+  caminhada" grava em treinos_historico como treino feito). Faixa no Treino
+  pra trocar entre os dois ou "Voltar ao normal". **A ficha não muda:**
+  sessão leve só marca `concluido_em`, não grava carga/séries aliviadas.
+- **Passos:** meta de hoje −30% (grava em `passos_diarios.meta`, a Home recarrega).
+- **Dieta:** igual; o texto lembra proteína e água.
+- **Sequência:** conta normal. **Lembretes:** no máx. 2 de água hoje.
+- Estado do dia no aparelho (`data/diaLeve.ts`, Preferences). Textos pt/en/es.
+- Validação: tsc e vite build. Não testado no aparelho.
+
+- **ai-proxy v4.5 publicada** (dono autorizou; versão 26, ACTIVE): o app manda
+  `dia_leve` junto com a mensagem do chat e o Life recebe "DIA LEVE HOJE" no
+  contexto — apoia em vez de cobrar, não sugere treino pesado nem compensar
+  amanhã. deno check + 47 testes ok.
+
+**Pendências**
+1. Token do GitHub → push de `main`, `scanner-v1-1` e `story-studio` + APK;
+   testes no aparelho (Live Activity, Story, dia leve).
+
+### 2026-10-22 (cont.) — Live Activity completa: pausar/retomar e "Treino concluído"
+
+Dono pediu todos os botões do mockup funcionando no Android. Faltavam:
+- **Pausar / Retomar** na prancha: `pausarCronometro` / `retomarCronometro`
+  (`cronometroPausadoEm`; ao retomar, início e fim andam pelo tempo parado).
+  Pausada: relógio parado, "Pausado · faltam 0:20 de 0:45", Retomar (lima) +
+  Concluir; correndo: Pausar + Concluir (lima). Concluir pausado grava o
+  tempo até a pausa. Pausada não dispara o fim nem o aviso local.
+- **Treino concluído**: antes o card sumia quando a última série acabava;
+  agora fica "Treino concluído · 18 séries · 4.820 kg de volume" com "Salvar
+  no app" (abre o app) até salvar ou descartar. ("Refazer" do mockup não se
+  aplica: a sessão tem vários exercícios.)
+- Mesmas ações no Java (`EstadoLive`, app dormindo) e no TS
+  (`SessaoTreinoProvider`): carga±, reps±, confirmar, seg±, iniciar,
+  cancelar, pausar, retomar, +15s, pular. Textos pt/en/es.
+- Conferido por script: todo id/texto/drawable usado no Java existe.
+  tsc e vite build ok. **Java não compilado aqui** (sem JDK/SDK) → Actions.
+
+### 2026-10-22 (fim) — push, PR #1 e APK de teste
+
+- Push de `main` (64e1be4), `scanner-v1-1` e `story-studio`.
+- **PR #1** `story-studio` → `main` (inclui o scanner):
+  https://github.com/athosmatheusadm/athoslife-app-nativo/pull/1 — sem merge
+  até o dono testar no aparelho.
+- **APK de teste** (run 39825785326, sem servidor_dev): build ok — o Java novo
+  da Live Activity compilou. Cópia em `Downloads/ATHOSlife-teste-22-10.apk`.
+
+**Pendências**
+1. Dono testa no aparelho: Live Activity (todos os estados e botões com a tela
+   bloqueada, textos en/es), Story (foto, cantos, exportar, Instagram/menu),
+   dia leve (check-in cansado + sono), scanner novo.
+2. Merge do PR #1 depois do teste.
+3. Facebook App ID → `facebookAppId`.
+4. Dono revogar o token do GitHub que foi colado no chat.
+
+### 2026-10-22 (noite) — APK v2 testado: funcionando
+
+- O 1º APK abriu em tela preta: `workflow_dispatch` com `servidor_dev` vazio
+  usou o padrão (IP do PC) → app buscava as telas no `npm run dev`. Workflow
+  corrigido (padrão vazio = APK independente; c72c444). APK v2 (run
+  39841244837) conferido por dentro (sem `server.url`, telas no APK).
+- **Dono instalou o v2 no celular: "tá perfeito".** Tem ajustes pra depois.
+
+**Pendências (próxima sessão)**
+1. Ajustes que o dono vai listar depois do teste.
+2. Merge do PR #1 quando o dono liberar.
+3. Animações do Life (formato dos arquivos?), imagens da ficha de treino
+   (print + qual zip), limite do chat (hoje 40 pago / 4 grátis).
+4. Contas externas: Firebase (google-services.json + conta de serviço),
+   Brevo (SMTP), RevenueCat (produtos na Play, chave, webhook), Facebook App ID.
+5. Dono revogar o token do GitHub colado no chat.
+
+### 2026-10-24 — Relatório do teste do APK + app funcionando offline (branch `correcoes-teste-apk`)
+
+Relatório (`ATHOSlife-relatorio-teste-APK.pdf`, outra sessão) conferido contra o
+código e o banco antes de mexer. **Item 8 estava errado**: as 9 tabelas citadas
+têm FK com `on delete cascade` (só `fundadores` é `set null`, de propósito) —
+excluir conta já apaga tudo. Os outros itens batiam.
+
+**Offline (pedido do dono: "mesmo off, usar tudo sem bug")** — `src/data/offline/`:
+- `conexao.ts`: estado real da rede (o fetch do Supabase avisa; pedido ao banco
+  corta em 9 s em sinal ruim). `armazem.ts`: IndexedDB. `usuario.ts`: id da
+  sessão local — **sai o `auth.getUser()`** (ia ao servidor em toda leitura e,
+  sem rede, dizia "não logado"). Sessão vencida sem rede continua valendo.
+- `cache.ts`: toda leitura guarda cópia por usuário; sem rede devolve a cópia.
+- `fila.ts`: toda gravação é uma operação em dados; sem rede vai pra fila e
+  atualiza a cópia na hora; sobe em ordem ao voltar o sinal / reabrir / a cada
+  30 s (`sincronia.ts`). Inserção leva id do aparelho e vai como upsert
+  "ignora se existe" → reenvio não duplica. Recusa do servidor vira aviso.
+- Todos os repositórios convertidos. Base de alimentos (1.650) e catálogo de
+  exercícios ficam no aparelho (busca offline). Chat: histórico guardado; IA e
+  scanner dizem "precisa de internet". Selo discreto no topo (sem internet /
+  N registros esperando). Sair com registro pendente avisa antes.
+- Abertura (item 9): abre na hora com o perfil guardado; sem nada guardado e
+  sem rede, tela "Sem conexão" + "Tentar de novo". Perfil carrega 1 vez (era 3×).
+- **Testado**: simulação com banco falso (`scratchpad`, 18 cenários: gravar
+  offline, desfazer offline, sincronizar, ordem, reenvio sem duplicar) — tudo ok.
+
+**Itens do relatório**
+1. Receitas × alergias: `domain/rules/alergias.ts` casa o texto livre (pt/en/es)
+   com `receitas_cozinha.alergenos`; some das sugestões, aviso no card e na receita.
+2. Caixa de hábitos do consentimento começa desmarcada.
+3. Life flutuante: toque só no corpo dele; translúcido e sem pegar toque ao rolar.
+4. Hábitos: "firme há N dias" usa a sequência atual dos hábitos.
+5. Números no idioma (`domain/rules/formatoNumero.ts`): kcal inteira, gramas,
+   peso, água (2,75 L / 2.75 L igual em todo lugar).
+6. Onboarding: "Ex.: 175", "4 refeições por dia", alergia com sugestões e
+   obrigatória se marcou "Sim".
+7. **Treino sem notificação**: a faixa do treino tem os controles do card
+   (carga/reps, confirmar série, cronômetro, +15 s, pular).
+10. `check_access_status` só na linha de quem chama (migração, ver pendências).
+11. Exportação inclui receitas_criadas, scan_historico, life_pausas.
+12. Rótulos quebram linha; `#root { overflow-x: clip }`.
+13. Porção por unidade quando a base tem `porcao_tipica_g` (1/2/3 un.).
+14. Zoom liberado; selo de kcal da receita com mais contraste.
+15. Câmera negada → "Libere a câmera nos ajustes"; sem rede avisa antes da foto.
+- Peso pelo Life: leitor de frases virou `supabase/functions/_shared/pesoComando.ts`
+  (servidor e app usam o mesmo). Aceita as 6 frases do relatório; número sozinho
+  ("82") → Life pergunta "Anoto 82 kg?" com Sim/Não; offline o app anota sozinho.
+  Prompt: o Gemini não diz "anotei" peso. Card "Meu peso": botão "Contar meu peso
+  pro Life" (abre o chat com "Pesei  kg"). Conta > peso grava pesagem de hoje.
+- Widget: botão "Colocar o widget na tela inicial" no painel de água
+  (`requestPinAppWidget`), nome/descrição em pt/en/es, `previewLayout`.
+- Telas de protótipo só no `npm run dev`. Esconde "Life puxa conversa" e o
+  "Health Connect chega em breve". Senha mínima 8 no app. Release com R8
+  (`minifyEnabled`/`shrinkResources`, regras dos plugins no proguard).
+- Faixa de dias do Treino cabe os 7; Dieta não repete as receitas sugeridas;
+  selo Premium não empurra a seta.
+
+Validado: `npm run typecheck` e `npm run build` ok; teste do leitor de peso
+(31 frases) ok. **Não testado no celular** (Java do widget e R8 → Actions).
+
+**Pendências**
+1. **Aplicar a migração** `db/athoslife_offline_e_relatorio_apk_migration.sql`
+   ANTES de publicar este JS (o "Fiz hoje" offline manda `p_dia`; sem a migração
+   o servidor recusa). O modo automático bloqueou aplicar daqui.
+2. **Deploy do `ai-proxy`** (leitor de peso em `_shared/` + regra no prompt).
+3. Supabase Auth: senha mínima 8 e proteção contra senha vazada (painel).
+4. Dono decidir: apagar funções antigas (stripe_webhook, create-checkout,
+   send-welome-whatsapp, relogio-athos) e índices de Stripe; `vagas_fundador`
+   sem login (página de vendas?); alerta do teto de IA a 80%.
+5. Dono decidir (visual): uma identidade só (login verde × onboarding limão),
+   cabeçalhos das abas, fonte Inter (hoje é a do sistema).
+6. Sentry/Crashlytics (Firebase); fotos de exercício em WebP (precisa trocar as
+   URLs no banco).
+7. Já conhecidas: chave RevenueCat, Facebook App ID, Termos/Política, e-mail de
+   suporte, AAB assinado (workflow android-build pronto).
+
+### 2026-10-24 (tarde) — decisões do dono aplicadas
+
+- **Migração aplicada** no Supabase (`athoslife_offline_e_relatorio_apk`) e
+  conferida: `registrar_checkin_habito(p_habito_id, p_dia)`, `check_access_status`
+  só na própria linha, `is_premium_like`/`fuso_do_usuario` só sobre quem chama.
+- **Stripe**: os 4 índices duplicados em `profiles` apagados
+  (`db/athoslife_limpeza_stripe_migration.sql`, aplicada). Tabelas e colunas
+  `stripe_*` ficam (histórico). **WhatsApp fica** (planos futuros do dono).
+- **Uma identidade só**: consentimento e onboarding usam os tokens do app
+  (verde `brand`, superfícies e textos do tema) em vez do verde-limão fixo;
+  "life" reto como no login. De quebra, essas telas passam a seguir o tema claro.
+- **Fonte Inter** dentro do app (`@fontsource-variable/inter@5.2.8`, ~220 KB,
+  funciona offline); o Story exportado também usa a Inter.
+- Push do branch `correcoes-teste-apk` feito.
+
+**Pendências**
+1. **Deploy do `ai-proxy`** e **apagar as Edge Functions `stripe_webhook` e
+   `create-checkout`**: o token em `~/.supabase/access-token` venceu (401) —
+   precisa de um token novo do Supabase (Account > Access Tokens).
+2. Firebase: o dono vai criar a conta e dar acesso (Crashlytics + FCM).
+3. Supabase Auth: senha mínima 8 e proteção de senha vazada (painel).
+4. Testar o APK novo no celular (offline, widget, treino, peso no chat).
+5. Cabeçalhos das abas continuam diferentes entre si (não mexi no layout).
+
+### 2026-10-24 (fim) — Supabase em dia
+
+- **`ai-proxy` publicada (v27)**: leitor de peso compartilhado
+  (`_shared/pesoComando.ts`) + regra no prompt ("não diga que anotou peso").
+  Conferido: a função sobe e responde.
+- **Edge Functions `stripe_webhook` e `create-checkout` apagadas**. Ficam:
+  ai-proxy, rc-sync, rc-webhook, send-welome-whatsapp, relogio-athos (WhatsApp:
+  planos futuros do dono).
+- APK de teste do branch `correcoes-teste-apk` (run 40113535473) em
+  `Downloads/ATHOSlife-teste-24-10.apk`. 1ª tentativa falhou: apóstrofo sem
+  escape em `values-en/athos_widget_textos.xml` (corrigido).
+
+**Pendências**
+1. Dono testar o APK no celular (roteiro: offline/modo avião, treino sem
+   notificação, "82" no chat, widget, onboarding novo, receitas × alergia).
+2. Supabase Auth (painel): senha mínima 8 e proteção de senha vazada.
+3. Firebase (dono cria a conta e dá acesso): Crashlytics + FCM.
+4. Merge do PR #1 e deste branch quando o dono aprovar.
+5. Dono revogar o token do GitHub colado no chat.
+
+### 2026-10-24 (noite) — estimativa do Life com cota própria, receitas variadas e temáticas
+
+- **Código de barras continua grátis** (Open Food Facts, sem IA). O custo só
+  existe quando o Life estima: cota nova `estimar` (`db/athoslife_cota_estimar_migration.sql`,
+  aplicada) — grátis **1 por semana** (como a receita do Life), pago **20 por
+  dia** separado do chat. Grátis sem estimativa: o app mostra o convite pro
+  plano (`PlanoParaEstimar`) na busca da Dieta e no scanner.
+  `ai-proxy` já usa a cota nova no código — **falta deploy** (auto mode pediu
+  autorização do dono). Até o deploy, a estimativa segue gastando 1 msg do chat.
+- **"Receitas que fecham seu dia" variam**: sorteio estável por turno
+  (manhã/tarde/noite) entre as que cabem; antes era sempre a mesma campeã.
+- **Expositor temático**: coluna `receitas_cozinha.temas`
+  (`db/athoslife_receitas_temas_migration.sql`, aplicada) + janelas em
+  `domain/rules/temasSazonais.ts` (Natal 1–25/12, Ano-Novo 26/12–6/1, Páscoa
+  3 semanas antes até o domingo — data calculada —, Festa Junina jun–15/jul só BR).
+  Card dourado no topo da Cozinha na época. **Ainda não há receita marcada**.
+- **Selo "Grátis"** na Cozinha só pra quem está no grátis.
+- **Achado**: `receitas_cozinha` libera leitura coluna a coluna e `alergenos`
+  não tinha GRANT — a Cozinha do APK de 24/10 falharia ao carregar. Corrigido
+  no banco (`grant select (alergenos, temas)`), vale pro APK já gerado.
+- `ai-proxy` publicada com a cota `estimar` (autorizado pelo dono).
+- Expositor temático **escondido** (`EXPOSITOR_TEMATICO_LIGADO = false` em
+  `CozinhaSecao.tsx`) até o dono pedir as receitas. Pra ligar: marcar
+  `receitas_cozinha.temas` e trocar a chave.
+
+**Pendências (próxima sessão)**
+1. Dono testar `Downloads/ATHOSlife-teste-24-10.apk` (offline/modo avião,
+   treino sem notificação, "82" no chat, widget, onboarding verde, receitas ×
+   alergia). Gerar APK novo pra ver: convite "Ver planos" da estimativa, selo
+   Grátis corrigido, receitas do dia variando.
+2. Supabase Auth (painel): senha mínima 8 + proteção de senha vazada.
+3. Firebase: dono cria a conta e dá acesso (Crashlytics + FCM).
+4. Receitas temáticas quando o dono pedir (expositor pronto e escondido).
+5. Merge: PR #1 (`story-studio`) e depois `correcoes-teste-apk`, com aprovação.
+6. Tokens do GitHub e do Supabase: dono decidiu manter por enquanto.
+
+### 2026-10-25 — scanner mais rápido e com mais produtos, ícone do mascote, Life animado (branch `scanner-life-vivo`)
+
+- **Scanner sem escolher refeição antes** (dono: travava a agilidade). Pela
+  câmera do widget (ou /scanner direto) a tela abre já em foto × código; a
+  refeição sai do horário (`refeicaoPeloHorario`: café < 10h, almoço < 15h,
+  lanche < 18h, jantar) com "Vai pra: Almoço · pelo horário ▾" no topo pra
+  trocar, e dá pra trocar de novo na revisão (toque no nome da refeição).
+  Vindo da Dieta continua indo pra refeição de onde veio.
+- **Código de barras com mais cobertura** (tudo grátis, sem IA):
+  celular → base própria `produtos_codigo_barras` → Open Food Facts (tenta
+  UPC-A ↔ EAN-13, aceita nutrientes só por porção e kJ) → USDA FoodData
+  Central (`DEMO_KEY`, GTIN com 14 dígitos; cobre importados). O que vem das
+  bases públicas é gravado na base própria. Produto que ninguém conhece (ou
+  conhecido sem tabela): a pessoa **copia o rótulo** (coluna 100 g) em
+  `CadastroRotulo` e o produto entra pra todo mundo; a estimativa do Life
+  continua como 2ª opção. Migração `db/athoslife_codigo_barras_migration.sql`
+  (tabela + `salvar_produto_codigo_barras`: confere os números, 60
+  gravações/dia por pessoa, produto existente só muda pelo autor ou quando
+  dado de base pública substitui cadastro de usuário). **Aplicada** (autorizada
+  pelo dono) e conferida: RLS ligado, só leitura direta, anon sem acesso.
+- **Ícone do mascote** (`mascote-icone.zip` do dono, só Android — não há
+  projeto iOS): 3 `activity-alias` (Normal/Conquista/Sono), plugin
+  `mascote/MascoteIcone*` (pacote renomeado pra `br.com.athoslife.app.mascote`),
+  `RECEIVE_BOOT_COMPLETED`. Sono = horário de dormir/acordar salvo em
+  Perfil > Notificações; Conquista = calorias entre 90–110% da meta hoje
+  (mesma regra do convite do Story). `src/data/native/iconeMascote.ts`.
+  O MainActivity não tem mais LAUNCHER (passa pros alias). Sem a versão
+  redonda (`roundIcon`): o dono não quer ícone redondo. O formato final é a
+  máscara do launcher (Samsung = quadrado arredondado; Pixel corta em círculo).
+- **Life animado no app** (`life_foco.html`): o motor WebGL do protótipo roda
+  intacto em `public/life/vivo/foco.html`, gerado por
+  `scripts/gerar_life_vivo.py` (imagens base64 → `public/life/vivo/a/`,
+  HTML de 4 MB → 82 KB). `LifeMascote` usa ele pra normal/feliz/treino/chef
+  no mesmo tamanho do PNG (PNG fica até a animação estar pronta e se não
+  houver WebGL); Hábitos usa a versão roxa pelo nível. Tamanhos pequenos
+  (chat, abertura) seguem PNG (`estatico`). Toque no Life = pulinho.
+- **Widget com o Life água** (`life_agua.html`): widget não roda WebGL, então
+  gravei do motor real 20 quadros por faixa (respira e pisca, 3 s em loop,
+  ViewFlipper de 150 ms, mesmo 58×80 dp): seco triste (0), seco com sede
+  (< 40%), feliz, piscadinha (≥ 75%) e refrescado (meta). Quadros em
+  `drawable-nodpi/athos_wg_life_<faixa>_NN.webp`; `res/raw/athos_keep.xml`
+  segura eles no shrinkResources.
+
+Validado: `npm run typecheck` e `npm run build` ok. Life animado e quadros do
+widget conferidos num Chromium headless (4 versões, tamanho igual ao PNG).
+**Não testado no celular** (ícone, widget e WebGL no WebView → APK).
+
+**Pendências**
+1. APK de teste gerado (run 40233093815, compilou o nativo novo sem erro) em
+   `Downloads/ATHOSlife-teste-25-10.apk`. Testar: ícone trocando (sono/conquista, com o app fechado),
+   widget animado, Life animado (desempenho em celular simples), scanner
+   pelo widget e cadastro pelo rótulo.
+2. Merge deste branch (depende de `correcoes-teste-apk`).
+
+### 2026-10-27 — revisão completa (PDF de 26/10): tudo que não depende de chave/e-mail (branch `revisao-completa-ajustes`, saiu de `scanner-life-vivo`)
+
+O dono trouxe `ATHOSlife-revisao-completa.pdf` (revisão do APK de 25/10 feita
+em outra sessão). Conferido contra o código antes de mexer; os pontos batiam.
+Ficaram de fora só os que pedem chave ou e-mail (RevenueCat, assinatura de
+release, e-mail de suporte, chave própria do USDA).
+
+**App**
+- **Idioma e região:** idioma virou um botão que abre a lista (antes os 3
+  ficavam à mostra) e entrou o **seletor de país** (nome pelo Intl no idioma
+  da pessoa). Trocar o país ajusta as unidades pro costume de lá.
+- **Unidades e datas:** peso (card Energia e peso + WeightCard) e água seguem
+  `profiles.unidades` (lb / fl oz) via `definirUnidadesNumeros`; datas curtas
+  do gráfico e das memórias no costume do país (`diaMes`: 9/27 nos EUA).
+- **México:** "Almuerzo" vira "Comida" (`TROCAS_POR_PAIS` em dicionarios.ts).
+- **Chat:** `**negrito**` vira negrito e as quebras de linha viram parágrafos
+  (`TextoLife` em baloes.tsx).
+- **Limite de quantidade:** 5 kg por item, 5 L de água por registro
+  (`domain/rules/limites.ts`), na busca, no scanner, nos suplementos e nos
+  repositórios. No banco: `db/athoslife_limites_registro_migration.sql`.
+- **Madrugada (0h–4h) conta como noite:** nada de "Bom dia!" à meia-noite;
+  a refeição sugerida nesse horário é jantar.
+- **Backup do Android desligado** (`allowBackup=false` + regras de extração):
+  sessão e dados de saúde não vão pra nuvem nem pra outro aparelho.
+- **Busca de alimentos com o básico primeiro** (também sem internet).
+  Conferido no banco: frango, chicken, pollo, egg, ovo, arroz, rice e banana
+  trazem o alimento simples nos 5 primeiros. `db/athoslife_busca_basicos_primeiro_migration.sql`.
+- **Acabamento:** "✓ Outro" do onboarding virou ✎; proteína com vírgula/ponto
+  do idioma; "1.653.332 kcal registradas" formatado; "Hoje — segunda-feira"
+  (sem "Segunda-Feira"); versão "1.0" igual no Sobre e no Perfil;
+  "Agregado: tortilla" (concordância); Life flutuante menor em tela de 360 px.
+- **Treino na tela de bloqueio com o app fechado:** alarme do sistema no fim
+  do descanso/cronômetro avança o card (antes dependia do app vivo e o
+  cronômetro ficava negativo); "+15 s" e "Pular" reagendam; a última série do
+  treino confirmada ali fecha o treino com o resumo. `SCHEDULE_EXACT_ALARM`
+  declarada (Android 14+: a pessoa precisa ligar "Alarmes e lembretes";
+  ainda não há tela pedindo).
+- **Refeição digitada no chat (novo):** "almocei arroz, feijão e um bife" ->
+  o Life chama `registrar_alimentos`, o servidor acha cada alimento na base
+  (mesma busca da Dieta, sem IA), calcula gramas pela medida dita (colher,
+  concha, fatia, unidades, g, oz...) e o chat mostra um **cartão de
+  conferência** (±10 g, tirar item, total). Só grava ao tocar em Registrar,
+  pelo mesmo caminho da Dieta (funciona offline). Avisa restrição/alergia.
+  `supabase/functions/ai-proxy/refeicaoDigitada.ts`, `RegistroNoChat.tsx`.
+
+**Life (ai-proxy v4.5 — precisa deploy)**
+- Sabe quando o check de saúde está **bloqueado** (não manda mais tocar em
+  "Montar dieta": fim do loop do teste) e quando pede a declaração de ciente.
+- **Mesmo id_envio = mesma resposta** (tabela `life_chat_envios`): reenvio
+  depois de queda de rede não gera resposta duplicada. Sem a tabela a função
+  segue funcionando, só sem essa trava.
+- Check-in: fechamento variado ("tô por aqui" não a cada resposta).
+- Abertura: nome com maiúscula ("Matheus") e sem "Sem cobrança".
+- **Memória (revisada):** nenhuma memória gravada no banco até hoje; a única
+  pessoa com memória ligada não contou nada duradouro depois de ligar, então
+  não é falha de gravação. Achado e corrigido: quando a pessoa ainda não
+  decidiu, o Life detecta algo pra lembrar e o app convida, mas ao aceitar
+  **aquilo que motivou o convite se perdia**. Agora a ai-proxy manda
+  `memoria_pendente` e o app guarda ao aceitar. Marca `[[LEMBRAR` cortada
+  pelo limite de tokens não vaza mais no chat.
+
+**Banco (migrações prontas, NÃO aplicadas — esperam o OK do dono)**
+1. `db/athoslife_limites_registro_migration.sql` (conferido: nenhum registro atual fora do limite)
+2. `db/athoslife_idade_trava_migration.sql` — menor bloqueado fica bloqueado;
+   data de nascimento que muda entre checks trava; idade do perfil passa a
+   seguir a data de nascimento do 1º check. Mensagem nova: "não conseguimos
+   confirmar sua idade".
+3. `db/athoslife_chat_envio_unico_migration.sql` (tabela `life_chat_envios`)
+4. `db/athoslife_busca_basicos_primeiro_migration.sql`
+5. `db/athoslife_rls_initplan_migration.sql` — 102 regras com
+   `(select auth.uid())` (conferido: pega exatamente as 102 do aviso).
+
+Validado: `npm run typecheck`, `npm run build`, testes node (6 + 4 + 10),
+`deno check` da ai-proxy e 54 testes Deno (inclui os novos de refeição
+digitada e de marca cortada). Nada testado no celular.
+
+**Pendências**
+1. Dono autorizar: aplicar as 5 migrações e publicar a `ai-proxy` v4.5.
+2. APK novo (nativo mudou: backup, alarme do treino, card da última série).
+   Testar: card do treino com o app fechado, refeição digitada, idioma/país,
+   lb/fl oz, Life menor em celular pequeno.
+3. Depende de chave/e-mail (fica pro dono): chave do RevenueCat, assinatura
+   de release, e-mail de suporte, chave própria do USDA via servidor.
+4. Painel: proteção de senha vazada; regras duplicadas em `profiles`
+   (aviso multiple_permissive_policies, 30) e `pg_trgm` no public ficaram
+   pra depois (mexer em regra de acesso sem pressa).
+5. Tela pedindo "Alarmes e lembretes" no Android 14+ (pra o fim do descanso
+   chegar na hora exata).
+6. Funções antigas ainda publicadas: `send-welome-whatsapp`, `relogio-athos`
+   (WhatsApp está fora; apagar com o OK do dono).
+7. Chat por voz/peso em lb: o peso digitado no chat continua em kg.
+
+## 2026-10-27 (tarde) — idade com correção, bebidas de marca, busca por apelido
+
+Branch `revisao-completa-ajustes`.
+
+- **Trava de idade revisada (pedido do dono: "não limitar uma correção").**
+  `db/athoslife_idade_trava_migration.sql` reescrita: a data de nascimento
+  pode ser corrigida **uma vez**; a terceira data diferente trava de vez
+  (`idade_divergente`). Na correção a comparação com a idade antiga do perfil
+  é ignorada e o perfil passa a seguir a data do check mais recente
+  (gatilho `trg_zz_triagem_alinha_perfil`). Testado no banco com bloco que se
+  desfaz: data errada (menor) bloqueia -> corrigida libera e perfil vira 25 ->
+  terceira data trava.
+  No app: "Digitei minha data errada" aparece só no aviso de bloqueio do
+  check e some depois de usada (`planosRepository.corrigirNascimento`,
+  `CorrigirNascimento` em PlanosNoLife.tsx, pt/en/es). O Life só fala disso
+  se a pessoa disser que errou a data (ai-proxy, sem explicar a regra).
+- **Bebidas de marca:** `db/athoslife_bebidas_marcas_migration.sql`, 116
+  bebidas (refrigerantes, sucos, energéticos, isotônicos/eletrólitos, água de
+  coco, chás prontos) em pt/en/es. Marca mundial aparece pra todos; marca
+  regional só no país dela (Guaraná Antarctica BR/PT, Jarritos MX/US, Inca
+  Kola PE, Irn-Bru GB/IE, Pocari JP, Thums Up IN, Appletiser ZA...). Valores
+  típicos por lata/garrafa (porcao_tipica_g = embalagem). scanner=false.
+- **Busca por apelido:** `buscar_alimentos` (na migração da busca) e a busca
+  sem internet olham `aliases` ("coca", "coke", "guarana", "redbull",
+  "refri"...). Apelido exato conta como nome igual. Busca offline agora tira
+  pontuação como o banco ("coca cola" acha "Coca-Cola").
+
+Validado: typecheck, build, `deno check` e 54 testes Deno da ai-proxy.
+
+**Banco (aplicado com OK do dono, 27/10):** as 6 migrações entraram
+(limites_registro, chat_envio_unico, busca_basicos_primeiro, rls_initplan,
+idade_trava, bebidas_marcas). Conferido: 0 regras ainda com auth.uid() direto,
+gatilhos da idade criados, `life_chat_envios` existe, "coca" -> Coca-Cola,
+"guaraná" -> Guaraná Antarctica (BR), "gatorade" no MX acha Gatorade,
+Guaraná Antarctica não aparece no MX, "frango" segue com o básico primeiro.
+**ai-proxy v4.5 publicada.**
+
+**Pendências**
+1. APK novo / chaves e e-mail / funções antigas do WhatsApp: seguram até o
+   dono liberar (pedido de 27/10).
+2. Push: precisa do token do GitHub de novo.
+3. ~~Ordem da busca "refrigerante"~~: dono aprovou como está (genérico
+   primeiro, marcas depois; nome da marca cai direto nela).
+
+## 2026-10-27 (noite) — refeição digitada: alimento padrão primeiro
+
+Conferindo a refeição digitada no chat (o chat usa só o 1º resultado da
+busca): "arroz" virava Farinha de arroz, "rice" virava Rice flour, "taco" no
+MX virava Água de coco Vita Coco (apelido "vitacoco") e "tacos" não achava
+nada.
+- `db/athoslife_busca_padroes_migration.sql`: apelidos padrão (arroz -> branco
+  cozido, feijão -> carioca, ovo -> cozido, banana -> prata, frango -> peito
+  grelhado, bife -> contrafilé, pão -> francês, leite -> integral, taco ->
+  Taco de carne), casou-só-pelo-apelido vai depois de casou-pelo-nome (o
+  "refrigerante" aprovado continua igual), 1ª palavra > palavra no meio.
+  Conferido com consulta só de leitura. Busca offline com a mesma ordem.
+- ai-proxy: plural tenta o singular quando não acha ("tacos" -> "taco",
+  "limões" -> "limão"). Teste novo (55 Deno ok), typecheck e build ok.
+
+**Aplicado com OK do dono:** migração busca_padroes no banco e ai-proxy publicada. Conferido no banco: arroz, rice, feijão, ovo, banana, bife, taco (MX), coca, guaraná, refrigerante, gatorade e frango com o esperado no topo.
+
+**Pendências:** APK novo / chaves e e-mail / funções do WhatsApp seguram até o dono liberar; push precisa do token do GitHub.
+
+## 2026-10-27 (noite, 2) — chat sem cartão + prévia do onboarding
+
+- **Bug do chat (visto pelo dono):** "life hj eu comi um arroz e um file de
+  frango" -> o Life respondeu "Mandei pra conferir" sem chamar
+  `registrar_alimentos`, e o cartão não apareceu. Agora, se a pessoa contou o
+  que comeu e a resposta promete o cartão sem a ferramenta, a ai-proxy pede de
+  novo com a ferramenta obrigatória (`prometeuRegistro` em
+  refeicaoDigitada.ts). Se mesmo assim não vier, troca o texto por "não achei"
+  em vez de prometer à toa. 56 testes Deno ok. **Precisa deploy da ai-proxy.**
+- **Prévia do onboarding:** rota `/previa/onboarding` (só `npm run dev`, fora
+  do APK): o onboarding de verdade sem conta e sem gravar nada; no fim volta
+  ao começo.
+
+### 2026-10-27 — ai-proxy publicada (cartão da refeição no chat)
+- Dono autorizou; `ai-proxy` publicada com a nova tentativa que força o `registrar_alimentos` quando o Life promete o cartão sem montar (commit b52026e).
+- Consulta de gasto em `ai_audit_logs`: o log guarda só o total de tokens (entrada + saída somados); não há registro de `scan`/`vision` em produção ainda.
+
+### 2026-10-27 — limite do chat ampliado + histórico em camadas (falta publicar)
+- APLICADA: `athoslife_limite_chat_ampliado` (chat 10 grátis / 80 pago por dia; conferido no banco).
+- Novo `ai-proxy/historico.ts`: as 6 mensagens mais recentes vão inteiras; as anteriores (até 30) vão como uma linha por troca. O modelo escreve `[[RESUMO: ...]]` no fim da resposta, o servidor tira do texto e grava em `life_chat_mensagens.resumo`. Sem resumo, a mensagem entra cortada (90 letras). Desliga com o segredo `CONTEXTO_CAMADAS=0`.
+- `ai_audit_logs` passa a gravar entrada, saída, raciocínio, cache, modelo e versão do contexto (inclusive no scanner).
+- Medição: as 15 últimas mensagens do dono somam ~1.070 caracteres (~300 tokens). O peso está no `PROMPT_LIFE` (~11.500 caracteres, ~2.900 tokens) + ferramentas (~800). O próximo ganho de custo é dividir o roteiro por assunto.
+- Validado: `deno check`, 62 testes Deno.
+- PENDENTE: aplicar `db/athoslife_memoria_camadas_migration.sql` ANTES de publicar a `ai-proxy` (precisa deploy; autorização do dono).
+- 27/10 (depois): dono autorizou. APLICADA `athoslife_memoria_camadas` (colunas conferidas) e `ai-proxy` publicada com o histórico em camadas. Falta: conferir no chat real se o `[[RESUMO]]` some do texto e é gravado, e ler os tokens separados no log.
+
+## 2026-10-27 (noite, 3) — Life cozinhando na espera da IA + Life dourado de verdade
+
+- **Vídeo do Life cozinhando** (do dono, `video life cozinhando.mp4` na raiz,
+  fora do git): recortado, sem som e comprimido em `public/life/cozinhando.mp4`
+  (113 KB) + 1º quadro `cozinhando.jpg`. `LifeCozinhando` (ui/components/life)
+  mostra o vídeo em loop num quadro arredondado preto. Tirar o fundo preto foi
+  testado e descartado: apagava a frigideira, o ouvido e o rabo. Com "reduzir
+  movimento" fica o quadro parado. Entra no Scanner enquanto a IA olha a
+  foto e enquanto busca o código de barras (no lugar do Life chef + rodinha),
+  e na estimativa da IA (Scanner "produto sem tabela" e busca da Dieta).
+- **Life dourado nunca aparecia:** as conquistas só eram avaliadas abrindo
+  Perfil > Conquistas e o `AchievementToast` não era usado em lugar nenhum.
+  Agora `CelebracaoConquistas` (montado no AppShell) avalia ao abrir, ao
+  voltar pro app e ao trocar de aba (máx. 1x a cada 90 s), via
+  `conquistasRepository.verificarNovas`. Conquista nova: faixa com o Life
+  dourado (a de nível mais alto, se vierem várias).
+- **Dia de conquista:** meta de calorias batida OU conquista desbloqueada
+  hoje deixam o Life da Home (saudação e flutuante) e o ícone do app
+  dourados até a meia-noite (`diaDeConquista` em iconeMascote.ts). Antes o
+  ícone só olhava a meta de calorias, e a Home ficava sempre "normal".
+  O ícone continua trocando só quando o app sai da tela (trocar com ele
+  aberto pode fechar o app).
+
+Validado: typecheck e build. Não visto no aparelho.
+
+**Pendências:** testar no APK (vídeo no WebView, faixa dourada, ícone ao sair
+do app); APK novo / chaves e e-mail / funções do WhatsApp seguram até o dono
+liberar; push precisa do token do GitHub; conferir o `[[RESUMO]]` no chat real.
+
+## 2026-10-28 — Life dourado vira a animação do Life vivo
+
+Dono: o Life da Home ficou "travado no dourado" (imagem parada o dia todo) e
+devia usar a animação do Life vivo (entra na pose e o dourado sobe).
+- `LifeMascote`: `humor="conquista"` agora é o Life vivo tocando a ação
+  "ouro" do protótipo (pose da medalha, dourado sobe dos pés, volta ao
+  verde, ~4,4 s). Prop nova `celebrar` (contador): cada aumento toca de
+  novo. Sem WebGL fica a imagem dourada parada. Vale pra faixa da
+  conquista e pro topo da galeria.
+- Home: o Life não fica mais dourado o dia todo. Conquista nova ou meta
+  batida deixam uma celebração pendente (`athos.life.celebrar`); a Home
+  toca a animação uma vez, na hora ou quando a pessoa voltar pra ela
+  (`useCelebracaoNaHome`).
+- O ícone do app continua dourado até a meia-noite (regra do pacote do ícone).
+
+Validado: typecheck e build. Não visto no aparelho.
+
+## 2026-10-28 — Seletor orbital + francês (branch `idiomas-orbital`)
+
+Dono: novo seletor de idioma (pacote `ATHOSlife-seletor-orbital.zip`, raiz,
+fora do git) e **dois idiomas novos: francês e hindi** (Índia/Nepal vendem
+bem), com cultura, jeito de falar, costumes e comidas.
+- `SeletorIdiomaOrbital` (ui/components): porte React do componente do
+  pacote, mesma geometria/interação, cores pelos tokens do app; anel aberto
+  com raio 80 px (pacote: 96) a pedido do dono. Entrou na 1ª tela do
+  onboarding no lugar dos 3 botões.
+- **Francês** (`i18n/mensagens/fr.ts`, todas as chaves): Life trata por
+  "tu"; refeições da França (petit-déjeuner, déjeuner, goûter, dîner) e do
+  Québec via `TROCAS_POR_PAIS` (déjeuner, dîner, souper, collation).
+  Países novos no seletor: BE, LU, MA, SN, CI.
+- Sem francês no banco ainda: nomes de alimentos/exercícios, receitas e
+  traduções de conteúdo caem no **inglês** (antes caíam no pt).
+  Termos/Política em francês: por enquanto mostram o inglês.
+- `MealSheet`: texto fixo do erro do ícone foi pro dicionário (`erroIcone`).
+
+Validado: typecheck. Não visto no aparelho.
+
+**Pendências (idiomas):**
+1. Hindi (`hi.ts`) — próximo.
+2. **ai-proxy**: aceita só pt-BR/en/es; com `fr` o Life cai no português
+   (só responde em francês se a pessoa escrever em francês). Precisa do
+   jeito de falar de cada cultura + deploy (OK do dono).
+3. Banco: nomes em fr/hi (alimentos, exercícios, receitas, conquistas) e
+   comidas típicas de França/Québec/Índia/Nepal — migração com OK do dono.
+4. Termos e Política em francês e hindi.
+5. Frase de boas-vindas e Life da 1ª tela: dono achou as opções secas; refazer junto.
+
+## 2026-10-28 (2) — Hindi, banco em fr/hi, comidas típicas e Life com cultura
+
+Dono: além do francês, **hindi** (Índia/Nepal vendem bem) e "fazer as
+coisas no banco também, pra não ter um em português e outro em francês".
+- **Hindi** (`i18n/mensagens/hi.ts`, todas as chaves): "आप", inglês do dia a
+  dia em devanágari; refeições nashta / lunch / snacks / dinner; alternativas
+  indianas no hábito (nimbu pani, chaas, nariyal pani). Nepal (NP) nos países.
+- **Banco — APLICADO** (com o pedido do dono):
+  - `athoslife_idiomas_fr_hi_conteudo_migration.sql`: 26 conquistas,
+    100 exercícios e 25 receitas (vitrine + modo de preparo) em fr/hi;
+    `receitas_conteudo_liberado` aceita fr/hi. Rótulos das seções em fr/hi
+    reconhecidos em `domain/rules/cozinha.ts`.
+  - `athoslife_idiomas_fr_hi_alimentos_migration.sql`: `nome_fr`/`nome_hi`
+    em 1.570 alimentos; **`normalizar_texto` mantém o devanágari** (antes
+    uma busca em hindi virava espaço e casava com tudo) e troca œ→oe;
+    `buscar_alimentos` em fr/hi; apelidos padrão (चावल, अंडा, pain, lait…);
+    `habito_nome_proibido` com termos fr, hindi e hinglish (testado: não
+    bloqueia "गरम पानी पीना", "Joint mobility").
+  - `athoslife_comidas_tipicas_in_np_fr_qc_migration.sql`: 79 comidas
+    (roti, paneer, dal tadka, idli, dosa, chole, biryani, chai, momo, dal
+    bhat, sel roti, quiche, ratatouille, poutine, tourtière…), valores IFCT
+    2017 / Ciqual / USDA, nomes nos 5 idiomas e apelidos em hinglish.
+- **App**: busca offline, alergias (मूंगफली, arachide…) e filtro de hábitos
+  reconhecem fr/hi (testado com Deno: 14 casos).
+- **ai-proxy (PRECISA DEPLOY)**: idioma fr/hi aceito; crise e termos
+  sensíveis em fr/hi/hinglish; linhas de apoio FR 3114, BE, CH, LU, Québec
+  em francês, Índia Tele-MANAS 14416 (em hindi), Nepal 1166; filtro de
+  prescrição e "fora do tema" em fr/hi; jeito de falar/costumes/comidas de
+  cada cultura no prompt (só entra pra quem usa o idioma); textos fixos
+  (peso, check-in, abertura, cartão da refeição, copiar refeição); leitor de
+  peso sem IA entende "je pèse 80 kg" e "मेरा वज़न 80 kg है"; scanner mostra
+  o nome em fr/hi. 64 testes Deno ok.
+
+Validado: typecheck, build, deno check, 64 testes Deno, migrações testadas
+com rollback antes de aplicar e conferidas depois.
+
+**Pendências:** deploy da ai-proxy (OK do dono); Termos/Política em fr/hi
+(mostram inglês); frase de boas-vindas + Life da 1ª tela (refazer com o
+dono); push (token do GitHub).
+
+## 2026-10-29 — ai-proxy fr/hi publicada + Termos/Política em fr/hi
+
+Dono: "faz o deploy da ia proxy e do que ficou faltando da sessão anterior".
+- **ai-proxy publicada** (versão 33, branch `idiomas-orbital`): Life em
+  francês e hindi, crise e linhas de apoio FR/BE/CH/LU/QC/IN/NP, filtros
+  fr/hi, cultura no prompt, peso fr/hi, nome fr/hi no scanner. Antes:
+  `deno check` + 71 testes Deno ok; colunas `nome_fr`/`nome_hi` conferidas
+  no banco (1.649 alimentos com hindi). Sem login responde 401 (ok).
+- **Histórico em camadas conferido no banco:** 2 das 4 respostas do Life
+  desde 27/10 gravaram `resumo`, nenhuma deixou `[[RESUMO` no texto. Log
+  de tokens separado funciona: ~5.700 de entrada e ~20–80 de saída por
+  mensagem (`camadas-v1`). A entrada é quase toda o roteiro do Life —
+  dividir o `PROMPT_LIFE` continua sendo o próximo ganho de custo.
+- **Termos e Política em francês e hindi** (`legal/documentos.ts`):
+  tradução fiel do inglês (mesmas seções, mesmos [campos] a preencher),
+  francês com "tu", menu "Profil > Confidentialité et données" e CNIL como
+  exemplo de autoridade; hindi com "आप". `VERSAO_DOCUMENTOS` não mudou
+  (só tradução). Precisa revisão de advogado, como as outras versões.
+
+Validado: typecheck, build, deno check, 71 testes Deno.
+
+**Pendências:** push das branches `revisao-completa-ajustes` e
+`idiomas-orbital` (token do GitHub) + PR pra `main`; frase de boas-vindas
++ Life da 1ª tela (refazer com o dono); APK novo pra testar; chaves do
+RevenueCat (`VITE_RC_GOOGLE_KEY` no .env e no GitHub Actions,
+`RC_SECRET_KEY` e `RC_WEBHOOK_AUTH` no Supabase), `google-services.json`
+(FCM), `facebookAppId`, SMTP Brevo e URL de produção no Supabase Auth.
+
+## 2026-10-29 (2) — fotos da Cozinha, chaves do RevenueCat/Firebase
+
+- **Fotos que faltavam** (pacote `ATHOSlife_imagens_receitas_Claude_Code.zip`,
+  raiz, fora do git): "Chips Crocantes de Batata Doce com Alecrim" e "Chá
+  Calmante de Camomila e Cidreira" em `public/receitas/` (800×800 webp,
+  como as outras; PNG original 1254×1254, sem esticar).
+- **Bug:** a foto saía do título TRADUZIDO, então em en/es/fr/hi nenhuma
+  receita achava a foto. Agora `Receita.foto` vem do título em pt.
+- **Credenciais:** `ATHOSlife_RevenueCat_credenciais.docx`, o docx do
+  Firebase e `athoslife-89511-firebase-adminsdk-*.json` (conta de serviço,
+  projeto `athoslife-89511`) entraram no `.gitignore` — não estavam.
+- `VITE_RC_GOOGLE_KEY` no `.env` local com a chave **test_** (Test Store do
+  RevenueCat; trocar pela `goog_` antes da Play) e nos dois workflows do
+  Android (falta criar o secret no GitHub).
+- **Bloqueado pelo modo automático:** gravar no Supabase `RC_SECRET_KEY`,
+  `RC_WEBHOOK_AUTH` e `FIREBASE_SERVICE_ACCOUNT`. Precisa autorização do dono.
+- Firebase: veio a conta de serviço (servidor). Para push no Android ainda
+  falta o `google-services.json` (Firebase > app Android
+  `br.com.athoslife.app`) e uma função que envie o push (não existe ainda).
+- **Onboarding novo** (`ATHOSlife-onboarding-completo.html`, 10 telas, Life
+  vivo trocando de versão): NÃO portado ainda. Ele tira as perguntas de
+  treino (frequência, local, tipo) e de rotina, que alimentam as metas
+  iniciais — perguntar ao dono antes.
+
+Validado: typecheck e build.
+
+## 2026-10-29 (3) — segredos no Supabase, ícone, prévia do onboarding
+
+- **Segredos gravados** (dono autorizou): `RC_SECRET_KEY`, `RC_WEBHOOK_AUTH`
+  (gerado; o dono cola no webhook do RevenueCat como Authorization) e
+  `FIREBASE_SERVICE_ACCOUNT` (JSON da conta de serviço, para um futuro envio
+  de push). Testado: `rc-webhook` com senha errada 401, com a certa 200;
+  a `sk_` responde na API do RevenueCat.
+- **Por que o ícone não troca (diagnóstico, sem aparelho no ADB):**
+  1. Só o APK de 25/10 (`scanner-life-vivo`) tem a troca de ícone; os de
+     22/10 (story) e 24/10 não têm. A atualização ao vivo não leva código
+     nativo. Conquista desbloqueada deixando o ícone dourado (27/10) não está
+     em APK nenhum.
+  2. No APK de 25/10 o dourado só vem com calorias entre 90% e 110% da meta,
+     conferidas quando a Home carrega; o sono só se os horários de dormir e
+     acordar estiverem salvos em Perfil > Notificações.
+  3. A troca só acontece quando o app sai da tela (de propósito).
+  4. Alguns launchers (Samsung/Xiaomi) demoram a redesenhar, ou tiram o atalho
+     da tela inicial quando o alias muda; na gaveta de apps aparece certo.
+  → Precisa de APK novo para testar.
+- **Prévia do onboarding novo:** cópia do HTML do dono com a tela "Treino"
+  (vezes por semana + onde treina) depois de "Seu corpo", no mesmo visual,
+  com validação, Life Treino e linha na revisão:
+  `ATHOSlife-onboarding-completo-PREVIA-com-treino.html` (raiz, fora do git).
+  Scripts conferidos com `node --check`; não visto num navegador (WSL sem as
+  bibliotecas do Chromium). O contador decorativo "3/10" dentro dos módulos
+  continua fixo. Aprovado → portar as telas para o app (branch própria).
+
+## 2026-10-29 (4) — Onboarding definitivo (branch `onboarding-novo`)
+
+Dono aprovou o `ATHOSlife-onboarding-completo.html` + a tela Treino da prévia:
+"sensacional, esse é o definitivo". Pediu só o fim: "Concluir e entrar no
+app" no lugar de baixar as respostas.
+- **`public/onboarding/`**: o HTML dele roda inteiro (CSS, Life vivo WebGL,
+  réguas, sono, hábitos, água) num iframe. Mudanças no HTML: imagens base64
+  viraram `img/*.webp` (24); tela **Treino** (vezes por semana + onde) depois
+  de "Seu corpo", com Life Treino, validação e linha na revisão; fr e hi na
+  órbita; números no formato do idioma; idade 18–100 com a mensagem do app;
+  revisão sem "Prévia concluída" e botão **Concluir e entrar no app**;
+  espaço entre letras desligado no hindi (separava o devanágari).
+- **`textos.js` + `i18n.js`**: a página continua escrita em pt; a camada de
+  tradução troca cada texto visível/placeholder/aria (inclusive o que os
+  scripts escrevem depois) para en/es/fr/hi. Os VALORES ficam em pt e o app
+  lê como códigos. ~330 textos; conferido com passeio automático em todas as
+  telas nos 5 idiomas (o que sobrou igual em es são palavras iguais).
+- **`ponte.js`** ⇄ **`OnboardingNovo.tsx`**: idioma/unidades/nome pela URL;
+  trocar idioma na órbita troca o do app; Voltar do Android volta uma tela;
+  "Concluir" grava com `profileRepository.concluirOnboarding` (mesmo
+  `DadosOnboarding` de antes) + 1º peso, e abre a Home; erro de rede/servidor
+  aparece na revisão. `respostasNovo.ts` converte as respostas (frequência de
+  treino entra nas calorias; ar livre = casa; alergia digitada vira lista).
+- Onboarding antigo (`Onboarding.tsx`, `onboarding/estado.ts`,
+  `componentes.tsx`) removido; `/previa/onboarding` abre o novo sem gravar.
+
+Validado: typecheck, build, 4 testes Deno da conversão (com respostas reais
+da página), passeio automático pt/en/es/fr/hi e teste de ponta a ponta no app
+(Chrome do Windows): troca de idioma chega no app e o fim entrega os dados.
+**Não visto no celular** (WebGL no WebView, safe area, Voltar do Android).
+
+**Pendências:** APK pra testar; push + PR desta branch (token do GitHub);
+textos novos de `m.onboarding.*` que só o antigo usava ficaram no dicionário
+(limpar depois).
+
+### 2026-10-29 — fim do dia: pendências pra próxima sessão
+- Tudo commitado e **só no PC** (sem token do GitHub). Branch atual:
+  `onboarding-novo` (156a6b9), que contém `idiomas-orbital` ←
+  `revisao-completa-ajustes` ← `scanner-life-vivo` ← `correcoes-teste-apk`.
+  Próxima: push de todas + PR pra `main`.
+- GitHub: criar o secret `VITE_RC_GOOGLE_KEY` (mesmo valor do `.env`).
+- RevenueCat: dono cola URL + senha do webhook (Authorization) e confere o
+  entitlement `premium` nos produtos de teste. Se a senha se perdeu, gerar
+  outra e regravar `RC_WEBHOOK_AUTH`.
+- Firebase: falta o `google-services.json` (app Android `br.com.athoslife.app`)
+  e decidir quais pushes (sugestão: resgate após 2–3 dias + avisos de
+  assinatura). Depois: plugin de push, tabela de tokens (migração) e função
+  `enviar-push`.
+- APK novo para testar: onboarding no WebView, paywall (Test Store), ícone
+  do mascote, Life dourado, vídeo do Life cozinhando.
+- Dono decide se "Jiló" em hindi fica करेला.
+- Frase de boas-vindas: resolvida pelo onboarding novo (texto do dono).
+
+## 2026-10-30 — streak, Life roxo, chat do dia, Live Activity, check-in
+
+Dono autorizou tudo das pendências menos Firebase, RevenueCat e paywall
+(token do GitHub vem depois). Pedidos dele e o que foi feito:
+- **Streak da Home não contava:** as colunas `streak_atual`/`maior_streak` e
+  o trigger `handle_streak_on_open` nunca existiram no banco (card sempre 0).
+  `db/athoslife_streak_abertura_migration.sql` **APLICADA**: colunas (sem
+  GRANT UPDATE, app só lê), `streak_dia`, trigger no fuso do usuário e ponto
+  de partida pelos dias seguidos com registro (dono começou em 7). Testado
+  com bloco que desfaz: ontem +1, mesmo dia igual, buraco volta a 1 e recorde fica.
+- **Life roxo em hábito novo:** `statusHabito`/`nivelBemEstar` tratavam 0 dias
+  como recaída. Agora roxo só até 3 dias depois de uma recaída de verdade;
+  hábito sem recaída começa verde.
+- **Chat mostrava msg de dias atrás:** `carregarHistoricoChat` só traz as de
+  hoje. O Life continua lembrando (ai-proxy lê histórico/resumo do banco).
+- **Live Activity "dentro de outro quadrado" e peso espremido:** no Android
+  12+ a moldura do sistema sobrava ~24 dp pro número entre − e + ("80 kg"
+  encolhia). Número agora numa linha própria, −/+ em pílulas largas embaixo,
+  padding 14→10, OK 60→52 dp; moldura (DecoratedCustomViewStyle) só no 12+.
+  No app (TreinoEmAndamento) tocar na carga abre o teclado pra digitar
+  (de 2,5 em 2,5 kg eram 32 toques até 80 kg). Texto `digitarCarga` nos 5 idiomas.
+- **Check-in demorando:** Gemini responde em ~1,5 s mas às vezes trava e a
+  pessoa esperava 15 s (22 e 26/10). Timeout do check-in 15→6 s (cai na
+  resposta pronta). **Precisa deploy da ai-proxy.**
+
+Validado: só `npm run typecheck` (abaixo). Não visto no aparelho; layout da
+Live Activity precisa de APK.
+
+**Pendências**
+1. Deploy da ai-proxy (timeout do check-in).
+2. Lentidão geral: `lerComCache` espera sempre a rede quando há conexão; ideia
+   pronta (não aplicada): se a rede não responder em ~2,5 s e houver cópia,
+   mostrar a cópia e atualizar por trás.
+3. Do que o dono autorizou e ficou pra próxima: apagar dados de teste do
+   gráfico, Jiló em hindi, limpar textos do onboarding antigo, modo claro no
+   Onboarding/Consentimento, "Leaked password protection", push + PR com o token.
+
+## 2026-10-30 (2) — deploy da ai-proxy, rede lenta, limpeza e GitHub
+
+Dono: "termine o que você começou" + autorizou o deploy da ai-proxy e mandou
+o token do GitHub (usado só na hora, não fica salvo no PC).
+- **ai-proxy publicada** (versão 35): timeout do check-in 15→6 s. Conferido
+  que a função sobe (responde `not_authenticated` com a chave anon).
+- **Rede lenta (`lerComCache`):** com cópia guardada, a tela espera a rede
+  no máximo 2,5 s; passou disso mostra a cópia e a resposta grava por trás
+  pra próxima leitura. Sem cópia, espera a rede como antes. A busca de trás
+  não grava se um registro mexeu na cópia enquanto ela estava no ar
+  (`versoes` em cache.ts), então não "apaga" o que a pessoa acabou de fazer.
+  7 testes isolados (rede rápida, lenta, sem cópia, falha por trás, registro
+  no meio) passaram; não há executor de testes JS no projeto.
+- **Textos do onboarding antigo:** bloco `onboarding` dos 5 idiomas ficou só
+  com os 6 textos ainda usados (erroIdade, treino.casa/academia,
+  confirmar.*). ~600 linhas a menos.
+- **Jiló em hindi:** करेला é outro legume (melão-de-são-caetano); virou
+  कड़वा बैंगन ("berinjela amarga"), igual aos outros idiomas.
+- **Modo claro no Consentimento:** já segue o tema (só tokens). Escuro é o
+  padrão do app; o onboarding novo é o HTML do dono e fica como ele fez.
+- **Bloqueado pelo modo automático (precisa do dono):** apagar os dados de
+  teste (120 itens `[teste]` em itens_refeicao + 19 pesos com
+  created_at=2000-01-01, todos da conta matheusecomerc; a pesagem real de
+  27/09 fica) e ligar "Leaked password protection" (`password_hibp_enabled`).
+
+Validado: typecheck, build, 71 testes Deno das Edge Functions, 7 testes do
+cache. Não visto no aparelho.
+
+**Pendências**
+1. Dono: apagar dados de teste + ligar proteção de senha vazada (ou liberar).
+2. APK pra testar no celular (onboarding no WebView, Live Activity, paywall).
+3. Secret `VITE_RC_GOOGLE_KEY` no GitHub; RevenueCat webhook; Firebase.
+4. Trocar o token do GitHub (foi colado no chat).
+
+## 2026-10-30 (3) — app segue o celular e onboarding com versão clara
+
+Dono perguntou se o modo claro/escuro acompanha o celular (não acompanhava)
+e pediu as duas opções:
+- **Tema padrão = Automático** (`ui/theme/tema.ts`): sem escolha salva, segue
+  o celular. Escuro/Claro agora ficam salvos (antes "escuro" = sem chave),
+  então quem tinha escolhido Escuro antes passa a Automático uma vez.
+  Consentimento já usava tokens e segue junto.
+- **Onboarding claro** como camada separada, o HTML do dono continua igual:
+  `public/onboarding/claro.css` (só com `html.tema-claro`; cores do modo
+  claro do app) + `tema.js` no `<head>` (sem piscar escuro): dentro do app
+  copia a classe do `<html>` do app e acompanha ao vivo; aberta sozinha segue
+  o celular; `?tema=claro|escuro` força. Fundo em volta do iframe
+  (`OnboardingNovo.tsx`) também troca.
+- Validado: passeio automático completo no claro (53 telas, sem erro de
+  script, dados entregues no fim) e no escuro (igual a antes); teste do
+  iframe trocando de tema ao vivo; typecheck e build.
+
+**Ícone do mascote:** código conferido (3 alias, troca ao sair do app,
+alarmes de sono/meia-noite) e sem erro aparente. O APK do dono não troca
+porque é anterior a 25/10 ou recebeu o código só pela atualização ao vivo
+(que não leva código nativo). Precisa de APK novo; o dourado vem com
+calorias 90–110% da meta ou conquista desbloqueada no dia, o sono só com
+horários salvos em Perfil > Notificações, e a troca acontece ao sair do app.
+
+**Pendências:** APK novo (ícone, onboarding claro/escuro no WebView, Live
+Activity, paywall); o resto segue do bloco anterior.
+
+## 2026-10-30 (4) — água travada e selo "sem internet" preso
+
+Relato do teste: água "travou, não deixava colocar nada"; selo de offline
+ficou preso na tela do dono.
+- **Causa comum:** o fetch do Supabase só cortava `/rest/`. A renovação da
+  sessão (`/auth/`) em sinal ruim ficava pendurada e o supabase-js segura
+  todo pedido ao banco esperando a sessão → gravação nunca terminava, a fila
+  (`rodando`) ficava presa e tudo que espera por ela também.
+  - `client.ts`: corte de 15 s em `/auth/v1/`.
+  - `fila.ts`: teto de 20 s por operação (`executar`); passou disso vai pra
+    fila e repete depois (idempotente). Teste simulando servidor mudo: antes
+    preso pra sempre, agora fila em 20 s e o 2º gole na hora.
+- **Selo preso:** só uma resposta do servidor tirava o "sem internet"; numa
+  tela parada nada perguntava. `sincronia.ts`: enquanto offline, testa
+  `/auth/v1/health` a cada 10 s e ao voltar pro app (`testarConexao`).
+- **Card de água otimista** (`useAgua.ts`): o número sobe no toque; o "−"
+  espera o gole otimista virar registro de verdade.
+- Widget da tela inicial (Android): código revisado, sem causa achada;
+  quadros pequenos (232×320). Falta saber do testador se era o widget ou o
+  card e a marca do celular.
+
+Validado: typecheck, build, teste do servidor mudo. Não visto no aparelho.
+
+## 2026-10-31 — widget de água (copinhos) travado
+
+Testador confirmou: era o widget da tela inicial (copos não somavam e a
+animação do Life parou). Sem aparelho/logcat aqui; reforços nas causas
+prováveis (não compilado localmente — sem JDK/SDK; o CI do APK compila):
+- Toque nos copos com `FLAG_RECEIVER_FOREGROUND` (fila rápida; na normal,
+  com bateria economizando em Samsung/Xiaomi, o toque atrasava ou sumia) e
+  `FLAG_INCLUDE_STOPPED_PACKAGES` (app "parado" pelo sistema).
+- `onReceive`/`atualizarTodos` com try/catch: erro não derruba mais o
+  processo deixando o widget congelado.
+- Troca do ícone do mascote (mexe nos componentes do app; launchers podem
+  recarregar o widget com o layout inicial, que não tem toques) e
+  boot/atualização do app agora redesenham o widget (`atualizarTodos` público).
+- Antes disso, com sinal ruim, o app também não gravava os copos do widget
+  (mesma trava da sessão corrigida em 30/10 (4)).
+
+**Pendente:** confirmar no APK; se repetir, pegar marca/modelo do celular
+e, se der, logcat filtrando `WidgetAgua`.
+
+### 2026-10-31 — APK de teste gerado
+CI `android-apk-teste` no commit 7f14e3d (run 41180723715): **sucesso**, o
+Java novo do widget compilou. APK em `Downloads/ATHOSlife-teste-31-10.apk`.
+Sem o secret `VITE_RC_GOOGLE_KEY` no GitHub → assinaturas/paywall não
+funcionam neste APK. Testar: widget (copos e animação), ícone do mascote,
+onboarding claro/escuro, água e selo offline com sinal ruim, Live Activity.
+
+### 2026-10-31 — fim da sessão: próximos passos
+- Dono testa o APK de 31/10 (widget, ícone, claro/escuro, água offline).
+- Próximo grande passo: Firebase + push adaptado ao usuário. Falta o
+  `google-services.json` e a lista das primeiras notificações. Sugestão
+  dada: poucas (resgate após 2–3 dias + 1 lembrete/dia no horário de uso),
+  na voz do Life; depois tabela de tokens (migração) + função `enviar-push`.
+- Conselho dado ao dono: parar de somar funções grandes, estabilizar e
+  lançar pra 50–100 pessoas medindo volta no dia seguinte, na 1ª semana e assinaturas.
+- Ainda com o dono: secret `VITE_RC_GOOGLE_KEY` no GitHub, apagar dados de
+  teste, "Leaked password protection", webhook do RevenueCat, trocar o
+  token do GitHub, decidir o merge do PR #2.
+
+- Dados de teste **apagados** com autorização do dono (120 itens `[teste]` + 19 pesos falsos; pesagem real de 27/09 mantida).
+- "Leaked password protection": tentada com autorização do dono → recusada pelo Supabase (HTTP 402: só no plano Pro). Fica desligada até o projeto ir pro Pro.
+
+## 2026-10-31 (2) — Life frio no desabafo
+
+Testador: desabafando, o Life respondeu curto, "qualquer coisa tô aqui",
+que ia parar de mandar mensagem hoje e que dava pra pausar as métricas —
+pareceu querer sair da conversa. Dono: "faltou empatia e acolhimento,
+imagina se é alguém passando por um problema grave". Causa: o prompt
+mandava "acolher curto" (1–3 frases), dava "Tô aqui" de exemplo e mandava
+oferecer a pausa justo no momento pesado. Mudanças no `PROMPT_LIFE`:
+- Desabafo: fica na conversa, até 4 frases, cita o que a pessoa contou,
+  valida e faz uma pergunta aberta; nunca fecha a conversa ("qualquer coisa
+  tô aqui", "fico por aqui") — quem encerra é ela; nunca minimiza.
+- QUANDO É GRAVE: desesperança, violência/abuso, perda, pânico → devagar,
+  "você importa", pergunta com cuidado se está segura, incentiva alguém de
+  confiança + profissional, linha de apoio do país (agora vai no prompt via
+  `linhaApoio(loc)`); nunca "sou só uma IA" pra se afastar.
+- Pausa: nunca no começo do desabafo nem junto do acolhimento; no máx. 1×,
+  como alívio das metas ("eu continuo aqui"), nunca "vou parar de mandar
+  mensagem". Confirmação da pausa reescrita nos 5 idiomas.
+- Resposta fixa de crise (CVV etc.): tirado "sou uma IA e não consigo te
+  ajudar"; agora "você importa" + "eu continuo aqui do seu lado", 5 idiomas.
+
+Validado: 71 testes Deno, deno check. **ai-proxy publicada (versão 36)** com autorização do dono.

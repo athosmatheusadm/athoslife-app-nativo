@@ -1,6 +1,6 @@
 import { ActivityIcon, ActivityIconPicker, HABIT_ICONS } from '@ui/components/ActivityIcon'
 import { useState } from 'react'
-import { habitoNomeProibido, tipoDaCategoria, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
+import { habitoNomeProibido, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 
@@ -10,7 +10,7 @@ import { useFecharNoVoltar } from '@app/voltarAndroid'
  * ferramenta pra dependência. Digitar um desses no nome é recusado aqui
  * (habitoNomeProibido) e no banco (trigger validar_habito).
  */
-type ChaveCategoria = 'doce' | 'fast_food' | 'refrigerante' | 'leitura' | 'outro'
+type ChaveCategoria = 'doce' | 'fast_food' | 'refrigerante' | 'leitura' | 'sono' | 'agua' | 'meditar' | 'caminhar' | 'verduras' | 'outro'
 
 const CATEGORIAS_EVITAR: readonly { valor: string | null; chave: ChaveCategoria }[] = [
   { valor: 'doce', chave: 'doce' },
@@ -21,8 +21,13 @@ const CATEGORIAS_EVITAR: readonly { valor: string | null; chave: ChaveCategoria 
 
 /** Categorias aqui precisam bater com CATEGORIAS_CONSTRUIR em domain/entities/habito.ts. */
 const CATEGORIAS_CONSTRUIR: readonly { valor: string | null; chave: ChaveCategoria }[] = [
+  { valor: 'sono', chave: 'sono' },
+  { valor: 'agua', chave: 'agua' },
   { valor: 'leitura', chave: 'leitura' },
-  { valor: null, chave: 'outro' },
+  { valor: 'meditar', chave: 'meditar' },
+  { valor: 'caminhar', chave: 'caminhar' },
+  { valor: 'verduras', chave: 'verduras' },
+  { valor: 'construir', chave: 'outro' },
 ]
 
 const INTENSIDADES: readonly IntensidadeHabito[] = ['leve', 'medio', 'forte']
@@ -33,11 +38,10 @@ const INTENSIDADES: readonly IntensidadeHabito[] = ['leve', 'medio', 'forte']
  * configuração, não um registro do dia a dia como na Dieta).
  *
  * Dois tipos: "evitar" (reduzir algo, fluxo original com vontade/recaída) e
- * "construir" (aumentar algo, ex. leitura). O tipo não vai pro banco — é
- * inferido da categoria por `tipoDaCategoria` na leitura (ver
- * habitosRepository). Por isso escolher "Outro" dentro de "Construir"
- * ainda cai como tipo "evitar" ao recarregar — teste consciente, categoria
- * livre por nome só funciona bem hoje pra "evitar".
+ * "construir" (aumentar algo, ex. dormir melhor). O tipo não vai pro banco —
+ * é inferido da categoria por `tipoDaCategoria` na leitura (ver
+ * habitosRepository); "Outro" dentro de Construir grava a categoria
+ * 'construir' pra não virar "evitar".
  */
 export function AddHabitSheet(props: {
   onSalvar: (params: {
@@ -64,8 +68,8 @@ export function AddHabitSheet(props: {
 
   function trocarTipo(t: TipoHabito) {
     setTipo(t)
-    setIcone(t === 'construir' ? 'leitura' : 'doce')
-    setCategoria(t === 'construir' ? 'leitura' : 'doce')
+    setIcone(t === 'construir' ? 'sono' : 'doce')
+    setCategoria(t === 'construir' ? 'sono' : 'doce')
   }
 
   async function salvar() {
@@ -76,7 +80,7 @@ export function AddHabitSheet(props: {
       // Sucesso: o pai fecha o painel (desmonta), sem precisar zerar `salvando` aqui.
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
-      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : t.erro)
+      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : msg === 'limite_habitos_gratis' ? m.habitos.limiteGratis : t.erro)
       setSalvando(false)
     }
   }
@@ -149,7 +153,7 @@ export function AddHabitSheet(props: {
             <button
               key={c.chave}
               type="button"
-              onClick={() => { setCategoria(c.valor); setIcone(c.valor ?? 'outro') }}
+              onClick={() => { setCategoria(c.valor); setIcone(c.valor === null || c.valor === 'construir' ? 'outro' : c.valor) }}
               aria-pressed={categoria === c.valor}
               className={`min-h-11 rounded-pill px-4 text-sm font-bold transition-colors active:scale-95 ${
                 categoria === c.valor
@@ -162,9 +166,6 @@ export function AddHabitSheet(props: {
           ))}
         </div>
         <ActivityIconPicker valor={icone} opcoes={HABIT_ICONS} onChange={setIcone} disabled={salvando} />
-        {tipoDaCategoria(categoria) !== tipo && (
-          <p className="mt-1.5 text-micro text-content-low">{t.avisoOutro}</p>
-        )}
 
         <p className="mt-4 block text-micro font-bold uppercase tracking-wide text-content-low">{t.intensidade}</p>
         <div className="mt-1.5 flex gap-2">

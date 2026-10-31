@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Conquista } from '@domain/entities/conquista'
 import { LifeMascote } from '@ui/components/LifeMascote'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -20,10 +20,13 @@ export function AchievementToast(props: {
   const { conquista } = props
   const t = useI18n().m.perfil.conquistas
 
+  // O timer recomeça só quando a conquista muda, não a cada render de quem mostra.
+  const fechar = useRef(props.onFechar)
+  fechar.current = props.onFechar
   useEffect(() => {
-    const t = setTimeout(props.onFechar, 6000)
+    const t = setTimeout(() => fechar.current(), 6000)
     return () => clearTimeout(t)
-  }, [props])
+  }, [conquista.id])
 
   return (
     <div

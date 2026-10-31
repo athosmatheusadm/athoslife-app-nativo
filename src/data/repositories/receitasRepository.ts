@@ -1,8 +1,13 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache, mexerNoCache } from '@data/offline/cache'
+import { escrever } from '@data/offline/fila'
+import { usuarioId } from '@data/offline/usuario'
 import type { CategoriaReceita, Receita } from '@domain/entities/receita'
+import type { TemaSazonal } from '@domain/rules/temasSazonais'
 import type { Macros } from '@domain/entities/food'
 import { localidadeAtual } from '@data/localidadeAtual'
 import { texto, traducoesDe } from '@data/traducoesConteudo'
+import { slugReceita } from '@domain/rules/cozinha'
 
 /** Linha crua de receitas_cozinha. */
 interface ReceitaRow {
@@ -18,6 +23,8 @@ interface ReceitaRow {
   destaque: boolean | null
   conteudo: string | null
   ordem: number | null
+  alergenos?: string[] | null
+  temas?: string[] | null
 }
 
 function macrosDe(row: ReceitaRow): Macros {
@@ -33,10 +40,11 @@ function macrosDe(row: ReceitaRow): Macros {
  * Converte linha -> domínio. `bloqueada` e `favoritada` são decididos
  * depois, no serviço, porque dependem do perfil e das favoritas.
  */
-function paraDominio(row: ReceitaRow, trad: Record<string, unknown> = {}): Omit<Receita, 'bloqueada' | 'favoritada'> {
+function paraDominio(row: ReceitaRow, trad: Record<string, unknown> = {}): ReceitaCrua {
   return {
     id: row.id,
     titulo: texto(trad, 'titulo', row.titulo),
+    foto: slugReceita(row.titulo),
     subtitulo: texto(trad, 'subtitulo', row.subtitulo),
     categoria: row.categoria as CategoriaReceita,
     macros: macrosDe(row),
@@ -46,14 +54,16 @@ function paraDominio(row: ReceitaRow, trad: Record<string, unknown> = {}): Omit<
     destaque: row.destaque ?? false,
     conteudo: row.conteudo,
     ordem: row.ordem ?? 0,
+    alergenos: row.alergenos ?? [],
+    temas: (row.temas ?? []) as TemaSazonal[],
   }
 }
 
 /** Tudo menos `conteudo` — a coluna não tem GRANT de SELECT direto. */
 const COLUNAS_VITRINE =
-  'id, titulo, subtitulo, categoria, macros, kcal, tempo_preparo_min, cor_tema, premium, destaque, ordem'
+  'id, titulo, subtitulo, categoria, macros, kcal, tempo_preparo_min, cor_tema, premium, destaque, ordem, alergenos, temas'
 
-export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada'>
+export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada' | 'contemRestricao'>
 
 /**
  * Modo de preparo liberado pro plano da pessoa, no idioma dela. Se o banco
@@ -61,14 +71,17 @@ export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada'>
  */
 async function conteudoLiberado() {
   const { idioma } = localidadeAtual()
-  if (idioma === 'en' || idioma === 'es') {
+  if (idioma !== 'pt-BR') {
+    // en/es/fr/hi no banco (db/athoslife_idiomas_fr_hi_conteudo_migration.sql).
     const r = await supabase.rpc('receitas_conteudo_liberado', { p_idioma: idioma })
     if (!r.error) return r
   }
   return supabase.rpc('receitas_conteudo_liberado')
 }
 
-/** Único ponto que conhece receitas_cozinha e receitas_favoritas. */
+const CHAVE_FAVORITAS = 'receitas:favoritas'
+
+/** Único ponto que conhece receitas_cozinha e receitas_favoritas. Funciona sem rede. */
 export const receitasRepository = {
   /**
    * Lista todas as receitas, na ordem definida. A vitrine (nome, kcal,
@@ -77,49 +90,66 @@ export const receitasRepository = {
    * (db/athoslife_limites_gratis_servidor_migration.sql).
    */
   async listar(): Promise<ReceitaCrua[]> {
-    const [vitrine, liberadas, trad] = await Promise.all([
-      supabase
-        .from('receitas_cozinha')
-        .select(COLUNAS_VITRINE)
-        .order('ordem')
-        .returns<Omit<ReceitaRow, 'conteudo'>[]>(),
-      conteudoLiberado(),
+    // Guardado por idioma (o modo de preparo vem traduzido): a Cozinha abre sem rede.
+    const { idioma } = localidadeAtual()
+    const [linhas, trad] = await Promise.all([
+      lerComCache(`receitas:v3:${idioma}`, async () => {
+        const [vitrine, liberadas] = await Promise.all([
+          supabase
+            .from('receitas_cozinha')
+            .select(COLUNAS_VITRINE)
+            .order('ordem')
+            .returns<Omit<ReceitaRow, 'conteudo'>[]>(),
+          conteudoLiberado(),
+        ])
+        if (vitrine.error) throw vitrine.error
+        if (liberadas.error) throw liberadas.error
+        const conteudos = (liberadas.data ?? []) as Array<{ id: string; conteudo: string | null }>
+        const conteudoPorId = new Map(conteudos.map((r) => [r.id, r.conteudo]))
+        return (vitrine.data ?? []).map((row): ReceitaRow => ({ ...row, conteudo: conteudoPorId.get(row.id) ?? null }))
+      }),
       traducoesDe('receitas_cozinha'),
     ])
-    if (vitrine.error) throw vitrine.error
-    if (liberadas.error) throw liberadas.error
-    const linhas = (liberadas.data ?? []) as Array<{ id: string; conteudo: string | null }>
-    const conteudoPorId = new Map(linhas.map((r) => [r.id, r.conteudo]))
-    return (vitrine.data ?? []).map((row) =>
-      paraDominio({ ...row, conteudo: conteudoPorId.get(row.id) ?? null }, trad(row.id)),
-    )
+    return linhas.map((row) => paraDominio(row, trad(row.id)))
   },
 
   /** IDs das receitas favoritadas pelo usuário atual. */
   async idsFavoritas(): Promise<Set<string>> {
-    const { data, error } = await supabase
-      .from('receitas_favoritas')
-      .select('receita_id')
-      .returns<Array<{ receita_id: string }>>()
-    if (error) throw error
-    return new Set((data ?? []).map((r) => r.receita_id))
+    const ids = await lerComCache(
+      CHAVE_FAVORITAS,
+      async () => {
+        const { data, error } = await supabase
+          .from('receitas_favoritas')
+          .select('receita_id')
+          .returns<Array<{ receita_id: string }>>()
+        if (error) throw error
+        return (data ?? []).map((r) => r.receita_id)
+      },
+      { padrao: [] },
+    )
+    return new Set(ids)
   },
 
   async favoritar(receitaId: string): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    const userId = await usuarioId()
     // ON CONFLICT: favoritar de novo não quebra (UNIQUE user+receita).
-    const { error } = await supabase
-      .from('receitas_favoritas')
-      .upsert({ user_id: userId, receita_id: receitaId }, { onConflict: 'user_id,receita_id' })
-    if (error) throw error
+    await escrever(
+      {
+        op: 'upsert',
+        tabela: 'receitas_favoritas',
+        valores: { user_id: userId, receita_id: receitaId },
+        onConflict: 'user_id,receita_id',
+        ignorarDuplicados: true,
+      },
+      () => mexerNoCache<string[]>(CHAVE_FAVORITAS, (atual = []) => (atual.includes(receitaId) ? atual : [...atual, receitaId])),
+    )
   },
 
   async desfavoritar(receitaId: string): Promise<void> {
-    const { error } = await supabase
-      .from('receitas_favoritas')
-      .delete()
-      .eq('receita_id', receitaId)
-    if (error) throw error
+    const userId = await usuarioId()
+    await escrever(
+      { op: 'delete', tabela: 'receitas_favoritas', filtros: [['user_id', userId], ['receita_id', receitaId]] },
+      () => mexerNoCache<string[]>(CHAVE_FAVORITAS, (atual) => atual?.filter((id) => id !== receitaId)),
+    )
   },
 }

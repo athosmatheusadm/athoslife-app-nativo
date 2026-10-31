@@ -27,6 +27,8 @@ function mensagemErroAuth(err: unknown, t: Mensagens['entrar']['erros']): string
   return t.geral
 }
 
+export const SENHA_MINIMA = 8
+
 export function Login() {
   const [modo, setModo] = useState<Modo>('entrar')
   const [email, setEmail] = useState('')
@@ -54,6 +56,12 @@ export function Login() {
         await authRepository.entrar(email, senha)
         // Sucesso: SessionProvider pega o evento e o Guards redireciona sozinho.
       } else {
+        // Mínimo 8 no app (relatório do APK); o Supabase também precisa estar em 8.
+        if (senha.length < SENHA_MINIMA) {
+          setErro(t.erros.fraca)
+          setCarregando(false)
+          return
+        }
         const { sessaoAtiva } = await authRepository.criarConta(email, senha)
         if (!sessaoAtiva) {
           // Sem sessão = o Supabase pede confirmação. Ele responde igual se o e-mail
@@ -114,7 +122,7 @@ export function Login() {
             <input
               type={verSenha ? 'text' : 'password'}
               required
-              minLength={modo === 'criar' ? 6 : undefined}
+              minLength={modo === 'criar' ? SENHA_MINIMA : undefined}
               autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'}
               enterKeyHint="go"
               value={senha}

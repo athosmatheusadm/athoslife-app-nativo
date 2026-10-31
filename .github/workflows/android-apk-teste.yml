@@ -15,15 +15,19 @@ name: APK de teste (instalar no celular)
 # Mudança em código NATIVO (plugin Kotlin, manifest, widget) exige rodar de
 # novo e reinstalar — a atualização ao vivo só cobre as telas.
 #
-# Secrets necessários: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+# Secrets necessários: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_RC_GOOGLE_KEY (RevenueCat)
 
 on:
   workflow_dispatch:
     inputs:
+      # Padrão vazio de propósito: o GitHub troca campo em branco pelo padrão,
+      # então com o IP aqui não dava pra pedir um APK independente (22/10:
+      # APK saiu apontando pro PC e abriu em tela preta).
+      # Atualização ao vivo: preencher com o endereço do PC, ex. http://192.168.18.92:5173
       servidor_dev:
         description: 'Endereço do npm run dev no PC (vazio = APK independente)'
         required: false
-        default: 'http://192.168.18.92:5173'
+        default: ''
 
 jobs:
   build:
@@ -53,6 +57,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_RC_GOOGLE_KEY: ${{ secrets.VITE_RC_GOOGLE_KEY }}
         run: npm run build
 
       - name: Sincronizar Capacitor

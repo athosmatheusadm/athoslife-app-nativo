@@ -1,4 +1,7 @@
 import { supabase } from '@data/supabase/client'
+import { exigirRede, lerComCache, lerDoCache, mexerNoCache } from '@data/offline/cache'
+import { escrever } from '@data/offline/fila'
+import { emailDaSessao, usuarioId } from '@data/offline/usuario'
 import type { MascoteModo, Metas, Objetivo, Plano, Profile, Sexo } from '@domain/entities/profile'
 import { normalizarIdioma, type Localidade, type Unidades } from '@domain/rules/localidade'
 
@@ -34,6 +37,12 @@ interface ProfileRow {
   pais: string | null
   fuso: string | null
   unidades: string | null
+  restricoes?: string[] | null
+  onboarding_respostas?: Record<string, unknown> | null
+  life_chat_ligado?: boolean | null
+  life_chat_momentos?: string[] | null
+  telefone?: string | null
+  consentimento_memoria?: boolean | null
 }
 
 /** Resposta de liberar_teste_gratis (db/athoslife_protecao_ia_migration.sql). */
@@ -106,23 +115,52 @@ function paraDominio(row: ProfileRow): Profile {
   }
 }
 
+const CHAVE_PERFIL = 'perfil'
+
+/** A linha do perfil: do servidor com rede, da cópia local sem rede. */
+async function perfilCru(userId: string): Promise<ProfileRow | null> {
+  return lerComCache(CHAVE_PERFIL, async () => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle<ProfileRow>()
+    if (error) throw error
+    return data
+  })
+}
+
+/** Linha do perfil pra quem precisa de colunas que o domínio não expõe (contato, restrições...). */
+export async function linhaDoPerfil(): Promise<ProfileRow> {
+  const row = await perfilCru(await usuarioId())
+  if (!row) throw new Error('perfil_nao_encontrado')
+  return row
+}
+
+/** Sem ir ao servidor: a última cópia do perfil (pra abrir o app na hora). */
+export async function perfilGuardado(): Promise<Profile | null> {
+  const row = await lerDoCache<ProfileRow | null>(CHAVE_PERFIL).catch(() => undefined)
+  return row ? paraDominio(row) : null
+}
+
+/**
+ * Atualiza colunas do próprio perfil. Funciona sem internet: vai pra fila e
+ * a cópia local já fica com o valor novo (o app relê o perfil dela).
+ */
+export async function atualizarPerfil(campos: Record<string, unknown>): Promise<void> {
+  const userId = await usuarioId()
+  await escrever({ op: 'update', tabela: 'profiles', valores: campos as Record<string, never>, filtros: [['id', userId]] }, () =>
+    mexerNoCache<ProfileRow | null>(CHAVE_PERFIL, (atual) => (atual ? ({ ...atual, ...campos } as ProfileRow) : undefined)),
+  )
+}
+
 /**
  * Único ponto do app que conhece a tabela profiles.
  * A UI nunca vê snake_case nem string solta de plano.
  */
 export const profileRepository = {
   async buscar(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle<ProfileRow>()
-
-    if (error) throw error
-    return data ? paraDominio(data) : null
+    const row = await perfilCru(userId)
+    return row ? paraDominio(row) : null
   },
 
-  /** Rebaixa planos expirados. Autoridade é do backend. */
+  /** Rebaixa planos expirados. Autoridade é do backend. Só com rede. */
   async verificarAcesso(): Promise<void> {
     const { error } = await supabase.rpc('check_access_status')
     if (error) throw error
@@ -133,6 +171,7 @@ export const profileRepository = {
    * conta e por aparelho, com e-mail confirmado e não descartável.
    */
   async liberarTesteGratis(aparelho: string): Promise<StatusTesteGratis> {
+    exigirRede()
     const { data, error } = await supabase.rpc('liberar_teste_gratis', { p_aparelho: aparelho })
     if (error) throw error
     return data as StatusTesteGratis
@@ -142,72 +181,58 @@ export const profileRepository = {
    * Atualiza last_app_open e deixa o trigger handle_streak_on_open()
    * decidir o streak. O client NÃO calcula streak — a idempotência
    * contra multi-device depende de a decisão ser do Postgres.
+   * Só com rede: abrir offline não conta (o horário seria do aparelho).
    */
   async registrarAbertura(): Promise<void> {
     const { error } = await supabase
       .from('profiles')
       .update({ last_app_open: new Date().toISOString() })
-      .eq('id', (await supabase.auth.getUser()).data.user?.id ?? '')
+      .eq('id', await usuarioId())
     if (error) throw error
   },
 
   /** Aceite da tela de Consentimento (LGPD art. 11 / GDPR art. 9: dado de saúde). */
   async aceitarConsentimento(params: { habitos: boolean; versao: string }): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        consentimento_aceito: true,
-        consentimento_data: new Date().toISOString(),
-        consentimento_versao: params.versao,
-        consentimento_habitos: params.habitos,
-      })
-      .eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({
+      consentimento_aceito: true,
+      consentimento_data: new Date().toISOString(),
+      consentimento_versao: params.versao,
+      consentimento_habitos: params.habitos,
+    })
   },
 
   /** Liga (ou desliga) o consentimento de hábitos — Hábitos pede antes de abrir. */
   async definirConsentimentoHabitos(valor: boolean): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { error } = await supabase.from('profiles').update({ consentimento_habitos: valor }).eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ consentimento_habitos: valor })
   },
 
   /** Fim do onboarding: grava perfil, metas e localidade, e marca como completo. */
   async concluirOnboarding(d: DadosOnboarding): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        nome: d.nome,
-        idade: d.idade,
-        sexo: d.sexo,
-        altura_cm: d.alturaCm,
-        peso_atual: d.pesoKg,
-        peso_inicial: d.pesoKg,
-        peso_meta: d.pesoMeta,
-        objetivo: d.objetivo,
-        local_treino: d.localTreino,
-        dias_treino: d.diasTreino,
-        restricoes: d.restricoes,
-        kcal_meta: d.metas.kcal,
-        prot_meta: d.metas.proteina,
-        carbo_meta: d.metas.carboidrato,
-        gord_meta: d.metas.gordura,
-        agua_meta_ml: d.metas.aguaMl,
-        passos_meta: d.metas.passos,
-        idioma: d.localidade.idioma,
-        pais: d.localidade.pais,
-        fuso: d.localidade.fuso,
-        unidades: d.localidade.unidades,
-        onboarding_respostas: d.respostas,
-        onboarding_completo: true,
-      })
-      .eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({
+      nome: d.nome,
+      idade: d.idade,
+      sexo: d.sexo,
+      altura_cm: d.alturaCm,
+      peso_atual: d.pesoKg,
+      peso_inicial: d.pesoKg,
+      peso_meta: d.pesoMeta,
+      objetivo: d.objetivo,
+      local_treino: d.localTreino,
+      dias_treino: d.diasTreino,
+      restricoes: d.restricoes,
+      kcal_meta: d.metas.kcal,
+      prot_meta: d.metas.proteina,
+      carbo_meta: d.metas.carboidrato,
+      gord_meta: d.metas.gordura,
+      agua_meta_ml: d.metas.aguaMl,
+      passos_meta: d.metas.passos,
+      idioma: d.localidade.idioma,
+      pais: d.localidade.pais,
+      fuso: d.localidade.fuso,
+      unidades: d.localidade.unidades,
+      onboarding_respostas: d.respostas,
+      onboarding_completo: true,
+    })
   },
 
   /** O que o onboarding guardou sobre comida (pra pré-preencher o plano de dieta). */
@@ -216,14 +241,7 @@ export const profileRepository = {
     refeicoesPorDia: string | null
     frequenciaTreino: string | null
   }> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('restricoes, onboarding_respostas')
-      .eq('id', userId)
-      .single<{ restricoes: string[] | null; onboarding_respostas: Record<string, unknown> | null }>()
-    if (error) throw error
+    const data = await linhaDoPerfil()
     const r = data.onboarding_respostas ?? {}
     const naoGosta = Array.isArray(r.alimentos_nao_gosta) ? (r.alimentos_nao_gosta as unknown[]).map(String) : []
     return {
@@ -235,10 +253,7 @@ export const profileRepository = {
 
   /** Idioma/unidades trocados depois (Perfil > Idioma e região). */
   async atualizarLocalidade(campos: Partial<Localidade>): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { error } = await supabase.from('profiles').update(campos).eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ ...campos })
   },
 
   /** Horário de acordar/dormir e chaves de lembrete (Perfil > Notificações) — o servidor também pode usar. */
@@ -248,50 +263,26 @@ export const profileRepository = {
     lembreteAgua: boolean
     lembreteTreino: boolean
   }): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        horario_acordar: r.acordar,
-        horario_dormir: r.dormir,
-        lembrete_agua: r.lembreteAgua,
-        lembrete_treino: r.lembreteTreino,
-      })
-      .eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({
+      horario_acordar: r.acordar,
+      horario_dormir: r.dormir,
+      lembrete_agua: r.lembreteAgua,
+      lembrete_treino: r.lembreteTreino,
+    })
   },
 
   /** Atualiza a meta diária de água (litros escolhidos no painel do disco). */
   async atualizarMetaAgua(metaMl: number): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ agua_meta_ml: metaMl })
-      .eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ agua_meta_ml: metaMl })
   },
 
   /** Alergias/restrições (onboarding, chat do Life e Perfil > Metas). */
   async restricoes(): Promise<string[]> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('restricoes')
-      .eq('id', userId)
-      .single<{ restricoes: string[] | null }>()
-    if (error) throw error
-    return data.restricoes ?? []
+    return (await linhaDoPerfil()).restricoes ?? []
   },
 
   async atualizarRestricoes(restricoes: readonly string[]): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { error } = await supabase.from('profiles').update({ restricoes }).eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ restricoes: [...restricoes] })
   },
 
   /** Metas diárias — tela de Metas do Perfil (kcal/proteína/carbo/gordura/passos; água usa atualizarMetaAgua). */
@@ -299,56 +290,39 @@ export const profileRepository = {
     campo: 'kcal_meta' | 'prot_meta' | 'carbo_meta' | 'gord_meta' | 'passos_meta',
     valor: number,
   ): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ [campo]: valor })
   },
 
   /** Email vem da sessão de autenticação, não da tabela profiles (fonte única, sem risco de desincronizar). */
   async emailAtual(): Promise<string | null> {
-    return (await supabase.auth.getUser()).data.user?.email ?? null
+    return emailDaSessao()
   },
 
   async atualizarNome(nome: string): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { error } = await supabase.from('profiles').update({ nome }).eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ nome })
   },
 
   /** Objetivo + peso-meta — definidos no card de peso da Home. */
   async atualizarObjetivoPeso(objetivo: Objetivo | null, pesoMeta: number | null): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-    const { error } = await supabase
-      .from('profiles')
-      .update({ objetivo, peso_meta: pesoMeta })
-      .eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ objetivo, peso_meta: pesoMeta })
   },
 
-  /** Altura/idade/peso/sexo — tela de Conta, campos independentes (cada um salva no próprio blur). */
+  /** Altura/idade/sexo — tela de Conta, campos independentes (cada um salva no próprio blur). O peso vai por pesoRepository.registrar. */
   async atualizarDadosPessoais(
     campo: 'altura_cm' | 'idade' | 'peso_atual' | 'sexo',
     valor: number | string | null,
   ): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
-
-    const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', userId)
-    if (error) throw error
+    await atualizarPerfil({ [campo]: valor })
   },
 
   /**
    * Sobe a foto pro bucket público `avatars` (caminho `<user_id>/avatar.jpg`,
    * upsert — sempre sobrescreve a mesma foto) e grava a URL pública no perfil.
+   * Só com rede (foto não fica na fila: pesa demais).
    */
   async atualizarAvatar(arquivo: Blob): Promise<string> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    exigirRede()
+    const userId = await usuarioId()
 
     const caminho = `${userId}/avatar.jpg`
     const { error: erroUpload } = await supabase.storage
@@ -360,12 +334,7 @@ export const profileRepository = {
     // Cache-bust: mesmo nome de arquivo sempre, sem isso a imagem antiga fica presa no cache do navegador/app.
     const url = `${data.publicUrl}?v=${Date.now()}`
 
-    const { error: erroPerfil } = await supabase
-      .from('profiles')
-      .update({ avatar_url: url })
-      .eq('id', userId)
-    if (erroPerfil) throw erroPerfil
-
+    await atualizarPerfil({ avatar_url: url })
     return url
   },
 }

@@ -1,0 +1,324 @@
+<title>Prévia do Story ATHOS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a tela inteira é o Story 9:16 (a foto da pessoa). Por cima, só vidro:
+   barra no topo, três ferramentas e o botão de postar no rodapé. Os dados ficam
+   soltos sobre a foto e se arrastam com o dedo. Tokens = os do app. */
+:root {
+  --brand: 34 197 94; --brand-ink: 4 18 10;
+  --gold: 251 191 36; --prot: 96 165 250; --carb: 251 146 60; --gord: 250 204 21;
+  --vidro: 14 16 15; --linha: 255 255 255;
+  --fundo: 12 12 12; --hi: 255 255 255; --low: 156 163 175; --s2: 26 26 26; --s4: 42 42 42;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --fundo: 232 238 233; --hi: 17 24 20; --low: 87 96 108; --s2: 246 248 246; --s4: 220 226 221; --brand: 22 163 74; color-scheme: light;
+} }
+:root[data-theme="light"] { --fundo: 232 238 233; --hi: 17 24 20; --low: 87 96 108; --s2: 246 248 246; --s4: 220 226 221; --brand: 22 163 74; color-scheme: light; }
+.tela { --brand: 34 197 94; }
+* { box-sizing: border-box; }
+body { background: rgb(var(--fundo)); color: rgb(var(--hi)); font-family: var(--sans); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+button:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
+
+.abas { max-width: 380px; margin: 0 auto 12px; display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: rgb(var(--s2)); border: 1px solid rgb(var(--s4)); }
+.aba { flex: 1; min-height: 40px; border-radius: 999px; font-size: 13px; font-weight: 600; color: rgb(var(--low)); }
+.aba[aria-selected="true"] { background: rgb(var(--brand)); color: rgb(var(--brand-ink)); }
+.topo { max-width: 380px; margin: 0 auto 14px; }
+.topo p { margin: 0; font-size: 12.5px; color: rgb(var(--low)); line-height: 1.45; }
+
+.tela { position: relative; max-width: 380px; aspect-ratio: 9 / 16; margin: 0 auto; border-radius: 28px; overflow: hidden;
+  background: #0e100f; color: #fff; box-shadow: 0 24px 60px rgb(0 0 0 / .35); touch-action: none; user-select: none; -webkit-user-select: none; }
+.foto { position: absolute; inset: 0; width: 100%; height: 100%; max-width: 100%; object-fit: cover; }
+.foto-gym { position: absolute; inset: 0; background:
+  radial-gradient(60% 40% at 70% 30%, rgb(255 255 255 / .10), transparent 70%),
+  radial-gradient(90% 60% at 30% 80%, rgb(34 197 94 / .18), transparent 70%),
+  linear-gradient(160deg, #262b27, #0b0d0c 70%); }
+.tela::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(rgb(0 0 0 / .35), transparent 16%, transparent 60%, rgb(0 0 0 / .55)); }
+.faixa { position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .2s;
+  background: repeating-linear-gradient(135deg, rgb(255 255 255 / .08) 0 6px, transparent 6px 12px); border: 1px dashed rgb(255 255 255 / .35); }
+.faixa span { position: absolute; left: 10px; font-size: 10px; font-weight: 600; letter-spacing: .04em; opacity: .8; }
+.f-topo { top: 0; height: 13%; border-top: 0; } .f-topo span { bottom: 6px; }
+.f-base { bottom: 0; height: 18%; border-bottom: 0; } .f-base span { top: 6px; }
+.tela.arrastando .faixa { opacity: 1; }
+
+.vidro { background: rgb(var(--vidro) / .42); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgb(var(--linha) / .14); }
+
+/* Elementos sobre a foto */
+.el { position: absolute; z-index: 2; transform: translate(-50%, -50%); cursor: grab; text-shadow: 0 2px 12px rgb(0 0 0 / .55); }
+.el.sel { outline: 1.5px dashed rgb(255 255 255 / .8); outline-offset: 6px; border-radius: 6px; }
+.el .rot { display: block; font-size: calc(10px * var(--k, 1)); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; white-space: nowrap; }
+.el .val { display: block; font-size: calc(26px * var(--k, 1)); font-weight: 900; letter-spacing: -.02em; line-height: 1.05; white-space: nowrap; }
+.el .val small { font-size: .5em; font-weight: 700; margin-left: 3px; letter-spacing: 0; }
+.el.titulo .val { font-size: calc(17px * var(--k, 1)); font-weight: 800; letter-spacing: 0; }
+.el.life img { display: block; width: calc(92px * var(--k, 1)); height: auto; filter: drop-shadow(0 8px 16px rgb(0 0 0 / .45)); text-shadow: none; }
+.assinatura { position: absolute; z-index: 2; left: 16px; bottom: 16px; font-size: 12px; font-weight: 800; letter-spacing: .02em; text-shadow: 0 1px 8px rgb(0 0 0 / .5); pointer-events: none; transition: opacity .2s; }
+.assinatura b { color: rgb(var(--brand)); font-weight: 800; }
+
+/* Controles (somem na imagem exportada) */
+.barra { position: absolute; z-index: 4; top: 14px; left: 14px; right: 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.redondo { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; font-size: 17px; }
+.redondo:disabled { opacity: .4; cursor: default; }
+.pilula { height: 32px; padding: 0 14px; border-radius: 999px; display: flex; align-items: center; font-size: 13px; font-weight: 600; }
+.rodape { position: absolute; z-index: 4; left: 12px; right: 12px; bottom: 14px; display: grid; gap: 10px; }
+.ferramentas { display: flex; justify-content: center; gap: 22px; }
+.ferr { display: grid; justify-items: center; gap: 4px; font-size: 11px; font-weight: 600; text-shadow: 0 1px 6px rgb(0 0 0 / .6); }
+.ferr span:first-child { width: 46px; height: 46px; border-radius: 999px; display: grid; place-items: center; }
+.ferr svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ferr[aria-expanded="true"] span:first-child { background: rgb(var(--brand)); color: rgb(var(--brand-ink)); border-color: transparent; }
+.acoes { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.postar { min-height: 50px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.postar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+.baixar { width: 50px; height: 50px; border-radius: 999px; display: grid; place-items: center; }
+.baixar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+
+/* Painéis de vidro (um de cada vez, sobre o rodapé) */
+.painel { position: absolute; z-index: 5; left: 12px; right: 12px; bottom: 14px; border-radius: 20px; padding: 14px; display: grid; gap: 10px; }
+.painel-cab { display: flex; align-items: center; justify-content: space-between; }
+.painel-cab b { font-size: 14px; }
+.ok { width: 34px; height: 34px; border-radius: 999px; background: rgb(var(--brand)); color: rgb(var(--brand-ink)); font-weight: 800; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { height: 34px; border-radius: 999px; border: 1px solid rgb(var(--linha) / .25); padding: 0 12px; font-size: 12.5px; font-weight: 600; }
+.chip[aria-pressed="true"] { border-color: rgb(var(--brand)); background: rgb(var(--brand) / .22); color: rgb(var(--brand)); }
+.nota { margin: 0; font-size: 11.5px; line-height: 15px; opacity: .72; }
+.linha-aj { display: flex; align-items: center; gap: 10px; }
+.linha-aj > span { font-size: 12px; font-weight: 600; opacity: .8; width: 64px; }
+.mm { width: 34px; height: 34px; border-radius: 999px; border: 1px solid rgb(var(--linha) / .25); font-size: 17px; }
+.cores { display: flex; gap: 8px; }
+.cor { width: 30px; height: 30px; border-radius: 999px; border: 2px solid rgb(var(--linha) / .35); background: var(--c); }
+.cor[aria-pressed="true"] { border-color: rgb(var(--brand)); box-shadow: 0 0 0 2px rgb(var(--brand) / .4); }
+.perigo { margin-left: auto; height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid rgb(var(--linha) / .25); font-size: 12.5px; font-weight: 600; }
+
+.aviso { position: absolute; z-index: 6; left: 50%; top: 64px; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; max-width: calc(100% - 28px); overflow: hidden; text-overflow: ellipsis; }
+.legenda { max-width: 380px; margin: 10px auto 0; font-size: 12px; color: rgb(var(--low)); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .faixa, .assinatura { transition: none; } }
+</style>
+
+<div class="abas" role="tablist" aria-label="Tipo de Story">
+  <button class="aba" role="tab" data-modo="food" aria-selected="true">Alimentação</button>
+  <button class="aba" role="tab" data-modo="gym" aria-selected="false">Musculação</button>
+</div>
+<div class="topo"><p>Arraste os números com o dedo. Toque num número pra mudar tamanho e cor. "Foto" troca pela sua (dá pra testar com uma foto do seu celular).</p></div>
+
+<main class="tela" id="tela" aria-label="Editor do Story">
+  <div id="fundo"></div>
+  <div class="faixa f-topo" aria-hidden="true"><span>Área coberta pelo Instagram</span></div>
+  <div class="faixa f-base" aria-hidden="true"><span>Área coberta pelo Instagram</span></div>
+  <div id="camada"></div>
+  <div class="assinatura" id="assinatura">ATHOS<b>life</b></div>
+
+  <div class="barra" id="barra">
+    <button class="redondo vidro" aria-label="Voltar">←</button>
+    <span class="pilula vidro" id="modoNome">Story · Alimentação</span>
+    <button class="redondo vidro" id="desfazer" aria-label="Desfazer" disabled>↶</button>
+  </div>
+
+  <div class="rodape" id="rodape">
+    <div class="ferramentas">
+      <button class="ferr" id="bFoto"><span class="vidro"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M8 6l2-2h4l2 2"/><circle cx="12" cy="13" r="3.5"/></svg></span><span>Foto</span></button>
+      <button class="ferr" id="bDados" aria-expanded="false"><span class="vidro"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-6"/></svg></span><span>Dados</span></button>
+      <button class="ferr" id="bModelos" aria-expanded="false"><span class="vidro"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 15h6M9 18h4"/></svg></span><span>Modelos</span></button>
+    </div>
+    <div class="acoes">
+      <button class="postar" id="postar"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg>Postar nos Stories</button>
+      <button class="baixar vidro" id="baixar" aria-label="Salvar imagem"><svg viewBox="0 0 24 24"><path d="M12 4v11m-5-5l5 5 5-5M5 19h14"/></svg></button>
+    </div>
+  </div>
+
+  <section class="painel vidro" id="pDados" hidden>
+    <div class="painel-cab"><b>O que aparece na foto</b><button class="ok" data-fechar aria-label="Pronto">✓</button></div>
+    <div class="chips" id="listaDados"></div>
+    <p class="nota" id="notaDados"></p>
+  </section>
+  <section class="painel vidro" id="pModelos" hidden>
+    <div class="painel-cab"><b>Modelos</b><button class="ok" data-fechar aria-label="Pronto">✓</button></div>
+    <div class="chips">
+      <button class="chip" data-modelo="base">Na base</button>
+      <button class="chip" data-modelo="topo">No topo</button>
+      <button class="chip" data-modelo="lado">Na lateral</button>
+      <button class="chip" data-modelo="foto">Só a foto</button>
+    </div>
+    <p class="nota">O modelo só reorganiza. Sua foto e seus números continuam.</p>
+  </section>
+  <section class="painel vidro" id="pAjuste" hidden>
+    <div class="painel-cab"><b id="ajNome"></b><button class="ok" data-fechar aria-label="Pronto">✓</button></div>
+    <div class="linha-aj"><span>Tamanho</span><button class="mm" id="menor" aria-label="Diminuir">−</button><button class="mm" id="maior" aria-label="Aumentar">+</button></div>
+    <div class="linha-aj"><span>Cor</span>
+      <div class="cores" id="cores">
+        <button class="cor" style="--c:#ffffff" data-cor="#ffffff" aria-label="Branco"></button>
+        <button class="cor" style="--c:#86efac" data-cor="#86efac" aria-label="Verde"></button>
+        <button class="cor" style="--c:#fbbf24" data-cor="#fbbf24" aria-label="Dourado"></button>
+        <button class="cor" style="--c:#111412" data-cor="#111412" aria-label="Preto"></button>
+      </div>
+      <button class="perigo" id="ocultar">Ocultar</button>
+    </div>
+  </section>
+
+  <p class="aviso vidro" id="aviso" role="status" hidden></p>
+  <input type="file" id="arquivo" accept="image/*" hidden>
+</main>
+<p class="legenda" id="legenda"></p>
+
+<script>
+// Dados de exemplo. No app: Alimentação vem da refeição salva pelo scanner
+// (por isso o "≈"); Musculação vem do treino que acabou de terminar.
+const MODOS = {
+  food: {
+    nome: 'Alimentação', foto: 'prato.webp', life: 'life-chef.webp', lifeNome: 'Life Chef',
+    legenda: 'Dados da refeição salva pelo scanner. O "≈" avisa que é estimativa.',
+    itens: [
+      { id: 'titulo', rot: 'Almoço', val: 'Bowl de frango com brócolis', x: 50, y: 22, on: true, titulo: true },
+      { id: 'kcal', rot: 'Calorias', val: '≈ 512', un: 'kcal', x: 30, y: 66, on: true },
+      { id: 'prot', rot: 'Proteína', val: '48', un: 'g', x: 70, y: 66, on: true },
+      { id: 'carb', rot: 'Carboidrato', val: '52', un: 'g', x: 30, y: 75, on: false },
+      { id: 'gord', rot: 'Gordura', val: '13', un: 'g', x: 70, y: 75, on: false },
+      { id: 'life', life: true, x: 80, y: 44, on: false },
+    ],
+  },
+  gym: {
+    nome: 'Musculação', foto: null, life: 'life-treino.webp', lifeNome: 'Life Treino',
+    legenda: 'Dados do treino que acabou de terminar. "Recorde" só aparece quando bateu um.',
+    itens: [
+      { id: 'titulo', rot: 'Treino de hoje', val: 'Peito & Tríceps', x: 50, y: 22, on: true, titulo: true },
+      { id: 'pr', rot: 'Novo recorde', val: '130', un: 'kg · Supino', x: 50, y: 58, on: true },
+      { id: 'volume', rot: 'Volume total', val: '4.820', un: 'kg', x: 30, y: 70, on: true },
+      { id: 'series', rot: 'Séries', val: '18', x: 70, y: 70, on: true },
+      { id: 'tempo', rot: 'Duração', val: '52', un: 'min', x: 30, y: 79, on: false },
+      { id: 'life', life: true, x: 76, y: 42, on: true },
+    ],
+  },
+}
+const MODELOS = {
+  base: (i, n) => ({ x: n % 2 ? 70 : 30, y: 62 + Math.floor(n / 2) * 9 }),
+  topo: (i, n) => ({ x: n % 2 ? 70 : 30, y: 24 + Math.floor(n / 2) * 9 }),
+  lado: (i, n) => ({ x: 26, y: 34 + n * 10 }),
+}
+
+let modo = 'food', estado = {}, sel = null, historico = []
+const $ = (id) => document.getElementById(id)
+const clone = (o) => JSON.parse(JSON.stringify(o))
+for (const k of Object.keys(MODOS)) estado[k] = { itens: clone(MODOS[k].itens), foto: MODOS[k].foto }
+const atual = () => estado[modo]
+
+function guardar() { historico.push(clone(atual().itens)); if (historico.length > 30) historico.shift(); $('desfazer').disabled = false }
+function avisar(txt) { const a = $('aviso'); a.textContent = txt; a.hidden = false; clearTimeout(avisar.t); avisar.t = setTimeout(() => (a.hidden = true), 2400) }
+
+function render() {
+  const m = MODOS[modo], s = atual()
+  $('fundo').innerHTML = s.foto ? `<img class="foto" src="${s.foto}" alt="Foto do Story">` : '<div class="foto-gym" aria-hidden="true"></div>'
+  $('modoNome').textContent = `Story · ${m.nome}`
+  $('legenda').textContent = m.legenda
+  const c = $('camada'); c.replaceChildren()
+  for (const it of s.itens) {
+    if (!it.on) continue
+    const d = document.createElement('div')
+    d.className = 'el' + (it.titulo ? ' titulo' : '') + (it.life ? ' life' : '') + (sel === it.id ? ' sel' : '')
+    d.style.left = it.x + '%'; d.style.top = it.y + '%'; d.style.setProperty('--k', it.k ?? 1); d.style.color = it.cor ?? '#fff'
+    d.dataset.id = it.id; d.tabIndex = 0
+    if (it.life) { d.innerHTML = `<img src="${m.life}" alt="${m.lifeNome}">`; d.setAttribute('aria-label', m.lifeNome) }
+    else { d.innerHTML = `<span class="rot">${it.rot}</span><span class="val">${it.val}${it.un ? `<small>${it.un}</small>` : ''}</span>`; d.setAttribute('aria-label', `${it.rot}: ${it.val} ${it.un ?? ''}`) }
+    c.append(d)
+  }
+  // Lista de dados
+  const l = $('listaDados'); l.replaceChildren()
+  for (const it of s.itens) {
+    const b = document.createElement('button')
+    b.className = 'chip'; b.setAttribute('aria-pressed', String(it.on))
+    b.textContent = it.life ? m.lifeNome : it.rot
+    b.onclick = () => { guardar(); it.on = !it.on; render() }
+    l.append(b)
+  }
+  $('notaDados').textContent = modo === 'food' ? 'Calorias com "≈": vieram do scanner, são estimativa.' : 'Duração e recorde vêm do treino salvo.'
+  // Ajuste do selecionado
+  const it = s.itens.find((i) => i.id === sel)
+  $('pAjuste').hidden = !it
+  if (it) {
+    $('ajNome').textContent = it.life ? m.lifeNome : it.rot
+    for (const b of $('cores').children) b.setAttribute('aria-pressed', String((it.cor ?? '#ffffff') === b.dataset.cor))
+    $('cores').parentElement.style.display = it.life ? 'none' : ''
+    $('ocultar').style.display = it.life ? 'none' : ''
+  }
+  $('rodape').hidden = !!it || !$('pDados').hidden || !$('pModelos').hidden
+}
+
+function abrir(painel) {
+  sel = null
+  for (const p of ['pDados', 'pModelos']) $(p).hidden = p !== painel || !$(p).hidden
+  $('bDados').setAttribute('aria-expanded', String(!$('pDados').hidden))
+  $('bModelos').setAttribute('aria-expanded', String(!$('pModelos').hidden))
+  render()
+}
+function fechar() { sel = null; $('pDados').hidden = true; $('pModelos').hidden = true; $('bDados').setAttribute('aria-expanded', 'false'); $('bModelos').setAttribute('aria-expanded', 'false'); render() }
+
+// Arrastar
+let arr = null
+$('camada').addEventListener('pointerdown', (e) => {
+  const el = e.target.closest('.el'); if (!el) return
+  const r = $('tela').getBoundingClientRect(), it = atual().itens.find((i) => i.id === el.dataset.id)
+  arr = { it, r, x0: e.clientX, y0: e.clientY, ix: it.x, iy: it.y, moveu: false }
+  el.setPointerCapture(e.pointerId)
+})
+$('camada').addEventListener('pointermove', (e) => {
+  if (!arr) return
+  const dx = (e.clientX - arr.x0) / arr.r.width * 100, dy = (e.clientY - arr.y0) / arr.r.height * 100
+  if (!arr.moveu && Math.hypot(dx, dy) < 1.2) return
+  if (!arr.moveu) { guardar(); arr.moveu = true; $('tela').classList.add('arrastando') }
+  arr.it.x = Math.min(92, Math.max(8, arr.ix + dx)); arr.it.y = Math.min(94, Math.max(6, arr.iy + dy))
+  const el = $('camada').querySelector(`[data-id="${arr.it.id}"]`); el.style.left = arr.it.x + '%'; el.style.top = arr.it.y + '%'
+})
+$('camada').addEventListener('pointerup', () => {
+  if (!arr) return
+  $('tela').classList.remove('arrastando')
+  if (!arr.moveu) { $('pDados').hidden = true; $('pModelos').hidden = true; sel = sel === arr.it.id ? null : arr.it.id; render() }
+  else if (arr.it.y < 13 || arr.it.y > 82) avisar('Essa parte fica embaixo dos botões do Instagram')
+  arr = null
+})
+$('camada').addEventListener('keydown', (e) => { const el = e.target.closest('.el'); if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); sel = el.dataset.id; render() } })
+$('fundo').addEventListener('click', () => { if (sel || !$('pDados').hidden || !$('pModelos').hidden) fechar() })
+
+// Ferramentas
+$('bDados').onclick = () => abrir('pDados')
+$('bModelos').onclick = () => abrir('pModelos')
+$('bFoto').onclick = () => $('arquivo').click()
+$('arquivo').onchange = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  const r = new FileReader(); r.onload = () => { atual().foto = r.result; render(); avisar('Foto trocada') }; r.readAsDataURL(f)
+  e.target.value = ''
+}
+for (const b of document.querySelectorAll('[data-fechar]')) b.onclick = fechar
+for (const b of document.querySelectorAll('[data-modelo]')) b.onclick = () => {
+  guardar()
+  const its = atual().itens, nm = b.dataset.modelo
+  if (nm === 'foto') { for (const i of its) i.on = false; avisar('Só a foto e a assinatura') }
+  else {
+    let n = 0
+    for (const i of its) {
+      if (i.titulo) { i.on = true; i.x = nm === 'lado' ? 30 : 50; i.y = nm === 'topo' ? 76 : 22; continue }
+      if (i.life) continue
+      if (n < 4 && MODOS[modo].itens.find((o) => o.id === i.id).on) { i.on = true; Object.assign(i, MODELOS[nm](i, n)); n++ }
+    }
+  }
+  render()
+}
+$('menor').onclick = () => { const i = atual().itens.find((o) => o.id === sel); guardar(); i.k = Math.max(.6, +((i.k ?? 1) - .15).toFixed(2)); render() }
+$('maior').onclick = () => { const i = atual().itens.find((o) => o.id === sel); guardar(); i.k = Math.min(2, +((i.k ?? 1) + .15).toFixed(2)); render() }
+for (const b of $('cores').children) b.onclick = () => { const i = atual().itens.find((o) => o.id === sel); guardar(); i.cor = b.dataset.cor; render() }
+$('ocultar').onclick = () => { const i = atual().itens.find((o) => o.id === sel); guardar(); i.on = false; sel = null; render() }
+$('desfazer').onclick = () => { const h = historico.pop(); if (h) { atual().itens = h; sel = null; render() } $('desfazer').disabled = historico.length === 0 }
+$('postar').onclick = () => avisar('Abriria o Instagram com a imagem (prévia)')
+$('baixar').onclick = () => avisar('Salvaria a imagem 1080 × 1920 na galeria (prévia)')
+
+for (const a of document.querySelectorAll('.aba')) a.onclick = () => {
+  modo = a.dataset.modo; sel = null; historico = []; $('desfazer').disabled = true
+  for (const o of document.querySelectorAll('.aba')) o.setAttribute('aria-selected', String(o === a))
+  fechar()
+}
+render()
+</script>
