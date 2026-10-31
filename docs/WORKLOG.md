@@ -3939,3 +3939,27 @@ onboarding claro/escuro, água e selo offline com sinal ruim, Live Activity.
 
 - Dados de teste **apagados** com autorização do dono (120 itens `[teste]` + 19 pesos falsos; pesagem real de 27/09 mantida).
 - "Leaked password protection": tentada com autorização do dono → recusada pelo Supabase (HTTP 402: só no plano Pro). Fica desligada até o projeto ir pro Pro.
+
+## 2026-10-31 (2) — Life frio no desabafo
+
+Testador: desabafando, o Life respondeu curto, "qualquer coisa tô aqui",
+que ia parar de mandar mensagem hoje e que dava pra pausar as métricas —
+pareceu querer sair da conversa. Dono: "faltou empatia e acolhimento,
+imagina se é alguém passando por um problema grave". Causa: o prompt
+mandava "acolher curto" (1–3 frases), dava "Tô aqui" de exemplo e mandava
+oferecer a pausa justo no momento pesado. Mudanças no `PROMPT_LIFE`:
+- Desabafo: fica na conversa, até 4 frases, cita o que a pessoa contou,
+  valida e faz uma pergunta aberta; nunca fecha a conversa ("qualquer coisa
+  tô aqui", "fico por aqui") — quem encerra é ela; nunca minimiza.
+- QUANDO É GRAVE: desesperança, violência/abuso, perda, pânico → devagar,
+  "você importa", pergunta com cuidado se está segura, incentiva alguém de
+  confiança + profissional, linha de apoio do país (agora vai no prompt via
+  `linhaApoio(loc)`); nunca "sou só uma IA" pra se afastar.
+- Pausa: nunca no começo do desabafo nem junto do acolhimento; no máx. 1×,
+  como alívio das metas ("eu continuo aqui"), nunca "vou parar de mandar
+  mensagem". Confirmação da pausa reescrita nos 5 idiomas.
+- Resposta fixa de crise (CVV etc.): tirado "sou uma IA e não consigo te
+  ajudar"; agora "você importa" + "eu continuo aqui do seu lado", 5 idiomas.
+
+Validado: 71 testes Deno, deno check. **Precisa deploy da ai-proxy**
+(bloqueado pelo modo automático; aguardando o dono autorizar).

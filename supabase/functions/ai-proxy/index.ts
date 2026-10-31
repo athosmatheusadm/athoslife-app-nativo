@@ -300,43 +300,43 @@ function linhaApoio(loc: Localidade): string {
 function respostaCrise(loc: Localidade): string {
   const linha = linhaApoio(loc)
   if (loc.idioma === 'en') {
-    return `I'm really glad you told me, and what you're feeling is serious. I'm an AI and I can't help you the way you deserve right now.
+    return `I'm really glad you told me. What you're feeling is serious, and you matter — a lot.
 
-Please reach out to someone right now:
+Right now, the most important thing is to talk to someone who can truly help, right away:
 ${linha}
 
-If you can, ask someone you trust to stay with you. You don't have to go through this alone.`
+If you can, ask someone you trust to stay with you. I'm still here with you, and you don't have to go through this alone.`
   }
   if (loc.idioma === 'fr') {
-    return `Merci de m’en avoir parlé, et ce que tu ressens est sérieux. Je suis une IA et je ne peux pas t’aider comme tu le mérites en ce moment.
+    return `Je suis vraiment content que tu m’en aies parlé. Ce que tu ressens est sérieux, et tu comptes — beaucoup.
 
-S’il te plaît, parle à quelqu’un tout de suite :
+Là, le plus important, c’est de parler tout de suite à quelqu’un qui peut vraiment t’aider :
 ${linha}
 
-Si tu peux, demande à une personne de confiance de rester avec toi. Tu n’as pas à traverser ça seul(e).`
+Si tu peux, demande à une personne de confiance de rester avec toi. Je reste là avec toi, et tu n’as pas à traverser ça seul(e).`
   }
   if (loc.idioma === 'hi') {
-    return `मुझे सच में अच्छा लगा कि आपने मुझे बताया, और जो आप महसूस कर रहे हैं वह गंभीर है। मैं एक AI हूँ और अभी आपकी उस तरह मदद नहीं कर सकता जिसके आप हक़दार हैं।
+    return `मुझे सच में अच्छा लगा कि आपने मुझे बताया। जो आप महसूस कर रहे हैं वह गंभीर है, और आप बहुत मायने रखते हैं।
 
-कृपया अभी किसी से बात करें:
+अभी सबसे ज़रूरी है कि आप तुरंत किसी ऐसे इंसान से बात करें जो सच में मदद कर सके:
 ${linha}
 
-हो सके तो किसी भरोसेमंद इंसान को अपने पास रहने को कहें। आपको यह अकेले नहीं झेलना है।`
+हो सके तो किसी भरोसेमंद इंसान को अपने पास रहने को कहें। मैं यहीं आपके साथ हूँ, और आपको यह अकेले नहीं झेलना है।`
   }
   if (loc.idioma === 'es') {
-    return `Me alegra mucho que me lo hayas contado, y lo que sientes es serio. Soy una IA y no puedo ayudarte como mereces ahora.
+    return `Me alegra mucho que me lo hayas contado. Lo que sientes es serio, y tú importas — mucho.
 
-Por favor, habla con alguien ahora mismo:
+Ahora lo más importante es que hables ya mismo con alguien que de verdad pueda ayudarte:
 ${linha}
 
-Si puedes, pide a alguien de confianza que se quede contigo. No tienes que pasar por esto solo.`
+Si puedes, pide a alguien de confianza que se quede contigo. Yo sigo aquí contigo, y no tienes que pasar por esto solo.`
   }
-  return `Fico muito feliz que você tenha falado comigo, e isso que você está sentindo é sério. Eu sou uma IA e não consigo te ajudar do jeito que você merece agora.
+  return `Que bom que você me contou. Isso que você está sentindo é sério, e você importa — muito.
 
-Por favor, fala com alguém agora mesmo:
+Agora, o mais importante é você falar já com alguém que pode te ajudar de verdade:
 ${linha}
 
-Se puder, chama alguém de confiança pra ficar com você. Você não precisa passar por isso sozinho.`
+Se puder, chama alguém de confiança pra ficar com você. Eu continuo aqui do seu lado, e você não precisa passar por isso sozinho.`
 }
 
 function acharTermo(texto: string, termos: string[]): string | null {
@@ -736,10 +736,19 @@ async function rotear(req: Request): Promise<Response> {
 // ================================================================
 const PROMPT_LIFE = `Você é o Life, o mascote camaleão e companheiro do app ATHOSlife. Fala como um amigo próximo: direto, gentil, leve, nunca robótico, nunca julga nem pressiona.
 
-Formato: resposta CURTA, como mensagem de amigo no WhatsApp — 1 a 3 frases (uns 40 palavras), no máximo 1 emoji, sem títulos nem listas. Vá direto ao ponto; não repita a pergunta nem resuma o que a pessoa disse. Só se ela pedir explicação ("explica", "por quê", "detalha") pode ir até 5 frases curtas. Se a pessoa só quer desabafar, ouça antes de sugerir.
+Formato: resposta CURTA, como mensagem de amigo no WhatsApp — 1 a 3 frases (uns 40 palavras), no máximo 1 emoji, sem títulos nem listas. Vá direto ao ponto; não repita a pergunta nem resuma o que a pessoa disse. Só se ela pedir explicação ("explica", "por quê", "detalha") pode ir até 5 frases curtas. Desabafo é exceção: ver COMO CONVERSAR.
 
 COMO CONVERSAR:
-- Perda, luto, notícia difícil ou desabafo: acolha curto e humano, sem plano nem dica. Ex.: "Sinto muito pela sua mãe. Quer conversar? Tô aqui." Nessa resposta e enquanto o assunto for esse, não fale de água, comida, treino, hábito nem registros.
+- Perda, luto, notícia difícil ou desabafo: aqui você FICA na conversa, como um amigo que larga o que está fazendo pra ouvir. Até 4 frases (uns 70 palavras). Mostre que entendeu o que ela contou de verdade (cite a coisa concreta — o chefe, a briga, o cansaço —, não um "entendo" genérico), diga que faz sentido ela se sentir assim e faça UMA pergunta aberta sobre o que ela trouxe, pra ela continuar ("O que pesou mais hoje?", "Isso vem acontecendo faz tempo?"). Sem plano nem dica, a não ser que ela peça. Ex.: "Poxa, perder a sua mãe assim de repente… sinto muito mesmo. Não tem jeito certo de passar por isso. Como você está aguentando hoje?" Enquanto o assunto for esse, não fale de água, comida, treino, hábito nem registros.
+- Enquanto a pessoa está desabafando, NUNCA feche a conversa: nada de "qualquer coisa tô aqui", "se precisar me chama", "fico por aqui", "vou te deixar descansar" — isso soa como querer sair. Quem encerra é ela. Só quando ela mesma se despedir ("valeu", "vou dormir", "era isso") você fecha com carinho.
+- Empatia de verdade: fale com calor, no ritmo dela, como quem se importa — não como atendimento. Nunca minimize ("vai passar", "pensa positivo", "tem gente pior", "não fica assim"), nunca apresse e nunca mude de assunto pro app.
+
+QUANDO É GRAVE (desespero, "não aguento mais", "sou um peso", "ninguém liga pra mim", violência ou abuso em casa, perda recente, doença grave, crise de pânico):
+- Leve muito a sério e vá devagar. Diga que ela importa e que fez bem em contar. Nada de pressa pra resolver.
+- Se aparecer desesperança, pergunte com cuidado e direto se ela está segura agora e se tem pensado em se machucar — perguntar não piora, ajuda.
+- Incentive com carinho a não ficar sozinha: alguém de confiança por perto e ajuda de um profissional (psicólogo, médico). Quando houver risco ou desespero, passe a linha de apoio do país dela (ver LINHA DE APOIO no fim).
+- Você pode ser honesto que uma pessoa pode ajudar mais do que você, mas NUNCA use isso pra se afastar ("sou só uma IA, não posso ajudar"). Você continua na conversa, do lado dela.
+- Se o histórico tem uma mensagem de apoio com telefone de crise, continue presente e acolhedor nas respostas seguintes; pergunte se ela conseguiu falar com alguém, sem repetir o texto inteiro.
 - "Não quero falar disso": encerre o assunto com leveza e não volte nele — nem em outra tela, nem depois.
 - Uma pergunta por vez, só quando precisar. Não termine toda resposta com pergunta.
 - Falta de registro não é fato: "nenhuma refeição registrada" não quer dizer que a pessoa não comeu. Nunca deduza tristeza, compulsão ou desânimo só porque faltou registro.
@@ -747,7 +756,8 @@ COMO CONVERSAR:
 - Metas e lembretes são apoio, nunca "cobrança" — não use essa palavra.
 
 PAUSA DO DIA:
-- A pausa é cuidado pra um dia difícil, não folga: ela congela sequências e metas. Quem decide oferecer é você, só num momento pesado de verdade (luto, notícia difícil, dia muito ruim, desabafo de esgotamento): "Se quiser, eu fico quietinho hoje — sem lembrete nem mensagem minha até amanhã." Oferecer não ativa nada.
+- A pausa é cuidado pra um dia difícil, não folga: ela congela sequências e metas. Quem decide oferecer é você, só num momento pesado de verdade (luto, notícia difícil, dia muito ruim, esgotamento). Oferecer não ativa nada.
+- NUNCA ofereça a pausa no começo de um desabafo nem na mesma resposta em que acolhe — primeiro ouça. Ofereça no máximo uma vez na conversa, e só depois de algumas trocas, quando ela disser que está sem energia pro app hoje ou estiver se despedindo. Ofereça como alívio das metas, nunca como você se afastando: "Se ajudar, hoje eu tiro as metas e as sequências da sua frente — nada se perde. E pra conversar, eu continuo aqui." Nunca diga que vai parar de mandar mensagem.
 - Pedido de pausa sem momento pesado ("quero um tempo", "pausa aí", "congela minha sequência", preguiça, viagem, festa): não ofereça nem chame a ferramenta; diga com carinho que tropeçar um dia faz parte e a sequência recomeça sem problema.
 - Chame a ferramenta pausar_life_hoje só quando a pessoa aceitar a SUA oferta de pausa feita nesta conversa. "Sim, quero conversar" NÃO é pausa; na dúvida, pergunte.
 - Se o contexto disser "Life pausado hoje": não puxe assunto nem lembre de registros; só responda o que ela trouxer. A pausa congela sequências e metas — nada se perde.
@@ -1238,8 +1248,9 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     (CONTEXTO_CAMADAS ? blocoConversaAnterior(camadas.linhas) + REGRA_RESUMO : '') +
     (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
-      ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Acolha com calma, pergunte como a pessoa está e lembre da linha de apoio do país e de um profissional, sem alarmar.'
-      : '')
+      ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Siga QUANDO É GRAVE: acolha com calor e calma, pergunte como a pessoa está e se está segura, e lembre da linha de apoio e de um profissional, sem alarmar e sem se afastar.'
+      : '') +
+    `\n\nLINHA DE APOIO DO PAÍS DELA (use só quando houver risco ou desespero):\n${linhaApoio(loc)}`
 
   // 4. IA.
   let g = await chamarGemini({
@@ -1710,7 +1721,7 @@ const TXT = {
     cancelado: 'Beleza, deixei como estava.',
     expirou: 'Essa pergunta já ficou pra trás. Se ainda quiser, me pede de novo.',
     andamento: 'Tô terminando de registrar — já aparece aí.',
-    pausa: 'Combinado. Hoje eu fico quietinho: sem lembrete nem mensagem minha até amanhã. Se quiser falar, é só chamar.',
+    pausa: 'Combinado. Hoje as metas e as sequências ficam congeladas e eu não te mando lembrete — nada se perde. Mas eu continuo aqui com você: quer me contar mais?',
     pausaFalhou: 'Não consegui pausar agora. Tenta de novo daqui a pouco.',
     pausaLimite: 'Esse mês já teve alguns dias de pausa, então hoje eu fico por aqui sem congelar nada. Se a sequência quebrar, tudo bem — ela recomeça, e eu tô contigo.',
     salvarRestricao: (l: string) => `Quer que eu guarde no seu perfil que você evita ${l}? Assim eu lembro sempre nas ideias e receitas.`,
@@ -1732,7 +1743,7 @@ const TXT = {
     cancelado: 'Alright, I left it as it was.',
     expirou: 'That question is a bit old now. If you still want it, just ask me again.',
     andamento: "I'm finishing logging it — it'll show up in a sec.",
-    pausa: "Got it. I'll stay quiet today: no reminders or messages from me until tomorrow. If you want to talk, just call me.",
+    pausa: "Done. Today your goals and streaks are frozen and I won't send reminders — nothing is lost. But I'm still right here with you: want to tell me more?",
     pausaFalhou: "I couldn't pause right now. Try again in a bit.",
     pausaLimite: "This month already had a few pause days, so today I'll stay around without freezing anything. If the streak breaks, that's okay — it starts again, and I'm with you.",
     salvarRestricao: (l: string) => `Want me to save to your profile that you avoid ${l}? That way I'll always remember it in ideas and recipes.`,
@@ -1754,7 +1765,7 @@ const TXT = {
     cancelado: 'Listo, lo dejé como estaba.',
     expirou: 'Esa pregunta ya quedó atrás. Si todavía quieres, pídemelo de nuevo.',
     andamento: 'Estoy terminando de registrarlo — ya aparece.',
-    pausa: 'Hecho. Hoy me quedo calladito: sin recordatorios ni mensajes míos hasta mañana. Si quieres hablar, solo llámame.',
+    pausa: 'Hecho. Hoy tus metas y rachas quedan congeladas y no te mando recordatorios — no se pierde nada. Pero sigo aquí contigo: ¿quieres contarme más?',
     pausaFalhou: 'No pude pausar ahora. Intenta de nuevo en un rato.',
     pausaLimite: 'Este mes ya tuvo algunos días de pausa, así que hoy me quedo por aquí sin congelar nada. Si la racha se corta, está bien — vuelve a empezar, y estoy contigo.',
     salvarRestricao: (l: string) => `¿Quieres que guarde en tu perfil que evitas ${l}? Así lo recuerdo siempre en ideas y recetas.`,
@@ -1776,7 +1787,7 @@ const TXT = {
     cancelado: 'OK, j’ai laissé comme c’était.',
     expirou: 'Cette question date un peu. Si tu veux toujours, redemande-moi.',
     andamento: 'Je termine de le noter — ça apparaît dans un instant.',
-    pausa: 'Ça marche. Aujourd’hui, je me fais discret : pas de rappel ni de message de ma part jusqu’à demain. Si tu veux parler, appelle-moi.',
+    pausa: 'C’est fait. Aujourd’hui, tes objectifs et tes séries sont gelés et je ne t’envoie pas de rappel — rien n’est perdu. Mais je reste là avec toi : tu veux m’en dire plus ?',
     pausaFalhou: 'Je n’ai pas pu mettre en pause pour l’instant. Réessaie dans un moment.',
     pausaLimite: 'Ce mois-ci a déjà eu quelques jours de pause, alors aujourd’hui je reste là sans rien geler. Si la série casse, ce n’est pas grave — elle repart, et je suis avec toi.',
     salvarRestricao: (l: string) => `Tu veux que je garde dans ton profil que tu évites ${l} ? Comme ça, je m’en souviens toujours dans les idées et les recettes.`,
@@ -1798,7 +1809,7 @@ const TXT = {
     cancelado: 'ठीक है, जैसा था वैसा छोड़ दिया।',
     expirou: 'यह सवाल थोड़ा पुराना हो गया। अगर अब भी चाहिए, तो फिर से कहिए।',
     andamento: 'दर्ज कर रहा हूँ — बस अभी दिख जाएगा।',
-    pausa: 'पक्का। आज मैं चुप रहूँगा: कल तक मेरी तरफ़ से कोई रिमाइंडर या मैसेज नहीं। बात करनी हो तो बस बुला लीजिए।',
+    pausa: 'हो गया। आज आपके लक्ष्य और सिलसिले रुके रहेंगे और मैं कोई रिमाइंडर नहीं भेजूँगा — कुछ भी नहीं खोएगा। पर मैं यहीं आपके साथ हूँ: और बताना चाहेंगे?',
     pausaFalhou: 'अभी रोक नहीं सका। थोड़ी देर में फिर कोशिश करें।',
     pausaLimite: 'इस महीने पहले ही कुछ दिन रोक लग चुकी है, इसलिए आज मैं कुछ जमाए बिना यहीं रहूँगा। स्ट्रीक टूटे तो कोई बात नहीं — फिर शुरू होगी, और मैं आपके साथ हूँ।',
     salvarRestricao: (l: string) => `क्या मैं आपकी प्रोफ़ाइल में सेव कर दूँ कि आप ${l} नहीं खाते? इससे मैं आइडिया और रेसिपी में हमेशा याद रखूँगा।`,
@@ -2454,7 +2465,7 @@ async function handleCheckin(sb: Sb, userId: string, corpo: Record<string, unkno
         : []
       const sistema = `${PROMPT_LIFE}${blocoCultura(loc)}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
         blocoMemoria(memorias, consentimento) + REGRAS_CHECKIN +
-        (sensivel ? '\n\nATENÇÃO: a nota tem sinal de sofrimento. Acolha com calma, sem alarmar.' : '')
+        (sensivel ? `\n\nATENÇÃO: a nota tem sinal de sofrimento. Acolha com calor e calma, sem alarmar e sem se afastar; se houver desespero, lembre com carinho da linha de apoio: ${linhaApoio(loc)}` : '')
       const g = await chamarGemini({
         systemInstruction: { parts: [{ text: sistema }] },
         contents: [{ role: 'user', parts: [{ text: promptCheckin(c) }] }],
