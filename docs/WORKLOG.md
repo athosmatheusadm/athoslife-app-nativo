@@ -3936,3 +3936,5 @@ onboarding claro/escuro, água e selo offline com sinal ruim, Live Activity.
 - Ainda com o dono: secret `VITE_RC_GOOGLE_KEY` no GitHub, apagar dados de
   teste, "Leaked password protection", webhook do RevenueCat, trocar o
   token do GitHub, decidir o merge do PR #2.
+
+- Dados de teste **apagados** com autorização do dono (120 itens `[teste]` + 19 pesos falsos; pesagem real de 27/09 mantida).
