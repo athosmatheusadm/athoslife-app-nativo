@@ -13,6 +13,8 @@ import android.util.Log;
 
 import java.util.Calendar;
 
+import br.com.athoslife.app.widget.WidgetAguaProvider;
+
 /**
  * Núcleo da troca de ícone no Android.
  *
@@ -128,6 +130,9 @@ public final class MascoteIcone {
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "activity-alias não encontrado no AndroidManifest: " + e.getMessage());
         }
+        // Trocar o alias mexe nos componentes do app: alguns launchers recarregam
+        // o widget de água com o layout inicial, sem os toques. Redesenha.
+        WidgetAguaProvider.atualizarTodos(c);
     }
 
     private static void definir(PackageManager pm, ComponentName comp, boolean ligado) {

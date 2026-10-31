@@ -3898,3 +3898,22 @@ ficou preso na tela do dono.
   card e a marca do celular.
 
 Validado: typecheck, build, teste do servidor mudo. Não visto no aparelho.
+
+## 2026-10-31 — widget de água (copinhos) travado
+
+Testador confirmou: era o widget da tela inicial (copos não somavam e a
+animação do Life parou). Sem aparelho/logcat aqui; reforços nas causas
+prováveis (não compilado localmente — sem JDK/SDK; o CI do APK compila):
+- Toque nos copos com `FLAG_RECEIVER_FOREGROUND` (fila rápida; na normal,
+  com bateria economizando em Samsung/Xiaomi, o toque atrasava ou sumia) e
+  `FLAG_INCLUDE_STOPPED_PACKAGES` (app "parado" pelo sistema).
+- `onReceive`/`atualizarTodos` com try/catch: erro não derruba mais o
+  processo deixando o widget congelado.
+- Troca do ícone do mascote (mexe nos componentes do app; launchers podem
+  recarregar o widget com o layout inicial, que não tem toques) e
+  boot/atualização do app agora redesenham o widget (`atualizarTodos` público).
+- Antes disso, com sinal ruim, o app também não gravava os copos do widget
+  (mesma trava da sessão corrigida em 30/10 (4)).
+
+**Pendente:** confirmar no APK; se repetir, pegar marca/modelo do celular
+e, se der, logcat filtrando `WidgetAgua`.

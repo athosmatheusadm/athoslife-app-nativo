@@ -12,6 +12,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import java.text.NumberFormat;
@@ -31,6 +32,7 @@ import br.com.athoslife.app.R;
  *  - Botão de volume ("..." do HTML): 250 ml -> 500 ml -> 1 L.
  */
 public class WidgetAguaProvider extends AppWidgetProvider {
+    private static final String TAG = "WidgetAgua";
     static final String ACAO_COPO = "br.com.athoslife.app.WIDGET_AGUA_COPO";
     static final String ACAO_VOLUME = "br.com.athoslife.app.WIDGET_AGUA_VOLUME";
 
@@ -51,24 +53,39 @@ public class WidgetAguaProvider extends AppWidgetProvider {
 
     @Override
     public void onReceive(Context ctx, Intent intent) {
-        super.onReceive(ctx, intent);
-        String acao = intent.getAction();
-        if (ACAO_COPO.equals(acao)) {
-            WidgetAguaEstado.somarCopo(ctx);
-            atualizarTodos(ctx);
-            WidgetAguaPlugin.avisarFila();
-        } else if (ACAO_VOLUME.equals(acao)) {
-            WidgetAguaEstado.trocarVolume(ctx);
-            atualizarTodos(ctx);
+        // Erro aqui derruba o processo calado e o widget fica parado na tela:
+        // registra e segue (o próximo toque ou abertura do app redesenha).
+        try {
+            super.onReceive(ctx, intent);
+            String acao = intent.getAction();
+            if (ACAO_COPO.equals(acao)) {
+                WidgetAguaEstado.somarCopo(ctx);
+                atualizarTodos(ctx);
+                WidgetAguaPlugin.avisarFila();
+            } else if (ACAO_VOLUME.equals(acao)) {
+                WidgetAguaEstado.trocarVolume(ctx);
+                atualizarTodos(ctx);
+            }
+        } catch (RuntimeException e) {
+            Log.e(TAG, "falha ao tratar toque no widget", e);
         }
     }
 
-    static void atualizarTodos(Context ctx) {
-        AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
-        int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, WidgetAguaProvider.class));
-        if (ids.length == 0) return;
-        RemoteViews v = montar(ctx, WidgetAguaEstado.carregar(ctx));
-        mgr.updateAppWidget(ids, v);
+    /**
+     * Redesenha o widget com o estado atual (e os toques ligados de novo).
+     * Público: a troca do ícone do mascote também chama — mudar o alias do
+     * launcher faz alguns launchers recarregarem o widget sem os toques.
+     */
+    public static void atualizarTodos(Context ctx) {
+        try {
+            AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
+            int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, WidgetAguaProvider.class));
+            if (ids == null || ids.length == 0) return;
+            RemoteViews v = montar(ctx, WidgetAguaEstado.carregar(ctx));
+            mgr.updateAppWidget(ids, v);
+        } catch (RuntimeException e) {
+            Log.e(TAG, "falha ao redesenhar o widget", e);
+        }
     }
 
     private static RemoteViews montar(Context ctx, WidgetAguaEstado e) {
@@ -113,7 +130,12 @@ public class WidgetAguaProvider extends AppWidgetProvider {
     }
 
     private static PendingIntent broadcast(Context ctx, String acao, int codigo) {
-        Intent it = new Intent(ctx, WidgetAguaProvider.class).setAction(acao);
+        // FOREGROUND: o toque vai pra fila rápida de broadcasts. Na fila normal,
+        // com o celular ocupado ou economizando bateria (Samsung/Xiaomi), o
+        // toque podia demorar muito ou não chegar e o widget parecia travado.
+        // INCLUDE_STOPPED: entrega mesmo com o app "parado" pelo sistema.
+        Intent it = new Intent(ctx, WidgetAguaProvider.class).setAction(acao)
+                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND | Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         return PendingIntent.getBroadcast(ctx, codigo, it, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
