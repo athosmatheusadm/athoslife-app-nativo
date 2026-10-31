@@ -3917,3 +3917,10 @@ prováveis (não compilado localmente — sem JDK/SDK; o CI do APK compila):
 
 **Pendente:** confirmar no APK; se repetir, pegar marca/modelo do celular
 e, se der, logcat filtrando `WidgetAgua`.
+
+### 2026-10-31 — APK de teste gerado
+CI `android-apk-teste` no commit 7f14e3d (run 41180723715): **sucesso**, o
+Java novo do widget compilou. APK em `Downloads/ATHOSlife-teste-31-10.apk`.
+Sem o secret `VITE_RC_GOOGLE_KEY` no GitHub → assinaturas/paywall não
+funcionam neste APK. Testar: widget (copos e animação), ícone do mascote,
+onboarding claro/escuro, água e selo offline com sinal ruim, Live Activity.
