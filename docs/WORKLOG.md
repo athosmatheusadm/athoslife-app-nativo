@@ -3938,3 +3938,4 @@ onboarding claro/escuro, água e selo offline com sinal ruim, Live Activity.
   token do GitHub, decidir o merge do PR #2.
 
 - Dados de teste **apagados** com autorização do dono (120 itens `[teste]` + 19 pesos falsos; pesagem real de 27/09 mantida).
+- "Leaked password protection": tentada com autorização do dono → recusada pelo Supabase (HTTP 402: só no plano Pro). Fica desligada até o projeto ir pro Pro.
