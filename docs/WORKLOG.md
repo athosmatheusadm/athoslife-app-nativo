@@ -3924,3 +3924,15 @@ Java novo do widget compilou. APK em `Downloads/ATHOSlife-teste-31-10.apk`.
 Sem o secret `VITE_RC_GOOGLE_KEY` no GitHub → assinaturas/paywall não
 funcionam neste APK. Testar: widget (copos e animação), ícone do mascote,
 onboarding claro/escuro, água e selo offline com sinal ruim, Live Activity.
+
+### 2026-10-31 — fim da sessão: próximos passos
+- Dono testa o APK de 31/10 (widget, ícone, claro/escuro, água offline).
+- Próximo grande passo: Firebase + push adaptado ao usuário. Falta o
+  `google-services.json` e a lista das primeiras notificações. Sugestão
+  dada: poucas (resgate após 2–3 dias + 1 lembrete/dia no horário de uso),
+  na voz do Life; depois tabela de tokens (migração) + função `enviar-push`.
+- Conselho dado ao dono: parar de somar funções grandes, estabilizar e
+  lançar pra 50–100 pessoas medindo volta no dia seguinte, na 1ª semana e assinaturas.
+- Ainda com o dono: secret `VITE_RC_GOOGLE_KEY` no GitHub, apagar dados de
+  teste, "Leaked password protection", webhook do RevenueCat, trocar o
+  token do GitHub, decidir o merge do PR #2.
