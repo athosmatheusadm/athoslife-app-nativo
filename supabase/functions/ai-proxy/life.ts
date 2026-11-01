@@ -405,9 +405,23 @@ export async function mensagensDaPessoa(sb: Sb, userId: string): Promise<string[
 }
 
 export async function linhaCheckinsHoje(sb: Sb, userId: string, hoje: string): Promise<string> {
+  return (await checkinsDeHoje(sb, userId, hoje)).linha
+}
+
+/**
+ * Check-in de hoje: SEMPRE vai pro prompt (dono, 01/11: é o que diz como a
+ * pessoa está e o tom do Life). `pesado` = algum sentimento pouco agradável
+ * hoje, o que liga o módulo de desabafo mesmo sem palavra de desabafo.
+ */
+export async function checkinsDeHoje(sb: Sb, userId: string, hoje: string): Promise<{ linha: string; pesado: boolean }> {
   const { data } = await sb.from('life_checkins').select('momento, palavra, etiquetas').eq('user_id', userId).eq('data', hoje)
   const lista = (data ?? []) as { momento: Momento; palavra: string; etiquetas: string[] }[]
-  if (!lista.length) return ''
+  if (!lista.length) return { linha: '', pesado: false }
+  const pesado = lista.some((c) => (SENTIMENTOS[c.palavra]?.a ?? 3) <= 2)
+  return { linha: linhaDosCheckins(lista), pesado }
+}
+
+function linhaDosCheckins(lista: { momento: Momento; palavra: string; etiquetas: string[] }[]): string {
   const partes = lista.map((c) => `${NOME_MOMENTO[c.momento].replace('da ', '')} ${SENTIMENTOS[c.palavra]?.rotulo['pt-BR'] ?? c.palavra}` +
     (c.etiquetas?.length ? ` (${c.etiquetas.map((e) => ROTULO_ETIQUETA[e as (typeof ETIQUETAS)[number]] ?? e).join(', ')})` : ''))
   return `\nCheck-in de hoje: ${partes.join('; ')}.`

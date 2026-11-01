@@ -4103,3 +4103,29 @@ cheio; da 41ª mensagem do dia (`FLASH_MSGS_DIA`=40) e acima de
 `TETO_MES_USD`=1,0 no mês troca só o modelo pro Lite. Preços (dono): mensal
 R$ 30, fundador R$ 25, anual R$ 290, anual fundador R$ 238 — teto ≈ 1/3 do
 líquido do plano que menos rende.
+
+## 2026-11-01 (5) — prompt por assunto (ideia do dono) — pronto, NÃO publicado
+
+- `assuntos.ts`: detecta comida, treino, hábitos, desabafo (emocional) e
+  peso pela mensagem + 2 anteriores da pessoa + última do Life + tela do
+  chat; desabafo também por sinal sensível, check-in pesado de hoje e dia
+  pausado. "até" sem acento não liga comida.
+- `PROMPT_LIFE` virou `PROMPT_BASE` + módulos (`MOD_COMIDA`, `MOD_TREINO`,
+  `MOD_HABITOS`, `MOD_EMOCIONAL`, `MOD_PESO`, `ACAO_*`). Texto das 81 regras
+  igual (conferido linha a linha); só o título de AÇÕES mudou. Base: crise,
+  grave, NUNCA, fora do tema, como conversar — sempre.
+- Sempre vão: check-in de hoje (dono), quem a pessoa é, linha "Hoje", Agora,
+  núcleo da memória, jeito de falar. Contexto etiquetado por assunto
+  (`LinhaContexto`): refeições/plano de dieta/perfil de comida → comida;
+  plano de treino → treino; hábitos → hábitos ou comida; check de saúde →
+  comida ou treino; peso → peso. Fatos da memória pela área da chave
+  (`comida.`, `treino.`, `habito.`; o resto sempre). Ferramentas só no
+  assunto (comida: registrar/repetir; desabafo: pausar); sem assunto, sem
+  ferramentas. Check-in usa base + desabafo + hábitos.
+- `versao_contexto` no audit leva os assuntos (`camadas-v1+comida,...`).
+- Estimativa de prompt+ferramentas: conversa solta −51%, desabafo −43%,
+  treino −46%, hábitos −49%, comida −14%.
+
+Validado: 87 testes Deno (6 novos), deno check. Não testado com o modelo
+(sem chave Gemini local): testar no app logo depois de publicar; volta
+rápida = republicar o commit da v39.

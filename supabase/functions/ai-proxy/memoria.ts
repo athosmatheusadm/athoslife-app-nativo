@@ -84,7 +84,7 @@ NÍVEIS (categoria entre parênteses):
 - fragmento: um momento marcante, nas palavras dela, em termos gerais (fragmento), "importancia":3. Ex.: "Chamou o que sente de 'sensação de esforço infinito'". No máximo 1 por conversa e só se foi marcante.
 
 REGRAS:
-- Chave estável em minúsculas, com pontos: area.assunto (ex.: comida.nao_gosta.atum, rotina.curso_dias, evento.prova_10km). Se o assunto JÁ está guardado, use a MESMA chave com "corrigir" — nunca duplique. A correção da pessoa sempre vence.
+- Chave estável em minúsculas, com pontos: area.assunto. A área diz quando a lembrança entra na conversa: comida. (gostos, aversões e hábitos de comer, restrição de dieta), treino. (como e quando treina, esportes, limites de exercício), habito. (hábitos de evitar ou construir), rotina., pessoa., estilo., evento., contexto., fragmento. (ex.: comida.nao_gosta.atum, treino.horario, rotina.curso_dias, evento.prova_10km). Restrição alimentar e alergia são nucleo com chave rotina.restricao_* (valem sempre). Se o assunto JÁ está guardado, use a MESMA chave com "corrigir" — nunca duplique. A correção da pessoa sempre vence.
 - Texto curto em terceira pessoa, até 150 caracteres, sem nome da pessoa.
 - Datas AAAA-MM-DD contadas a partir da linha Agora ("sexta" = a próxima sexta).
 - Saúde só como hábito, sem diagnóstico: "evita lactose" (não "intolerante"), "dorme 6 a 7 horas" (não "insônia"). Sentimento só como evento, contexto ou fragmento, em palavras gerais.
@@ -174,6 +174,7 @@ export interface MemoriaCamada {
   fixada: boolean
   nivel?: string | null
   estado?: string | null
+  chave?: string | null
 }
 
 export function blocoMemoriaCamadas(memorias: MemoriaCamada[], hoje: string, tudo: boolean): string {
