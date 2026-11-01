@@ -50,6 +50,13 @@ const GEMINI_KEY = env('GEMINI_API_KEY')
 // 2.5 ficou restrito a quem já usava (erro 404 em 2026-09-27). Troca sem
 // republicar: Secret GEMINI_MODEL no painel do Supabase.
 const MODELO = env('GEMINI_MODEL', 'gemini-3.5-flash-lite')
+/**
+ * Só o chat do Life (01/11, dono): o Lite seguia as regras do prompt pela
+ * metade. Flash no chat; scanner, receitas e check-in continuam no Lite.
+ * Troca sem republicar: Secret GEMINI_MODEL_CHAT. Se o modelo do chat der
+ * 404/400 de modelo, a chamada cai no MODELO (o chat nunca para).
+ */
+const MODELO_CHAT = env('GEMINI_MODEL_CHAT', 'gemini-3.8-flash')
 const SUPABASE_URL = env('SUPABASE_URL')
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY')
 const TETO_GLOBAL_TOKENS = Number(env('IA_TETO_TOKENS_DIA', '2000000'))
@@ -457,6 +464,8 @@ interface ResultadoGemini {
   bloqueado: boolean
   /** Tokens separados, como o Google devolve (só pro log de custo). */
   uso?: UsoTokens
+  /** Modelo que respondeu de fato (pro log). */
+  modelo?: string
 }
 
 interface UsoTokens { entrada: number; saida: number; raciocinio: number; cache: number }
@@ -473,19 +482,27 @@ function somarUso(a?: UsoTokens, b?: UsoTokens): UsoTokens | undefined {
  * poderia deixar a resposta vazia. (28/09: família 3.x recusou
  * thinkingBudget 0 e o chat inteiro caiu com 502.)
  */
-async function chamarGemini(corpo: Record<string, unknown>, timeoutMs = 25_000): Promise<ResultadoGemini> {
-  const r = await chamarGeminiUmaVez(corpo, timeoutMs)
+async function chamarGemini(corpo: Record<string, unknown>, timeoutMs = 25_000, modelo = MODELO): Promise<ResultadoGemini> {
+  let r = await chamarGeminiUmaVez(corpo, timeoutMs, modelo)
   const cfgAtual = corpo.generationConfig as Record<string, unknown> | undefined
-  if (r.ok || r.status !== 400 || !cfgAtual?.thinkingConfig) return r
-  const cfg = { ...(corpo.generationConfig as Record<string, unknown>) }
-  delete cfg.thinkingConfig
-  cfg.maxOutputTokens = Number(cfg.maxOutputTokens ?? 0) + 1024
-  return chamarGeminiUmaVez({ ...corpo, generationConfig: cfg }, timeoutMs)
+  if (!r.ok && r.status === 400 && cfgAtual?.thinkingConfig) {
+    const cfg = { ...cfgAtual }
+    delete cfg.thinkingConfig
+    cfg.maxOutputTokens = Number(cfg.maxOutputTokens ?? 0) + 1024
+    r = await chamarGeminiUmaVez({ ...corpo, generationConfig: cfg }, timeoutMs, modelo)
+  }
+  // Modelo do chat indisponível (404 ou 400): cai no padrão — o chat nunca para.
+  if (!r.ok && modelo !== MODELO && (r.status === 404 || r.status === 400)) {
+    console.warn('[gemini] modelo', modelo, 'falhou com', r.status, '— usando', MODELO)
+    return chamarGemini(corpo, timeoutMs, MODELO)
+  }
+  return r
 }
 
 async function chamarGeminiUmaVez(
   corpo: Record<string, unknown>,
   timeoutMs: number,
+  modelo: string,
 ): Promise<ResultadoGemini & { status: number; erro: string }> {
   const falha = { ok: false, texto: '', chamadas: [] as ChamadaFerramenta[], tokens: 0, custo: 0, bloqueado: false, status: 0, erro: '' }
   if (!GEMINI_KEY) return falha
@@ -494,7 +511,7 @@ async function chamarGeminiUmaVez(
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
       {
         method: 'POST',
         // Chave no cabeçalho, não na URL (URL vai parar em log).
@@ -505,14 +522,14 @@ async function chamarGeminiUmaVez(
     )
     if (!res.ok) {
       const erro = (await res.text().catch(() => '')).slice(0, 300)
-      console.error('[gemini] http', res.status, MODELO, erro)
+      console.error('[gemini] http', res.status, modelo, erro)
       return { ...falha, status: res.status, erro }
     }
     const data = await res.json()
     const uso = data?.usageMetadata ?? {}
     const entrada = Number(uso.promptTokenCount ?? 0)
     const saida = Number(uso.candidatesTokenCount ?? 0) + Number(uso.thoughtsTokenCount ?? 0)
-    const [pe, ps] = PRECOS[MODELO] ?? [0, 0]
+    const [pe, ps] = PRECOS[modelo] ?? [0, 0]
     const candidato = data?.candidates?.[0]
     const bloqueado = Boolean(data?.promptFeedback?.blockReason) || candidato?.finishReason === 'SAFETY'
     const txt: string =
@@ -538,6 +555,7 @@ async function chamarGeminiUmaVez(
         raciocinio: Number(uso.thoughtsTokenCount ?? 0),
         cache: Number(uso.cachedContentTokenCount ?? 0),
       },
+      modelo,
       status: res.status,
       erro: '',
     }
@@ -671,7 +689,7 @@ async function auditar(sb: Sb, userId: string, tipo: string, status: string, g?:
     tokens_saida: g?.uso?.saida ?? null,
     tokens_raciocinio: g?.uso?.raciocinio ?? null,
     tokens_cache: g?.uso?.cache ?? null,
-    modelo: g ? MODELO : null,
+    modelo: g ? g.modelo ?? MODELO : null,
     versao_contexto: versaoContexto ?? null,
     data: new Date().toISOString(),
   })
@@ -1284,7 +1302,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
     // 0,8 → 0,6 (01/11): com 0,8 o Lite seguia as regras pela metade (7 de 8 respostas terminando em pergunta).
     generationConfig: configGeracao(400, 0.6),
-  })
+  }, 25_000, MODELO_CHAT)
   // Prometeu o cartão da refeição sem chamar a ferramenta: pede de novo,
   // obrigando registrar_alimentos (custo extra só nesse caso).
   if (g.ok && !g.chamadas.length && prometeuRegistro(mensagem, g.texto)) {
@@ -1294,7 +1312,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
       tools: FERRAMENTAS_LIFE,
       toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: ['registrar_alimentos'] } },
       generationConfig: configGeracao(400, 0.2),
-    })
+    }, 25_000, MODELO_CHAT)
     if (g2.ok && g2.chamadas.length) g = { ...g2, tokens: g.tokens + g2.tokens, custo: g.custo + g2.custo, uso: somarUso(g.uso, g2.uso) }
     // Nunca deixa "mandei pra conferir" sem cartão.
     else g = { ...g, texto: TXT_REGISTRO[loc.idioma].nada }
