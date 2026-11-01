@@ -32,12 +32,12 @@ export const CATEGORIA_META: Record<
   CategoriaReceita,
   { rotulo: string; cor: string; emoji: string }
 > = {
-  emagrecimento: { rotulo: 'Emagrecimento', cor: '#22c55e', emoji: '🥗' },
-  massa: { rotulo: 'Ganho de massa', cor: '#3b82f6', emoji: '🍗' },
-  vegano: { rotulo: 'Vegano', cor: '#84cc16', emoji: '🌱' },
-  habitos: { rotulo: 'Hábitos', cor: '#f97316', emoji: '🍫' },
-  shakes: { rotulo: 'Shakes', cor: '#06b6d4', emoji: '🥤' },
-  chas: { rotulo: 'Chás', cor: '#10b981', emoji: '🍵' },
+  emagrecimento: { rotulo: 'Emagrecimento', cor: '#64c27b', emoji: '🥗' },
+  massa: { rotulo: 'Ganho de massa', cor: '#588cda', emoji: '🍗' },
+  vegano: { rotulo: 'Vegano', cor: '#91bb54', emoji: '🌱' },
+  habitos: { rotulo: 'Hábitos', cor: '#e3814a', emoji: '🍫' },
+  shakes: { rotulo: 'Shakes', cor: '#4ab1c8', emoji: '🥤' },
+  chas: { rotulo: 'Chás', cor: '#4eb18a', emoji: '🍵' },
 }
 
 /** Uma receita curada do mini e-book. */

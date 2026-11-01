@@ -138,6 +138,7 @@ export const es: Mensagens = {
         noite: '¿Qué tal estuvo tu día?',
       },
       agoraNao: 'Ahora no',
+      fecharJanela: 'Cerrar',
       sugestoes: 'Sugerencias',
       outro: 'Otro…',
       dica: 'Con un toque basta.',

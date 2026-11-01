@@ -145,6 +145,7 @@ export const hi: Mensagens = {
         noite: 'और बताइए, आज का दिन कैसा रहा?',
       },
       agoraNao: 'अभी नहीं',
+      fecharJanela: 'बंद करें',
       sugestoes: 'सुझाव',
       outro: 'कुछ और…',
       dica: 'एक टैप काफ़ी है।',

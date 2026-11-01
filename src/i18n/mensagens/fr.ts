@@ -144,6 +144,7 @@ export const fr: Mensagens = {
         noite: 'Alors, c’était comment ta journée ?',
       },
       agoraNao: 'Pas maintenant',
+      fecharJanela: 'Fermer',
       sugestoes: 'Suggestions',
       outro: 'Autre…',
       dica: 'Un toucher suffit.',

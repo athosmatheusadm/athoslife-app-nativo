@@ -67,7 +67,7 @@ export interface TextosStory {
 }
 
 export const COR_PADRAO = '#ffffff'
-export const CORES_STORY = ['#ffffff', '#d3f6a2', '#171d16'] as const
+export const CORES_STORY = ['#ffffff', '#d3f0b8', '#171d16'] as const
 
 const CAMPOS: Record<ModoStory, readonly string[]> = {
   gym: ['pr', 'evolution', 'focus', 'volume', 'sets', 'duration'],

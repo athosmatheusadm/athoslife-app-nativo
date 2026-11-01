@@ -3962,3 +3962,36 @@ oferecer a pausa justo no momento pesado. Mudanças no `PROMPT_LIFE`:
   ajudar"; agora "você importa" + "eu continuo aqui do seu lado", 5 idiomas.
 
 Validado: 71 testes Deno, deno check. **ai-proxy publicada (versão 36)** com autorização do dono.
+
+## 2026-11-01 — verde menta no código (branch `verde-menta`)
+
+Aplicado o guia `ATHOSlife-verde-menta-no-codigo.md` do dono (as cores tinham
+sido trocadas só no APK compilado; sem isto o próximo build voltaria ao neon).
+Branch saiu de `onboarding-novo`.
+- Tokens em `globals.css` (escuro, claro e `.tema-escuro` do scanner): verde
+  `#64c27b`/`#2a8c4a` e acentos/macros com ~65% da saturação. Fundos e textos
+  iguais. Ondas do tema claro em `#2a8c4a`.
+- Barra de baixo: emoji → ícones de traço (Lucide), ativo numa pílula discreta,
+  sem brilho verde.
+- Brilhos removidos/suavizados (Em casa/Academia, laser do leitor, ponto do
+  story, toast de conquista, radiais, chama da sequência). Hex fixos trocados
+  pela tabela (receitas, conquistas, níveis, story, erros → `text-accent-danger`).
+- `suavizarCor` (`domain/rules/cores.ts`) no `cor_tema` das receitas do banco.
+- Onboarding: neon-limão → verde do app (`index.html`, `claro.css`); objetivo
+  agora vem antes das réguas, já aberto (o campo "Outro" foi junto); texto de
+  apoio novo nos 5 idiomas (`textos.js`).
+- `capacitor.config.ts`: `iconColor` `#64c27b`.
+- Check-in da Home: sem a barra roxa, card compacto com sugestões deslizando;
+  um toque já registra; tocar no card / expandir / "Outro…" abre janela de
+  baixo pra cima (mapa 4×4, etiquetas, nota). "Editar" abre a janela com a
+  palavra marcada; fechar sem salvar volta pro resumo. Voltar do Android
+  fecha. Chave nova `fecharJanela` nos 5 idiomas.
+
+Validado: typecheck e build. **Não visto no aparelho nem no navegador.**
+
+**Pendente:** dono conferir no APK (cores nos dois temas, barra, check-in,
+onboarding). Atualizar `cor_tema` no banco é opcional (o app já suaviza).
+Depois: guia "Life: conversa e memória" (01/11), começando pelos itens 1–3
+da ordem dele (gravação com horários distintos, linha "Agora:", regra de
+não oferecer o que não faz, regras de conversa) — mexe na ai-proxy e no
+banco, precisa de deploy autorizado.

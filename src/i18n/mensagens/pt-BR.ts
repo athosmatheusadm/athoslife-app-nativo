@@ -148,6 +148,7 @@ export const ptBR = {
         noite: 'E aí, como foi seu dia?',
       },
       agoraNao: 'Agora não',
+      fecharJanela: 'Fechar',
       sugestoes: 'Sugestões',
       outro: 'Outro…',
       dica: 'Um toque basta.',

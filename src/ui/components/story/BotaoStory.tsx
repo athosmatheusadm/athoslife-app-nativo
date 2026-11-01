@@ -22,7 +22,7 @@ export function BotaoStory({ modo, destaque = false }: { modo?: ModoStory; desta
         <path d="M8 6l2-2h4l2 2" />
         <circle cx="12" cy="13" r="3.5" />
       </svg>
-      {destaque && <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-brand shadow-[0_0_6px_rgb(var(--c-brand))]" aria-hidden="true" />}
+      {destaque && <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-brand" aria-hidden="true" />}
     </button>
   )
 }

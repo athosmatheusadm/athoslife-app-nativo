@@ -107,9 +107,9 @@ export function ReceitaView(props: {
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
           <Macro valor={macrosTotais.calorias} rotulo={t.kcal} cor={props.corTema} />
-          <Macro valor={`${fmtG(macrosTotais.proteina)}g`} rotulo={t.prot} cor="#f43f5e" />
-          <Macro valor={`${fmtG(macrosTotais.carboidrato)}g`} rotulo={t.carb} cor="#3b82f6" />
-          <Macro valor={`${fmtG(macrosTotais.gordura)}g`} rotulo={t.gord} cor="#fbbf24" />
+          <Macro valor={`${fmtG(macrosTotais.proteina)}g`} rotulo={t.prot} cor="#de6674" />
+          <Macro valor={`${fmtG(macrosTotais.carboidrato)}g`} rotulo={t.carb} cor="#588cda" />
+          <Macro valor={`${fmtG(macrosTotais.gordura)}g`} rotulo={t.gord} cor="#e8be62" />
         </div>
         <p className="mt-2 text-center text-micro text-content-low">
           {t.macrosDe(String(porcoes))}
@@ -140,7 +140,7 @@ export function ReceitaView(props: {
                       type="checkbox"
                       checked={feito}
                       onChange={() => alternar(i)}
-                      className="mt-0.5 h-5 w-5 flex-none accent-[#22c55e]"
+                      className="mt-0.5 h-5 w-5 flex-none accent-brand"
                     />
                     <span className={`text-sm leading-snug ${feito ? 'text-content-low line-through' : 'text-content-hi'}`}>
                       {escalarIngrediente(ing, fatorIngredientes)}

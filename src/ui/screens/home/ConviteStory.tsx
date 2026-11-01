@@ -71,7 +71,7 @@ export function ConviteStory({ dia }: { dia: DiaBom | null }) {
   }
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-brand/35 bg-surface-2 bg-[radial-gradient(120%_120%_at_100%_0%,rgb(var(--c-brand)/0.2),transparent_60%)] p-4">
+    <section className="relative overflow-hidden rounded-3xl border border-brand/35 bg-surface-2 bg-[radial-gradient(120%_120%_at_100%_0%,rgb(var(--c-brand)/0.12),transparent_60%)] p-4">
       <button onClick={dispensar} aria-label={t.dispensar} className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center text-content-low">
         ✕
       </button>

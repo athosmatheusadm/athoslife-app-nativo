@@ -60,7 +60,7 @@ export function StreakCard({
 function ChamaVerde() {
   return (
     <span className="relative inline-flex h-10 w-9 items-end justify-center" aria-hidden="true">
-      <span className="absolute inset-0 rounded-full bg-brand/40 blur-md motion-safe:animate-[chamaBrilho_1.6s_ease-in-out_infinite]" />
+      <span className="absolute inset-0 rounded-full bg-brand/[0.18] blur-md motion-safe:animate-[chamaBrilho_1.6s_ease-in-out_infinite]" />
       <svg
         viewBox="0 0 32 40"
         className="relative h-10 w-8 origin-bottom motion-safe:animate-[chamaTremula_1.2s_ease-in-out_infinite]"

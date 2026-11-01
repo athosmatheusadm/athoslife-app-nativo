@@ -201,7 +201,7 @@ export function WorkoutScreen() {
             aria-pressed={local === l.id}
             className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-all active:scale-[0.98] ${
               local === l.id
-                ? 'bg-brand text-brand-ink shadow-[0_0_20px_rgba(34,197,94,0.45)]'
+                ? 'bg-brand text-brand-ink'
                 : 'text-content-low'
             }`}
           >

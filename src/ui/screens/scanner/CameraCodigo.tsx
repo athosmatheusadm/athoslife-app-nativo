@@ -81,7 +81,7 @@ export function CameraCodigo({ nomeRefeicao, onCodigo, onDigitar, onFechar, onEr
           <i key={c} className={`absolute h-7 w-7 border-[3px] border-brand ${c}`} />
         ))}
         {!lido && (
-          <span className="laser-codigo absolute left-[8%] right-[8%] h-0.5 rounded bg-brand shadow-[0_0_12px_rgb(var(--c-brand))]" />
+          <span className="laser-codigo absolute left-[8%] right-[8%] h-0.5 rounded bg-brand" />
         )}
       </div>
 

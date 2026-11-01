@@ -59,7 +59,7 @@ export function RevisaoScanner(p: Props) {
           />
         </>
       ) : (
-        <div className="absolute inset-0 bg-[radial-gradient(70%_45%_at_50%_30%,rgb(var(--c-brand)/0.25),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(70%_45%_at_50%_30%,rgb(var(--c-brand)/0.15),transparent_70%)]" />
       )}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgb(0_0_0/0.35),transparent_18%,transparent_42%,rgb(0_0_0/0.72)_78%)]" />
 

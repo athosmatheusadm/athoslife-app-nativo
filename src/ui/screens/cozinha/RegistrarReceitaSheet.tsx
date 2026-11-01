@@ -115,7 +115,7 @@ export function RegistrarReceitaSheet(props: {
             {t.confirmarRegistro}
           </button>
         )}
-        {estado === 'erro' && <p className="mt-2 text-center text-micro text-[#f43f5e]">{t.erroRegistrar}</p>}
+        {estado === 'erro' && <p className="mt-2 text-center text-micro text-accent-danger">{t.erroRegistrar}</p>}
       </div>
     </div>
   )

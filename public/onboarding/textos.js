@@ -81,7 +81,7 @@ window.ATHOS_TEXTOS = {
   // ---------- corpo ----------
   'SEU CORPO': ['YOUR BODY', 'TU CUERPO', 'TON CORPS', 'आपका शरीर'],
   'Vamos conhecer seu ponto de partida?': ['Shall we see your starting point?', '¿Conocemos tu punto de partida?', 'On découvre ton point de départ ?', 'चलिए आपका शुरुआती पॉइंट देखें?'],
-  'Me conte sua altura, seu peso e o que você quer alcançar.': ['Tell me your height, your weight and what you want to achieve.', 'Cuéntame tu altura, tu peso y lo que quieres lograr.', 'Dis-moi ta taille, ton poids et ce que tu veux atteindre.', 'मुझे अपनी लंबाई, वज़न और गोल बताइए।'],
+  'Me conte o que você quer alcançar, sua altura e seu peso.': ['Tell me what you want to achieve, your height and your weight.', 'Cuéntame lo que quieres lograr, tu altura y tu peso.', 'Dis-moi ce que tu veux atteindre, ta taille et ton poids.', 'मुझे अपना गोल, अपनी लंबाई और वज़न बताइए।'],
   'Sistema de medidas': ['Measurement system', 'Sistema de medidas', 'Système de mesure', 'माप का सिस्टम'],
   'Altura': ['Height', 'Altura', 'Taille', 'लंबाई'],
   'Peso': ['Weight', 'Peso', 'Poids', 'वज़न'],

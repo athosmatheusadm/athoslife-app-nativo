@@ -41,7 +41,7 @@ interface EntradaStory {
 }
 
 const LIFE: Record<ModoStory, string> = { gym: '/life/treino.webp', food: '/life/chef.webp' }
-const COR_SELECAO = '#d3f6a2'
+const COR_SELECAO = '#d3f0b8'
 type Gaveta = null | 'adicionar' | 'modelos' | 'ajustes'
 
 export function StoryScreen() {

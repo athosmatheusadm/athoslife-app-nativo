@@ -8,6 +8,7 @@ import type { Macros } from '@domain/entities/food'
 import { localidadeAtual } from '@data/localidadeAtual'
 import { texto, traducoesDe } from '@data/traducoesConteudo'
 import { slugReceita } from '@domain/rules/cozinha'
+import { suavizarCor } from '@domain/rules/cores'
 
 /** Linha crua de receitas_cozinha. */
 interface ReceitaRow {
@@ -49,7 +50,7 @@ function paraDominio(row: ReceitaRow, trad: Record<string, unknown> = {}): Recei
     categoria: row.categoria as CategoriaReceita,
     macros: macrosDe(row),
     tempoPreparoMin: row.tempo_preparo_min ?? null,
-    corTema: row.cor_tema ?? '#22c55e',
+    corTema: suavizarCor(row.cor_tema ?? '#64c27b'),
     premium: row.premium ?? false,
     destaque: row.destaque ?? false,
     conteudo: row.conteudo,
