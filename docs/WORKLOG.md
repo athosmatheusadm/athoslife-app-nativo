@@ -4095,3 +4095,11 @@ Validado: 81 testes Deno, deno check. **Não publicado.**
 Próximo passo de custo que mais rende: enxugar o PROMPT_LIFE (~4.650 tokens,
 >80% da entrada), começando por partes condicionais (comida/Cozinha só quando
 o assunto é comida).
+
+### 2026-11-01 (4b) — importância e custo no ar (ai-proxy v39)
+Com autorização do dono: `athoslife_memoria_importancia_migration.sql`
+**aplicada** (conferido) e **ai-proxy v39 publicada**. Pago: sempre contexto
+cheio; da 41ª mensagem do dia (`FLASH_MSGS_DIA`=40) e acima de
+`TETO_MES_USD`=1,0 no mês troca só o modelo pro Lite. Preços (dono): mensal
+R$ 30, fundador R$ 25, anual R$ 290, anual fundador R$ 238 — teto ≈ 1/3 do
+líquido do plano que menos rende.

@@ -66,16 +66,18 @@ const MODELO_CHAT = env('GEMINI_MODEL_CHAT', 'gemini-3.8-flash')
  * (menos histórico e lembranças) e resposta mais curta — o núcleo e o que é
  * importante sempre entram, então o Life continua parecendo que lembra.
  * Pago: SEMPRE contexto cheio (dono: enxugar o pago é sacanear quem paga).
- * Proteção só contra abuso que se sustenta: acima de TETO_MES_USD de custo
- * de IA no mês, o resto do mês troca só o modelo (Lite), com o mesmo
- * contexto e a mesma memória. FLASH_MSGS_DIA (padrão = limite do dia, ou
- * seja, desligado) existe pra uma emergência. Ajustável por Secret.
+ * Proteção contra quem tenta estourar o limite, trocando SÓ o modelo (Lite),
+ * com o mesmo contexto e a mesma memória: da FLASH_MSGS_DIA+1ª mensagem do
+ * dia em diante (40, dono), e acima de TETO_MES_USD de IA no mês. Teto: o
+ * plano que menos rende é o anual de fundador (R$ 238/ano ≈ R$ 19,80/mês,
+ * ~R$ 16,80 líquido da Play); US$ 1,00 ≈ R$ 5,50 ≈ 1/3 disso. Mensal R$ 30,
+ * fundador R$ 25, anual R$ 290. Ajustável por Secret, sem republicar.
  */
 interface PerfilCusto { literais: number; antigas: number; fatos: number; saida: number; extrairAte: number }
 const PERFIL_GRATIS: PerfilCusto = { literais: 4, antigas: 10, fatos: 8, saida: 280, extrairAte: 10 }
 const PERFIL_PAGO: PerfilCusto = { literais: 6, antigas: 24, fatos: 20, saida: 400, extrairAte: 40 }
-const FLASH_MSGS_DIA = Number(env('FLASH_MSGS_DIA', '80'))
-const TETO_MES_USD = Number(env('TETO_MES_USD', '1.5'))
+const FLASH_MSGS_DIA = Number(env('FLASH_MSGS_DIA', '40'))
+const TETO_MES_USD = Number(env('TETO_MES_USD', '1.0'))
 const SUPABASE_URL = env('SUPABASE_URL')
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY')
 const TETO_GLOBAL_TOKENS = Number(env('IA_TETO_TOKENS_DIA', '2000000'))
