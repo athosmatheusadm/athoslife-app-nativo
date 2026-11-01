@@ -77,3 +77,19 @@ Deno.test('prompt da extração leva o guardado e a conversa', () => {
   ok(p.includes('rotina.curso_dias | fato | Curso terça e quinta'))
   ok(p.includes('PESSOA: Te passei errado'))
 })
+
+Deno.test('lembrança que já passou: aniversário e "há X"', () => {
+  const b = blocoMemoriaCamadas([
+    { texto: 'Fim de semana no resort com a família', categoria: 'evento', data_referencia: '2025-11-01', fixada: false, nivel: 'evento', estado: 'fechado' },
+    { texto: 'Formatura da irmã', categoria: 'evento', data_referencia: '2026-10-01', fixada: false, nivel: 'evento', estado: 'fechado' },
+  ], HOJE, false)
+  ok(b.includes('LEMBRANÇAS QUE JÁ PASSARAM'))
+  ok(b.includes('resort com a família (faz 1 ano por estes dias)'), b)
+  ok(b.includes('Formatura da irmã (há 31 dias)'), b)
+  ok(!b.includes('EVENTOS:'))
+})
+
+Deno.test('prompt da extração explica importância de evento', () => {
+  const p = promptExtracao({ agora: 'Agora: x', guardadas: [], troca: [] })
+  ok(p.includes('3 = marcante') && p.includes('1 = passageiro'))
+})

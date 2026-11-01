@@ -34,6 +34,10 @@ export interface MemoriaGuardada { chave: string | null; nivel: string | null; t
 
 const DATA = /^\d{4}-\d{2}-\d{2}$/
 const CHAVE = /^[a-z0-9_]+(\.[a-z0-9_]+){1,4}$/
+const diaDoAno = (d: string) => {
+  const t = Date.parse(d + 'T12:00:00Z')
+  return Math.floor((t - Date.parse(d.slice(0, 4) + '-01-01T12:00:00Z')) / 86_400_000)
+}
 const dias = (a: string, b: string) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86_400_000)
 
 /** Mensagem que vale a extração: "ok", "sim", "kkk" não têm o que guardar. */
@@ -86,6 +90,12 @@ REGRAS:
 - Saúde só como hábito, sem diagnóstico: "evita lactose" (não "intolerante"), "dorme 6 a 7 horas" (não "insônia"). Sentimento só como evento, contexto ou fragmento, em palavras gerais.
 - NUNCA guarde: diagnóstico, remédio, saúde mental, conteúdo de crise, sexualidade, religião, política, dinheiro, documentos, endereço, telefone, e-mail, ou o que ela pediu pra não guardar.
 - Não guarde o que o LIFE disse nem coisa do momento ("tô com fome agora"), nem o que já está guardado igual.
+- IMPORTÂNCIA (vale pra todo nível, e decide o que o Life lembra daqui a meses):
+  3 = marcante: família e pessoas queridas, viagem, conquista (prova passada, promoção, meta batida), data especial (aniversário, casamento, formatura, nascimento), perda ou luto, mudança grande (casa, emprego, cidade). Evento 3 vira história e volta quando o assunto aparecer ou no aniversário da data.
+  2 = relevante: compromisso com data (prova, entrevista, consulta de rotina, competição), fato útil do dia a dia.
+  1 = passageiro: um dia bom ou ruim comum, cansaço de um dia, algo pequeno. Some depois de passar.
+- Dia ruim comum: evento importância 1 só se ficou algo pra perguntar depois ("estado":"aberto", "retomar_em" 1–2 dias). Se os dias ruins se repetem pelo mesmo motivo, guarde UM contexto ("Semanas puxadas no serviço") em vez de um evento por dia.
+- Dia feliz marcante (passeio com a família, viagem, comemoração) é importância 3, mesmo já tendo acontecido: "data_referencia" = o dia em que foi.
 - No máximo 6 ops.`
 }
 
@@ -179,12 +189,21 @@ export function blocoMemoriaCamadas(memorias: MemoriaCamada[], hoje: string, tud
   if (fatos.length) partes.push(`FATOS (gostos, rotina, limites):\n${fatos.map(linha).join('\n')}`)
   const contexto = de('contexto')
   if (contexto.length) partes.push(`FASE ATUAL (passa sozinha):\n${contexto.map(linha).join('\n')}`)
-  const eventos = de('evento')
+  const eventos = de('evento').filter((m) => m.estado !== 'fechado')
+  const passados = memorias.filter((m) => (m.nivel ?? 'fato') === 'evento' && m.estado === 'fechado' && !m.fixada)
   if (eventos.length) {
     partes.push(`EVENTOS:\n${eventos.map((m) => {
       const d = m.data_referencia ? dias(hoje, m.data_referencia) : null
       const quando = d === null ? '' : d === 0 ? ' (hoje)' : d === 1 ? ' (amanhã)' : d === -1 ? ' (ontem)' : d > 0 ? ` (daqui a ${d} dias, ${m.data_referencia})` : ` (há ${-d} dias)`
       return `- ${m.texto}${quando}${m.estado === 'aberto' ? ' — ficou em aberto: se fizer sentido, retome UMA vez, com leveza e saída fácil' : ''}`
+    }).join('\n')}`)
+  }
+  if (passados.length) {
+    partes.push(`LEMBRANÇAS QUE JÁ PASSARAM (momentos importantes dela; traga com carinho só se o assunto pedir ou se for o aniversário da data):\n${passados.map((m) => {
+      const d = m.data_referencia ? -dias(hoje, m.data_referencia) : null
+      const aniversario = m.data_referencia && d !== null && d > 300 && Math.abs(diaDoAno(hoje) - diaDoAno(m.data_referencia)) <= 1
+      const quando = d === null ? '' : aniversario ? ` (faz ${Math.round(d / 365)} ano${Math.round(d / 365) > 1 ? 's' : ''} por estes dias)` : d < 60 ? ` (há ${d} dias)` : ` (há uns ${Math.round(d / 30)} meses)`
+      return `- ${m.texto}${quando}`
     }).join('\n')}`)
   }
   const frag = de('fragmento')

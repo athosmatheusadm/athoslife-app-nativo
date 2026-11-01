@@ -4072,3 +4072,26 @@ com `p_tudo`, tipo `memoria` no audit; as 3 memórias antigas viraram nível
 Nenhum chat ainda depois da v37: na primeira conversa, conferir em
 `ai_audit_logs` se `modelo` = `gemini-3.8-flash` no chat e se aparecem
 linhas `memoria` com status ok. Falta: APK com o rótulo "Momento marcante".
+
+## 2026-11-01 (4) — importância dos eventos + custo por plano
+
+- `db/athoslife_memoria_importancia_migration.sql` (**não aplicada**, falta
+  autorização): evento importância 3 (família, viagem, conquista, data
+  especial, perda) fechado continua lembrável — volta quando a conversa toca
+  nele (`life_palavra_comum`: palavra de 5+ letras em comum, sem acento; os
+  trigramas sozinhos confundiam "dia ruim no serviço" com o resort), no
+  aniversário da data e no "o que você lembra?". Importância 1 fechado não
+  volta. Faxina protege o importante. Testada no banco com rollback (6 casos ok).
+- `memoria.ts`: regras de importância na extração (dia ruim comum = 1 e vira
+  contexto se repetir; dia feliz marcante = 3); bloco "LEMBRANÇAS QUE JÁ
+  PASSARAM" com "faz 1 ano por estes dias" / "há X dias".
+- Custo por plano (`index.ts`): grátis segue no Flash com contexto enxuto
+  (4 mensagens inteiras + 10 resumidas, 8 fatos, saída 280, extração até a
+  10ª mensagem). Pago: contexto cheio; depois de `FLASH_MSGS_DIA` (40) no dia
+  ou acima de `TETO_MES_USD` (1,5) de IA no mês, Lite + contexto enxuto.
+  Secrets ajustam sem republicar.
+
+Validado: 81 testes Deno, deno check. **Não publicado.**
+Próximo passo de custo que mais rende: enxugar o PROMPT_LIFE (~4.650 tokens,
+>80% da entrada), começando por partes condicionais (comida/Cozinha só quando
+o assunto é comida).

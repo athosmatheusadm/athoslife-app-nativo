@@ -60,6 +60,21 @@ const MODELO = env('GEMINI_MODEL', 'gemini-3.5-flash-lite')
  * 404/400 de modelo, a chamada cai no MODELO (o chat nunca para).
  */
 const MODELO_CHAT = env('GEMINI_MODEL_CHAT', 'gemini-3.8-flash')
+
+/**
+ * Custo por plano (01/11, dono). Grátis: mesmo Flash, mas contexto enxuto
+ * (menos histórico e lembranças) e resposta mais curta — o núcleo e o que é
+ * importante sempre entram, então o Life continua parecendo que lembra.
+ * Pago: contexto cheio, com proteção contra quem tenta estourar o limite:
+ * depois de FLASH_MSGS_DIA mensagens no dia, ou acima de TETO_MES_USD de
+ * custo de IA no mês, o resto vai pro Lite com o contexto enxuto. Ninguém
+ * fica sem resposta. Tudo ajustável por Secret, sem republicar.
+ */
+interface PerfilCusto { literais: number; antigas: number; fatos: number; saida: number; extrairAte: number }
+const PERFIL_GRATIS: PerfilCusto = { literais: 4, antigas: 10, fatos: 8, saida: 280, extrairAte: 10 }
+const PERFIL_PAGO: PerfilCusto = { literais: 6, antigas: 24, fatos: 20, saida: 400, extrairAte: 40 }
+const FLASH_MSGS_DIA = Number(env('FLASH_MSGS_DIA', '40'))
+const TETO_MES_USD = Number(env('TETO_MES_USD', '1.5'))
 const SUPABASE_URL = env('SUPABASE_URL')
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY')
 const TETO_GLOBAL_TOKENS = Number(env('IA_TETO_TOKENS_DIA', '2000000'))
@@ -1241,9 +1256,14 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     sb.rpc('is_premium_like', { p_user_id: userId }),
   ])
   const pago = pagoRes.data === true
+  const gastoMes = pago ? await gastoIaNoMes(sb, userId, loc.fuso) : 0
+  const economia = pago && (cota.usados > FLASH_MSGS_DIA || gastoMes > TETO_MES_USD)
+  const perfil = pago && !economia ? PERFIL_PAGO : PERFIL_GRATIS
+  const modeloChat = economia ? MODELO : MODELO_CHAT
   const salvas = ((histRes.data ?? []) as MensagemSalva[]).reverse()
     .map((m) => ({ ...m, texto: m.texto.replace(MARCA_CARTAO_SALVA, '').trim() }))
-  const camadas = CONTEXTO_CAMADAS ? dividirHistorico(salvas) : { literais: salvas, linhas: [] }
+    .slice(-(perfil.literais + perfil.antigas))
+  const camadas = CONTEXTO_CAMADAS ? dividirHistorico(salvas, perfil.literais) : { literais: salvas, linhas: [] }
   const historico = camadas.literais
 
   // 3b. Life adaptativo: memória (com consentimento), padrões, jeito de falar e check-in de hoje.
@@ -1251,7 +1271,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const consentimento = await lerConsentimentoMemoria(sb, userId)
   const pedeTudo = PEDE_LEMBRANCAS.test(normalizar(mensagem))
   const [memorias, padroes, falas, checkinsHoje] = await Promise.all([
-    consentimento === true ? memoriasParaContexto(sb, userId, mensagem, hojeLocal, 20, pedeTudo) : Promise.resolve([]),
+    consentimento === true ? memoriasParaContexto(sb, userId, mensagem, hojeLocal, perfil.fatos, pedeTudo) : Promise.resolve([]),
     padroesDaPessoa(sb, userId, hojeLocal),
     mensagensDaPessoa(sb, userId),
     linhaCheckinsHoje(sb, userId, hojeLocal),
@@ -1310,8 +1330,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     tools: FERRAMENTAS_LIFE,
     toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
     // 0,8 → 0,6 (01/11): com 0,8 o Lite seguia as regras pela metade (7 de 8 respostas terminando em pergunta).
-    generationConfig: configGeracao(400, 0.6),
-  }, 25_000, MODELO_CHAT)
+    generationConfig: configGeracao(perfil.saida, 0.6),
+  }, 25_000, modeloChat)
   // Prometeu o cartão da refeição sem chamar a ferramenta: pede de novo,
   // obrigando registrar_alimentos (custo extra só nesse caso).
   if (g.ok && !g.chamadas.length && prometeuRegistro(mensagem, g.texto)) {
@@ -1320,8 +1340,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
       contents: conteudos,
       tools: FERRAMENTAS_LIFE,
       toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: ['registrar_alimentos'] } },
-      generationConfig: configGeracao(400, 0.2),
-    }, 25_000, MODELO_CHAT)
+      generationConfig: configGeracao(perfil.saida, 0.2),
+    }, 25_000, modeloChat)
     if (g2.ok && g2.chamadas.length) g = { ...g2, tokens: g.tokens + g2.tokens, custo: g.custo + g2.custo, uso: somarUso(g.uso, g2.uso) }
     // Nunca deixa "mandei pra conferir" sem cartão.
     else g = { ...g, texto: TXT_REGISTRO[loc.idioma].nada }
@@ -1377,7 +1397,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   await auditar(sb, userId, 'chat', status, g, VERSAO_CONTEXTO)
 
   // Memória em segundo plano: a pessoa não espera por isso.
-  if (consentimento === true && status !== 'fora_tema' && valeExtrair(mensagem)) {
+  if (consentimento === true && status !== 'fora_tema' && valeExtrair(mensagem) && cota.usados <= perfil.extrairAte) {
     const anteriores = historico.slice(-2).map((m) => ({ autor: m.autor === 'life' ? 'life' as const : 'usuario' as const, texto: m.texto }))
     emSegundoPlano(extrairMemoria(sb, userId, loc.fuso, hojeLocal, [
       ...anteriores, { autor: 'usuario', texto: mensagem }, { autor: 'life', texto: resposta },
@@ -1390,6 +1410,15 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     ...(acao ? { acao } : {}),
     ...(memoria?.sugerirMemoria ? { sugerir_memoria: true, memoria_pendente: memoria.pendentes } : {}),
   })
+}
+
+/** Custo de IA (US$, estimado) desta pessoa no mês corrente, no fuso dela. */
+async function gastoIaNoMes(sb: Sb, userId: string, fuso: string): Promise<number> {
+  const inicio = `${hojeNoFuso(fuso).slice(0, 7)}-01T00:00:00Z`
+  const { data, error } = await sb.from('ai_audit_logs').select('custo_estimado')
+    .eq('user_id', userId).gte('data', inicio).limit(5000)
+  if (error) { console.warn('[custo] gasto do mês falhou', error.message); return 0 }
+  return ((data ?? []) as { custo_estimado: number | null }[]).reduce((t, r) => t + Number(r.custo_estimado ?? 0), 0)
 }
 
 /** Roda depois da resposta (Supabase EdgeRuntime.waitUntil); fora dele, só não espera. */
