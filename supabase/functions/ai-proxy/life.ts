@@ -472,3 +472,37 @@ export async function dadosAbertura(sb: Sb, userId: string, hoje: string, idioma
     ultimaAtividade: ultimas.at(-1) ?? null,
   }
 }
+
+
+/**
+ * 01/11: o prompt não dizia a data, o dia da semana nem a hora, e o Life
+ * chutava ao gravar um evento ("prova sexta") ou ao transformar "quarta e
+ * sexta" em datas. Vai no topo do contexto, no fuso da pessoa.
+ */
+export function linhaAgora(fuso: string, agora = new Date()): string {
+  const fmt = (tz: string) => new Intl.DateTimeFormat('pt-BR', {
+    timeZone: tz, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }).format(agora)
+  let quando: string
+  let tz = fuso
+  try {
+    quando = fmt(fuso)
+  } catch {
+    tz = 'America/Sao_Paulo'
+    quando = fmt(tz)
+  }
+  return `Agora: ${quando} (${tz}). Para datas, conte a partir daqui: "sexta" é a próxima sexta.`
+}
+
+/**
+ * As 3 últimas respostas do Life (01/11), pra ele não abrir nem fechar do
+ * mesmo jeito e não repetir a mesma lembrança ("frango e cuscuz" em 3 de 8).
+ * Já estão no histórico; aqui vão destacadas, com a regra junto.
+ */
+export function blocoUltimasRespostas(historico: { autor: string; texto: string }[]): string {
+  const ultimas = historico.filter((m) => m.autor === 'life' && m.texto.trim()).slice(-3)
+  if (!ultimas.length) return ''
+  const linhas = ultimas.map((m) => `- ${m.texto.replace(/\s+/g, ' ').trim().slice(0, 300)}`)
+  return `\n\nSUAS ÚLTIMAS RESPOSTAS (não comece nem termine igual a elas; não repita a mesma lembrança nem a mesma oferta):\n${linhas.join('\n')}`
+}

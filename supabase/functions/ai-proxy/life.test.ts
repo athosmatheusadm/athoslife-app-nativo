@@ -114,3 +114,25 @@ Deno.test('marca de memória cortada no fim não aparece no chat', () => {
   igual(r.texto, 'Boa, bora nessa!')
   igual(r.lembrar.length, 0)
 })
+
+Deno.test('linha Agora: data, dia da semana e hora no fuso da pessoa', async () => {
+  const { linhaAgora } = await import('./life.ts')
+  // domingo, 1/11/2026 18:30 UTC = 15:30 em São Paulo
+  const l = linhaAgora('America/Sao_Paulo', new Date('2026-11-01T18:30:00Z'))
+  ok(l.startsWith('Agora: domingo, 01/11/2026'), l)
+  ok(l.includes('15:30'), l)
+  ok(l.includes('(America/Sao_Paulo)'), l)
+  // fuso inválido não derruba o chat
+  ok(linhaAgora('Nada/Disso', new Date('2026-11-01T18:30:00Z')).includes('America/Sao_Paulo'))
+})
+
+Deno.test('últimas respostas: só as 3 últimas do Life, numa linha cada', async () => {
+  const { blocoUltimasRespostas } = await import('./life.ts')
+  igual(blocoUltimasRespostas([{ autor: 'usuario', texto: 'oi' }]), '')
+  const b = blocoUltimasRespostas([
+    { autor: 'life', texto: 'r1' }, { autor: 'usuario', texto: 'u' }, { autor: 'life', texto: 'r2\ncom quebra' },
+    { autor: 'life', texto: 'r3' }, { autor: 'life', texto: 'r4' },
+  ])
+  ok(!b.includes('r1'))
+  ok(b.includes('- r2 com quebra') && b.includes('- r4'))
+})

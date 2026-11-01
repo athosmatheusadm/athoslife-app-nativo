@@ -3995,3 +3995,32 @@ Depois: guia "Life: conversa e memória" (01/11), começando pelos itens 1–3
 da ordem dele (gravação com horários distintos, linha "Agora:", regra de
 não oferecer o que não faz, regras de conversa) — mexe na ai-proxy e no
 banco, precisa de deploy autorizado.
+
+## 2026-11-01 (2) — Life: itens 1–3 do guia "conversa e memória"
+
+Do guia do dono (`Life guia de conversa e memória (1).docx`), só a ai-proxy:
+- **Ordem do chat:** `gravarTroca` grava pergunta (instante em que chegou) e
+  resposta (agora, ≥ 1 ms depois) com `criado_em` distintos. Trocados os 7
+  inserts em par (chat, crise, fora do tema, peso, ação, check-in). Antes as
+  duas saíam com o mesmo now() e a ordem era sorteio (52 pares no banco).
+- **Linha "Agora:"** no topo do contexto (`linhaAgora` em `life.ts`, fuso da
+  pessoa; fuso inválido cai em São Paulo).
+- **PROMPT_LIFE:** regra de não oferecer o que as ferramentas não fazem
+  (dias futuros, treino); regras de conversa que faltavam (responder as duas
+  partes, confirmar correção na hora, fazer o que ofereceu, ≤ 2 lembranças e
+  sem repetir, propor em vez de devolver a pergunta, estimar antes de "não
+  sei", só ouvir no desabafo, palavras dela, não repetir abertura/fecho);
+  ≥ metade das respostas sem pergunta.
+- Bloco **SUAS ÚLTIMAS RESPOSTAS** (3 últimas do Life) no prompt.
+- Temperatura do chat 0,8 → 0,6. Modelo continua `gemini-3.5-flash-lite`
+  (a troca pelo Flash só no chat fica pra medir custo; hoje o modelo é global).
+
+Validado: 73 testes Deno (2 novos), `deno check`.
+
+**Pendente (barrado pelo modo automático, precisa do dono):**
+1. Deploy da ai-proxy (vai virar a v37).
+2. SQL único que desfaz os empates antigos:
+   `update life_chat_mensagens l set criado_em = l.criado_em + interval '1 millisecond' where l.autor = 'life' and exists (select 1 from life_chat_mensagens u where u.user_id = l.user_id and u.criado_em = l.criado_em and u.autor = 'usuario');`
+3. Push das branches (token do GitHub inválido).
+Depois: rodar os testes 1–13 do roteiro do guia. Próximo item do guia: 4
+(horário local dos tropeços) e 5 (`programar_refeicao`).

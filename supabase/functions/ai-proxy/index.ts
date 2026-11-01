@@ -40,7 +40,7 @@ import { repoSupabase } from './scanner/repositorio.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
   aplicarMarcasMemoria, blocoMemoria, ehConstruir, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
-  lerConsentimentoMemoria, linhaCheckinsHoje, memoriasParaContexto, mensagensDaPessoa, padroesDaPessoa, promptCheckin,
+  blocoUltimasRespostas, lerConsentimentoMemoria, linhaAgora, linhaCheckinsHoje, memoriasParaContexto, mensagensDaPessoa, padroesDaPessoa, promptCheckin,
   REGRAS_CHECKIN, REGRAS_MEMORIA, respostaCheckinPadrao, resumoCheckin, validarCheckin,
 } from './life.ts'
 
@@ -641,6 +641,25 @@ async function devolverCota(sb: Sb, userId: string, tipo: TipoCota) {
   if (error) console.warn('[cota] devolver falhou', error.message)
 }
 
+/**
+ * Grava pergunta e resposta com horários distintos (01/11). Num insert só as
+ * duas saíam com o mesmo criado_em (now() é o início da transação) e a ordem
+ * virava sorteio: na tela e no histórico que o próprio Life lê, a resposta às
+ * vezes vinha antes da pergunta. A pergunta fica com o instante em que chegou;
+ * a resposta, com o de agora (no mínimo 1 ms depois).
+ */
+async function gravarTroca(
+  sb: Sb, userId: string, chegouEm: Date,
+  usuario: Record<string, unknown>, life: Record<string, unknown>,
+) {
+  const depois = new Date(Math.max(Date.now(), chegouEm.getTime() + 1))
+  const { error } = await sb.from('life_chat_mensagens').insert([
+    { user_id: userId, autor: 'usuario', criado_em: chegouEm.toISOString(), ...usuario },
+    { user_id: userId, autor: 'life', criado_em: depois.toISOString(), ...life },
+  ])
+  if (error) console.warn('[chat] gravar troca falhou', error.message)
+}
+
 async function auditar(sb: Sb, userId: string, tipo: string, status: string, g?: ResultadoGemini, versaoContexto?: string) {
   const { error } = await sb.from('ai_audit_logs').insert({
     user_id: userId,
@@ -750,10 +769,21 @@ QUANDO É GRAVE (desespero, "não aguento mais", "sou um peso", "ninguém liga p
 - Você pode ser honesto que uma pessoa pode ajudar mais do que você, mas NUNCA use isso pra se afastar ("sou só uma IA, não posso ajudar"). Você continua na conversa, do lado dela.
 - Se o histórico tem uma mensagem de apoio com telefone de crise, continue presente e acolhedor nas respostas seguintes; pergunte se ela conseguiu falar com alguém, sem repetir o texto inteiro.
 - "Não quero falar disso": encerre o assunto com leveza e não volte nele — nem em outra tela, nem depois.
-- Uma pergunta por vez, só quando precisar. Não termine toda resposta com pergunta.
+- No máximo UMA pergunta por resposta, e só quando precisar. Termine pelo menos metade das respostas SEM pergunta: com uma sugestão concreta, uma afirmação ou algo que você já fez.
 - Falta de registro não é fato: "nenhuma refeição registrada" não quer dizer que a pessoa não comeu. Nunca deduza tristeza, compulsão ou desânimo só porque faltou registro.
 - Nunca diga que lembra, viu ou fez algo que não está no contexto ou no resultado de uma ação.
 - Metas e lembretes são apoio, nunca "cobrança" — não use essa palavra.
+- Responda primeiro o que a pessoa perguntou. Se a mensagem tem duas partes, responda as duas, na ordem em que vieram.
+- Se a pessoa corrigir um dado (dia, horário, preferência), confirme em meia frase logo no começo ("Anotado: curso na quarta e na sexta.") — mesmo que a mensagem também traga um desabafo. Não espere ela perguntar se você viu.
+- Só ofereça o que você consegue fazer (ver AÇÕES NO APP). Se ofereceu e a pessoa aceitou, faça nesta resposta. Nunca mande a pessoa procurar um botão pra fazer o que você mesmo ofereceu.
+- Use o que você lembra só quando isso muda a resposta: no máximo duas lembranças por resposta, e não repita uma lembrança que já apareceu nas SUAS ÚLTIMAS RESPOSTAS. Nunca traga ingrediente que ela disse que não tem.
+- Quando ela pedir pra organizar ou planejar, proponha (com os dias e horários que você sabe dela) em vez de devolver a pergunta.
+- Antes de dizer "não sei", veja se dá pra deduzir com o que você sabe. Se der, diga a estimativa, deixe claro que é estimativa e pergunte se acertou.
+- Quando ela disser que só quer conversar ou desabafar: não organize nada, não sugira pausa e não puxe comida nem treino. Use as palavras dela pra mostrar que entendeu; se ajudar, use um fato da rotina dela pra dar perspectiva (sem tentar consertar).
+- Se chegaram várias mensagens seguidas, responda tudo numa resposta só, sem repetir o mesmo acolhimento.
+- Fale do jeito da pessoa: use as palavras dela (se ela diz "curso", não diga "faculdade") e o mesmo nível de informalidade. Espelhar não é copiar: não repita erro de digitação.
+- Não comece nem termine do mesmo jeito que nas SUAS ÚLTIMAS RESPOSTAS. Evite: "Tô aqui só te ouvindo", "Quer desabafar mais?", "super", "com certeza", "que tal focarmos".
+- Nunca exagere o risco ("colapso", "perigo") e nunca dê diagnóstico. Em sinal de crise, QUANDO É GRAVE vale acima de todas estas regras.
 
 PAUSA DO DIA:
 - A pausa é cuidado pra um dia difícil, não folga: ela congela sequências e metas. Quem decide oferecer é você, só num momento pesado de verdade (luto, notícia difícil, dia muito ruim, esgotamento). Oferecer não ativa nada.
@@ -767,6 +797,7 @@ AÇÕES NO APP (você só executa estas três, pelas ferramentas):
 - repetir_refeicao: quando a pessoa pedir pra repetir/copiar uma refeição já registrada ("coloca na janta o mesmo de ontem", "repete o café de hoje no lanche"). Origem e destino vêm da lista REFEIÇÕES do contexto — as 4 fixas ou as extras dela, pelo nome. Se não der pra saber qual é a origem ou o destino, pergunte antes ("Você quer repetir o jantar de ontem?"). Se ela já disse se quer somar ao que tem ou trocar, mande o modo.
 - pausar_life_hoje: ver PAUSA DO DIA.
 - Fora isso, você não registra, marca nem muda nada no app. Nunca diga "pronto", "coloquei" ou "registrei" por conta própria — quem confirma é o app, depois de gravar.
+- Nunca ofereça montar, colocar, programar ou mudar no app algo que estas ferramentas não fazem (ex.: "quer que eu coloque na sua dieta da semana?", "monto pra você?"). Hoje você não põe comida em dias futuros nem mexe no treino. Se a pessoa pedir, diga numa frase o que dá pra fazer agora (ex.: ela adiciona na refeição do dia, na tela de Dieta) e siga ajudando na conversa.
 
 PODE:
 - Conversar sobre o dia, humor, hábitos e consistência; celebrar esforço; acolher dia ruim sem forçar positividade.
@@ -1130,6 +1161,7 @@ async function handleChatUmaVez(sb: Sb, userId: string, corpo: Record<string, un
 }
 
 async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+  const chegouEm = new Date()
   const mensagem = texto(corpo.mensagem, MAX_MENSAGEM + 1).trim()
   if (!mensagem) return json({ error: 'invalid_message' }, 400)
   if (mensagem.length > MAX_MENSAGEM) return json({ error: 'message_too_long', max: MAX_MENSAGEM }, 400)
@@ -1142,10 +1174,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     const RESPOSTA_CRISE = respostaCrise(loc)
     // Guarda só o termo que disparou — nunca o texto (dado sensível).
     await sb.from('eventos_seguranca').insert({ user_id: userId, tipo: 'palavra_risco', contexto: crise })
-    await sb.from('life_chat_mensagens').insert([
-      { user_id: userId, autor: 'usuario', texto: mensagem },
-      { user_id: userId, autor: 'life', texto: RESPOSTA_CRISE },
-    ])
+    await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: RESPOSTA_CRISE })
     return json({ resposta: RESPOSTA_CRISE, restantes: null, seguranca: true })
   }
 
@@ -1153,10 +1182,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   //     resposta fixa, sem IA e sem cota — mas conta como sinal de abuso.
   if (pedidoForaDoTema(mensagem)) {
     const resposta = RESPOSTA_FORA_DO_TEMA[loc.idioma]
-    await sb.from('life_chat_mensagens').insert([
-      { user_id: userId, autor: 'usuario', texto: mensagem },
-      { user_id: userId, autor: 'life', texto: resposta },
-    ])
+    await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: resposta })
     await registrarSinal(sb, userId, 'fora_tema')
     return json({ resposta, restantes: null })
   }
@@ -1175,10 +1201,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const cmdPeso = lerComandoPeso(mensagem)
   if (cmdPeso) {
     const r = await executarComandoPeso(sb, userId, cmdPeso, loc.idioma, hojeNoFuso(loc.fuso))
-    await sb.from('life_chat_mensagens').insert([
-      { user_id: userId, autor: 'usuario', texto: mensagem },
-      { user_id: userId, autor: 'life', texto: r.resposta },
-    ])
+    await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: r.resposta })
     return json({ resposta: r.resposta, restantes: null, acao: r.mudou ? { tipo: 'peso_atualizado' } : null })
   }
 
@@ -1246,6 +1269,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     linhaDiaLeve(corpo.dia_leve) +
     adaptativo +
     (CONTEXTO_CAMADAS ? blocoConversaAnterior(camadas.linhas) + REGRA_RESUMO : '') +
+    blocoUltimasRespostas(historico) +
     (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Siga QUANDO É GRAVE: acolha com calor e calma, pergunte como a pessoa está e se está segura, e lembre da linha de apoio e de um profissional, sem alarmar e sem se afastar.'
@@ -1258,7 +1282,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     contents: conteudos,
     tools: FERRAMENTAS_LIFE,
     toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
-    generationConfig: configGeracao(400, 0.8),
+    // 0,8 → 0,6 (01/11): com 0,8 o Lite seguia as regras pela metade (7 de 8 respostas terminando em pergunta).
+    generationConfig: configGeracao(400, 0.6),
   })
   // Prometeu o cartão da refeição sem chamar a ferramenta: pede de novo,
   // obrigando registrar_alimentos (custo extra só nesse caso).
@@ -1321,11 +1346,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   if (!feito) resposta = cartoesDaResposta(resposta, catalogo ?? [])
   const memoria = !feito && status !== 'fora_tema' ? await aplicarMarcasMemoria(sb, userId, consentimento, marcas) : null
 
-  await sb.from('life_chat_mensagens').insert([
-    { user_id: userId, autor: 'usuario', texto: mensagem },
-    // Resumo só quando a resposta é a do modelo (ferramenta/filtro trocam o texto).
-    { user_id: userId, autor: 'life', texto: resposta.slice(0, 2000), resumo: !feito && status === 'ok' ? resumo : null },
-  ])
+  await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: resposta.slice(0, 2000), resumo: !feito && status === 'ok' ? resumo : null })
   await auditar(sb, userId, 'chat', status, g, VERSAO_CONTEXTO)
 
   return json({
@@ -1505,6 +1526,7 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<str
     linhas.push(`Plano de referência de dieta: objetivo ${texto(pd.objetivo, 20)} (ritmo ${texto(pd.ritmo, 10)}), atividade ${texto(pd.atividade, 12)}, ${num(pd.refeicoes)} refeições; meta ${num(mt.kcal)} kcal, P ${num(mt.proteina)} g, C ${num(mt.carboidrato)} g, G ${num(mt.gordura)} g (gasto estimado ${num(pd.gasto)} kcal)`)
   }
 
+  linhas.unshift(linhaAgora(fuso))
   return linhas.join('\n')
 }
 
@@ -2129,6 +2151,7 @@ async function proporRegistro(
  * { tipo: 'acao', id, escolha } -> { resposta, acao }
  */
 async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+  const chegouEm = new Date()
   const id = uuidValido(corpo.id)
   const escolha = corpo.escolha
   if (!id || !['adicionar', 'substituir', 'forcar', 'salvar', 'cancelar'].includes(String(escolha))) {
@@ -2174,10 +2197,7 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
     r = await executarRepeticao(sb, userId, id, novo, loc.idioma, hoje)
   }
 
-  await sb.from('life_chat_mensagens').insert([
-    { user_id: userId, autor: 'usuario', texto: t.escolha[escolha as Escolha] },
-    { user_id: userId, autor: 'life', texto: r.resposta },
-  ])
+  await gravarTroca(sb, userId, chegouEm, { texto: t.escolha[escolha as Escolha] }, { texto: r.resposta })
   await auditar(sb, userId, 'acao', r.status)
   return json({ resposta: r.resposta, acao: r.acao })
 }
@@ -2420,6 +2440,7 @@ Responda só JSON:
 // Sem cota do chat; IA no máximo 3 vezes por dia, depois resposta pronta.
 // ================================================================
 async function handleCheckin(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+  const chegouEm = new Date()
   const loc = await lerLocalidade(sb, userId)
   const hora = Number(new Intl.DateTimeFormat('en-US', { timeZone: loc.fuso, hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
   const c = validarCheckin(corpo, hora)
@@ -2486,10 +2507,7 @@ async function handleCheckin(sb: Sb, userId: string, corpo: Record<string, unkno
 
   await sb.from('life_checkins').update({ resposta_life: resposta.slice(0, 2000) })
     .eq('user_id', userId).eq('data', hoje).eq('momento', c.momento)
-  await sb.from('life_chat_mensagens').insert([
-    { user_id: userId, autor: 'usuario', texto: resumoCheckin(c, loc.idioma), tipo: 'checkin' },
-    { user_id: userId, autor: 'life', texto: resposta.slice(0, 2000), tipo: 'checkin' },
-  ])
+  await gravarTroca(sb, userId, chegouEm, { texto: resumoCheckin(c, loc.idioma), tipo: 'checkin' }, { texto: resposta.slice(0, 2000), tipo: 'checkin' })
   return json({
     resposta,
     convite_conversa: c.agradavel <= 2 || !!sensivel || !!crise,
