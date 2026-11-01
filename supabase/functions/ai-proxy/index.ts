@@ -65,15 +65,16 @@ const MODELO_CHAT = env('GEMINI_MODEL_CHAT', 'gemini-3.8-flash')
  * Custo por plano (01/11, dono). Grátis: mesmo Flash, mas contexto enxuto
  * (menos histórico e lembranças) e resposta mais curta — o núcleo e o que é
  * importante sempre entram, então o Life continua parecendo que lembra.
- * Pago: contexto cheio, com proteção contra quem tenta estourar o limite:
- * depois de FLASH_MSGS_DIA mensagens no dia, ou acima de TETO_MES_USD de
- * custo de IA no mês, o resto vai pro Lite com o contexto enxuto. Ninguém
- * fica sem resposta. Tudo ajustável por Secret, sem republicar.
+ * Pago: SEMPRE contexto cheio (dono: enxugar o pago é sacanear quem paga).
+ * Proteção só contra abuso que se sustenta: acima de TETO_MES_USD de custo
+ * de IA no mês, o resto do mês troca só o modelo (Lite), com o mesmo
+ * contexto e a mesma memória. FLASH_MSGS_DIA (padrão = limite do dia, ou
+ * seja, desligado) existe pra uma emergência. Ajustável por Secret.
  */
 interface PerfilCusto { literais: number; antigas: number; fatos: number; saida: number; extrairAte: number }
 const PERFIL_GRATIS: PerfilCusto = { literais: 4, antigas: 10, fatos: 8, saida: 280, extrairAte: 10 }
 const PERFIL_PAGO: PerfilCusto = { literais: 6, antigas: 24, fatos: 20, saida: 400, extrairAte: 40 }
-const FLASH_MSGS_DIA = Number(env('FLASH_MSGS_DIA', '40'))
+const FLASH_MSGS_DIA = Number(env('FLASH_MSGS_DIA', '80'))
 const TETO_MES_USD = Number(env('TETO_MES_USD', '1.5'))
 const SUPABASE_URL = env('SUPABASE_URL')
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY')
@@ -1258,7 +1259,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const pago = pagoRes.data === true
   const gastoMes = pago ? await gastoIaNoMes(sb, userId, loc.fuso) : 0
   const economia = pago && (cota.usados > FLASH_MSGS_DIA || gastoMes > TETO_MES_USD)
-  const perfil = pago && !economia ? PERFIL_PAGO : PERFIL_GRATIS
+  const perfil = pago ? PERFIL_PAGO : PERFIL_GRATIS
   const modeloChat = economia ? MODELO : MODELO_CHAT
   const salvas = ((histRes.data ?? []) as MensagemSalva[]).reverse()
     .map((m) => ({ ...m, texto: m.texto.replace(MARCA_CARTAO_SALVA, '').trim() }))
