@@ -4063,3 +4063,12 @@ Validado: 79 testes Deno (6 novos), deno check, typecheck, build.
 ai-proxy (v38) → APK com o rótulo novo. Push das branches (token GitHub).
 Depois: resumos diários/semanais (cron), busca por sentido (vector),
 `programar_refeicao`.
+
+### 2026-11-01 (3b) — memória em camadas no ar
+Com autorização do dono: `db/athoslife_memoria_camadas_migration.sql`
+**aplicada** (conferido: colunas, 3 funções novas, `life_memorias_contexto`
+com `p_tudo`, tipo `memoria` no audit; as 3 memórias antigas viraram nível
+`fato`). **ai-proxy v38 publicada** (memória em camadas + Flash no chat).
+Nenhum chat ainda depois da v37: na primeira conversa, conferir em
+`ai_audit_logs` se `modelo` = `gemini-3.8-flash` no chat e se aparecem
+linhas `memoria` com status ok. Falta: APK com o rótulo "Momento marcante".
