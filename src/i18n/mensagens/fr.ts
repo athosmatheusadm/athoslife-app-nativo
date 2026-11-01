@@ -1537,6 +1537,7 @@ export const fr: Mensagens = {
         pessoa: 'Famille et animaux',
         estilo: 'Comment je préfère que Life me parle',
         contexto: 'Autre chose',
+        fragmento: 'Moment marquant',
       },
     },
     notificacoes: {

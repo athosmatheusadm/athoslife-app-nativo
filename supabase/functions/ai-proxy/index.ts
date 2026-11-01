@@ -36,6 +36,9 @@ import { executarComandoPeso, lerComandoPeso } from './peso.ts'
 import { blocoConversaAnterior, dividirHistorico, extrairResumo, JANELA_TOTAL, REGRA_RESUMO, type MensagemSalva } from './historico.ts'
 import { acharNaBase, lerItens, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
 import { handleScan } from './scanner/analisar.ts'
+import {
+  aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
+} from './memoria.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
@@ -1246,13 +1249,19 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   // 3b. Life adaptativo: memória (com consentimento), padrões, jeito de falar e check-in de hoje.
   const hojeLocal = hojeNoFuso(loc.fuso)
   const consentimento = await lerConsentimentoMemoria(sb, userId)
+  const pedeTudo = PEDE_LEMBRANCAS.test(normalizar(mensagem))
   const [memorias, padroes, falas, checkinsHoje] = await Promise.all([
-    consentimento === true ? memoriasParaContexto(sb, userId, mensagem, hojeLocal) : Promise.resolve([]),
+    consentimento === true ? memoriasParaContexto(sb, userId, mensagem, hojeLocal, 20, pedeTudo) : Promise.resolve([]),
     padroesDaPessoa(sb, userId, hojeLocal),
     mensagensDaPessoa(sb, userId),
     linhaCheckinsHoje(sb, userId, hojeLocal),
   ])
-  const adaptativo = blocoMemoria(memorias, consentimento) + (consentimento !== false ? REGRAS_MEMORIA : '') +
+  // Memória em camadas (01/11): ligada = blocos por nível e o app guarda sozinho
+  // (extração em segundo plano); ainda não decidida = marcas [[LEMBRAR]] como antes.
+  const blocoMem = consentimento === true
+    ? blocoMemoriaCamadas(memorias, hojeLocal, pedeTudo) + REGRAS_MEMORIA_AUTO
+    : blocoMemoria(memorias, consentimento) + (consentimento === null ? REGRAS_MEMORIA : '')
+  const adaptativo = blocoMem +
     blocoPadroes(padroes) + (estiloDaPessoa([...falas, mensagem]) ?? '')
 
   const conteudos: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
@@ -1367,12 +1376,45 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: resposta.slice(0, 2000), resumo: !feito && status === 'ok' ? resumo : null })
   await auditar(sb, userId, 'chat', status, g, VERSAO_CONTEXTO)
 
+  // Memória em segundo plano: a pessoa não espera por isso.
+  if (consentimento === true && status !== 'fora_tema' && valeExtrair(mensagem)) {
+    const anteriores = historico.slice(-2).map((m) => ({ autor: m.autor === 'life' ? 'life' as const : 'usuario' as const, texto: m.texto }))
+    emSegundoPlano(extrairMemoria(sb, userId, loc.fuso, hojeLocal, [
+      ...anteriores, { autor: 'usuario', texto: mensagem }, { autor: 'life', texto: resposta },
+    ]))
+  }
+
   return json({
     resposta,
     restantes: Math.max(cota.limite - cota.usados, 0),
     ...(acao ? { acao } : {}),
     ...(memoria?.sugerirMemoria ? { sugerir_memoria: true, memoria_pendente: memoria.pendentes } : {}),
   })
+}
+
+/** Roda depois da resposta (Supabase EdgeRuntime.waitUntil); fora dele, só não espera. */
+function emSegundoPlano(p: Promise<unknown>) {
+  const seguro = p.catch((e) => console.warn('[segundo plano] falhou', String(e)))
+  const rt = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime
+  if (rt?.waitUntil) rt.waitUntil(seguro)
+}
+
+/** Extrai da última troca tudo o que vale lembrar e aplica no banco (memoria.ts). */
+async function extrairMemoria(
+  sb: Sb, userId: string, fuso: string, hoje: string, troca: { autor: 'usuario' | 'life'; texto: string }[],
+) {
+  const guardadas = await memoriasGuardadas(sb, userId)
+  const g = await chamarGemini({
+    contents: [{ role: 'user', parts: [{ text: promptExtracao({ agora: linhaAgora(fuso), guardadas, troca }) }] }],
+    generationConfig: configGeracao(700, 0.2, true),
+  }, 20_000)
+  if (!g.ok) {
+    await auditar(sb, userId, 'memoria', 'error', g)
+    return
+  }
+  const ops = validarOps(extrairJSON(g.texto), hoje)
+  const r = await aplicarOps(sb, userId, ops)
+  await auditar(sb, userId, 'memoria', r ? 'ok' : 'error', g)
 }
 
 /** Contexto compacto (poucas linhas = poucos tokens). Tolera falha parcial. */

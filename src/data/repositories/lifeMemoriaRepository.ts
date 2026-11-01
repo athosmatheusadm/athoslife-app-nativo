@@ -6,7 +6,8 @@ import { atualizarPerfil, linhaDoPerfil } from './profileRepository'
 import type { Etiqueta, Momento, Sentimento } from '@domain/rules/checkinLife'
 
 /** Tipos de memória (life_memorias.categoria). */
-export type CategoriaMemoria = 'gosto' | 'rotina' | 'objetivo' | 'evento' | 'pessoa' | 'estilo' | 'contexto'
+/** `fragmento` (01/11): momento marcante, só o Life cria (não aparece em "contar algo"). */
+export type CategoriaMemoria = 'gosto' | 'rotina' | 'objetivo' | 'evento' | 'pessoa' | 'estilo' | 'contexto' | 'fragmento'
 
 export interface MemoriaLife {
   readonly id: string

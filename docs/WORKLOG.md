@@ -4024,3 +4024,42 @@ Validado: 73 testes Deno (2 novos), `deno check`.
 3. Push das branches (token do GitHub inválido).
 Depois: rodar os testes 1–13 do roteiro do guia. Próximo item do guia: 4
 (horário local dos tropeços) e 5 (`programar_refeicao`).
+
+## 2026-11-01 (3) — Flash no chat, reset dos testadores, memória em camadas
+
+Com autorização do dono:
+- **ai-proxy v37 publicada**: itens 1–3 do guia + chat no `gemini-3.8-flash`
+  (`MODELO_CHAT`, Secret `GEMINI_MODEL_CHAT` troca sem republicar). Se o
+  modelo do chat der 404/400 a chamada cai no Lite. Scanner, receitas e
+  check-in continuam no Lite. O 3.8-flash nunca tinha rodado aqui: conferir
+  a coluna `modelo` do `ai_audit_logs` depois das primeiras conversas.
+- **52 mensagens antigas** do chat desempatadas (+1 ms na resposta).
+- **Teste grátis renovado** até 08/11 pra Matheus (estava free), Gustavo,
+  Gu e Gustavou (este estava trial sem data, ou seja, sem acesso). Micael já
+  ia até 08/11. Contas vip do dono intocadas.
+
+**Memória em camadas (código pronto, NÃO publicado):**
+- `db/athoslife_memoria_camadas_migration.sql`: níveis (núcleo, fato,
+  estilo, evento, contexto, fragmento), chave por assunto (correção no
+  lugar), importância, estado (evento vira 'fechado' em vez de apagado;
+  contexto expira), retomar_em, até 400 por pessoa (faxina tira as menos
+  importantes), `life_memoria_aplicar` (ops da extração),
+  `life_memorias_contexto` por camada (núcleo/fixadas sempre, estilo, até 20
+  fatos ou 60 com "o que você lembra?", contexto, eventos próximos/abertos,
+  1 fragmento só se parecido). Tipo `memoria` no `ai_audit_logs`.
+  Testada no banco real dentro de transação desfeita (rollback conferido).
+- ai-proxy (`memoria.ts`): depois da resposta, em segundo plano
+  (`EdgeRuntime.waitUntil`), o Lite lê a última troca + o guardado e devolve
+  várias ops; o servidor valida (filtro de sensível, datas, chave) e aplica.
+  Memória ligada: blocos por camada no prompt e o modelo não precisa mais de
+  [[LEMBRAR]] (só [[ESQUECER]]). Não decidida: marcas como antes.
+  Filtro: "rua"/"email" soltos não barram mais; endereço/telefone sim.
+- App: categoria `fragmento` ("Momento marcante") nos 5 idiomas na tela de
+  memórias; pendentes antes do consentimento 4 → 12.
+
+Validado: 79 testes Deno (6 novos), deno check, typecheck, build.
+
+**Pendente:** dono autorizar a migração; aplicar migração → publicar a
+ai-proxy (v38) → APK com o rótulo novo. Push das branches (token GitHub).
+Depois: resumos diários/semanais (cron), busca por sentido (vector),
+`programar_refeicao`.

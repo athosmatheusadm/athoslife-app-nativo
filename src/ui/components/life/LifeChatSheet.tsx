@@ -278,7 +278,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       if (r.restantes !== null) setRestantes(r.restantes)
       aplicarAcao(r.acao)
       if (r.sugerirMemoria) setConviteMemoria((c) => c ?? 'mostrar')
-      if (r.memoriaPendente.length) pendentesMemoria.current = [...pendentesMemoria.current, ...r.memoriaPendente].slice(-4)
+      if (r.memoriaPendente.length) pendentesMemoria.current = [...pendentesMemoria.current, ...r.memoriaPendente].slice(-12)
     } catch (e) {
       falhaRef.current = { texto: mensagem, id }
       // A mensagem não foi aceita: tira do histórico e devolve pro campo.

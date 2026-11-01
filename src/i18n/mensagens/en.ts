@@ -1531,6 +1531,7 @@ export const en: Mensagens = {
         pessoa: 'Family and pets',
         estilo: 'How I like Life to talk',
         contexto: 'Something else',
+        fragmento: 'Meaningful moment',
       },
     },
     notificacoes: {

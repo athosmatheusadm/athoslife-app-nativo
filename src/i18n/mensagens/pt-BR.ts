@@ -1545,6 +1545,7 @@ export const ptBR = {
         pessoa: 'Família e pets',
         estilo: 'Como prefiro que o Life fale',
         contexto: 'Outra coisa',
+        fragmento: 'Momento marcante',
       },
     },
     notificacoes: {

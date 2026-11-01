@@ -1538,6 +1538,7 @@ export const hi: Mensagens = {
         pessoa: 'परिवार और पालतू',
         estilo: 'Life मुझसे कैसे बात करे',
         contexto: 'कुछ और',
+        fragmento: 'खास पल',
       },
     },
     notificacoes: {

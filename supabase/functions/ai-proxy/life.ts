@@ -56,7 +56,10 @@ const PROIBIDO_MEMORIA = new RegExp('\\b(' + [
   'rivotril', 'fluoxetina', 'sertralina', 'ozempic', 'hiv', 'cancer', 'gravid\\w*', 'aborto',
   'gay', 'lesbica', 'bissexual', 'trans', 'sexo', 'sexual\\w*', 'religia\\w*', 'igreja', 'evangelic\\w*', 'catolic\\w*', 'espirita',
   'umbanda', 'candomble', 'ateu', 'partido', 'bolsonar\\w*', 'lula', 'petista', 'esquerda', 'direita',
-  'salario', 'divida\\w*', 'emprestimo', 'cartao de credito', 'senha', 'cpf', 'rg', 'endereco', 'rua', 'telefone', 'whatsapp', 'email',
+  'salario', 'divida\\w*', 'emprestimo', 'cartao de credito', 'senha', 'cpf', 'rg',
+  // expressões, não palavras soltas (01/11): "corre na rua de manhã" pode; "moro na rua X" não.
+  'endereco', 'minha rua', 'moro na rua', 'mora na rua', 'moro na avenida', 'mora na avenida', 'telefone', 'meu numero',
+  'meu celular', 'meu whatsapp', 'whatsapp dela', 'whatsapp dele', 'meu e-?mail', 'e-?mail dela', 'e-?mail dele', 'e-?mail e',
   'depression', 'disorder', 'medication', 'meds', 'pregnan\\w*', 'religion', 'church', 'salary', 'debt', 'password', 'address',
   'depresion', 'medicamento\\w*', 'embaraz\\w*', 'religion', 'deuda\\w*', 'direccion',
 ].join('|') + ')\\b')
@@ -70,7 +73,7 @@ export function memoriaPermitida(l: Lembranca, termosExtras: string[] = []): boo
   return true
 }
 
-export interface MemoriaContexto { texto: string; categoria: string; data_referencia: string | null; fixada: boolean }
+export interface MemoriaContexto { texto: string; categoria: string; data_referencia: string | null; fixada: boolean; nivel?: string | null; estado?: string | null }
 
 export function blocoMemoria(memorias: MemoriaContexto[], consentimento: boolean | null): string {
   if (consentimento === false) {
@@ -381,8 +384,10 @@ export async function lerConsentimentoMemoria(sb: Sb, userId: string): Promise<b
   return typeof data?.consentimento_memoria === 'boolean' ? data.consentimento_memoria : null
 }
 
-export async function memoriasParaContexto(sb: Sb, userId: string, mensagem: string, hoje: string, limite = 10): Promise<MemoriaContexto[]> {
-  const { data, error } = await sb.rpc('life_memorias_contexto', { p_user_id: userId, p_mensagem: mensagem, p_hoje: hoje, p_limite: limite })
+export async function memoriasParaContexto(
+  sb: Sb, userId: string, mensagem: string, hoje: string, limite = 20, tudo = false,
+): Promise<MemoriaContexto[]> {
+  const { data, error } = await sb.rpc('life_memorias_contexto', { p_user_id: userId, p_mensagem: mensagem, p_hoje: hoje, p_limite: limite, p_tudo: tudo })
   if (error) { console.warn('[memoria] contexto falhou', error.message); return [] }
   return (data ?? []) as MemoriaContexto[]
 }
