@@ -4369,3 +4369,66 @@ resumos), e o roteiro de testes do bloco (6).
   aberto pra `main`: https://github.com/athosmatheusadm/athoslife-app-nativo/pull/3
 - Merge fica com o dono, depois do roteiro de 29 testes. Ainda pendente:
   `VITE_RC_GOOGLE_KEY` nos secrets, APK novo, PR #2 e webhook do RevenueCat.
+
+## 2026-11-02 (10) — Chat fora do ar desde a v41: causa, correção e prevenção
+
+**O que aconteceu:** testando como usuário (conta de teste), 100% das
+mensagens do chat davam `ia_falhou` em ~27 s. Pelo `ai_audit_logs`, nenhuma
+mensagem deu certo no Flash desde a v41 (01/11); ninguém tinha usado o chat.
+
+**Causa 1 (nossa, comprovada):** mandávamos `thinkingLevel: minimal` pro
+`gemini-3.8-flash` → 400 ("MINIMAL is not supported"); a nova tentativa ia
+SEM limite de raciocínio → passava de 25 s → timeout; a reserva (Lite) só
+entrava em 400/404, não em timeout.
+**Causa 2 (Google, forte evidência):** com a config certa (`low`) o Flash
+ainda não responde em 14 s, enquanto o Lite responde em ~1 s com o mesmo
+prompt; uma tentativa voltou 503 "high demand". Não dá pra saber ainda se é
+pico ou permanente — os logs de tempo por tentativa (v45) vão dizer.
+
+**No ar agora: ai-proxy v44** (autorizada pelo dono): raciocínio por modelo
+(Flash `low`, Lite `minimal`) + reserva no Lite também em timeout/503/429,
+Flash com no máx. 14 s. O chat RESPONDE, mas leva ~15–18 s (espera o Flash
+estourar e cai no Lite).
+
+**Pronto, NÃO publicado (dono pediu pra não postar — pode trocar de IA):**
+commit `2735a23`
+- `gemini.ts`: chamada ao Gemini fora do index.ts, com `gemini.test.ts`
+  (Flash recusando, travado, 503, bloqueio de segurança). 132 testes Deno.
+- Disjuntor: Flash falhou → `life_config.modelo_chat_pausado_ate` = agora +
+  10 min; nesse tempo o chat vai direto no Lite (todas as instâncias).
+  Não precisa migração (usa a `life_config` que já existe).
+- Log do tempo de cada tentativa (`[gemini] ok/http/timeout ... ms`).
+- `scripts/smoke-life.mjs` + `.github/workflows/smoke-life.yml` (a cada 3 h,
+  e-mail se falhar; precisa dos secrets SMOKE_EMAIL e SMOKE_SENHA).
+- Regra nova no AGENTS.md: deploy da ai-proxy só conta como feito com o
+  teste de fumaça passando.
+
+**Atalho sem deploy:** pra o chat ficar rápido já, trocar o Secret
+`GEMINI_MODEL_CHAT` pra `gemini-3.5-flash-lite` no painel do Supabase
+(Edge Functions → Secrets). Vale na hora, sem publicar.
+
+**Se trocar de IA (sair do Gemini):** o ponto único agora é
+`supabase/functions/ai-proxy/gemini.ts` (chamarGemini devolve
+`ResultadoGemini`: texto, chamadas de ferramenta, tokens, custo). As
+ferramentas (function calling) estão declaradas no formato do Gemini em
+`index.ts` (FERRAMENTAS_LIFE) e precisariam ser convertidas.
+
+**APK de teste** pronto (run 41527734502, artifact `athoslife-teste-apk`),
+sem `VITE_RC_GOOGLE_KEY` (assinatura não funciona). Não entregar a
+testadores enquanto o chat estiver lento/sem a v45 ou o atalho acima.
+
+**Conta de teste criada** pra QA: `qa.life.*@athoslife-teste.dev`, uid
+`ac14e2ea-efd1-4297-9bb3-9ea10b5a231e`, plano trial até 04/11, memória
+ligada. A senha ficou só na pasta temporária (some ao desligar): pra usar no
+alarme, redefinir a senha pelo painel (Authentication → Users); pra não
+usar, apagar o usuário lá.
+
+**Teste "testador chato" ficou por fazer** (parou no chat fora do ar).
+
+**Pendências (ler isto primeiro):**
+1. Decidir a IA do chat (Flash quando voltar, Lite, ou outra). Depois:
+   autorizar o deploy da v45 e rodar `node scripts/smoke-life.mjs`.
+2. Rodar o teste completo de testador chato (roteiro de 29 do guia).
+3. Secrets no GitHub: `VITE_RC_GOOGLE_KEY`, `SMOKE_EMAIL`, `SMOKE_SENHA`.
+4. Merge do PR #3 depois dos testes; revogar o token do GitHub usado hoje.
+5. Psicólogo (Fase 5) e advogado (consentimento + resumos).
