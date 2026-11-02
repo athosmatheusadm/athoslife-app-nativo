@@ -497,6 +497,7 @@ export const fr: Mensagens = {
   planoDieta: {
     card: {
       doPlano: 'De ton plan',
+      doLife: 'Life l’a préparé',
       adicionarTudo: 'Tout ajouter',
       dica: 'Ajoute ce que tu as vraiment mangé.',
     },
@@ -586,6 +587,18 @@ export const fr: Mensagens = {
           `C’est fait ! ${n === 1 ? 'J’ai noté 1 aliment' : `J’ai noté ${n} aliments`} dans ${refeicao} (${kcal} kcal).`,
         cancelado: 'OK, je n’ai rien noté.',
         falhou: 'Je n’ai pas pu noter pour l’instant. Réessaie dans un moment.',
+      },
+      programar: {
+        titulo: (dias: string) => `Préparer · ${dias}`,
+        confirmar: 'Préparer',
+        explica: 'Ça apparaît en clair dans Repas. Quand tu manges, touche juste le ✓ du repas.',
+        totalPorDia: (kcal: string) => `Total par jour : ${kcal} kcal`,
+        pronto: (dias: string) => `C'est prêt (${dias}). Quand tu manges, touche le ✓ du repas dans Repas.`,
+        noLugar: (dias: string) => `Prêt · ${dias}`,
+        desfazer: 'Annuler',
+        desfeito: "Annulé, j'ai tout retiré.",
+        cancelado: "D'accord, je n'ai rien préparé.",
+        falhou: "Je n'ai pas pu maintenant. Réessaie dans un moment.",
       },
       peso: {
         confirmar: (kg: string) => `Je note ${kg} kg comme ton poids du jour ?`,

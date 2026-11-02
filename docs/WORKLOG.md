@@ -4129,3 +4129,26 @@ líquido do plano que menos rende.
 Validado: 87 testes Deno (6 novos), deno check. Não testado com o modelo
 (sem chave Gemini local): testar no app logo depois de publicar; volta
 rápida = republicar o commit da v39.
+
+## 2026-11-02 — Fase 1: refeições planejadas (docs/PLANO_LIFE_ACOES.md)
+
+- ai-proxy **v40 publicada**: prompt por assunto + o Life não empurra mais
+  pro "Montar dieta" (só se pedirem um plano inteiro com todas as letras,
+  uma vez).
+- `db/athoslife_refeicoes_planejadas_migration.sql` (**não aplicada**, falta
+  autorização): tabela própria, RLS do dono (testada logando como usuário,
+  com rollback), teto 200 itens, só os 4 fixos.
+- ai-proxy (`programar.ts` + `proporProgramacao`): ferramenta
+  `programar_refeicao` (hoje até +14 dias, máx. 7 dias por pedido; itens da
+  base ou `copiar_de` um dia já comido); card `programar_itens`; contexto
+  "Já deixado no lugar". Quem tem plano de dieta: o Life diz que cada dia já
+  mostra o plano apagadinho com ✓. **Só oferece se o app manda
+  `recursos: ['programar']`** — o APK antigo não tem o cartão.
+- App: `planejadasRepository` (offline), `ProgramarNoChat` (ajusta gramas,
+  confirma, Desfazer apaga o lote), Dieta mostra o planejado apagadinho no
+  lugar da sugestão do plano ("O Life deixou no lugar") e o ✓ registra e tira
+  do planejado; faixa de dias até +7; 5 idiomas; exportação LGPD inclui a
+  tabela.
+
+Validado: 91 testes Deno, deno check, typecheck, build. Não visto no
+aparelho. **Ordem:** migração → deploy ai-proxy → APK.

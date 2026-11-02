@@ -287,6 +287,17 @@ export type AcaoLife =
       refeicao: { tipo: 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'; extraId: string | null; nome: string }
       itens: ItemRegistroLife[]
     }
+  /**
+   * Refeições planejadas (02/11): o Life deixa comida no lugar em hoje ou nos
+   * próximos dias. O chat mostra o cartão; ao confirmar, o app grava em
+   * refeicoes_planejadas (aparece apagadinho na Dieta até o ✓).
+   */
+  | {
+      tipo: 'programar_itens'
+      dias: string[]
+      refeicoes: { tipo: 'cafe' | 'almoco' | 'lanche' | 'jantar'; itens: ItemRegistroLife[] }[]
+      origem: 'life' | 'dia'
+    }
 
 /** Um alimento do cartão de conferência (macros da base valem pra `porcaoG`). */
 export interface ItemRegistroLife {
@@ -360,6 +371,8 @@ export async function enviarMensagemChat(
     foco,
     id_envio: idEnvio,
     ...(diaLeve ? { dia_leve: diaLeve } : {}),
+    // O que este app sabe mostrar (02/11): o servidor só oferece a ação se o app tiver o cartão.
+    recursos: ['programar'],
   })
   return {
     resposta: cru.resposta,

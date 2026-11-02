@@ -491,6 +491,7 @@ export const es: Mensagens = {
   planoDieta: {
     card: {
       doPlano: 'De tu plan',
+      doLife: 'Life lo dejó listo',
       adicionarTudo: 'Agregar todo',
       dica: 'Agrega lo que comiste de verdad.',
     },
@@ -580,6 +581,18 @@ export const es: Mensagens = {
           `¡Listo! ${n === 1 ? 'Registré 1 ítem' : `Registré ${n} ítems`} en ${refeicao} (${kcal} kcal).`,
         cancelado: 'Va, no registré nada.',
         falhou: 'No pude registrarlo ahora. Intenta de nuevo en un rato.',
+      },
+      programar: {
+        titulo: (dias: string) => `Dejar listo · ${dias}`,
+        confirmar: 'Dejar listo',
+        explica: 'Queda tenue en Dieta. Cuando comas, solo toca el ✓ de la comida.',
+        totalPorDia: (kcal: string) => `Total por día: ${kcal} kcal`,
+        pronto: (dias: string) => `Listo, quedó preparado (${dias}). Cuando comas, toca el ✓ de la comida en Dieta.`,
+        noLugar: (dias: string) => `Listo · ${dias}`,
+        desfazer: 'Deshacer',
+        desfeito: 'Deshecho, quité todo.',
+        cancelado: 'Vale, no dejé nada listo.',
+        falhou: 'No pude ahora. Inténtalo de nuevo en un rato.',
       },
       peso: {
         confirmar: (kg: string) => `¿Anoto ${kg} kg como tu peso de hoy?`,

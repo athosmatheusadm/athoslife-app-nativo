@@ -491,6 +491,7 @@ export const en: Mensagens = {
   planoDieta: {
     card: {
       doPlano: 'From your plan',
+      doLife: 'Life set this up',
       adicionarTudo: 'Add all',
       dica: 'Add what you actually ate.',
     },
@@ -580,6 +581,18 @@ export const en: Mensagens = {
           `Done! Logged ${n} ${n === 1 ? 'item' : 'items'} to ${refeicao} (${kcal} kcal).`,
         cancelado: "Okay, I didn't log anything.",
         falhou: "I couldn't log it right now. Try again in a bit.",
+      },
+      programar: {
+        titulo: (dias: string) => `Set it up · ${dias}`,
+        confirmar: 'Set it up',
+        explica: "It shows faded in Diet. When you eat, just tap the meal's ✓.",
+        totalPorDia: (kcal: string) => `Total per day: ${kcal} kcal`,
+        pronto: (dias: string) => `Done, it's set up (${dias}). When you eat, tap the meal's ✓ in Diet.`,
+        noLugar: (dias: string) => `Set up · ${dias}`,
+        desfazer: 'Undo',
+        desfeito: 'Undone, I removed it all.',
+        cancelado: "Okay, I didn't set anything up.",
+        falhou: "I couldn't do it now. Try again in a bit.",
       },
       peso: {
         confirmar: (kg: string) => `Log ${kg} kg as today's weight?`,

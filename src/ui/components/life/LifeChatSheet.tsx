@@ -28,6 +28,7 @@ import {
 } from '@data/lifePausa'
 import { TextoLife } from './baloes'
 import { RegistroNoChat } from './RegistroNoChat'
+import { ProgramarNoChat } from './ProgramarNoChat'
 import { useI18n } from '@/i18n/I18nProvider'
 import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
@@ -98,6 +99,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   const [escolha, setEscolha] = useState<Extract<AcaoLife, { tipo: 'escolha' }> | null>(null)
   const pendentesMemoria = useRef<LembrancaPendente[]>([])
   const [registro, setRegistro] = useState<Extract<AcaoLife, { tipo: 'registrar_itens' }> | null>(null)
+  const [programar, setProgramar] = useState<Extract<AcaoLife, { tipo: 'programar_itens' }> | null>(null)
   const [pausado, setPausado] = useState(false)
   const [mudandoPausa, setMudandoPausa] = useState(false)
   // Mensagem que falhou: reenviar o mesmo texto usa o mesmo id (sem ação em dobro).
@@ -151,6 +153,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   function aplicarAcao(acao: AcaoLife | null) {
     setEscolha(acao?.tipo === 'escolha' ? acao : null)
     setRegistro(acao?.tipo === 'registrar_itens' ? acao : null)
+    // O cartão de "deixar no lugar" fica até a pessoa responder (vira Desfazer depois).
+    if (acao?.tipo === 'programar_itens') setProgramar(acao)
     if (acao?.tipo === 'refeicao_atualizada') avisarRegistroDoDia()
     if (acao?.tipo === 'peso_atualizado') {
       avisarRegistroDoDia()
@@ -428,6 +432,26 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
               onCancelar={() => {
                 setRegistro(null)
                 setHistorico((h) => [...h, { autor: 'life', texto: tc.registro.cancelado }])
+              }}
+            />
+          )}
+
+          {programar && (
+            <ProgramarNoChat
+              key={programar.dias.join() + programar.refeicoes.map((r) => r.tipo + r.itens.length).join()}
+              acao={programar}
+              onPronto={(texto) => {
+                setHistorico((h) => [...h, { autor: 'life', texto }])
+                avisarRegistroDoDia()
+              }}
+              onDesfeito={(texto) => {
+                setProgramar(null)
+                setHistorico((h) => [...h, { autor: 'life', texto }])
+                avisarRegistroDoDia()
+              }}
+              onCancelar={() => {
+                setProgramar(null)
+                setHistorico((h) => [...h, { autor: 'life', texto: tc.programar.cancelado }])
               }}
             />
           )}

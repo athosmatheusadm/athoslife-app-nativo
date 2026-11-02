@@ -30,6 +30,9 @@ import { macrosRestantes } from '@domain/rules/cozinha'
 import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { aoAplicarPlano } from '@app/eventosLife'
 import { planosRepository, type PlanoDietaSalvo } from '@data/repositories/planosRepository'
+import { planejadasRepository, type ItemPlanejado } from '@data/repositories/planejadasRepository'
+import { aoRegistrarNoDia } from '@data/registroDoDia'
+import { dataLocalISO } from '@domain/rules/datas'
 import { quantidade } from '@ui/components/life/MontarPlanoNoLife'
 
 type TipoFixo = 'cafe' | 'almoco' | 'lanche' | 'jantar'
@@ -90,7 +93,8 @@ export function DietScreen(props: {
   const [suplementoChave, setSuplementoChave] = useState<string | null>(null)
   const [clipboard, setClipboard] = useState<ItemRefeicao | null>(null)
 
-  const tira = useMemo(() => gerarTiraDias(), [])
+  // 7 dias à frente (02/11): dá pra ver o que o Life deixou no lugar na semana.
+  const tira = useMemo(() => gerarTiraDias(3, 7), [])
   const [diaSel, setDiaSel] = useState<Date>(() => new Date())
 
   const [refeicoes, setRefeicoes] = useState<Refeicao[]>(
@@ -180,8 +184,42 @@ export function DietScreen(props: {
     return aoAplicarPlano((p) => p.tipo === 'dieta' && carregar())
   }, [])
 
-  /** Itens do plano pra esta refeição que ainda não foram registrados (só os 4 fixos). */
+  // Refeições planejadas pelo Life (02/11): aparecem apagadinhas no lugar da
+  // sugestão do plano; o ✓ registra de verdade e tira do planejado.
+  const [planejadas, setPlanejadas] = useState<ItemPlanejado[]>([])
+  useEffect(() => {
+    const dia = dataLocalISO(diaSel)
+    let vivo = true
+    const carregar = () => void planejadasRepository.doDia(dia).then((l) => vivo && setPlanejadas(l)).catch(() => vivo && setPlanejadas([]))
+    carregar()
+    const tirar = aoRegistrarNoDia(carregar)
+    return () => {
+      vivo = false
+      tirar()
+    }
+  }, [diaSel])
+
+  /** O que o Life deixou no lugar nesta refeição (só os 4 fixos). */
+  function planejadasDa(r: Refeicao): ItemRefeicao[] {
+    if (r.tipo === 'extra') return []
+    const jaTem = new Set(r.itens.map((i) => i.nome))
+    return planejadas
+      .filter((p) => p.tipo === r.tipo && !jaTem.has(p.nome))
+      .map((p) => ({
+        id: `planejada:${p.id}`,
+        nome: p.nome,
+        quantidade: p.quantidade,
+        calorias: p.calorias,
+        proteina: p.proteina,
+        carboidrato: p.carboidrato,
+        gordura: p.gordura,
+      }))
+  }
+
+  /** Sugestão da refeição: o que o Life deixou no lugar vem antes do plano de referência. */
   function itensDoPlano(r: Refeicao): ItemRefeicao[] {
+    const doLife = planejadasDa(r)
+    if (doLife.length) return doLife
     const doPlano = r.tipo === 'extra' ? undefined : planoDieta?.refeicoes.find((x) => x.tipo === r.tipo)
     if (!doPlano) return []
     const jaTem = new Set(r.itens.map((i) => i.nome))
@@ -202,6 +240,12 @@ export function DietScreen(props: {
     return gravar(async () => {
       for (const { id: _temporario, ...item } of itens) {
         await itensRefeicaoRepository.adicionar(paraAlvo(r), diaSel, item)
+      }
+      // Comeu o que o Life deixou no lugar: sai do planejado (já está no diário).
+      const ids = itens.filter((i) => i.id.startsWith('planejada:')).map((i) => i.id.slice('planejada:'.length))
+      if (ids.length) {
+        await planejadasRepository.apagar(ids, dataLocalISO(diaSel))
+        setPlanejadas((l) => l.filter((p) => !ids.includes(p.id)))
       }
     })
   }
@@ -477,6 +521,7 @@ export function DietScreen(props: {
             onFechar={() => setSheetChave(null)}
             onAdicionarItem={(item) => void adicionarItem(r, item)}
             sugestoesPlano={itensDoPlano(r)}
+            sugestaoDoLife={planejadasDa(r).length > 0}
             onAdicionarPlano={(itens) => void registrarDoPlano(r, itens)}
             onRemoverItem={(itemId) => void removerItem(r, itemId)}
             onCopiarItem={(item) => {

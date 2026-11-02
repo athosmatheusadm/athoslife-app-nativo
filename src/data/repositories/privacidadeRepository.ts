@@ -27,6 +27,7 @@ const TABELAS_EXPORTAVEIS = [
   'receitas_criadas',
   'scan_historico',
   'life_pausas',
+  'refeicoes_planejadas',
 ] as const
 
 /** Pastas `<user_id>/` no Storage com arquivo da pessoa (Storage não apaga por SQL). */

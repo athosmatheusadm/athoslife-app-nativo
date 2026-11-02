@@ -498,6 +498,7 @@ export const hi: Mensagens = {
   planoDieta: {
     card: {
       doPlano: 'आपके प्लान से',
+      doLife: 'Life ने तैयार रखा',
       adicionarTudo: 'सब जोड़ें',
       dica: 'वही जोड़ें जो आपने सच में खाया।',
     },
@@ -587,6 +588,18 @@ export const hi: Mensagens = {
           `हो गया! ${refeicao} में ${n} ${n === 1 ? 'चीज़' : 'चीज़ें'} दर्ज कीं (${kcal} kcal)।`,
         cancelado: 'ठीक है, कुछ दर्ज नहीं किया।',
         falhou: 'अभी दर्ज नहीं हो सका। थोड़ी देर में दोबारा कोशिश करें।',
+      },
+      programar: {
+        titulo: (dias: string) => `पहले से तैयार · ${dias}`,
+        confirmar: 'तैयार रखें',
+        explica: 'यह डाइट में हल्का दिखेगा। खाने पर बस उस खाने का ✓ दबाइए।',
+        totalPorDia: (kcal: string) => `हर दिन कुल: ${kcal} kcal`,
+        pronto: (dias: string) => `हो गया, तैयार है (${dias})। खाने पर डाइट में उस खाने का ✓ दबाइए।`,
+        noLugar: (dias: string) => `तैयार · ${dias}`,
+        desfazer: 'वापस लें',
+        desfeito: 'वापस ले लिया, सब हटा दिया।',
+        cancelado: 'ठीक है, कुछ भी तैयार नहीं रखा।',
+        falhou: 'अभी नहीं हो पाया। थोड़ी देर में फिर कोशिश कीजिए।',
       },
       peso: {
         confirmar: (kg: string) => `आज का वज़न ${kg} kg लिख दूँ?`,

@@ -38,6 +38,10 @@ import { acharNaBase, lerItens, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO
 import { handleScan } from './scanner/analisar.ts'
 import { detectarAssuntos, fatoDoAssunto, type Assunto } from './assuntos.ts'
 import {
+  itemDaCopia, nomesDias, nomesRefeicoes, resolverDiasFuturos, resolverTipo, TIPOS_FIXOS as TIPOS_PLANEJAVEIS, TXT_PROGRAMAR,
+  type TipoFixo as TipoPlanejavel,
+} from './programar.ts'
+import {
   aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, type MemoriaCamada, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
 } from './memoria.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
@@ -830,14 +834,14 @@ QUANDO É GRAVE (desespero, "não aguento mais", "sou um peso", "ninguém liga p
 
 AÇÕES NO APP (você só executa as que estão listadas aqui, pelas ferramentas; se não houver nenhuma, nesta conversa você não registra nada):
 - Fora isso, você não registra, marca nem muda nada no app. Nunca diga "pronto", "coloquei" ou "registrei" por conta própria — quem confirma é o app, depois de gravar.
-- Nunca ofereça montar, colocar, programar ou mudar no app algo que estas ferramentas não fazem (ex.: "quer que eu coloque na sua dieta da semana?", "monto pra você?"). Hoje você não põe comida em dias futuros nem mexe no treino. Se a pessoa pedir, diga numa frase o que dá pra fazer agora (ex.: ela adiciona na refeição do dia, na tela de Dieta) e siga ajudando na conversa.
+- Nunca ofereça montar, colocar, programar ou mudar no app algo que estas ferramentas não fazem (ex.: "quer que eu coloque na sua dieta da semana?", "monto pra você?"). Hoje você não mexe no treino nem na ficha. Se a pessoa pedir, diga numa frase o que dá pra fazer agora (ex.: ela adiciona na refeição do dia, na tela de Dieta) e siga ajudando na conversa.
 
 PODE:
 - Conversar sobre o dia, humor, hábitos e consistência; celebrar esforço; acolher dia ruim sem forçar positividade.
 - Lembrar de leve registros do app (água, refeições, hábitos) usando o contexto abaixo.
 
 NUNCA:
-- Montar dieta ou cardápio, definir calorias/macros-alvo para a pessoa.
+- Montar plano de dieta ou cardápio inteiro do nada, definir calorias/macros-alvo para a pessoa. (Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao.)
 - Dizer QUAL suplemento ou remédio tomar, nem QUANTO (dose, gramas, scoops, horários).
 - Recomendar treino, exercícios, séries, repetições ou carga.
 - Diagnosticar nada físico ou emocional, nem fazer terapia.
@@ -892,13 +896,27 @@ const MOD_HABITOS = `HÁBITOS (a conversa é sobre hábitos):
 const MOD_PESO = `PESO: você NÃO grava pesagem nem meta de peso nesta conversa — quem grava é o app, quando a pessoa escreve do jeito certo. Nunca diga "anotei", "registrei" ou "salvei" um peso. Se ela contar o peso de um jeito que não foi gravado, peça numa frase pra mandar assim: "pesei 80 kg" (no idioma dela: "I weigh 80 kg" / "hoy peso 80 kg").`
 const ACAO_COMIDA = `- registrar_alimentos: quando a pessoa contar o que comeu pra registrar ("almocei arroz, feijão e um bife", "comi 2 ovos no café", "registra uma banana", "jantei 200 g de frango e salada"). Separe cada alimento com a quantidade e a unidade que ela disse (g, ml, unidade, colher de sopa, concha, fatia, xícara, copo); se ela não disse quantidade, deixe vazio. Refeição: a que ela disse (cafe, almoco, lanche, jantar ou o nome de uma extra dela); se não disse, deixe vazio. O app mostra um cartão pra ela conferir e confirmar — não escreva kcal nem diga que registrou. Se ela está desabafando sobre o que comeu (culpa, "comi demais"), acolha primeiro e só ofereça registrar; não chame a ferramenta sem ela querer.
 - repetir_refeicao: quando a pessoa pedir pra repetir/copiar uma refeição já registrada ("coloca na janta o mesmo de ontem", "repete o café de hoje no lanche"). Origem e destino vêm da lista REFEIÇÕES do contexto — as 4 fixas ou as extras dela, pelo nome. Se não der pra saber qual é a origem ou o destino, pergunte antes ("Você quer repetir o jantar de ontem?"). Se ela já disse se quer somar ao que tem ou trocar, mande o modo.`
+const ACAO_PROGRAMAR = `- programar_refeicao: quando ela pedir pra deixar comida no lugar hoje ou num dia que vem ("põe pão com ovo no café de amanhã", "deixa os jantares de quarta e sexta prontos", "deixa amanhã igual a hoje"), inclusive uma ideia que você deu e ela aceitou. Se a conversa já diz o dia e a refeição, use e diga as datas; se não der pra saber, pergunte uma vez, curto ("Em quais dias, e no jantar?"). Pra repetir o que ela já comeu, use copiar_de. Fica apagadinho na Dieta e ela toca no ✓ da refeição quando comer — explique isso uma vez. O app mostra um cartão pra conferir; não diga que colocou.
+- Se o contexto tem "Plano de referência de dieta", cada dia da Dieta JÁ mostra esse plano apagadinho em cada refeição, com o ✓ pra registrar. Quando ela quiser "o dia de amanhã no lugar" e tiver plano, diga isso (não precisa programar nada); use programar_refeicao só pra trocar ou acrescentar algo.`
 const ACAO_EMOCIONAL = `- pausar_life_hoje: ver PAUSA DO DIA.`
 
-/** Monta o prompt do chat com a base e só os módulos do assunto. */
-function montarPromptLife(assuntos: Set<Assunto>): string {
-  const acoes = [assuntos.has('comida') ? ACAO_COMIDA : '', assuntos.has('emocional') ? ACAO_EMOCIONAL : ''].filter(Boolean).join('\n')
+const PAREN_PROGRAMAR = ' (Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao.)'
+
+/**
+ * Monta o prompt do chat com a base e só os módulos do assunto.
+ * `programar`: o app sabe mostrar o cartão de "deixar no lugar" (APK novo);
+ * no antigo o Life não oferece dia futuro (senão promete um cartão que não aparece).
+ */
+function montarPromptLife(assuntos: Set<Assunto>, programar = false): string {
+  const comida = assuntos.has('comida')
+  const acoes = [comida ? ACAO_COMIDA : '', comida && programar ? ACAO_PROGRAMAR : '', assuntos.has('emocional') ? ACAO_EMOCIONAL : '']
+    .filter(Boolean).join('\n')
   const titulo = 'nesta conversa você não registra nada):'
-  const base = acoes ? PROMPT_BASE.replace(titulo, `${titulo}\n${acoes}`) : PROMPT_BASE
+  let base = acoes ? PROMPT_BASE.replace(titulo, `${titulo}\n${acoes}`) : PROMPT_BASE
+  if (!programar) {
+    base = base.replace(PAREN_PROGRAMAR, '')
+      .replace('Hoje você não mexe no treino nem na ficha.', 'Hoje você não põe comida em dias futuros nem mexe no treino.')
+  }
   const mods = [
     assuntos.has('emocional') ? MOD_EMOCIONAL : '',
     assuntos.has('comida') ? MOD_COMIDA : '',
@@ -1314,6 +1332,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     pausadoHoje: ctxDia.pausado,
   })
   const contexto = textoContexto(ctxDia, assuntos)
+  const programar = Array.isArray(corpo.recursos) && corpo.recursos.includes('programar')
   const memoriasDoAssunto = pedeTudo
     ? memorias
     : (memorias as MemoriaCamada[]).filter((m) => (m.nivel ?? 'fato') !== 'fato' || m.fixada || fatoDoAssunto(m.chave, assuntos))
@@ -1352,7 +1371,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     ? await catalogoCozinha(sb, userId, loc.idioma, pago, falaDaPessoa)
     : null
   const sistema =
-    `${montarPromptLife(assuntos)}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
+    `${montarPromptLife(assuntos, programar)}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
     linhaDiaLeve(corpo.dia_leve) +
     adaptativo +
     (CONTEXTO_CAMADAS ? blocoConversaAnterior(camadas.linhas) + REGRA_RESUMO : '') +
@@ -1364,7 +1383,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     `\n\nLINHA DE APOIO DO PAÍS DELA (use só quando houver risco ou desespero):\n${linhaApoio(loc)}`
 
   // 4. IA.
-  const ferramentas = ferramentasPara(assuntos)
+  const ferramentas = ferramentasPara(assuntos, programar)
   let g = await chamarGemini({
     systemInstruction: { parts: [{ text: sistema }] },
     contents: conteudos,
@@ -1544,6 +1563,9 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
     sb.from('triagens_saude')
       .select('apto_treino, apto_dieta, motivos, ciente_orientacao')
       .eq('user_id', userId).order('criado_em', { ascending: false }).limit(1).maybeSingle(),
+    // Refeições planejadas pelo Life (02/11) — o que já está no lugar e falta o ✓.
+    sb.from('refeicoes_planejadas').select('data, tipo, nome').eq('user_id', userId)
+      .gte('data', hoje).lte('data', somarDias(hoje, 7)).order('data').limit(60),
   ])
   // deno-lint-ignore no-explicit-any
   const val = (i: number): any => (r[i].status === 'fulfilled' ? (r[i] as PromiseFulfilledResult<any>).value : null)
@@ -1646,6 +1668,15 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
   }
 
   add(listaRefeicoes(itensDoisDias, (val(9)?.data ?? []) as ExtraContexto[], hoje, ontem), ['comida'])
+  const planejadas = (val(12)?.data ?? []) as { data: string; tipo: TipoPlanejavel; nome: string }[]
+  if (planejadas.length) {
+    const grupos = new Map<string, string[]>()
+    for (const x of planejadas) {
+      const k = `${rotuloDia(x.data, hoje, 'pt-BR')} ${x.tipo}`
+      grupos.set(k, [...(grupos.get(k) ?? []), x.nome])
+    }
+    add(`Já deixado no lugar (planejado, falta o ✓ dela): ${[...grupos].map(([k, v]) => `${k}: ${v.slice(0, 5).join(', ')}`).join(' · ')}`, ['comida'])
+  }
 
   const peso = val(7)?.data?.[0]
   if (peso) add(`Último peso: ${peso.peso_kg}kg (${peso.data})`, ['peso'])
@@ -1752,9 +1783,9 @@ function listaRefeicoes(itens: ItemContexto[], extras: ExtraContexto[], hoje: st
 }
 
 /** Só as ferramentas do assunto: comida → registrar/repetir; desabafo → pausar. */
-function ferramentasPara(assuntos: Set<Assunto>): typeof FERRAMENTAS_LIFE | null {
+function ferramentasPara(assuntos: Set<Assunto>, programar = false): typeof FERRAMENTAS_LIFE | null {
   const nomes = new Set<string>([
-    ...(assuntos.has('comida') ? ['registrar_alimentos', 'repetir_refeicao'] : []),
+    ...(assuntos.has('comida') ? ['registrar_alimentos', 'repetir_refeicao', ...(programar ? ['programar_refeicao'] : [])] : []),
     ...(assuntos.has('emocional') ? ['pausar_life_hoje'] : []),
   ])
   if (!nomes.size) return null
@@ -1820,6 +1851,40 @@ const FERRAMENTAS_LIFE = [
             },
           },
           required: ['itens'],
+        },
+      },
+      {
+        name: 'programar_refeicao',
+        description:
+          'Deixa no lugar, em hoje ou nos próximos dias (até 14), comida que a pessoa pediu ou aceitou ("põe pão com ovo no café de amanhã", "coloca esse wrap no jantar de quarta e sexta", "deixa amanhã igual a hoje"). Não é registro do que ela comeu: fica apagadinho na Dieta e ela toca no ✓ da refeição quando comer. O app mostra um cartão pra conferir; nada é gravado sem ela confirmar. Não monta plano nem cardápio inteiro do nada.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            dias: {
+              type: 'ARRAY',
+              items: { type: 'STRING' },
+              description: "Datas AAAA-MM-DD contadas a partir da linha Agora, ou 'hoje'/'amanha'. 'Quarta e sexta' e 'meus dias de curso' viram datas.",
+            },
+            refeicao: { type: 'STRING', description: 'cafe, almoco, lanche ou jantar. Vazio = o dia todo (só com copiar_de).' },
+            itens: {
+              type: 'ARRAY',
+              description: 'Os alimentos, um por item (máx. 12). Vazio quando for copiar um dia.',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  nome: { type: 'STRING', description: 'Nome simples do alimento, no idioma da pessoa' },
+                  quantidade: { type: 'NUMBER', description: 'Número que ela disse. Vazio se não disse.' },
+                  unidade: { type: 'STRING', description: 'g, ml, unidade, colher de sopa, fatia, xícara. Vazio se não disse.' },
+                },
+                required: ['nome'],
+              },
+            },
+            copiar_de: {
+              type: 'STRING',
+              description: "Quando ela quer repetir o que JÁ COMEU num dia ('deixa amanhã igual a hoje'): 'hoje', 'ontem' ou AAAA-MM-DD (até 30 dias atrás).",
+            },
+          },
+          required: ['dias'],
         },
       },
       {
@@ -2084,6 +2149,13 @@ type AcaoCliente =
   }
   | { tipo: 'pausa'; dia: string }
   | { tipo: 'escolha'; id: string; opcoes: { valor: Escolha; rotulo: string }[] }
+  /** Refeições planejadas (02/11): o app grava em refeicoes_planejadas quando a pessoa confirma. */
+  | {
+    tipo: 'programar_itens'
+    dias: string[]
+    refeicoes: { tipo: TipoPlanejavel; itens: ItemAchado[] }[]
+    origem: 'life' | 'dia'
+  }
 
 interface ResultadoAcao {
   resposta: string
@@ -2209,6 +2281,7 @@ async function executarFerramenta(
   }
 
   if (chamada.nome === 'registrar_alimentos') return await proporRegistro(sb, userId, loc, chamada.args, hoje)
+  if (chamada.nome === 'programar_refeicao') return await proporProgramacao(sb, userId, loc, chamada.args, hoje)
 
   if (chamada.nome !== 'repetir_refeicao') return null
   const id = idEnvio ?? crypto.randomUUID()
@@ -2250,6 +2323,59 @@ async function executarFerramenta(
 
   const modo = a.modo === 'adicionar' || a.modo === 'substituir' ? a.modo : 'perguntar'
   return executarRepeticao(sb, userId, id, { origem: o.ref, destino: d.ref, modo, forcar: false }, loc.idioma, hoje)
+}
+
+/**
+ * Refeições planejadas (02/11): acha os alimentos (ou copia um dia já comido)
+ * e devolve o cartão. Não grava nada — o app grava em refeicoes_planejadas
+ * quando a pessoa confirma.
+ */
+async function proporProgramacao(
+  sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string,
+): Promise<ResultadoAcao> {
+  const tp = TXT_PROGRAMAR[loc.idioma]
+  const tr = TXT_REGISTRO[loc.idioma]
+  const dias = resolverDiasFuturos(a.dias, hoje)
+  if (!dias.length) return { resposta: tp.qualDia, acao: null, status: 'programar_sem_dia' }
+  const tipo = resolverTipo(a.refeicao)
+  const copiarDe = a.copiar_de ? resolverDia(a.copiar_de, hoje) : null
+
+  let refeicoes: { tipo: TipoPlanejavel; itens: ItemAchado[] }[] = []
+  const avisos: string[] = []
+  if (copiarDe) {
+    if (copiarDe > hoje || copiarDe < somarDias(hoje, -30)) return { resposta: tp.qualDia, acao: null, status: 'programar_copia_invalida' }
+    let q = sb.from('itens_refeicao').select('tipo, nome, quantidade_texto, calorias, proteina, carboidrato, gordura')
+      .eq('user_id', userId).eq('data', copiarDe).is('refeicao_extra_id', null).order('created_at').limit(48)
+    if (tipo) q = q.eq('tipo', tipo)
+    const { data } = await q
+    const linhas = (data ?? []) as { tipo: string; nome: string; quantidade_texto: string | null; calorias: number | null; proteina: number | null; carboidrato: number | null; gordura: number | null }[]
+    refeicoes = TIPOS_PLANEJAVEIS
+      .map((t) => ({ tipo: t, itens: linhas.filter((l) => l.tipo === t).map((l, i) => itemDaCopia(l, i)) }))
+      .filter((r) => r.itens.length)
+    if (!refeicoes.length) {
+      return { resposta: tp.nadaNoDia(rotuloDia(copiarDe, hoje, loc.idioma)), acao: null, status: 'programar_copia_vazia' }
+    }
+  } else {
+    if (!tipo) return { resposta: tp.qualRefeicao, acao: null, status: 'programar_sem_refeicao' }
+    const itens = lerItens(a.itens)
+    if (!itens.length) return { resposta: tr.nada, acao: null, status: 'programar_vazio' }
+    const [{ achados, faltando }, perfil] = await Promise.all([
+      acharNaBase(sb, itens, loc.idioma, loc.pais),
+      sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle(),
+    ])
+    if (!achados.length) return { resposta: tp.nada, acao: null, status: 'programar_nada' }
+    if (faltando.length) avisos.push(tr.faltando(lista(faltando, loc.idioma)))
+    const c = conflitosRestricao(achados.map((x) => x.nome), (perfil.data?.restricoes ?? []) as string[], loc.idioma)
+    if (c.itens.length) avisos.push(tr.restricao(lista(c.itens, loc.idioma), lista(c.rotulos, loc.idioma)))
+    refeicoes = [{ tipo, itens: achados }]
+  }
+
+  const resposta = [tp.confira(nomesRefeicoes(refeicoes.map((r) => r.tipo), loc.idioma), nomesDias(dias, hoje, loc.idioma)), ...avisos].join(' ')
+  return {
+    resposta,
+    acao: { tipo: 'programar_itens', dias, refeicoes, origem: copiarDe ? 'dia' : 'life' },
+    status: 'programar_proposto',
+  }
 }
 
 /**

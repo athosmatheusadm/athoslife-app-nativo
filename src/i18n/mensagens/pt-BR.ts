@@ -504,6 +504,7 @@ export const ptBR = {
   planoDieta: {
     card: {
       doPlano: 'Do seu plano',
+      doLife: 'O Life deixou no lugar',
       adicionarTudo: 'Adicionar tudo',
       dica: 'Adicione o que você comeu de verdade.',
     },
@@ -593,6 +594,18 @@ export const ptBR = {
           `Pronto! ${n === 1 ? 'Registrei 1 item' : `Registrei ${n} itens`} em ${refeicao} (${kcal} kcal).`,
         cancelado: 'Beleza, não registrei nada.',
         falhou: 'Não consegui registrar agora. Tenta de novo daqui a pouco.',
+      },
+      programar: {
+        titulo: (dias: string) => `Deixar no lugar · ${dias}`,
+        confirmar: 'Deixar no lugar',
+        explica: 'Fica apagadinho na Dieta. Quando comer, é só tocar no ✓ da refeição.',
+        totalPorDia: (kcal: string) => `Total por dia: ${kcal} kcal`,
+        pronto: (dias: string) => `Pronto, ficou no lugar (${dias}). Quando comer, toca no ✓ da refeição na Dieta.`,
+        noLugar: (dias: string) => `No lugar · ${dias}`,
+        desfazer: 'Desfazer',
+        desfeito: 'Desfeito, tirei tudo de lá.',
+        cancelado: 'Beleza, não deixei nada no lugar.',
+        falhou: 'Não consegui agora. Tenta de novo daqui a pouco.',
       },
       peso: {
         confirmar: (kg: string) => `Anoto ${kg} kg como seu peso de hoje?`,

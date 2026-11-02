@@ -28,6 +28,8 @@ export function MealSheet(props: {
   onAdicionarItem: (item: ItemRefeicao) => void
   /** Itens do plano de referência ainda não registrados nesta refeição. */
   sugestoesPlano?: readonly ItemRefeicao[]
+  /** A sugestão é o que o Life deixou no lugar (não o plano de referência). */
+  sugestaoDoLife?: boolean
   onAdicionarPlano?: (itens: readonly ItemRefeicao[]) => void
   onRemoverItem: (itemId: string) => void
   onCopiarItem: (item: ItemRefeicao) => void
@@ -206,7 +208,7 @@ export function MealSheet(props: {
           {sugestoes.length > 0 && props.onAdicionarPlano && (
             <div className="mt-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-micro font-semibold text-brand"><ActivityIcon icone="brilho" tile={false} cor="inherit" className="mr-1 inline-flex h-3.5 w-3.5 align-[-2px]" />{m.planoDieta.card.doPlano}</span>
+                <span className="text-micro font-semibold text-brand"><ActivityIcon icone="brilho" tile={false} cor="inherit" className="mr-1 inline-flex h-3.5 w-3.5 align-[-2px]" />{props.sugestaoDoLife ? m.planoDieta.card.doLife : m.planoDieta.card.doPlano}</span>
                 {sugestoes.length > 1 && (
                   <button type="button" onClick={() => props.onAdicionarPlano!(sugestoes)} className="min-h-11 px-2 text-micro font-semibold text-brand active:opacity-70">
                     {m.planoDieta.card.adicionarTudo}
