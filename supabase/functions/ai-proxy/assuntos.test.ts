@@ -50,3 +50,9 @@ Deno.test('fato da memória entra pelo assunto da chave', () => {
   ok(fatoDoAssunto('rotina.curso_dias', nada)) // rotina vai sempre
   ok(fatoDoAssunto(null, nada))
 })
+
+Deno.test('quem escorregou liga hábitos (pra anotar o tropeço)', () => {
+  igual(a('comi um doce agora, não aguentei'), ['comida', 'habitos'])
+  igual(a('jaquei no fim de semana'), ['habitos'])
+  igual(a('furei a dieta com pizza'), ['comida', 'habitos'])
+})

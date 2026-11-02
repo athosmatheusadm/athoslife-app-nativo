@@ -41,6 +41,7 @@ import {
   itemDaCopia, nomesDias, nomesRefeicoes, resolverDiasFuturos, resolverTipo, TIPOS_FIXOS as TIPOS_PLANEJAVEIS, TXT_PROGRAMAR,
   type TipoFixo as TipoPlanejavel,
 } from './programar.ts'
+import { acharHabito, lerHora, TXT_TROPECO, type HabitoEvitar } from './tropeco.ts'
 import {
   aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, type MemoriaCamada, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
 } from './memoria.ts'
@@ -892,7 +893,8 @@ const MOD_TREINO = `TREINO (a conversa é sobre treino):
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude séries, repetições, carga ou dias do plano — se a pessoa quiser mudar, diga que ela ajusta na ficha ou monta de novo no botão "Montar treino" (chat do Life no Treino).`
 const MOD_HABITOS = `HÁBITOS (a conversa é sobre hábitos):
 - Hábito de EVITAR algo (ex.: doce) e a pessoa pede justamente isso: atenda o pedido, sem sermão e sem negar, e reconheça de leve o esforço uma vez (ex.: "Tá firme há 5 dias no doce — se quiser uma versão mais leve: ..."). Use as alternativas que a tela de Hábitos mostra (no contexto) quando couber. Não repita o hábito como advertência a cada mensagem.
-- Hábitos: use os gatilhos, o horário de risco, a melhor sequência e os tropeços do contexto pra ajudar no momento — tropeço é parte do caminho, nunca fracasso.`
+- Hábitos: use os gatilhos, o horário de risco, a melhor sequência e os tropeços do contexto pra ajudar no momento — tropeço é parte do caminho, nunca fracasso.
+- Ela contou que escorregou num hábito de EVITAR do contexto ("comi um doce agora", "não aguentei e tomei refri"): acolha sem drama nem sermão e chame registrar_tropeco — o app pergunta com um toque se anota. Se foi ontem e ela não disse a hora, pergunte antes. Quando ela só contou o tropeço, não use registrar_alimentos (só se ela pedir pra registrar a comida). Se ela disser "não precisa anotar", não anote.`
 const MOD_PESO = `PESO: você NÃO grava pesagem nem meta de peso nesta conversa — quem grava é o app, quando a pessoa escreve do jeito certo. Nunca diga "anotei", "registrei" ou "salvei" um peso. Se ela contar o peso de um jeito que não foi gravado, peça numa frase pra mandar assim: "pesei 80 kg" (no idioma dela: "I weigh 80 kg" / "hoy peso 80 kg").`
 const ACAO_COMIDA = `- registrar_alimentos: quando a pessoa contar o que comeu pra registrar ("almocei arroz, feijão e um bife", "comi 2 ovos no café", "registra uma banana", "jantei 200 g de frango e salada"). Separe cada alimento com a quantidade e a unidade que ela disse (g, ml, unidade, colher de sopa, concha, fatia, xícara, copo); se ela não disse quantidade, deixe vazio. Refeição: a que ela disse (cafe, almoco, lanche, jantar ou o nome de uma extra dela); se não disse, deixe vazio. O app mostra um cartão pra ela conferir e confirmar — não escreva kcal nem diga que registrou. Se ela está desabafando sobre o que comeu (culpa, "comi demais"), acolha primeiro e só ofereça registrar; não chame a ferramenta sem ela querer.
 - repetir_refeicao: quando a pessoa pedir pra repetir/copiar uma refeição já registrada ("coloca na janta o mesmo de ontem", "repete o café de hoje no lanche"). Origem e destino vêm da lista REFEIÇÕES do contexto — as 4 fixas ou as extras dela, pelo nome. Se não der pra saber qual é a origem ou o destino, pergunte antes ("Você quer repetir o jantar de ontem?"). Se ela já disse se quer somar ao que tem ou trocar, mande o modo.`
@@ -1787,6 +1789,7 @@ function ferramentasPara(assuntos: Set<Assunto>, programar = false): typeof FERR
   const nomes = new Set<string>([
     ...(assuntos.has('comida') ? ['registrar_alimentos', 'repetir_refeicao', ...(programar ? ['programar_refeicao'] : [])] : []),
     ...(assuntos.has('emocional') ? ['pausar_life_hoje'] : []),
+    ...(assuntos.has('habitos') ? ['registrar_tropeco'] : []),
   ])
   if (!nomes.size) return null
   return [{ functionDeclarations: FERRAMENTAS_LIFE[0].functionDeclarations.filter((f) => nomes.has(f.name)) }] as typeof FERRAMENTAS_LIFE
@@ -1885,6 +1888,21 @@ const FERRAMENTAS_LIFE = [
             },
           },
           required: ['dias'],
+        },
+      },
+      {
+        name: 'registrar_tropeco',
+        description:
+          'Prepara a anotação de um tropeço num hábito de EVITAR que está no contexto, quando a pessoa contar que escorregou ("comi um doce agora", "tomei refri ontem à noite"). O app pergunta com um toque se anota; nada é gravado sem ela tocar em Anotar. Se foi ontem e ela não disse a hora, pergunte a hora aproximada antes.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            habito: { type: 'STRING', description: 'Nome do hábito como está no contexto (ou o que ela disse: "doce")' },
+            dia: { type: 'STRING', description: "'hoje' (padrão) ou 'ontem'" },
+            hora: { type: 'STRING', description: 'HH:MM, se ela disse. Vazio = agora.' },
+            gatilho: { type: 'STRING', description: 'O que puxou, se ela disse (tédio, ansiedade, festa, cansaço)' },
+          },
+          required: ['habito'],
         },
       },
       {
@@ -2282,6 +2300,7 @@ async function executarFerramenta(
 
   if (chamada.nome === 'registrar_alimentos') return await proporRegistro(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'programar_refeicao') return await proporProgramacao(sb, userId, loc, chamada.args, hoje)
+  if (chamada.nome === 'registrar_tropeco') return await proporTropeco(sb, userId, loc, chamada.args, hoje)
 
   if (chamada.nome !== 'repetir_refeicao') return null
   const id = idEnvio ?? crypto.randomUUID()
@@ -2323,6 +2342,63 @@ async function executarFerramenta(
 
   const modo = a.modo === 'adicionar' || a.modo === 'substituir' ? a.modo : 'perguntar'
   return executarRepeticao(sb, userId, id, { origem: o.ref, destino: d.ref, modo, forcar: false }, loc.idioma, hoje)
+}
+
+interface ArgsTropeco { vicio_id: string; nome: string; data: string; hora: string | null; gatilho: string | null }
+
+/**
+ * Tropeço contado no chat (02/11, Fase 2): acha o hábito de evitar e pergunta
+ * com um toque se anota (life_acoes, botões que o APK atual já mostra). Só
+ * grava em recaidas no "Anotar" (handleAcao).
+ */
+async function proporTropeco(
+  sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string,
+): Promise<ResultadoAcao> {
+  const tt = TXT_TROPECO[loc.idioma]
+  const { data: perfil } = await sb.from('profiles').select('consentimento_habitos').eq('id', userId).maybeSingle()
+  if (perfil?.consentimento_habitos !== true) return { resposta: tt.semHabito, acao: null, status: 'tropeco_sem_consentimento' }
+  const { data } = await sb.from('vicios_user').select('id, nome, categoria').eq('user_id', userId).eq('ativo', true).limit(20)
+  const evitar = ((data ?? []) as HabitoEvitar[]).filter((h) => !ehConstruir(h.categoria))
+  if (!evitar.length) return { resposta: tt.semHabito, acao: null, status: 'tropeco_sem_habito' }
+  const habito = acharHabito(texto(a.habito, 60), evitar)
+  if (!habito) return { resposta: tt.qualHabito(lista(evitar.map((h) => `"${h.nome}"`), loc.idioma)), acao: null, status: 'tropeco_ambiguo' }
+
+  const ontem = normalizar(String(a.dia ?? '')) === 'ontem' || ['yesterday', 'ayer', 'hier'].includes(normalizar(String(a.dia ?? '')))
+  const hora = lerHora(a.hora)
+  if (ontem && !hora) return { resposta: tt.qualHora, acao: null, status: 'tropeco_sem_hora' }
+  const args: ArgsTropeco = {
+    vicio_id: habito.id, nome: habito.nome, data: ontem ? somarDias(hoje, -1) : hoje, hora, gatilho: texto(a.gatilho, 60).trim() || null,
+  }
+  const id = crypto.randomUUID()
+  const { error } = await sb.from('life_acoes').insert({
+    id, user_id: userId, tipo: 'registrar_tropeco', status: 'pendente', args,
+    expira_em: new Date(Date.now() + 60 * 60_000).toISOString(),
+  })
+  if (error) {
+    // Sem a migração (check do tipo): acolhe e manda pra tela, sem prometer botão.
+    console.warn('[tropeco] oferta falhou', error.message)
+    return { resposta: tt.falhou, acao: null, status: 'tropeco_falhou' }
+  }
+  return {
+    resposta: tt.pergunta(habito.nome),
+    acao: { tipo: 'escolha', id, opcoes: [{ valor: 'salvar', rotulo: tt.anotar }, { valor: 'cancelar', rotulo: tt.deixa }] },
+    status: 'tropeco_proposto',
+  }
+}
+
+async function anotarTropeco(sb: Sb, userId: string, idAcao: string, args: ArgsTropeco, idioma: Idioma): Promise<ResultadoAcao> {
+  const tt = TXT_TROPECO[idioma]
+  const { error } = await sb.from('recaidas').insert({
+    user_id: userId, vicio_id: args.vicio_id, data: args.data, gatilho: args.gatilho, contexto: 'chat',
+    // Sem hora: o gatilho do banco põe a hora local de agora (fuso da pessoa).
+    ...(args.hora ? { horario: args.hora } : {}),
+  })
+  const r: ResultadoAcao = error
+    ? { resposta: tt.falhou, acao: null, status: 'tropeco_falhou' }
+    : { resposta: tt.anotado, acao: { tipo: 'refeicao_atualizada', data: args.data }, status: 'tropeco_ok' }
+  if (error) console.error('[tropeco] gravar falhou', error.message)
+  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r)
+  return r
 }
 
 /**
@@ -2456,8 +2532,16 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
     r = { resposta: t.expirou, acao: null, status: 'acao_expirada' }
     await fecharAcao(sb, id, 'cancelada', r)
   } else if (escolha === 'cancelar') {
-    r = { resposta: pend.tipo === 'salvar_restricao' ? t.restricaoNao : t.cancelado, acao: null, status: 'acao_cancelada' }
+    const resposta = pend.tipo === 'salvar_restricao' ? t.restricaoNao
+      : pend.tipo === 'registrar_tropeco' ? TXT_TROPECO[loc.idioma].naoAnotei : t.cancelado
+    r = { resposta, acao: null, status: 'acao_cancelada' }
     await fecharAcao(sb, id, 'cancelada', r)
+  } else if (pend.tipo === 'registrar_tropeco') {
+    if (escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
+    const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
+      .eq('id', id).eq('status', 'pendente').select('id')
+    if (!travou?.length) return json({ resposta: t.andamento, acao: null })
+    r = await anotarTropeco(sb, userId, id, pend.args as ArgsTropeco, loc.idioma)
   } else if (pend.tipo === 'salvar_restricao' || escolha === 'salvar') {
     // Botão de outro tipo de ação (ex.: "salvar" numa cópia de refeição): ignora.
     if (pend.tipo !== 'salvar_restricao' || escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
@@ -2477,7 +2561,11 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
     r = await executarRepeticao(sb, userId, id, novo, loc.idioma, hoje)
   }
 
-  await gravarTroca(sb, userId, chegouEm, { texto: t.escolha[escolha as Escolha] }, { texto: r.resposta })
+  // O que a pessoa tocou, com o rótulo que ela viu.
+  const rotulo = pend?.tipo === 'registrar_tropeco'
+    ? (escolha === 'salvar' ? TXT_TROPECO[loc.idioma].anotar : TXT_TROPECO[loc.idioma].deixa)
+    : t.escolha[escolha as Escolha]
+  await gravarTroca(sb, userId, chegouEm, { texto: rotulo }, { texto: r.resposta })
   await auditar(sb, userId, 'acao', r.status)
   return json({ resposta: r.resposta, acao: r.acao })
 }

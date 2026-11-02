@@ -35,6 +35,9 @@ const PALAVRAS: Record<Assunto, RegExp> = {
     'habito\\w*', 'sequencia', 'streak', 'vicio\\w*', 'parar de', 'tropec\\w*', 'recai\\w*', 'deslize', 'gatilho\\w*', 'leitura',
     'ler', 'li', 'meditar', 'meditac\\w*', 'dormir', 'dormi', 'sono', 'beber agua', 'firme', 'dias sem', 'resisti\\w*', 'escorreg\\w*',
     'habit\\w*', 'craving', 'relapse', 'habitud\\w*', 'recaida',
+    // quem escorregou (02/11): liga o hábito pra o Life poder anotar o tropeço
+    'nao aguentei', 'nao resisti', 'furei', 'quebrei', 'cedi', 'escorreguei', 'jaquei', 'pe na jaca', 'chutei o balde',
+    'sai da dieta', 'cai em tentacao', 'couldn\'t resist', 'gave in', 'no aguante', 'no resisti', 'cai',
   ].join('|') + ')\\b'),
   emocional: new RegExp('\\b(' + [
     'triste\\w*', 'tristeza', 'cansad\\w*', 'cansaco', 'exaust\\w*', 'esgotad\\w*', 'ansios\\w*', 'ansiedade', 'estress\\w*',

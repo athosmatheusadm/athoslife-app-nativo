@@ -29,7 +29,7 @@ app → entra no próximo APK.
 - Prompt: `programar_refeicao` nas ações; "colocar nas refeições não é montar
   dieta".
 
-## Fase 2 — Tropeço pelo chat
+## Fase 2 — Tropeço pelo chat  ← código pronto (falta migração + deploy; não precisa de APK)
 - Gatilho do horário local em `recaidas` (guia item 4).
 - `registrar_tropeco` com confirmação em um toque (sem gastar mensagem).
 

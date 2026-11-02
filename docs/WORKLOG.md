@@ -4152,3 +4152,23 @@ rápida = republicar o commit da v39.
 
 Validado: 91 testes Deno, deno check, typecheck, build. Não visto no
 aparelho. **Ordem:** migração → deploy ai-proxy → APK.
+
+## 2026-11-02 (2) — Fase 2: tropeço pelo chat (não precisa de APK)
+
+- `db/athoslife_tropeco_chat_migration.sql` (**não aplicada**): tira o
+  padrão UTC de `recaidas.horario`, gatilho põe a hora no fuso da pessoa
+  quando não vem; corrige os 4 tropeços antigos (estavam 3 h adiantados);
+  `life_acoes` aceita `registrar_tropeco`. Testada com rollback (18h UTC →
+  15h em São Paulo; hora mandada pelo Life respeitada).
+- ai-proxy (`tropeco.ts`): `registrar_tropeco` acha o hábito de evitar
+  (nome, categoria ou o único), pede a hora se foi ontem, e devolve os botões
+  **Anotar / Deixa pra lá** (escolha que o APK atual já mostra; não gasta
+  mensagem). "Anotar" grava em `recaidas` (contexto 'chat'); o gatilho
+  `handle_recaida` zera a sequência como na tela. Sem consentimento de
+  hábitos ou sem hábito de evitar: acolhe e não oferece. 5 idiomas.
+- Prompt (hábitos): acolher sem sermão e chamar a ferramenta; não usar
+  registrar_alimentos quando ela só contou o tropeço. Detecção: "não
+  aguentei", "jaquei", "furei a dieta"... ligam hábitos.
+
+Validado: 94 testes Deno, deno check. Falta: aplicar migrações das Fases 1
+e 2 + deploy (v41). Licença pro "oi" da semana seguinte fica na Fase 5.
