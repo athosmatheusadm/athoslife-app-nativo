@@ -4293,3 +4293,47 @@ dia pausado, enxugar mais o prompt (guia: roteiro de 29 testes).
 **Ferramentas desta sessão:** Deno instalado no scratchpad (some ao reiniciar);
 na próxima, `npm i deno@2` numa pasta temporária pra rodar
 `deno test -A supabase/functions/`. 105 testes passando no último commit.
+
+## 2026-11-02 (6) — Fases 3–5 no ar (v42) + Fases 6–9 construídas
+
+**No ar (autorizado pelo dono nesta sessão):** migrações `treino_chat` →
+`agua_habito_desfazer` → `aviso_risco` aplicadas na ordem (conferido: 3
+funções, 3 tabelas, `life_acoes` com os 8 tipos, `aviso_risco`='0') e
+**ai-proxy v42** (Fases 3, 4 e 5 desligada). A CLI do Supabase agora é a v3:
+o deploy pede `--yes` e `--remote=<ref>`.
+
+**Construído (código + testes; NÃO aplicado/deployado — o modo automático
+barrou a escrita no banco das fases novas):**
+- Fase 6 — jeito de falar desde a 1ª mensagem (`life.ts` estiloDaPessoa:
+  palpite → tendência → regra; pedido explícito na hora) + confiança da
+  memória de estilo (`db/athoslife_estilo_confianca_migration.sql`).
+- Fase 7 — streaming (NDJSON, só com `stream: true` do APK novo; rascunho
+  passa pelos filtros de saída), leituras em paralelo, log em segundo plano,
+  `duracao_ms`/`primeira_palavra_ms` (`db/athoslife_duracao_chat_migration.sql`).
+- Fase 8 — `cota.ts`: "sim" não conta (3/dia), desabafo ganha até 5 extras
+  sem contador, aviso com 2 restantes dito pelo Life, última resposta
+  resolve; `[[HUMOR]]` → rosto do Life no cabeçalho; texto de cota nos 5 idiomas.
+- Fase 9 — `resumos.ts` + `db/athoslife_resumos_migration.sql`: resumos do
+  dia/semana gerados em segundo plano na 1ª mensagem do dia (sem cron), só
+  com memória ligada, dia com risco fica de fora; somem com a memória.
+  Busca por sentido adiada.
+
+Tudo funciona sem as migrações novas (estilo vira regra, log sem duração,
+sem resumos), então o deploy não quebra nada se vier antes — mas o certo é
+banco primeiro.
+
+Validado: 124 testes Deno, deno check, typecheck, build.
+
+**Pendências (ler isto primeiro):**
+1. Autorizar: migrações `estilo_confianca`, `duracao_chat`, `resumos`
+   (qualquer ordem) + deploy da ai-proxy (vira v43).
+2. Token novo do GitHub → subir a `verde-menta` (push ainda não feito).
+3. APK novo: agora leva também streaming, rosto do Life no chat, contador
+   escondido no desabafo e o texto novo da cota. Falta `VITE_RC_GOOGLE_KEY`.
+4. Psicólogo (régua do oi, escada de cuidado) e advogado (consentimento de
+   memória — agora inclui os resumos das conversas, que a pessoa não vê
+   na tela de memórias; avaliar mostrar/apagar lá).
+5. Testar depois do deploy: conta nova escrevendo informal na 1ª mensagem
+   (resposta já curta e informal); "pode ser direto"; "sim" depois de uma
+   oferta (contador não cai); desabafo com a cota no fim (continua, sem
+   contador); `ai_audit_logs.duracao_ms`; `life_resumos` no dia seguinte.

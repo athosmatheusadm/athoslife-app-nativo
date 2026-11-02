@@ -53,6 +53,7 @@ import {
 } from './memoria.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
 import { juntarStream, linhaNdjson, novoRascunho } from './stream.ts'
+import { blocoResumos, garantirResumos, lerResumos } from './resumos.ts'
 import { ACEITES_GRATIS, EXTRAS_DESABAFO, ehAceiteCurto, extrairHumor, humorFinal, lifeOfereceu, linhaCota, REGRA_HUMOR } from './cota.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
@@ -1415,6 +1416,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     mensagensDaPessoa(sb, userId),
     checkinsDeHoje(sb, userId, hojeLocal),
     contextoAlo(sb, userId).catch(() => ''),
+    lerResumos(sb, userId, hojeLocal),
   ])
   leituras.catch(() => {}) // cota recusada: ninguém espera por elas
 
@@ -1436,7 +1438,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const cota = cotaHoje
 
   // 3. Histórico (do banco, não do cliente) + contexto do usuário.
-  const [histRes, ctxDia, { pago, gasto: gastoMes }, consentimento, padroes, falas, checkinsDia, alo] = await leituras
+  const [histRes, ctxDia, { pago, gasto: gastoMes }, consentimento, padroes, falas, checkinsDia, alo, resumos] = await leituras
   const economia = pago && (cota.usados > FLASH_MSGS_DIA || gastoMes > TETO_MES_USD)
   const perfil = pago ? PERFIL_PAGO : PERFIL_GRATIS
   const modeloChat = economia ? MODELO : MODELO_CHAT
@@ -1507,6 +1509,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     `${montarPromptLife(assuntos, programar)}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
     linhaDiaLeve(corpo.dia_leve) +
     adaptativo +
+    (consentimento === true && resumos ? blocoResumos(resumos, hojeLocal) : '') +
     (CONTEXTO_CAMADAS ? blocoConversaAnterior(camadas.linhas) + REGRA_RESUMO : '') +
     blocoUltimasRespostas(historico) +
     alo +
@@ -1611,6 +1614,19 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     emSegundoPlano(extrairMemoria(sb, userId, loc.fuso, hojeLocal, [
       ...anteriores, { autor: 'usuario', texto: mensagem }, { autor: 'life', texto: resposta },
     ]))
+  }
+
+  // Fase 9: na primeira mensagem do dia, resume em segundo plano os dias (e a semana) que faltam.
+  if (consentimento === true && resumos && cota.usados <= 1) {
+    emSegundoPlano(garantirResumos(sb, userId, loc.fuso, hojeLocal, resumos, async (prompt) => {
+      const r = await chamarGemini({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: configGeracao(400, 0.3),
+      }, 20_000, MODELO)
+      // tipo 'memoria' (o check do banco não tem 'resumo'); a versão separa no log.
+      await auditar(sb, userId, 'memoria', r.ok ? 'ok' : 'error', r, 'resumo')
+      return r.ok ? r.texto : null
+    }))
   }
 
   const humor = humorFinal(humorModelo, {
