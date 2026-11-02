@@ -278,6 +278,8 @@ export type AcaoLife =
   | { tipo: 'peso_atualizado' }
   /** O Life mexeu na ficha pelo chat (Fase 3): o Treino troca pro local e recarrega. */
   | { tipo: 'treino_atualizado'; local: 'casa' | 'academia' }
+  /** Água anotada ou desfeita pelo chat (Fase 4): recarrega o card de água. */
+  | { tipo: 'agua_atualizada' }
   /**
    * Refeição digitada ("almocei arroz e feijão", ai-proxy v4.5): alimentos já
    * achados na base. O chat mostra o cartão de conferência; só grava quando a

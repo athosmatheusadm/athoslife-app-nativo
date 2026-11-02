@@ -4200,3 +4200,23 @@ Testar no app atual: "comi um doce agora, não aguentei" (com hábito de doce)
   ferramentas, dor e check de saúde.
 
 Validado: 98 testes Deno, deno check, typecheck, build.
+
+## 2026-11-02 (4) — Fase 4: água, hábito e "desfaz isso" (funciona no APK atual)
+
+- `db/athoslife_agua_habito_desfazer_migration.sql` (**não aplicada**;
+  aplicar DEPOIS da migração da Fase 3, porque as duas redefinem o check de
+  tipos de `life_acoes`): tipos `registrar_agua`/`marcar_habito`, status
+  `desfeita`, índice, `life_marcar_habito` (mesma regra da tela, no nome da
+  pessoa; só servidor). Testada junto com a da Fase 3, com rollback.
+- ai-proxy (`rapido.ts`): **"bebi 2 copos de água"** grava na hora, sem IA
+  e sem cota (copo 250 ml, garrafa 500, litro 1000; precisa dizer água,
+  quantidade e que bebeu; suco/refri/pergunta não disparam) e responde o
+  total do dia. **"desfaz isso"** (sem IA, sem cota) volta a última ação
+  feita pelo Life em até 30 min: água, hábito marcado, tropeço (apaga e
+  devolve a sequência pela foto de antes), exercício adicionado, cópia de
+  treino (devolve o dia como era), restrição salva. Repetir refeição não
+  (diz pra ajustar na tela). **`marcar_habito`** pra hábito de construir
+  ("li 20 páginas") com Marcar / Deixa pra lá.
+- App novo: `agua_atualizada` recarrega o card de água.
+
+Validado: 101 testes Deno, deno check, typecheck, build.

@@ -30,6 +30,7 @@ import { TextoLife } from './baloes'
 import { RegistroNoChat } from './RegistroNoChat'
 import { ProgramarNoChat } from './ProgramarNoChat'
 import { avisarPlanoAplicado } from '@app/eventosLife'
+import { EVENTO_AGUA_MUDOU } from '@app/IntegracoesNativas'
 import { useI18n } from '@/i18n/I18nProvider'
 import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
@@ -158,6 +159,10 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     if (acao?.tipo === 'programar_itens') setProgramar(acao)
     if (acao?.tipo === 'refeicao_atualizada') avisarRegistroDoDia()
     if (acao?.tipo === 'treino_atualizado') avisarPlanoAplicado({ tipo: 'treino', local: acao.local })
+    if (acao?.tipo === 'agua_atualizada') {
+      window.dispatchEvent(new Event(EVENTO_AGUA_MUDOU))
+      avisarRegistroDoDia()
+    }
     if (acao?.tipo === 'peso_atualizado') {
       avisarRegistroDoDia()
       void recarregarPerfil() // meta/objetivo novos pro card e pra linha-guia

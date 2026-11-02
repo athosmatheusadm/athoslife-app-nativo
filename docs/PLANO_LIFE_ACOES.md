@@ -37,7 +37,7 @@ app → entra no próximo APK.
 - `adicionar_exercicio`, `copiar_treino` ("só hoje" por enquanto é texto: abre a ficha do outro dia; botão `abrir_treino` fica pra depois),
   linha da ficha no contexto, `exercicios_pedidos`.
 
-## Fase 4 — Água e hábito pelo chat + desfazer (guia item 7)
+## Fase 4 — Água e hábito pelo chat + desfazer (guia item 7)  ← código pronto (falta migração + deploy; funciona no APK atual)
 - "Bebi 2 copos" sem IA e sem cota; `marcar_habito`; desfazer em toda ação.
 
 ## Fase 5 — Aviso de recaída com licença (guia item 8)

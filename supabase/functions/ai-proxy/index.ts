@@ -46,6 +46,7 @@ import {
   acharExercicio, diaDaData, FALA_DE_DOR, lerDia, lerDias, montarSeries, nomeDias, nomeLocal, TXT_TREINO,
   type DiaSemana, type ExercicioCatalogo, type Local, type SerieDetalhe,
 } from './treino.ts'
+import { lerComandoAgua, pedeDesfazer, TXT_RAPIDO } from './rapido.ts'
 import {
   aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, type MemoriaCamada, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
 } from './memoria.ts'
@@ -838,6 +839,7 @@ QUANDO É GRAVE (desespero, "não aguento mais", "sou um peso", "ninguém liga p
 - Nunca exagere o risco ("colapso", "perigo") e nunca dê diagnóstico. Em sinal de crise, QUANDO É GRAVE vale acima de todas estas regras.
 
 AÇÕES NO APP (você só executa as que estão listadas aqui, pelas ferramentas; se não houver nenhuma, nesta conversa você não registra nada):
+- Água ("bebi 2 copos de água") e "desfaz isso" o app faz sozinho, antes de chegar em você. Se ela pedir pra desfazer algo, diga que é só escrever "desfaz isso" logo depois.
 - Fora isso, você não registra, marca nem muda nada no app. Nunca diga "pronto", "coloquei" ou "registrei" por conta própria — quem confirma é o app, depois de gravar.
 - Nunca ofereça montar, colocar, programar ou mudar no app algo que estas ferramentas não fazem (ex.: "quer que eu coloque na sua dieta da semana?", "monto pra você?"). Hoje você não mexe no treino nem na ficha. Se a pessoa pedir, diga numa frase o que dá pra fazer agora (ex.: ela adiciona na refeição do dia, na tela de Dieta) e siga ajudando na conversa.
 
@@ -902,7 +904,8 @@ const MOD_TREINO = `TREINO (a conversa é sobre treino):
 const MOD_HABITOS = `HÁBITOS (a conversa é sobre hábitos):
 - Hábito de EVITAR algo (ex.: doce) e a pessoa pede justamente isso: atenda o pedido, sem sermão e sem negar, e reconheça de leve o esforço uma vez (ex.: "Tá firme há 5 dias no doce — se quiser uma versão mais leve: ..."). Use as alternativas que a tela de Hábitos mostra (no contexto) quando couber. Não repita o hábito como advertência a cada mensagem.
 - Hábitos: use os gatilhos, o horário de risco, a melhor sequência e os tropeços do contexto pra ajudar no momento — tropeço é parte do caminho, nunca fracasso.
-- Ela contou que escorregou num hábito de EVITAR do contexto ("comi um doce agora", "não aguentei e tomei refri"): acolha sem drama nem sermão e chame registrar_tropeco — o app pergunta com um toque se anota. Se foi ontem e ela não disse a hora, pergunte antes. Quando ela só contou o tropeço, não use registrar_alimentos (só se ela pedir pra registrar a comida). Se ela disser "não precisa anotar", não anote.`
+- Ela contou que escorregou num hábito de EVITAR do contexto ("comi um doce agora", "não aguentei e tomei refri"): acolha sem drama nem sermão e chame registrar_tropeco — o app pergunta com um toque se anota. Se foi ontem e ela não disse a hora, pergunte antes. Quando ela só contou o tropeço, não use registrar_alimentos (só se ela pedir pra registrar a comida). Se ela disser "não precisa anotar", não anote.
+- Ela contou que FEZ um hábito de CONSTRUIR do contexto ("li 20 páginas hoje", "meditei agora"): celebre de leve e chame marcar_habito — o app pergunta com um toque antes de marcar.`
 const MOD_PESO = `PESO: você NÃO grava pesagem nem meta de peso nesta conversa — quem grava é o app, quando a pessoa escreve do jeito certo. Nunca diga "anotei", "registrei" ou "salvei" um peso. Se ela contar o peso de um jeito que não foi gravado, peça numa frase pra mandar assim: "pesei 80 kg" (no idioma dela: "I weigh 80 kg" / "hoy peso 80 kg").`
 const ACAO_COMIDA = `- registrar_alimentos: quando a pessoa contar o que comeu pra registrar ("almocei arroz, feijão e um bife", "comi 2 ovos no café", "registra uma banana", "jantei 200 g de frango e salada"). Separe cada alimento com a quantidade e a unidade que ela disse (g, ml, unidade, colher de sopa, concha, fatia, xícara, copo); se ela não disse quantidade, deixe vazio. Refeição: a que ela disse (cafe, almoco, lanche, jantar ou o nome de uma extra dela); se não disse, deixe vazio. O app mostra um cartão pra ela conferir e confirmar — não escreva kcal nem diga que registrou. Se ela está desabafando sobre o que comeu (culpa, "comi demais"), acolha primeiro e só ofereça registrar; não chame a ferramenta sem ela querer.
 - repetir_refeicao: quando a pessoa pedir pra repetir/copiar uma refeição já registrada ("coloca na janta o mesmo de ontem", "repete o café de hoje no lanche"). Origem e destino vêm da lista REFEIÇÕES do contexto — as 4 fixas ou as extras dela, pelo nome. Se não der pra saber qual é a origem ou o destino, pergunte antes ("Você quer repetir o jantar de ontem?"). Se ela já disse se quer somar ao que tem ou trocar, mande o modo.`
@@ -1201,7 +1204,7 @@ async function salvarRestricao(sb: Sb, userId: string, idAcao: string, args: Arg
     ? { resposta: t.restricaoFalhou, acao: null, status: 'restricao_falhou' }
     : { resposta: t.restricaoSalva(lista(args.nomes, idioma)), acao: null, status: 'restricao_ok' }
   if (error) console.error('[restricao] salvar falhou', error.message)
-  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r)
+  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r, undefined, { novas })
   return r
 }
 
@@ -1286,6 +1289,19 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 
   // 1d. Peso pelo chat (registrar, meta, histórico): o card "Meu peso" não
   //     tem botões, então é resposta fixa, sem IA e sem cota (peso.ts).
+  // 1e. "Desfaz isso" e "bebi 2 copos de água" (Fase 4): sem IA e sem cota.
+  if (pedeDesfazer(mensagem)) {
+    const r = await desfazerUltima(sb, userId, loc.idioma)
+    await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: r.resposta })
+    return json({ resposta: r.resposta, restantes: null, acao: r.acao })
+  }
+  const mlAgua = lerComandoAgua(mensagem)
+  if (mlAgua) {
+    const r = await registrarAguaChat(sb, userId, loc, mlAgua)
+    await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: r.resposta })
+    return json({ resposta: r.resposta, restantes: null, acao: r.acao })
+  }
+
   const cmdPeso = lerComandoPeso(mensagem)
   if (cmdPeso) {
     const r = await executarComandoPeso(sb, userId, cmdPeso, loc.idioma, hojeNoFuso(loc.fuso))
@@ -1811,7 +1827,7 @@ function ferramentasPara(assuntos: Set<Assunto>, programar = false): typeof FERR
   const nomes = new Set<string>([
     ...(assuntos.has('comida') ? ['registrar_alimentos', 'repetir_refeicao', ...(programar ? ['programar_refeicao'] : [])] : []),
     ...(assuntos.has('emocional') ? ['pausar_life_hoje'] : []),
-    ...(assuntos.has('habitos') ? ['registrar_tropeco'] : []),
+    ...(assuntos.has('habitos') ? ['registrar_tropeco', 'marcar_habito'] : []),
     ...(assuntos.has('treino') ? ['adicionar_exercicio', 'copiar_treino'] : []),
   ])
   if (!nomes.size) return null
@@ -1959,6 +1975,16 @@ const FERRAMENTAS_LIFE = [
             local: { type: 'STRING', description: "'academia' ou 'casa', se ela disse" },
           },
           required: ['destino_dia', 'so_hoje'],
+        },
+      },
+      {
+        name: 'marcar_habito',
+        description:
+          'Marca como feito hoje um hábito de CONSTRUIR que está no contexto, quando a pessoa contar que fez ("li 20 páginas hoje", "meditei agora", "caminhei 30 min"). O app pergunta com um toque antes de marcar. Não use pra hábito de evitar (isso é tropeço) nem pra água (o app anota sozinho).',
+        parameters: {
+          type: 'OBJECT',
+          properties: { habito: { type: 'STRING', description: 'Nome do hábito como está no contexto, ou o que ela fez ("leitura")' } },
+          required: ['habito'],
         },
       },
       {
@@ -2225,6 +2251,8 @@ type AcaoCliente =
   | { tipo: 'escolha'; id: string; opcoes: { valor: Escolha; rotulo: string }[] }
   /** Ficha mudou pelo chat (Fase 3): o app recarrega o Treino (APK antigo ignora). */
   | { tipo: 'treino_atualizado'; local: Local }
+  /** Água anotada/desfeita pelo chat (Fase 4): o app recarrega o card (APK antigo ignora). */
+  | { tipo: 'agua_atualizada' }
   /** Refeições planejadas (02/11): o app grava em refeicoes_planejadas quando a pessoa confirma. */
   | {
     tipo: 'programar_itens'
@@ -2254,10 +2282,11 @@ function opcoes(idioma: Idioma, valores: Escolha[]) {
   return valores.map((valor) => ({ valor, rotulo: TXT[idioma].escolha[valor] }))
 }
 
-async function fecharAcao(sb: Sb, id: string, status: string, r: ResultadoAcao, args?: ArgsRepetir) {
+async function fecharAcao(sb: Sb, id: string, status: string, r: ResultadoAcao, args?: ArgsRepetir, desfazer?: Record<string, unknown>) {
   const { error } = await sb.from('life_acoes').update({
     status,
-    resultado: { resposta: r.resposta, acao: r.acao },
+    // `desfazer`: o que o "desfaz isso" precisa pra voltar (Fase 4).
+    resultado: { resposta: r.resposta, acao: r.acao, ...(desfazer ? { desfazer } : {}) },
     ...(args ? { args } : {}),
     ...(status === 'pendente' ? { expira_em: new Date(Date.now() + 15 * 60_000).toISOString() } : {}),
   }).eq('id', id)
@@ -2359,6 +2388,7 @@ async function executarFerramenta(
   if (chamada.nome === 'registrar_alimentos') return await proporRegistro(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'programar_refeicao') return await proporProgramacao(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'registrar_tropeco') return await proporTropeco(sb, userId, loc, chamada.args, hoje)
+  if (chamada.nome === 'marcar_habito') return await proporMarcarHabito(sb, userId, loc, chamada.args)
   if (chamada.nome === 'adicionar_exercicio' || chamada.nome === 'copiar_treino') {
     // Dor/lesão nesta mensagem ou check de saúde travado: não mexe no treino.
     const trava = await travaDoTreino(sb, userId, loc.idioma, mensagem)
@@ -2408,6 +2438,119 @@ async function executarFerramenta(
 
   const modo = a.modo === 'adicionar' || a.modo === 'substituir' ? a.modo : 'perguntar'
   return executarRepeticao(sb, userId, id, { origem: o.ref, destino: d.ref, modo, forcar: false }, loc.idioma, hoje)
+}
+
+// ---------- água, hábito e desfazer (Fase 4) ----------
+interface ArgsHabito { vicio_id: string; nome: string }
+
+async function registrarAguaChat(sb: Sb, userId: string, loc: Localidade, ml: number): Promise<ResultadoAcao> {
+  const tr = TXT_RAPIDO[loc.idioma]
+  const hoje = hojeNoFuso(loc.fuso)
+  const { data: novo, error } = await sb.from('registros_agua').insert({ user_id: userId, quantidade_ml: ml, data: hoje }).select('id').maybeSingle()
+  if (error || !novo) {
+    if (error) console.error('[agua] gravar falhou', error.message)
+    return { resposta: tr.aguaFalhou, acao: null, status: 'agua_falhou' }
+  }
+  const [{ data: doDia }, { data: perfil }] = await Promise.all([
+    sb.from('registros_agua').select('quantidade_ml').eq('user_id', userId).eq('data', hoje),
+    sb.from('profiles').select('agua_meta_ml').eq('id', userId).maybeSingle(),
+  ])
+  const total = ((doDia ?? []) as { quantidade_ml: number }[]).reduce((s, x) => s + Number(x.quantidade_ml ?? 0), 0)
+  const r: ResultadoAcao = { resposta: tr.agua(ml, total, Number(perfil?.agua_meta_ml ?? 2500)), acao: { tipo: 'agua_atualizada' }, status: 'agua_ok' }
+  // Fica registrada como ação feita, pro "desfaz isso" (sem a migração, só não dá pra desfazer).
+  const { error: e2 } = await sb.from('life_acoes').insert({
+    id: crypto.randomUUID(), user_id: userId, tipo: 'registrar_agua', status: 'feita', args: { ml },
+    resultado: { resposta: r.resposta, acao: r.acao, desfazer: { ids: [novo.id] } },
+  })
+  if (e2) console.warn('[agua] ação pro desfazer falhou', e2.message)
+  return r
+}
+
+async function proporMarcarHabito(sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>): Promise<ResultadoAcao> {
+  const tr = TXT_RAPIDO[loc.idioma]
+  const { data } = await sb.from('vicios_user').select('id, nome, categoria, ultimo_checkin').eq('user_id', userId).eq('ativo', true).limit(20)
+  const construir = ((data ?? []) as (HabitoEvitar & { ultimo_checkin: string | null })[]).filter((h) => ehConstruir(h.categoria))
+  if (!construir.length) return { resposta: tr.habitoSem, acao: null, status: 'habito_sem' }
+  const h = acharHabito(texto(a.habito, 60), construir) as (HabitoEvitar & { ultimo_checkin: string | null }) | null
+  if (!h) return { resposta: tr.habitoQual(lista(construir.map((x) => `"${x.nome}"`), loc.idioma)), acao: null, status: 'habito_ambiguo' }
+  if (h.ultimo_checkin && h.ultimo_checkin >= hojeNoFuso(loc.fuso)) return { resposta: tr.habitoJa(h.nome), acao: null, status: 'habito_ja' }
+  const args: ArgsHabito = { vicio_id: h.id, nome: h.nome }
+  const id = await criarPendencia(sb, userId, 'marcar_habito', args)
+  if (!id) return { resposta: tr.habitoQual(`"${h.nome}"`), acao: null, status: 'habito_falhou' }
+  return {
+    resposta: tr.habitoPergunta(h.nome),
+    acao: { tipo: 'escolha', id, opcoes: [{ valor: 'salvar', rotulo: tr.marcar }, { valor: 'cancelar', rotulo: tr.deixa }] },
+    status: 'habito_proposto',
+  }
+}
+
+async function executarMarcarHabito(sb: Sb, userId: string, idAcao: string, args: ArgsHabito, idioma: Idioma): Promise<ResultadoAcao> {
+  const tr = TXT_RAPIDO[idioma]
+  const { data: foto } = await sb.from('vicios_user').select('streak_atual, melhor_streak, ultimo_checkin').eq('id', args.vicio_id).maybeSingle()
+  const { data, error } = await sb.rpc('life_marcar_habito', { p_user_id: userId, p_habito_id: args.vicio_id, p_dia: null })
+  const res = data as { status?: string; streak?: number } | null
+  const ok = !error && res?.status === 'ok'
+  const r: ResultadoAcao = ok
+    ? { resposta: tr.habitoFeito(args.nome, res?.streak ?? 1), acao: { tipo: 'refeicao_atualizada', data: '' }, status: 'habito_ok' }
+    : { resposta: tr.desfazerFalhou, acao: null, status: 'habito_falhou' }
+  if (!ok) console.error('[habito] marcar falhou', error?.message ?? res)
+  await fecharAcao(sb, idAcao, ok ? 'feita' : 'falhou', r, undefined, ok ? { vicio_id: args.vicio_id, foto } : undefined)
+  return r
+}
+
+/** "Desfaz isso": volta a última ação feita pelo Life nos últimos 30 min. */
+async function desfazerUltima(sb: Sb, userId: string, idioma: Idioma): Promise<{ resposta: string; acao: AcaoCliente | null }> {
+  const tr = TXT_RAPIDO[idioma]
+  const desde = new Date(Date.now() - 30 * 60_000).toISOString()
+  const { data: ult } = await sb.from('life_acoes').select('id, tipo, resultado')
+    .eq('user_id', userId).eq('status', 'feita').gte('criado_em', desde)
+    .order('criado_em', { ascending: false }).limit(1).maybeSingle()
+  if (!ult) return { resposta: tr.nadaPraDesfazer, acao: null }
+  const d = ((ult.resultado ?? {}) as { desfazer?: Record<string, unknown> }).desfazer
+  if (!d) return { resposta: tr.naoDaPraDesfazer, acao: null }
+
+  let erro: { message: string } | null = null
+  let resposta = tr.desfazerFalhou
+  let acao: AcaoCliente | null = null
+  if (ult.tipo === 'registrar_agua') {
+    ;({ error: erro } = await sb.from('registros_agua').delete().eq('user_id', userId).in('id', (d.ids ?? []) as string[]))
+    resposta = tr.desfeito.agua
+    acao = { tipo: 'agua_atualizada' }
+  } else if (ult.tipo === 'marcar_habito' || ult.tipo === 'registrar_tropeco') {
+    if (ult.tipo === 'registrar_tropeco') {
+      ;({ error: erro } = await sb.from('recaidas').delete().eq('user_id', userId).eq('id', String(d.recaida_id)))
+    }
+    if (!erro && d.foto) {
+      ;({ error: erro } = await sb.from('vicios_user').update(d.foto as Record<string, unknown>).eq('user_id', userId).eq('id', String(d.vicio_id)))
+    }
+    resposta = ult.tipo === 'registrar_tropeco' ? tr.desfeito.tropeco : tr.desfeito.habito
+    acao = { tipo: 'refeicao_atualizada', data: '' }
+  } else if (ult.tipo === 'adicionar_exercicio') {
+    ;({ error: erro } = await sb.from('treino_plano').delete().eq('user_id', userId).in('id', (d.ids ?? []) as string[]))
+    resposta = tr.desfeito.exercicio
+    acao = { tipo: 'treino_atualizado', local: d.local as Local }
+  } else if (ult.tipo === 'copiar_treino') {
+    const local = d.local as Local
+    ;({ error: erro } = await sb.from('treino_plano').delete().eq('user_id', userId).eq('local', local).eq('dia_semana', String(d.dia)))
+    const antes = (d.antes ?? []) as Record<string, unknown>[]
+    if (!erro && antes.length) ({ error: erro } = await sb.from('treino_plano').insert(antes.map((x) => ({ ...x, user_id: userId }))))
+    resposta = tr.desfeito.treino
+    acao = { tipo: 'treino_atualizado', local }
+  } else if (ult.tipo === 'salvar_restricao') {
+    const novas = new Set(((d.novas ?? []) as string[]).map((x) => normalizar(x)))
+    const { data: perfil } = await sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle()
+    const atuais = (Array.isArray(perfil?.restricoes) ? perfil.restricoes : []) as string[]
+    ;({ error: erro } = await sb.from('profiles').update({ restricoes: atuais.filter((x) => !novas.has(normalizar(String(x)))) }).eq('id', userId))
+    resposta = tr.desfeito.restricao
+  } else {
+    return { resposta: tr.naoDaPraDesfazer, acao: null }
+  }
+  if (erro) {
+    console.error('[desfazer] falhou', ult.tipo, erro.message)
+    return { resposta: tr.desfazerFalhou, acao: null }
+  }
+  await sb.from('life_acoes').update({ status: 'desfeita' }).eq('id', ult.id)
+  return { resposta, acao }
 }
 
 // ---------- treino pelo chat (Fase 3) ----------
@@ -2534,12 +2677,12 @@ async function executarExercicio(sb: Sb, userId: string, idAcao: string, args: A
     user_id: userId, local: args.local, dia_semana: d, exercicio_id: args.exercicio_id,
     series: args.series.length, repeticoes: args.series[0]?.reps ?? 12, series_detalhe: args.series, ordem: (maxPorDia.get(d) ?? -1) + 1,
   }))
-  const { error } = linhas.length ? await sb.from('treino_plano').insert(linhas) : { error: null }
+  const { data: novas, error } = linhas.length ? await sb.from('treino_plano').insert(linhas).select('id') : { data: [], error: null }
   const r: ResultadoAcao = error
     ? { resposta: tt.falhou, acao: null, status: 'exercicio_falhou' }
     : { resposta: tt.adicionado(args.nome, nomeDias(args.dias, idioma)), acao: { tipo: 'treino_atualizado', local: args.local }, status: 'exercicio_ok' }
   if (error) console.error('[treino] adicionar falhou', error.message)
-  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r)
+  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r, undefined, { ids: ((novas ?? []) as { id: string }[]).map((x) => x.id), local: args.local })
   return r
 }
 
@@ -2547,6 +2690,9 @@ async function executarCopiaTreino(
   sb: Sb, userId: string, idAcao: string, args: ArgsCopiaTreino, modo: 'adicionar' | 'substituir', idioma: Idioma,
 ): Promise<ResultadoAcao> {
   const tt = TXT_TREINO[idioma]
+  const { data: fotoDestino } = await sb.from('treino_plano')
+    .select('local, dia_semana, exercicio_id, series, repeticoes, series_detalhe, ordem, concluido_em')
+    .eq('user_id', userId).eq('local', args.local).eq('dia_semana', args.destino)
   const { data, error } = await sb.rpc('life_copiar_treino', {
     p_user_id: userId, p_local: args.local, p_destino_dia: args.destino,
     p_origem_dia: args.origem_dia, p_origem_data: args.origem_data, p_modo: modo,
@@ -2556,7 +2702,8 @@ async function executarCopiaTreino(
     ? { resposta: res?.status === 'origem_vazia' ? tt.copiarVazio(args.origem_dia ? nomeDias([args.origem_dia], idioma) : '') : tt.falhou, acao: null, status: 'copia_falhou' }
     : { resposta: tt.copiado(res.itens ?? 0, nomeDias([args.destino], idioma)), acao: { tipo: 'treino_atualizado', local: args.local }, status: 'copia_ok' }
   if (error) console.error('[treino] copiar falhou', error.message)
-  await fecharAcao(sb, idAcao, r.status === 'copia_ok' ? 'feita' : 'falhou', r)
+  await fecharAcao(sb, idAcao, r.status === 'copia_ok' ? 'feita' : 'falhou', r, undefined,
+    { local: args.local, dia: args.destino, antes: fotoDestino ?? [] })
   return r
 }
 
@@ -2604,16 +2751,19 @@ async function proporTropeco(
 
 async function anotarTropeco(sb: Sb, userId: string, idAcao: string, args: ArgsTropeco, idioma: Idioma): Promise<ResultadoAcao> {
   const tt = TXT_TROPECO[idioma]
-  const { error } = await sb.from('recaidas').insert({
+  // Foto do hábito antes (o gatilho handle_recaida mexe nela) — pro "desfaz isso".
+  const { data: foto } = await sb.from('vicios_user')
+    .select('streak_atual, melhor_streak, total_recaidas, ultima_recaida, ultimo_checkin').eq('id', args.vicio_id).maybeSingle()
+  const { data: nova, error } = await sb.from('recaidas').insert({
     user_id: userId, vicio_id: args.vicio_id, data: args.data, gatilho: args.gatilho, contexto: 'chat',
     // Sem hora: o gatilho do banco põe a hora local de agora (fuso da pessoa).
     ...(args.hora ? { horario: args.hora } : {}),
-  })
+  }).select('id').maybeSingle()
   const r: ResultadoAcao = error
     ? { resposta: tt.falhou, acao: null, status: 'tropeco_falhou' }
     : { resposta: tt.anotado, acao: { tipo: 'refeicao_atualizada', data: args.data }, status: 'tropeco_ok' }
   if (error) console.error('[tropeco] gravar falhou', error.message)
-  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r)
+  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r, undefined, nova ? { recaida_id: nova.id, vicio_id: args.vicio_id, foto } : undefined)
   return r
 }
 
@@ -2761,6 +2911,12 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
     r = pend.tipo === 'adicionar_exercicio'
       ? await executarExercicio(sb, userId, id, pend.args as ArgsExercicio, loc.idioma)
       : await executarCopiaTreino(sb, userId, id, pend.args as ArgsCopiaTreino, escolha === 'substituir' ? 'substituir' : 'adicionar', loc.idioma)
+  } else if (pend.tipo === 'marcar_habito') {
+    if (escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
+    const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
+      .eq('id', id).eq('status', 'pendente').select('id')
+    if (!travou?.length) return json({ resposta: t.andamento, acao: null })
+    r = await executarMarcarHabito(sb, userId, id, pend.args as ArgsHabito, loc.idioma)
   } else if (pend.tipo === 'registrar_tropeco') {
     if (escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
     const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
@@ -2787,7 +2943,9 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
   }
 
   // O que a pessoa tocou, com o rótulo que ela viu.
-  const rotulo = pend?.tipo === 'registrar_tropeco'
+  const rotulo = pend?.tipo === 'marcar_habito' && (escolha === 'salvar' || escolha === 'cancelar')
+    ? (escolha === 'salvar' ? TXT_RAPIDO[loc.idioma].marcar : TXT_RAPIDO[loc.idioma].deixa)
+    : pend?.tipo === 'registrar_tropeco'
     ? (escolha === 'salvar' ? TXT_TROPECO[loc.idioma].anotar : TXT_TROPECO[loc.idioma].deixa)
     : (pend?.tipo === 'adicionar_exercicio' || pend?.tipo === 'copiar_treino') && (escolha === 'salvar' || escolha === 'cancelar')
       ? (escolha === 'salvar' ? TXT_TREINO[loc.idioma].adicionar : TXT_TREINO[loc.idioma].deixa)
