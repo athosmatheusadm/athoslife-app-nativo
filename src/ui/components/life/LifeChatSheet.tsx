@@ -97,6 +97,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [enviando, setEnviando] = useState(false)
+  // Fase 7: o texto do Life enquanto ele escreve (a resposta final substitui).
+  const [rascunho, setRascunho] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [restantes, setRestantes] = useState<number | null>(null)
   const [escolha, setEscolha] = useState<Extract<AcaoLife, { tipo: 'escolha' }> | null>(null)
@@ -119,6 +121,10 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   useEffect(() => {
     fimRef.current?.scrollIntoView({ block: 'end', behavior: historico.length > 0 ? 'smooth' : 'auto' })
   }, [historico, enviando])
+  // Rascunho crescendo: acompanha sem animação (smooth a cada pedaço dá tranco).
+  useEffect(() => {
+    if (rascunho) fimRef.current?.scrollIntoView({ block: 'end', behavior: 'auto' })
+  }, [rascunho])
 
   useEffect(() => {
     let vivo = true
@@ -285,7 +291,9 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       return
     }
     try {
-      const r = await enviarMensagemChat(mensagem, foco, id)
+      setRascunho(null)
+      const r = await enviarMensagemChat(mensagem, foco, id, setRascunho)
+      setRascunho(null)
       falhaRef.current = null
       setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
       if (r.restantes !== null) setRestantes(r.restantes)
@@ -293,6 +301,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       if (r.sugerirMemoria) setConviteMemoria((c) => c ?? 'mostrar')
       if (r.memoriaPendente.length) pendentesMemoria.current = [...pendentesMemoria.current, ...r.memoriaPendente].slice(-12)
     } catch (e) {
+      setRascunho(null)
       falhaRef.current = { texto: mensagem, id }
       // A mensagem não foi aceita: tira do histórico e devolve pro campo.
       setHistorico((h) => h.slice(0, -1))
@@ -506,7 +515,12 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             />
           )}
 
-          {enviando && (
+          {enviando && rascunho && (
+            <div className="max-w-[85%] rounded-2xl border border-surface-4 bg-surface-2 p-3.5 text-sm leading-relaxed text-content-mid" aria-busy="true">
+              <TextoLife texto={separarCartoes(rascunho).texto} />
+            </div>
+          )}
+          {enviando && !rascunho && (
             <div className="flex w-fit items-center gap-2 rounded-2xl border border-surface-4 bg-surface-2 p-3.5 text-sm text-content-low" role="status">
               <span className="flex gap-1" aria-hidden="true">
                 <span className="h-1.5 w-1.5 rounded-full bg-content-low motion-safe:animate-bounce" />

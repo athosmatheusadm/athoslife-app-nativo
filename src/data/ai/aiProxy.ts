@@ -60,10 +60,64 @@ interface RespostaVisaoCrua {
   }
 }
 
-export async function chamar<T>(
-  tipo: 'vision' | 'scan' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura',
-  payload: Record<string, unknown>,
-): Promise<T> {
+type TipoChamada = 'vision' | 'scan' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura'
+
+export async function chamar<T>(tipo: TipoChamada, payload: Record<string, unknown>): Promise<T> {
+  const res = await abrir(tipo, payload)
+  if (res.ok) return res.json() as Promise<T>
+  return lancarErro(res.status, await res.json().catch(() => ({})))
+}
+
+/**
+ * Chat com streaming (Fase 7): o servidor manda o rascunho enquanto o Life
+ * escreve (NDJSON) e, no fim, a resposta de sempre. Servidor sem streaming,
+ * ou resposta sem IA (crise, comandos): vem o JSON normal e `aoRascunho` não roda.
+ */
+async function chamarChatStream<T>(payload: Record<string, unknown>, aoRascunho: (texto: string) => void): Promise<T> {
+  const res = await abrir('chat', { ...payload, stream: true })
+  const ndjson = (res.headers.get('content-type') ?? '').includes('ndjson')
+  if (!ndjson || !res.body) {
+    if (res.ok) return res.json() as Promise<T>
+    return lancarErro(res.status, await res.json().catch(() => ({})))
+  }
+  const leitor = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buffer = ''
+  let fim: Record<string, unknown> | null = null
+  const linha = (l: string) => {
+    if (!l.trim()) return
+    let o: Record<string, unknown>
+    try { o = JSON.parse(l) as Record<string, unknown> } catch { return }
+    if (o.t === 'rascunho' && typeof o.texto === 'string') aoRascunho(o.texto)
+    else if (o.t === 'fim' || o.t === 'erro') fim = o
+  }
+  try {
+    for (;;) {
+      const { value, done } = await leitor.read()
+      if (value) buffer += value
+      let i: number
+      while ((i = buffer.indexOf('\n')) >= 0) {
+        linha(buffer.slice(0, i))
+        buffer = buffer.slice(i + 1)
+      }
+      if (done) break
+    }
+    linha(buffer)
+  } catch {
+    marcarFalhaDeRede()
+    throw new AiProxyError({ tipo: 'sem_conexao' })
+  }
+  const f = fim as Record<string, unknown> | null
+  if (!f) throw new AiProxyError({ tipo: 'sem_conexao' })
+  if (f.t === 'erro') return lancarErro(Number(f.status) || 500, f)
+  return f as T
+}
+
+/** O navegador lê o corpo aos poucos? (WebView do Android: sim; muito antigo: não.) */
+function temStreaming(): boolean {
+  return typeof ReadableStream !== 'undefined' && typeof TextDecoderStream !== 'undefined'
+}
+
+async function abrir(tipo: TipoChamada, payload: Record<string, unknown>): Promise<Response> {
   if (!valeTentarRede()) throw new AiProxyError({ tipo: 'sem_conexao' })
   const { data: sessao, error: erroSessao } = await supabase.auth.getSession()
   const token = sessao.session?.access_token
@@ -88,12 +142,13 @@ export async function chamar<T>(
     marcarFalhaDeRede()
     throw new AiProxyError({ tipo: 'sem_conexao' })
   }
+  return res
+}
 
-  if (res.ok) return res.json() as Promise<T>
-
-  const body = (await res.json().catch(() => ({}))) as { error?: string; next_reset?: string }
+function lancarErro(status: number, corpo: unknown): never {
+  const body = (corpo ?? {}) as { error?: string; next_reset?: string }
   const erro = body.error ?? 'proxy_error'
-  if (res.status === 401) throw new AiProxyError({ tipo: 'not_authenticated' })
+  if (status === 401) throw new AiProxyError({ tipo: 'not_authenticated' })
   if (erro === 'premium_required') throw new AiProxyError({ tipo: 'premium_required' })
   if (erro === 'limit_reached') {
     throw new AiProxyError({ tipo: 'limit_reached', proximoReset: body.next_reset ?? '' })
@@ -364,22 +419,28 @@ export async function enviarMensagemChat(
   mensagem: string,
   foco: FocoLife = 'home',
   idEnvio: string = crypto.randomUUID(),
+  /** Fase 7: o texto do Life enquanto ele escreve (a resposta final substitui). */
+  aoRascunho?: (texto: string) => void,
 ): Promise<RespostaChat> {
   const diaLeve = await diaLeveHoje()
-  const cru = await chamar<{
+  type Cru = {
     resposta: string
     restantes: number | null
     acao?: AcaoLife
     sugerir_memoria?: boolean
     memoria_pendente?: unknown
-  }>('chat', {
+  }
+  const payload = {
     mensagem,
     foco,
     id_envio: idEnvio,
     ...(diaLeve ? { dia_leve: diaLeve } : {}),
     // O que este app sabe mostrar (02/11): o servidor só oferece a ação se o app tiver o cartão.
     recursos: ['programar'],
-  })
+  }
+  const cru = aoRascunho && temStreaming()
+    ? await chamarChatStream<Cru>(payload, aoRascunho)
+    : await chamar<Cru>('chat', payload)
   return {
     resposta: cru.resposta,
     restantes: cru.restantes,

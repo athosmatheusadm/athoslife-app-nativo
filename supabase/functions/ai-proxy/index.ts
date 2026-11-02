@@ -52,6 +52,7 @@ import {
   aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, type MemoriaCamada, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
 } from './memoria.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
+import { juntarStream, linhaNdjson, novoRascunho } from './stream.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
   aplicarMarcasMemoria, blocoMemoria, ehConstruir, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
@@ -499,6 +500,8 @@ interface ResultadoGemini {
   uso?: UsoTokens
   /** Modelo que respondeu de fato (pro log). */
   modelo?: string
+  /** Fase 7: instante (epoch ms) do primeiro pedaço de texto, quando veio em streaming. */
+  primeiraEm?: number
 }
 
 interface UsoTokens { entrada: number; saida: number; raciocinio: number; cache: number }
@@ -515,19 +518,22 @@ function somarUso(a?: UsoTokens, b?: UsoTokens): UsoTokens | undefined {
  * poderia deixar a resposta vazia. (28/09: família 3.x recusou
  * thinkingBudget 0 e o chat inteiro caiu com 502.)
  */
-async function chamarGemini(corpo: Record<string, unknown>, timeoutMs = 25_000, modelo = MODELO): Promise<ResultadoGemini> {
-  let r = await chamarGeminiUmaVez(corpo, timeoutMs, modelo)
+/** `aoEscrever` (Fase 7): streaming — recebe o texto acumulado a cada pedaço. */
+async function chamarGemini(
+  corpo: Record<string, unknown>, timeoutMs = 25_000, modelo = MODELO, aoEscrever?: (acumulado: string) => void,
+): Promise<ResultadoGemini> {
+  let r = await chamarGeminiUmaVez(corpo, timeoutMs, modelo, aoEscrever)
   const cfgAtual = corpo.generationConfig as Record<string, unknown> | undefined
   if (!r.ok && r.status === 400 && cfgAtual?.thinkingConfig) {
     const cfg = { ...cfgAtual }
     delete cfg.thinkingConfig
     cfg.maxOutputTokens = Number(cfg.maxOutputTokens ?? 0) + 1024
-    r = await chamarGeminiUmaVez({ ...corpo, generationConfig: cfg }, timeoutMs, modelo)
+    r = await chamarGeminiUmaVez({ ...corpo, generationConfig: cfg }, timeoutMs, modelo, aoEscrever)
   }
   // Modelo do chat indisponível (404 ou 400): cai no padrão — o chat nunca para.
   if (!r.ok && modelo !== MODELO && (r.status === 404 || r.status === 400)) {
     console.warn('[gemini] modelo', modelo, 'falhou com', r.status, '— usando', MODELO)
-    return chamarGemini(corpo, timeoutMs, MODELO)
+    return chamarGemini(corpo, timeoutMs, MODELO, aoEscrever)
   }
   return r
 }
@@ -536,6 +542,7 @@ async function chamarGeminiUmaVez(
   corpo: Record<string, unknown>,
   timeoutMs: number,
   modelo: string,
+  aoEscrever?: (acumulado: string) => void,
 ): Promise<ResultadoGemini & { status: number; erro: string }> {
   const falha = { ok: false, texto: '', chamadas: [] as ChamadaFerramenta[], tokens: 0, custo: 0, bloqueado: false, status: 0, erro: '' }
   if (!GEMINI_KEY) return falha
@@ -544,7 +551,9 @@ async function chamarGeminiUmaVez(
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
+      aoEscrever
+        ? `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:streamGenerateContent?alt=sse`
+        : `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
       {
         method: 'POST',
         // Chave no cabeçalho, não na URL (URL vai parar em log).
@@ -558,7 +567,10 @@ async function chamarGeminiUmaVez(
       console.error('[gemini] http', res.status, modelo, erro)
       return { ...falha, status: res.status, erro }
     }
-    const data = await res.json()
+    let primeiraEm: number | undefined
+    const data = aoEscrever && res.body
+      ? await juntarStream(res.body, (acc) => { primeiraEm ??= Date.now(); aoEscrever(acc) })
+      : await res.json()
     const uso = data?.usageMetadata ?? {}
     const entrada = Number(uso.promptTokenCount ?? 0)
     const saida = Number(uso.candidatesTokenCount ?? 0) + Number(uso.thoughtsTokenCount ?? 0)
@@ -589,6 +601,7 @@ async function chamarGeminiUmaVez(
         cache: Number(uso.cachedContentTokenCount ?? 0),
       },
       modelo,
+      primeiraEm,
       status: res.status,
       erro: '',
     }
@@ -711,8 +724,13 @@ async function gravarTroca(
   if (error) console.warn('[chat] gravar troca falhou', error.message)
 }
 
-async function auditar(sb: Sb, userId: string, tipo: string, status: string, g?: ResultadoGemini, versaoContexto?: string) {
-  const { error } = await sb.from('ai_audit_logs').insert({
+// Fase 7: tempo da resposta. Sem a coluna no banco (migração ainda não aplicada), grava sem ela.
+let semColunaDuracao = false
+async function auditar(
+  sb: Sb, userId: string, tipo: string, status: string, g?: ResultadoGemini, versaoContexto?: string,
+  tempo?: { total: number; primeira?: number | null },
+) {
+  const linha: Record<string, unknown> = {
     user_id: userId,
     tipo_chamada: tipo,
     status,
@@ -725,7 +743,18 @@ async function auditar(sb: Sb, userId: string, tipo: string, status: string, g?:
     modelo: g ? g.modelo ?? MODELO : null,
     versao_contexto: versaoContexto ?? null,
     data: new Date().toISOString(),
-  })
+  }
+  if (tempo && !semColunaDuracao) {
+    linha.duracao_ms = Math.round(tempo.total)
+    linha.primeira_palavra_ms = tempo.primeira == null ? null : Math.round(tempo.primeira)
+  }
+  let { error } = await sb.from('ai_audit_logs').insert(linha)
+  if (error && 'duracao_ms' in linha && /duracao_ms|primeira_palavra_ms|PGRST204/.test(`${error.code} ${error.message}`)) {
+    semColunaDuracao = true
+    delete linha.duracao_ms
+    delete linha.primeira_palavra_ms
+    ;({ error } = await sb.from('ai_audit_logs').insert(linha))
+  }
   if (error) console.warn('[audit] falhou', error.message)
 }
 
@@ -777,7 +806,7 @@ async function rotear(req: Request): Promise<Response> {
 
     switch (corpo?.tipo) {
       case 'chat':
-        return await handleChatUmaVez(sb, user.id, corpo)
+        return await responderChat(sb, user.id, corpo)
       case 'vision':
         return await handleVision(sb, user.id, corpo)
       case 'scan':
@@ -1214,18 +1243,60 @@ async function salvarRestricao(sb: Sb, userId: string, idAcao: string, args: Arg
  * falha de rede; se o servidor já respondeu (ou ainda está respondendo)
  * aquele id, devolve a mesma resposta em vez de chamar a IA de novo.
  */
-async function handleChatUmaVez(sb: Sb, userId: string, corpo: Record<string, unknown>): Promise<Response> {
+/**
+ * Chat com streaming (Fase 7). O app novo manda `stream: true`; o atual não, e
+ * recebe o JSON de sempre. Enquanto o modelo escreve, vão linhas NDJSON
+ * {"t":"rascunho","texto":...}; no fim, {"t":"fim", ...o JSON de sempre} (que
+ * substitui o rascunho) ou {"t":"erro", status, error}. Se nada foi escrito
+ * antes do fim (crise, comandos sem IA, cota, erro), sai o JSON normal, com o
+ * status HTTP certo.
+ */
+async function responderChat(sb: Sb, userId: string, corpo: Record<string, unknown>): Promise<Response> {
+  if (corpo.stream !== true) return handleChatUmaVez(sb, userId, corpo)
+  let ctrl: ReadableStreamDefaultController<Uint8Array> | null = null
+  const corpoStream = new ReadableStream<Uint8Array>({ start(c) { ctrl = c } })
+  let streaming = false
+  let entregar!: (r: Response) => void
+  const inicio = new Promise<Response>((r) => { entregar = r })
+  const escrever = (o: Record<string, unknown>) => { try { ctrl?.enqueue(linhaNdjson(o)) } catch { /* app fechou */ } }
+  const aoRascunho = (texto: string) => {
+    if (!streaming) {
+      streaming = true
+      entregar(new Response(corpoStream, {
+        headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-cache' },
+      }))
+    }
+    escrever({ t: 'rascunho', texto })
+  }
+  const fechar = () => { try { ctrl?.close() } catch { /* já fechado */ } }
+  handleChatUmaVez(sb, userId, corpo, aoRascunho).then(async (res) => {
+    if (!streaming) return entregar(res)
+    const c = await res.json().catch(() => ({ error: 'ia_falhou' })) as Record<string, unknown>
+    escrever(res.ok ? { t: 'fim', ...c } : { t: 'erro', status: res.status, ...c })
+    fechar()
+  }).catch((e) => {
+    console.error('[chat] stream falhou', String(e))
+    if (!streaming) return entregar(json({ error: 'proxy_error' }, 500))
+    escrever({ t: 'erro', status: 500, error: 'proxy_error' })
+    fechar()
+  })
+  return inicio
+}
+
+async function handleChatUmaVez(
+  sb: Sb, userId: string, corpo: Record<string, unknown>, aoRascunho?: (texto: string) => void,
+): Promise<Response> {
   const idEnvio = uuidValido(corpo.id_envio)
-  if (!idEnvio) return handleChat(sb, userId, corpo)
+  if (!idEnvio) return handleChat(sb, userId, corpo, aoRascunho)
 
   const { error: erroReserva } = await sb.from('life_chat_envios').insert({ user_id: userId, id_envio: idEnvio })
   if (erroReserva) {
     // 23505 = já existe: o mesmo envio chegou antes. Outro erro (tabela fora): segue sem a trava.
-    if (erroReserva.code !== '23505') return handleChat(sb, userId, corpo)
+    if (erroReserva.code !== '23505') return handleChat(sb, userId, corpo, aoRascunho)
     for (let i = 0; i < 20; i++) {
       const { data } = await sb.from('life_chat_envios').select('corpo')
         .eq('user_id', userId).eq('id_envio', idEnvio).maybeSingle()
-      if (!data) return handleChat(sb, userId, corpo) // o primeiro falhou e liberou o id
+      if (!data) return handleChat(sb, userId, corpo, aoRascunho) // o primeiro falhou e liberou o id
       if (data.corpo) return json(data.corpo)
       await new Promise((r) => setTimeout(r, 1000))
     }
@@ -1234,7 +1305,7 @@ async function handleChatUmaVez(sb: Sb, userId: string, corpo: Record<string, un
 
   let res: Response
   try {
-    res = await handleChat(sb, userId, corpo)
+    res = await handleChat(sb, userId, corpo, aoRascunho)
   } catch (e) {
     await sb.from('life_chat_envios').delete().eq('user_id', userId).eq('id_envio', idEnvio)
     throw e
@@ -1246,18 +1317,20 @@ async function handleChatUmaVez(sb: Sb, userId: string, corpo: Record<string, un
     // Erro (cota, IA fora...): libera o id pra pessoa tentar de novo.
     await sb.from('life_chat_envios').delete().eq('user_id', userId).eq('id_envio', idEnvio)
   }
-  // Faxina leve: envios com mais de 2 dias não servem mais pra nada.
-  await sb.from('life_chat_envios').delete().eq('user_id', userId)
-    .lt('criado_em', new Date(Date.now() - 2 * 86_400_000).toISOString())
+  // Faxina leve: envios com mais de 2 dias não servem mais pra nada (em segundo plano).
+  emSegundoPlano(Promise.resolve(sb.from('life_chat_envios').delete().eq('user_id', userId)
+    .lt('criado_em', new Date(Date.now() - 2 * 86_400_000).toISOString())))
   return res
 }
 
-async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>) {
+async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>, aoRascunho?: (texto: string) => void) {
   const chegouEm = new Date()
   const mensagem = texto(corpo.mensagem, MAX_MENSAGEM + 1).trim()
   if (!mensagem) return json({ error: 'invalid_message' }, 400)
   if (mensagem.length > MAX_MENSAGEM) return json({ error: 'message_too_long', max: MAX_MENSAGEM }, 400)
 
+  // Fase 7: a checagem de mensagem repetida já sai junto com a localidade.
+  const repetidaP = respostaDeMensagemRepetida(sb, userId, mensagem).catch(() => null)
   const loc = await lerLocalidade(sb, userId)
 
   // 1. Risco imediato: resposta fixa, sem IA e sem gastar cota.
@@ -1282,7 +1355,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   // 1c. A mesma mensagem de novo logo depois da resposta (toque duplo, script
   //     repetindo): devolve a resposta que já está lá, sem IA e sem cota.
   //     Mensagem curta ("sim", "ok") nunca conta — pode responder outra pergunta.
-  const repetida = await respostaDeMensagemRepetida(sb, userId, mensagem)
+  const repetida = await repetidaP
   if (repetida) {
     await registrarSinal(sb, userId, 'repetida')
     return json({ resposta: repetida, restantes: null })
@@ -1319,22 +1392,32 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     return json({ resposta: r.resposta, restantes: null, acao: r.mudou ? { tipo: 'peso_atualizado' } : null })
   }
 
-  // 2. Cota do plano.
-  const cota = await consumirCota(sb, userId, 'chat', loc.fuso)
-  if (!cota.ok) return cota.resposta
-
-  // 3. Histórico (do banco, não do cliente) + contexto do usuário.
-  const [histRes, ctxDia, pagoRes] = await Promise.all([
+  // 2 e 3 juntos (Fase 7): as leituras que não dependem da cota já saem enquanto
+  // ela é conferida — antes eram umas 8 idas ao banco em fila.
+  const hojeLocal = hojeNoFuso(loc.fuso)
+  const leituras = Promise.all([
     sb.from('life_chat_mensagens')
       .select('autor, texto, resumo')
       .eq('user_id', userId)
       .order('criado_em', { ascending: false })
       .limit(CONTEXTO_CAMADAS ? JANELA_TOTAL : JANELA_HISTORICO),
     montarContexto(sb, userId, loc.fuso),
-    sb.rpc('is_premium_like', { p_user_id: userId }),
+    sb.rpc('is_premium_like', { p_user_id: userId })
+      .then(async (r) => ({ pago: r.data === true, gasto: r.data === true ? await gastoIaNoMes(sb, userId, loc.fuso) : 0 })),
+    lerConsentimentoMemoria(sb, userId),
+    padroesDaPessoa(sb, userId, hojeLocal),
+    mensagensDaPessoa(sb, userId),
+    checkinsDeHoje(sb, userId, hojeLocal),
+    contextoAlo(sb, userId).catch(() => ''),
   ])
-  const pago = pagoRes.data === true
-  const gastoMes = pago ? await gastoIaNoMes(sb, userId, loc.fuso) : 0
+  leituras.catch(() => {}) // cota recusada: ninguém espera por elas
+
+  // 2. Cota do plano.
+  const cota = await consumirCota(sb, userId, 'chat', loc.fuso)
+  if (!cota.ok) return cota.resposta
+
+  // 3. Histórico (do banco, não do cliente) + contexto do usuário.
+  const [histRes, ctxDia, { pago, gasto: gastoMes }, consentimento, padroes, falas, checkinsDia, alo] = await leituras
   const economia = pago && (cota.usados > FLASH_MSGS_DIA || gastoMes > TETO_MES_USD)
   const perfil = pago ? PERFIL_PAGO : PERFIL_GRATIS
   const modeloChat = economia ? MODELO : MODELO_CHAT
@@ -1346,16 +1429,10 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const sensivel = acharTermo(mensagem, TERMOS_SENSIVEIS)
 
   // 3b. Life adaptativo: memória (com consentimento), padrões, jeito de falar e check-in de hoje.
-  const hojeLocal = hojeNoFuso(loc.fuso)
-  const consentimento = await lerConsentimentoMemoria(sb, userId)
   const pedeTudo = PEDE_LEMBRANCAS.test(normalizar(mensagem))
-  const [memorias, padroes, falas, checkinsDia, alo] = await Promise.all([
-    consentimento === true ? memoriasParaContexto(sb, userId, mensagem, hojeLocal, perfil.fatos, pedeTudo) : Promise.resolve([]),
-    padroesDaPessoa(sb, userId, hojeLocal),
-    mensagensDaPessoa(sb, userId),
-    checkinsDeHoje(sb, userId, hojeLocal),
-    contextoAlo(sb, userId).catch(() => ''),
-  ])
+  const memorias = consentimento === true
+    ? await memoriasParaContexto(sb, userId, mensagem, hojeLocal, perfil.fatos, pedeTudo)
+    : []
   const checkinsHoje = checkinsDia.linha
   // Prompt por assunto (01/11): base + check-in + quem ela é vão sempre; o resto
   // só quando o assunto aparece (mensagem, 2 anteriores dela, última do Life, tela).
@@ -1420,15 +1497,19 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
       : '') +
     `\n\nLINHA DE APOIO DO PAÍS DELA (use só quando houver risco ou desespero):\n${linhaApoio(loc)}`
 
-  // 4. IA.
+  // 4. IA. Com streaming (Fase 7), o rascunho passa pelos mesmos filtros de saída
+  //    antes de aparecer; se um deles pegar, o rascunho para e a resposta final troca o texto.
   const ferramentas = ferramentasPara(assuntos, programar)
+  const rascunho = aoRascunho
+    ? novoRascunho((t) => violaPrescricao(t) || pareceReceitaCompleta(t), aoRascunho)
+    : null
   let g = await chamarGemini({
     systemInstruction: { parts: [{ text: sistema }] },
     contents: conteudos,
     ...(ferramentas ? { tools: ferramentas, toolConfig: { functionCallingConfig: { mode: 'AUTO' } } } : {}),
     // 0,8 → 0,6 (01/11): com 0,8 o Lite seguia as regras pela metade (7 de 8 respostas terminando em pergunta).
     generationConfig: configGeracao(perfil.saida, 0.6),
-  }, 25_000, modeloChat)
+  }, 25_000, modeloChat, rascunho ? (acc) => rascunho.aoEscrever(acc) : undefined)
   // Prometeu o cartão da refeição sem chamar a ferramenta: pede de novo,
   // obrigando registrar_alimentos (custo extra só nesse caso).
   if (g.ok && !g.chamadas.length && prometeuRegistro(mensagem, g.texto)) {
@@ -1491,8 +1572,10 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const memoria = !feito && status !== 'fora_tema' ? await aplicarMarcasMemoria(sb, userId, consentimento, marcas) : null
 
   await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: resposta.slice(0, 2000), resumo: !feito && status === 'ok' ? resumo : null })
-  // Na auditoria, os assuntos da mensagem (pra medir quanto cada um custa).
-  await auditar(sb, userId, 'chat', status, g, `${VERSAO_CONTEXTO}+${[...assuntos].sort().join(',') || 'base'}`.slice(0, 60))
+  // Na auditoria, os assuntos da mensagem (pra medir quanto cada um custa) e o tempo.
+  // Em segundo plano (Fase 7): a resposta sai sem esperar o log.
+  emSegundoPlano(auditar(sb, userId, 'chat', status, g, `${VERSAO_CONTEXTO}+${[...assuntos].sort().join(',') || 'base'}`.slice(0, 60),
+    { total: Date.now() - chegouEm.getTime(), primeira: g.primeiraEm ? g.primeiraEm - chegouEm.getTime() : null }))
 
   // Memória em segundo plano: a pessoa não espera por isso.
   if (consentimento === true && status !== 'fora_tema' && valeExtrair(mensagem) && cota.usados <= perfil.extrairAte) {
@@ -1571,6 +1654,11 @@ function textoContexto(ctx: ContextoDia, assuntos: Set<Assunto>): string {
 async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<ContextoDia> {
   const hoje = hojeNoFuso(fuso)
   const ontem = somarDias(hoje, -1)
+  // Fase 7: os planos de referência saem junto com o resto (antes iam depois, em fila).
+  const planosRef = Promise.all(['treino', 'dieta'].map((tipo) => sb.from('planos_gerados')
+    .select('parametros, criado_em').eq('user_id', userId).eq('tipo', tipo)
+    .order('criado_em', { ascending: false }).limit(1).maybeSingle()))
+    .catch(() => [{ data: null }, { data: null }])
   const r = await Promise.allSettled([
     sb.from('profiles')
       .select('nome, objetivo, restricoes, kcal_meta, prot_meta, agua_meta_ml, onboarding_respostas, consentimento_habitos')
@@ -1734,9 +1822,7 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
   if (peso) add(`Último peso: ${peso.peso_kg}kg (${peso.data})`, ['peso'])
 
   // Plano de referência de treino mais recente (só os parâmetros — resumo curto).
-  const { data: planoRef } = await sb.from('planos_gerados')
-    .select('parametros, criado_em').eq('user_id', userId).eq('tipo', 'treino')
-    .order('criado_em', { ascending: false }).limit(1).maybeSingle()
+  const [{ data: planoRef }, { data: dietaRef }] = await planosRef
   if (planoRef?.parametros) {
     const pr = planoRef.parametros as Record<string, unknown>
     const dias = Array.isArray(pr.dias) ? pr.dias.join(', ') : ''
@@ -1744,9 +1830,6 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
   }
 
   // Plano de referência de dieta mais recente (meta + objetivo — sem o cardápio inteiro).
-  const { data: dietaRef } = await sb.from('planos_gerados')
-    .select('parametros, criado_em').eq('user_id', userId).eq('tipo', 'dieta')
-    .order('criado_em', { ascending: false }).limit(1).maybeSingle()
   if (dietaRef?.parametros) {
     const pd = dietaRef.parametros as Record<string, unknown>
     const mt = (pd.metas ?? {}) as Record<string, unknown>
