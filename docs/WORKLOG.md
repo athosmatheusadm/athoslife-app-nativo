@@ -4362,3 +4362,10 @@ Validado: 124 testes Deno, deno check, typecheck, build.
 **Pendências:** token do GitHub (push da `verde-menta`), APK novo +
 `VITE_RC_GOOGLE_KEY`, psicólogo (Fase 5) e advogado (consentimento +
 resumos), e o roteiro de testes do bloco (6).
+
+## 2026-11-02 (9) — verde-menta no GitHub
+
+- Push da `verde-menta` feito (token do dono, só na execução) e PR #3
+  aberto pra `main`: https://github.com/athosmatheusadm/athoslife-app-nativo/pull/3
+- Merge fica com o dono, depois do roteiro de 29 testes. Ainda pendente:
+  `VITE_RC_GOOGLE_KEY` nos secrets, APK novo, PR #2 e webhook do RevenueCat.
