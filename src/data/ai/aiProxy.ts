@@ -382,7 +382,14 @@ export interface RespostaChat {
   sugerirMemoria: boolean
   /** O que motivou o convite: o app guarda se ela aceitar (v4.5). */
   memoriaPendente: readonly LembrancaPendente[]
+  /** Fase 8: rosto do Life no cabeçalho, conforme a resposta (null = mantém). */
+  humor: HumorChat | null
+  /** Fase 8: desabafo além da cota — o app esconde o contador. */
+  contadorOculto: boolean
 }
+
+export type HumorChat = 'normal' | 'escutando' | 'feliz' | 'cozinhando' | 'treino'
+const HUMORES_CHAT: readonly HumorChat[] = ['normal', 'escutando', 'feliz', 'cozinhando', 'treino']
 
 const CATEGORIAS_LEMBRANCA = ['gosto', 'rotina', 'objetivo', 'evento', 'pessoa', 'estilo', 'contexto'] as const
 export interface LembrancaPendente {
@@ -429,6 +436,8 @@ export async function enviarMensagemChat(
     acao?: AcaoLife
     sugerir_memoria?: boolean
     memoria_pendente?: unknown
+    humor?: unknown
+    contador_oculto?: boolean
   }
   const payload = {
     mensagem,
@@ -447,6 +456,8 @@ export async function enviarMensagemChat(
     acao: cru.acao ?? null,
     sugerirMemoria: cru.sugerir_memoria === true,
     memoriaPendente: lerPendentes(cru.memoria_pendente),
+    humor: HUMORES_CHAT.find((h) => h === cru.humor) ?? null,
+    contadorOculto: cru.contador_oculto === true,
   }
 }
 

@@ -13,6 +13,7 @@ import {
   type AcaoLife,
   type EscolhaAcao,
   type FocoLife,
+  type HumorChat,
   type LembrancaPendente,
   type MensagemChat,
 } from '@data/ai/aiProxy'
@@ -70,6 +71,11 @@ function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros'], semRede: 
  * Treino tem "Montar treino"; Dieta tem "Montar dieta", o Life-chef e o
  * scanner. Os planos ficam no fim da conversa (PlanosNoLife).
  */
+/** Humor da resposta → expressões que já existem em /life/. */
+const ROSTO_DO_HUMOR: Record<HumorChat, HumorLife> = {
+  normal: 'normal', escutando: 'calmo', feliz: 'feliz', cozinhando: 'chef', treino: 'treino',
+}
+
 export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; humor?: HumorLife; rascunho?: string }) {
   const foco = props.foco ?? 'home'
   const navigate = useNavigate()
@@ -97,6 +103,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [enviando, setEnviando] = useState(false)
+  // Fase 8: o rosto do Life acompanha a resposta (desabafo: escutando, nunca chef).
+  const [humorConversa, setHumorConversa] = useState<HumorLife | null>(null)
   // Fase 7: o texto do Life enquanto ele escreve (a resposta final substitui).
   const [rascunho, setRascunho] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -296,7 +304,9 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       setRascunho(null)
       falhaRef.current = null
       setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
-      if (r.restantes !== null) setRestantes(r.restantes)
+      if (r.contadorOculto) setRestantes(null)
+      else if (r.restantes !== null) setRestantes(r.restantes)
+      if (r.humor) setHumorConversa(ROSTO_DO_HUMOR[r.humor])
       aplicarAcao(r.acao)
       if (r.sugerirMemoria) setConviteMemoria((c) => c ?? 'mostrar')
       if (r.memoriaPendente.length) pendentesMemoria.current = [...pendentesMemoria.current, ...r.memoriaPendente].slice(-12)
@@ -330,7 +340,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
         <div className="mx-auto mt-3 h-1 w-10 flex-none rounded-full bg-surface-4" aria-hidden="true" />
 
         <div className="flex flex-none items-center gap-3 px-6 pb-3 pt-3">
-          <LifeMascote humor={props.humor ?? 'normal'} alt="" className="h-14 flex-none" estatico />
+          <LifeMascote humor={humorConversa ?? props.humor ?? 'normal'} alt="" className="h-14 flex-none" estatico />
           <div className="min-w-0 flex-1">
             <h2 className="text-xl font-bold text-content-hi">{m.lifeChat.titulo[foco]}</h2>
             <p className="mt-0.5 text-sm text-content-low">{m.lifeChat.sub[foco]}</p>

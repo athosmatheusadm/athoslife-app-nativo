@@ -53,6 +53,7 @@ import {
 } from './memoria.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
 import { juntarStream, linhaNdjson, novoRascunho } from './stream.ts'
+import { ACEITES_GRATIS, EXTRAS_DESABAFO, ehAceiteCurto, extrairHumor, humorFinal, lifeOfereceu, linhaCota, REGRA_HUMOR } from './cota.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import {
   aplicarMarcasMemoria, blocoMemoria, ehConstruir, blocoPadroes, dadosAbertura, escolherAbertura, estiloDaPessoa, extrairMarcasMemoria,
@@ -666,7 +667,10 @@ async function consumirCota(sb: Sb, userId: string, tipo: TipoCota, fuso = FUSO_
   const motivo = row?.motivo ?? 'erro'
   if (motivo === 'premium_required') return { ok: false as const, resposta: json({ error: 'premium_required' }, 403) }
   if (motivo === 'limite_diario') {
-    return { ok: false as const, resposta: json({ error: 'limit_reached', next_reset: tempoAteRenovar(fuso) }, 403) }
+    return {
+      ok: false as const, motivo, limite: Number(row?.limite_hoje ?? 0),
+      resposta: json({ error: 'limit_reached', next_reset: tempoAteRenovar(fuso) }, 403),
+    }
   }
   // Chat pausado até a meia-noite dela por uso fora do tema (ver
   // registrar_sinal_ia) — o app já mostra "volta em HH:MM" pro limit_reached.
@@ -1340,7 +1344,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     // Guarda só o termo que disparou — nunca o texto (dado sensível).
     await sb.from('eventos_seguranca').insert({ user_id: userId, tipo: 'palavra_risco', contexto: crise })
     await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: RESPOSTA_CRISE })
-    return json({ resposta: RESPOSTA_CRISE, restantes: null, seguranca: true })
+    return json({ resposta: RESPOSTA_CRISE, restantes: null, seguranca: true, humor: 'escutando' })
   }
 
   // 1b. Pedido claro de tarefa fora do tema (código, redação, tradução...):
@@ -1395,12 +1399,14 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   // 2 e 3 juntos (Fase 7): as leituras que não dependem da cota já saem enquanto
   // ela é conferida — antes eram umas 8 idas ao banco em fila.
   const hojeLocal = hojeNoFuso(loc.fuso)
+  const histP = sb.from('life_chat_mensagens')
+    .select('autor, texto, resumo')
+    .eq('user_id', userId)
+    .order('criado_em', { ascending: false })
+    .limit(CONTEXTO_CAMADAS ? JANELA_TOTAL : JANELA_HISTORICO)
+    .then((r) => r)
   const leituras = Promise.all([
-    sb.from('life_chat_mensagens')
-      .select('autor, texto, resumo')
-      .eq('user_id', userId)
-      .order('criado_em', { ascending: false })
-      .limit(CONTEXTO_CAMADAS ? JANELA_TOTAL : JANELA_HISTORICO),
+    histP,
     montarContexto(sb, userId, loc.fuso),
     sb.rpc('is_premium_like', { p_user_id: userId })
       .then(async (r) => ({ pago: r.data === true, gasto: r.data === true ? await gastoIaNoMes(sb, userId, loc.fuso) : 0 })),
@@ -1412,9 +1418,22 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   ])
   leituras.catch(() => {}) // cota recusada: ninguém espera por elas
 
-  // 2. Cota do plano.
-  const cota = await consumirCota(sb, userId, 'chat', loc.fuso)
-  if (!cota.ok) return cota.resposta
+  // 2. Cota do plano (Fase 8: cota humana).
+  const sensivelAgora = !!acharTermo(mensagem, TERMOS_SENSIVEIS)
+  // "sim" que só aceita a oferta do Life: não conta (devolvido no fim, se deu certo).
+  const aceite = ehAceiteCurto(mensagem) &&
+    lifeOfereceu((((await histP).data ?? []) as MensagemSalva[]).find((m) => m.autor === 'life')?.texto)
+  let cotaHoje = await consumirCota(sb, userId, 'chat', loc.fuso)
+  let extraDesabafo = false
+  if (!cotaHoje.ok) {
+    // Desabafo não é cortado: conversa emocional ganha até 5 mensagens a mais, sem contador.
+    if (cotaHoje.motivo !== 'limite_diario') return cotaHoje.resposta
+    const emocional = sensivelAgora || await sinalSensivelRecente(sb, userId)
+    if (!emocional || await contarMarcaHoje(sb, userId, hojeLocal, '+extra') >= EXTRAS_DESABAFO) return cotaHoje.resposta
+    extraDesabafo = true
+    cotaHoje = { ok: true as const, usados: cotaHoje.limite, limite: cotaHoje.limite }
+  }
+  const cota = cotaHoje
 
   // 3. Histórico (do banco, não do cliente) + contexto do usuário.
   const [histRes, ctxDia, { pago, gasto: gastoMes }, consentimento, padroes, falas, checkinsDia, alo] = await leituras
@@ -1492,6 +1511,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     blocoUltimasRespostas(historico) +
     alo +
     (catalogo ? blocoCatalogo(catalogo) : '') +
+    linhaCota(extraDesabafo ? null : Math.max(cota.limite - cota.usados, 0), sensivelAgora || assuntos.has('emocional')) +
+    REGRA_HUMOR +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Siga QUANDO É GRAVE: acolha com calor e calma, pergunte como a pessoa está e se está segura, e lembre da linha de apoio e de um profissional, sem alarmar e sem se afastar.'
       : '') +
@@ -1533,7 +1554,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 
   // 5. Ação pedida pelo modelo (o texto dele é ignorado: quem diz "pronto"
   //    é o servidor, depois de gravar) ou filtro de saída na resposta.
-  const { texto: semResumo, resumo } = extrairResumo(g.texto.trim())
+  const { texto: semHumor, humor: humorModelo } = extrairHumor(g.texto.trim())
+  const { texto: semResumo, resumo } = extrairResumo(semHumor)
   const marcas = extrairMarcasMemoria(semResumo)
   let resposta = marcas.texto
   let status = 'ok'
@@ -1574,7 +1596,13 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: resposta.slice(0, 2000), resumo: !feito && status === 'ok' ? resumo : null })
   // Na auditoria, os assuntos da mensagem (pra medir quanto cada um custa) e o tempo.
   // Em segundo plano (Fase 7): a resposta sai sem esperar o log.
-  emSegundoPlano(auditar(sb, userId, 'chat', status, g, `${VERSAO_CONTEXTO}+${[...assuntos].sort().join(',') || 'base'}`.slice(0, 60),
+  // "+extra" (desabafo além da cota) e "+aceite" (o "sim" que não contou) servem de contagem do dia.
+  const deuCerto = status === 'ok' || /_ok$|pendente$|^feita$/.test(status)
+  const aceiteGratis = aceite && !extraDesabafo && deuCerto &&
+    await contarMarcaHoje(sb, userId, hojeLocal, '+aceite') < ACEITES_GRATIS
+  if (aceiteGratis) await devolverCota(sb, userId, 'chat')
+  const marcasLog = `${extraDesabafo ? '+extra' : ''}${aceiteGratis ? '+aceite' : ''}`
+  emSegundoPlano(auditar(sb, userId, 'chat', status, g, `${VERSAO_CONTEXTO}${marcasLog}+${[...assuntos].sort().join(',') || 'base'}`.slice(0, 60),
     { total: Date.now() - chegouEm.getTime(), primeira: g.primeiraEm ? g.primeiraEm - chegouEm.getTime() : null }))
 
   // Memória em segundo plano: a pessoa não espera por isso.
@@ -1585,9 +1613,19 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     ]))
   }
 
+  const humor = humorFinal(humorModelo, {
+    emocional: sensivelAgora || assuntos.has('emocional'),
+    comida: assuntos.has('comida'),
+    treino: assuntos.has('treino'),
+    // "pronto" de verdade; tropeço, pausa e licença do alô não são festa.
+    feito: !!feito && /_ok$|^feita$/.test(feito.status) && !/^(tropeco|pausa|licenca)_/.test(feito.status),
+  })
   return json({
     resposta,
-    restantes: Math.max(cota.limite - cota.usados, 0),
+    // Desabafo além da cota: contador escondido (Fase 8).
+    restantes: extraDesabafo ? null : Math.max(cota.limite - cota.usados + (aceiteGratis ? 1 : 0), 0),
+    ...(extraDesabafo ? { contador_oculto: true } : {}),
+    humor,
     ...(acao ? { acao } : {}),
     ...(memoria?.sugerirMemoria ? { sugerir_memoria: true, memoria_pendente: memoria.pendentes } : {}),
   })
@@ -1600,6 +1638,24 @@ async function gastoIaNoMes(sb: Sb, userId: string, fuso: string): Promise<numbe
     .eq('user_id', userId).gte('data', inicio).limit(5000)
   if (error) { console.warn('[custo] gasto do mês falhou', error.message); return 0 }
   return ((data ?? []) as { custo_estimado: number | null }[]).reduce((t, r) => t + Number(r.custo_estimado ?? 0), 0)
+}
+
+/** Conversa marcada como emocional nas últimas 2 horas (protocolo de palavras sensíveis). */
+async function sinalSensivelRecente(sb: Sb, userId: string): Promise<boolean> {
+  const { count, error } = await sb.from('eventos_seguranca').select('id', { count: 'exact', head: true })
+    .eq('user_id', userId).in('tipo', ['sinal_sensivel', 'palavra_risco'])
+    .gte('data', new Date(Date.now() - 2 * 3_600_000).toISOString())
+  if (error) { console.warn('[cota] sinal sensível falhou', error.message); return false }
+  return (count ?? 0) > 0
+}
+
+/** Quantas respostas de hoje levaram a marca no log (+extra, +aceite). */
+async function contarMarcaHoje(sb: Sb, userId: string, hoje: string, marca: string): Promise<number> {
+  const { count, error } = await sb.from('ai_audit_logs').select('id', { count: 'exact', head: true })
+    .eq('user_id', userId).eq('tipo_chamada', 'chat').like('versao_contexto', `%${marca}+%`)
+    .gte('data', `${hoje}T00:00:00Z`)
+  if (error) { console.warn('[cota] contar marca falhou', error.message); return 99 }
+  return count ?? 0
 }
 
 /** Roda depois da resposta (Supabase EdgeRuntime.waitUntil); fora dele, só não espera. */
