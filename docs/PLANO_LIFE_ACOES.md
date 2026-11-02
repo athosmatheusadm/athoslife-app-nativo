@@ -15,7 +15,7 @@ app → entra no próximo APK.
 - Memória em camadas + importância dos eventos (itens 9 parcial).
 - Prompt por assunto (ai-proxy v40).
 
-## Fase 1 — Refeições planejadas + "Comi ✓"  ← código pronto (falta migração + deploy + APK)
+## Fase 1 — Refeições planejadas + "Comi ✓"  ← no ar (v41); aparece no APK novo
 - Tabela própria `refeicoes_planejadas` (o que o Life deixou no lugar e a
   pessoa ainda não comeu). Não entra em nenhuma soma até o "Comi ✓", que move
   o item pra `itens_refeicao` pelo caminho de sempre (offline incluído).
@@ -29,7 +29,7 @@ app → entra no próximo APK.
 - Prompt: `programar_refeicao` nas ações; "colocar nas refeições não é montar
   dieta".
 
-## Fase 2 — Tropeço pelo chat  ← código pronto (falta migração + deploy; não precisa de APK)
+## Fase 2 — Tropeço pelo chat  ← no ar (v41), funciona no APK atual
 - Gatilho do horário local em `recaidas` (guia item 4).
 - `registrar_tropeco` com confirmação em um toque (sem gastar mensagem).
 

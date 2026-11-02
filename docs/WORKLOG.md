@@ -4172,3 +4172,10 @@ aparelho. **Ordem:** migração → deploy ai-proxy → APK.
 
 Validado: 94 testes Deno, deno check. Falta: aplicar migrações das Fases 1
 e 2 + deploy (v41). Licença pro "oi" da semana seguinte fica na Fase 5.
+
+### 2026-11-02 (2b) — Fases 1 e 2 no ar
+Com autorização do dono: migrações `refeicoes_planejadas` e `tropeco_chat`
+**aplicadas** (conferido: RLS + 4 políticas, gatilho do horário, padrão UTC
+removido, tipo novo em life_acoes) e **ai-proxy v41 publicada**.
+Testar no app atual: "comi um doce agora, não aguentei" (com hábito de doce)
+→ botões Anotar / Deixa pra lá. Fase 1 só no APK novo.
