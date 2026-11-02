@@ -1379,7 +1379,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     ? blocoMemoriaCamadas(memoriasDoAssunto, hojeLocal, pedeTudo) + REGRAS_MEMORIA_AUTO
     : blocoMemoria(memorias, consentimento) + (consentimento === null ? REGRAS_MEMORIA : '')
   const adaptativo = blocoMem +
-    blocoPadroes(padroes) + (estiloDaPessoa([...falas, mensagem]) ?? '')
+    blocoPadroes(padroes) + (estiloDaPessoa([...falas].reverse().concat(mensagem)) ?? '')
 
   const conteudos: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
   for (const m of [...historico, { autor: 'usuario', texto: mensagem }]) {

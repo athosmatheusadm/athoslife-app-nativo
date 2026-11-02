@@ -78,7 +78,7 @@ Cada op:
 NÍVEIS (categoria entre parênteses):
 - nucleo: quem a pessoa é e não muda à toa — objetivo (objetivo), pessoas importantes sem sobrenome (pessoa), restrição alimentar e rotina-base (rotina). Ex.: "Evita lactose", "Trabalha das 8h às 17h".
 - fato: gostos, aversões, hábitos, limites práticos (gosto ou rotina). Ex.: "Não gosta de atum", "Nas noites de curso tem uns 10 minutos pra cozinhar".
-- estilo: como prefere que o Life fale ou pense com ela (estilo), com "confianca" 0.3 se for dedução sua e 1 se ela pediu. Ex.: "Prefere uma sugestão pronta, não opções", "Medidas caseiras, nada de gramas".
+- estilo: como prefere que o Life fale ou pense com ela (estilo), com "confianca" 0.3 se for dedução sua e 1 se ela pediu. Se a conversa confirma um estilo já guardado, repita a MESMA chave com texto parecido (a confiança sobe); se contradiz, "corrigir" na mesma chave com o novo jeito. Ex.: "Prefere uma sugestão pronta, não opções", "Medidas caseiras, nada de gramas".
 - evento: algo com data que aconteceu ou vai acontecer (evento), com "data_referencia". Se ficou algo em aberto pra retomar com cuidado, "estado":"aberto" e "retomar_em" (1 a 3 dias depois). Ex.: "Prova de 10 km do bairro".
 - contexto: a fase atual, que passa (contexto), com "expira_em" de 3 a 14 dias. Ex.: "Semana puxada no serviço".
 - fragmento: um momento marcante, nas palavras dela, em termos gerais (fragmento), "importancia":3. Ex.: "Chamou o que sente de 'sensação de esforço infinito'". No máximo 1 por conversa e só se foi marcante.
@@ -175,6 +175,7 @@ export interface MemoriaCamada {
   nivel?: string | null
   estado?: string | null
   chave?: string | null
+  confianca?: number | null
 }
 
 export function blocoMemoriaCamadas(memorias: MemoriaCamada[], hoje: string, tudo: boolean): string {
@@ -185,7 +186,9 @@ export function blocoMemoriaCamadas(memorias: MemoriaCamada[], hoje: string, tud
   const nucleo = [...de('nucleo'), ...fixadas]
   if (nucleo.length) partes.push(`QUEM ELA É (sempre vale):\n${nucleo.map(linha).join('\n')}`)
   const estilo = de('estilo')
-  if (estilo.length) partes.push(`COMO FALAR COM ELA:\n${estilo.map(linha).join('\n')}`)
+  // Fase 6: confiança baixa entra como tendência; alta (ou pedido dela) como regra.
+  const linhaEstilo = (m: MemoriaCamada) => (m.confianca ?? 1) < 0.7 ? `- Parece preferir: ${m.texto} (palpite; confirme com o jeito dela)` : linha(m)
+  if (estilo.length) partes.push(`COMO FALAR COM ELA (aprendido nas conversas):\n${estilo.map(linhaEstilo).join('\n')}`)
   const fatos = de('fato')
   if (fatos.length) partes.push(`FATOS (gostos, rotina, limites):\n${fatos.map(linha).join('\n')}`)
   const contexto = de('contexto')

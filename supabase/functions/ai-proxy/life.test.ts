@@ -46,11 +46,41 @@ Deno.test('bloco de memória: desligada avisa o modelo para não prometer', () =
 })
 
 Deno.test('jeito de falar: curto, sem emoji, com humor', () => {
-  igual(estiloDaPessoa(['oi', 'tudo bem']), null) // poucas mensagens
+  igual(estiloDaPessoa([]), null)
   const curto = estiloDaPessoa(['oi', 'blz kkkk', 'treinei hj', 'tô cansado', 'kkkkk vdd', 'sim'])!
-  ok(curto.includes('escreve curto') && curto.includes('evite emoji') && curto.includes('humor leve'), curto)
+  ok(curto.includes('COMO_FALAR_COM_ELA') && curto.includes('curto') && curto.includes('sem emoji') && curto.includes('brincadeira'), curto)
+  ok(curto.includes('Tende a'), curto) // 6 mensagens: tendência, não regra
   const emoji = estiloDaPessoa(['bom dia ☀️', 'treino feito 💪', 'amei 😍', 'comi salada 🥗', 'boa noite 🌙'])!
   ok(emoji.includes('1 emoji combina'), emoji)
+})
+
+Deno.test('jeito de falar: desde a 1ª mensagem, como palpite', () => {
+  const um = estiloDaPessoa(['oi, vc pode me ajudar c a dieta? tô perdido'])!
+  ok(um.includes('Primeiro palpite') && um.includes('parece preferir') && um.includes('informal'), um)
+  ok(!um.includes('sem emoji'), um) // 1 mensagem não basta pra dizer que não usa emoji
+  const formal = estiloDaPessoa(['Boa tarde. Gostaria de saber como organizar minhas refeições durante a semana, considerando que trabalho em horário comercial.'])!
+  ok(formal.includes('formal') && !formal.includes('informal'), formal)
+  const muitas = Array.from({ length: 12 }, (_, i) => `ok ${i}`)
+  const regra = estiloDaPessoa(muitas)!
+  ok(!regra.includes('Tende') && !regra.includes('palpite') && regra.includes('Curto'), regra)
+  igual(estiloDaPessoa(['a semana foi corrida mas consegui treinar três vezes, o que pra mim já é uma vitória e tanto']), null)
+})
+
+Deno.test('jeito de falar: pedido explícito vale na hora e o último vence', () => {
+  const direto = estiloDaPessoa(['oi', 'pode ser direto, não precisa explicar'])!
+  ok(direto.includes('Pediu respostas diretas') && direto.includes('vale sempre'), direto)
+  const depois = estiloDaPessoa(['pode ser direto', 'hmm', 'explica melhor isso'])!
+  ok(depois.includes('Pediu explicação') && !depois.includes('Pediu respostas diretas'), depois)
+  const semEmoji = estiloDaPessoa(['bom dia 😀', 'oi 😀', 'para de mandar emoji'])!
+  ok(semEmoji.includes('Pediu sem emoji') && !semEmoji.includes('1 emoji'), semEmoji)
+  ok(estiloDaPessoa(['Be more direct please'])!.includes('Pediu respostas diretas'))
+  ok(estiloDaPessoa(['sé directo'])!.includes('Pediu respostas diretas'))
+})
+
+Deno.test('jeito de falar: "só quero conversar" vale só no momento', () => {
+  ok(estiloDaPessoa(['não quero organizar nada, só quero conversar'])!.includes('quer ser ouvida'))
+  const passou = estiloDaPessoa(['só quero desabafar', 'a', 'b', 'c'])
+  ok(!passou || !passou.includes('quer ser ouvida'), passou ?? '')
 })
 
 Deno.test('check-in: vocabulário fixo, energia vem do servidor, etiquetas filtradas', () => {

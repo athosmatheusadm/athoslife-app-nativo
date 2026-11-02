@@ -93,3 +93,12 @@ Deno.test('prompt da extração explica importância de evento', () => {
   const p = promptExtracao({ agora: 'Agora: x', guardadas: [], troca: [] })
   ok(p.includes('3 = marcante') && p.includes('1 = passageiro'))
 })
+
+Deno.test('estilo guardado: palpite entra como tendência, pedido como regra (Fase 6)', () => {
+  const b = blocoMemoriaCamadas([
+    { texto: 'Quer uma sugestão pronta, não opções', categoria: 'estilo', nivel: 'estilo', data_referencia: null, fixada: false, confianca: 0.3 },
+    { texto: 'Medidas caseiras, nada de gramas', categoria: 'estilo', nivel: 'estilo', data_referencia: null, fixada: false, confianca: 1 },
+  ], HOJE, false)
+  ok(b.includes('- Parece preferir: Quer uma sugestão pronta, não opções (palpite'), b)
+  ok(b.includes('\n- Medidas caseiras, nada de gramas'), b)
+})

@@ -105,19 +105,85 @@ COMO LEMBRAR (memória ligada):
 const EMOJI = /\p{Extended_Pictographic}/u
 const RISADA = /\b(k{3,}|(ha){2,}|(he){2,}|rs(rs)+|(ja){2,}|lol|kkk)\b/i
 
+// Abreviação e gíria de chat (pt/en/es), conferidas na mensagem sem acento.
+const INFORMAL = /(^|[^\p{L}])(vc|vcs|tb|tbm|pq|blz|hj|mt|mto|td|tds|cmg|msm|vlw|flw|tmj|mano|vei|véi|nd|ngm|sla|fds|tô|tá|bora|ur|gonna|wanna|thx|pls|idk|tbh|xq|tmb|porfa|wey)(?=$|[^\p{L}])/iu
+const FORMAL = /\b(prezad[oa]|por gentileza|gostaria de|poderia (me )?(informar|ajudar|dizer)|cordialmente|would you|could you please|i would like|quisiera|podría usted)\b/i
+
+// Pedido explícito vale na hora, com confiança 1 (guia, "Tom de voz"). O último pedido de cada
+// grupo vence ("pode ser direto" e, depois, "explica melhor" → explicar).
+const PEDIDOS_ESTILO: { grupo: string; re: RegExp; regra: string }[] = [
+  { grupo: 'porque', re: /\b(pode ser|seja|mais) diret[oa]\b|\bnao precisa (me )?explicar\b|\bsem (enrolacao|explicacao|textao)\b|\b(responde|fala|seja) (mais )?(curto|breve)\b|\bresumid[oa]\b|\bbe (more )?(brief|direct)\b|\bno need to explain\b|\bkeep it short\b|\b(se|sea) direct[oa]\b|\bsin explicar\b/,
+    regra: 'Pediu respostas diretas: curto, sem explicar o porquê, a não ser que ela pergunte.' },
+  { grupo: 'porque', re: /\bexplica (melhor|mais|direito)\b|\bcom mais detalhes?\b|\bme explica (o )?por ?que\b|\bquero entender\b|\bexplain (more|why)\b|\bmore detail\b|\bexplicame (mejor|mas)\b/,
+    regra: 'Pediu explicação: junto da sugestão, dê o porquê numa frase.' },
+  { grupo: 'emoji', re: /\bsem emoji|\bpara de (usar|mandar|colocar) emoji|\bno emojis?\b|\bsin emojis?\b/,
+    regra: 'Pediu sem emoji: não use nenhum.' },
+  { grupo: 'escolha', re: /\b(me )?da (so )?uma (sugestao|opcao|ideia) so\b|\bescolhe (voce|vc|pra mim|por mim)\b|\bjust pick (one|for me)\b|\belige (tu|por mi)\b/,
+    regra: 'Quer uma sugestão pronta, não opções.' },
+  { grupo: 'escolha', re: /\b(me )?da (umas |algumas )?opcoes\b|\bquero opcoes\b|\boutras opcoes\b|\bgive me (some )?options\b|\bdame opciones\b/,
+    regra: 'Gosta de opções pra comparar: até 3, curtas.' },
+  { grupo: 'medida', re: /\bem gramas\b|\bquantas? (gramas|calorias|kcal)\b|\bin grams\b|\ben gramos\b/,
+    regra: 'Pensa em números: quando falar de comida, dê gramas e kcal.' },
+  { grupo: 'medida', re: /\bsem (essa de )?gramas\b|\bnao (quero|vou) pesar\b|\bmedida caseira\b|\bwithout grams\b|\bsin gramos\b/,
+    regra: 'Medidas caseiras: colher, unidade, prato; nada de gramas.' },
+]
+// Vale só pra mensagem de agora e as 2 anteriores dela (não vira jeito fixo).
+const QUER_SO_CONVERSAR = /\bso quero (conversar|desabafar|falar|ser ouvid[oa])\b|\bso me (escuta|ouve)\b|\bnao quero (solucao|conselho|organizar nada|dica)\b|\bjust (want to )?(talk|vent|listen)\b|\bsolo quiero (hablar|desahogarme)\b/
+
+function semAcento(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+/**
+ * COMO_FALAR_COM_ELA (guia, item 10): desde a 1ª mensagem, com confiança pelo
+ * número de mensagens — até 2 é palpite ("parece preferir"), 3–9 é tendência,
+ * 10+ é regra. `mensagens` em ordem de conversa (a de agora por último).
+ */
 export function estiloDaPessoa(mensagens: string[]): string | null {
-  const msgs = mensagens.map((m) => m.trim()).filter((m) => m.length > 0)
-  if (msgs.length < 5) return null
-  const media = msgs.reduce((s, m) => s + m.length, 0) / msgs.length
-  const comEmoji = msgs.filter((m) => EMOJI.test(m)).length / msgs.length
-  const risadas = msgs.filter((m) => RISADA.test(m)).length / msgs.length
+  const msgs = mensagens.map((m) => m.trim()).filter((m) => m.length > 0).slice(-40)
+  if (!msgs.length) return null
+  const n = msgs.length
+  const media = msgs.reduce((s, m) => s + m.length, 0) / n
+  const fracao = (re: RegExp) => msgs.filter((m) => re.test(m)).length / n
+  const comEmoji = fracao(EMOJI)
+  const risadas = fracao(RISADA)
+  const informal = fracao(INFORMAL)
+  const formal = fracao(FORMAL)
+  const exclama = fracao(/!/)
+
   const dicas: string[] = []
-  if (media < 45) dicas.push('escreve curto: responda em 1 ou 2 frases')
-  else if (media > 180) dicas.push('escreve bastante: pode ir até 3 frases quando o assunto pedir')
-  if (comEmoji < 0.1) dicas.push('quase não usa emoji: evite emoji')
-  else if (comEmoji > 0.5) dicas.push('usa bastante emoji: 1 emoji combina')
-  if (risadas >= 0.2) dicas.push('tem humor leve: brincadeiras curtas combinam, sem forçar')
-  return dicas.length ? `\n\nJEITO DESTA PESSOA (adapte-se): ${dicas.join('; ')}. Se ela pedir outro jeito, vale o que ela pediu.` : null
+  if (media < 45) dicas.push('curto: 1 ou 2 frases')
+  else if (media > 180) dicas.push('detalhado: pode ir até 3 frases quando o assunto pedir')
+  if (formal >= 0.3 && informal < 0.2) dicas.push('mais formal: frases completas, sem gíria')
+  else if (informal >= 0.3 || (n <= 2 && informal > 0)) dicas.push('informal: pode usar o jeito dela de falar (sem copiar erro de digitação nem virar caricatura)')
+  if (comEmoji === 0 && n >= 3) dicas.push('sem emoji')
+  else if (comEmoji > 0.5) dicas.push('1 emoji combina')
+  if (risadas >= 0.2) dicas.push('aceita brincadeira curta, sem forçar')
+  if (exclama >= 0.5 && comEmoji > 0.2) dicas.push('animada: pode responder com energia')
+
+  const pedidos = new Map<string, string>()
+  for (const m of msgs) {
+    const t = semAcento(m)
+    for (const p of PEDIDOS_ESTILO) if (p.re.test(t)) pedidos.set(p.grupo, p.regra)
+  }
+  if (pedidos.has('emoji')) {
+    const i = dicas.findIndex((d) => d.includes('emoji'))
+    if (i >= 0) dicas.splice(i, 1)
+  }
+  const ouvir = msgs.slice(-3).some((m) => QUER_SO_CONVERSAR.test(semAcento(m)))
+
+  if (!dicas.length && !pedidos.size && !ouvir) return null
+  const linhas: string[] = []
+  if (dicas.length) {
+    linhas.push(n <= 2
+      ? `- Primeiro palpite (só ${n} mensage${n === 1 ? 'm' : 'ns'}): parece preferir ${dicas.join('; ')}. Já espelhe isso, mas sem exagerar.`
+      : n < 10
+        ? `- Tende a: ${dicas.join('; ')}.`
+        : `- ${dicas.map((d) => d[0].toUpperCase() + d.slice(1)).join('. ')}.`)
+  }
+  for (const r of pedidos.values()) linhas.push(`- ${r} (ela pediu: vale sempre)`)
+  if (ouvir) linhas.push('- Agora ela quer ser ouvida, não solução: acolha nas palavras dela, sem plano, comida ou treino, a não ser que peça.')
+  return `\n\nCOMO_FALAR_COM_ELA (jeito dela de escrever; o que ela pediu vence o resto):\n${linhas.join('\n')}`
 }
 
 export function blocoPadroes(linhas: string[]): string {
