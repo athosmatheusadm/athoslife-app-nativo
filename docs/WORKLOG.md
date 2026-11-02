@@ -4337,3 +4337,13 @@ Validado: 124 testes Deno, deno check, typecheck, build.
    (resposta já curta e informal); "pode ser direto"; "sim" depois de uma
    oferta (contador não cai); desabafo com a cota no fim (continua, sem
    contador); `ai_audit_logs.duracao_ms`; `life_resumos` no dia seguinte.
+
+## 2026-11-02 (7) — Bug na busca de exercício (no ar na v42)
+
+- `treino.ts` acharExercicio: o nome em hindi (devanágari) virava '' ao
+  normalizar, e '' "cabia" em qualquer pedido → "crucifixo na máquina" ou
+  "remada curvada" ofereciam "Gêmeos em Pé | Rosca Alternada". Corrigido
+  (filtra depois de normalizar) + apelidos: crucifixo na máquina/peck deck →
+  Voador (Pec Deck); cross over/crucifixo na polia → Crossover.
+- Conferido contra o catálogo real do banco. 125 testes Deno.
+- **Precisa deploy da ai-proxy** (entra junto na v43).
