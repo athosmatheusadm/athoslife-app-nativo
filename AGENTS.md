@@ -21,6 +21,10 @@ Duas IAs trabalham neste repositório. Siga isto antes de qualquer mudança.
   (`db/*_migration.sql`) tem que estar aplicada antes de publicar o JS.
 - **Edge Functions** em `supabase/functions/` (`ai-proxy`, `rc-sync`,
   `rc-webhook`, `_shared/`). Mudou uma? Avise no WORKLOG que precisa deploy.
+- **Depois de todo deploy da `ai-proxy`:** rode `node scripts/smoke-life.mjs`
+  (conta de teste) e só dê por feito se passar. Mudou modelo ou config do
+  Gemini? Teste de verdade, não só unitário (02/11: o chat ficou fora do ar
+  porque o Flash recusava a config de raciocínio e ninguém conversou com ele).
 - **Assinatura é pelo RevenueCat** (Play Billing por baixo). Não usar Stripe.
 - **WhatsApp está fora** desta versão. Não reintroduzir.
 - Custo de IA: teto diário baixo no lançamento; proteja contra abuso em vez

@@ -52,7 +52,11 @@ import {
   aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, type MemoriaCamada, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
 } from './memoria.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
-import { juntarStream, linhaNdjson, novoRascunho } from './stream.ts'
+import { linhaNdjson, novoRascunho } from './stream.ts'
+import {
+  chamarGemini, configGeracao, MODELO, MODELO_CHAT, modeloChatPausado, pausarModeloChat, somarUso,
+  type ChamadaFerramenta, type ResultadoGemini, type UsoTokens,
+} from './gemini.ts'
 import { blocoResumos, garantirResumos, lerResumos } from './resumos.ts'
 import { ACEITES_GRATIS, EXTRAS_DESABAFO, ehAceiteCurto, extrairHumor, humorFinal, lifeOfereceu, linhaCota, REGRA_HUMOR } from './cota.ts'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
@@ -64,17 +68,6 @@ import {
 
 const env = (k: string, padrao = '') => Deno.env.get(k) ?? padrao
 
-const GEMINI_KEY = env('GEMINI_API_KEY')
-// 2.5 ficou restrito a quem já usava (erro 404 em 2026-09-27). Troca sem
-// republicar: Secret GEMINI_MODEL no painel do Supabase.
-const MODELO = env('GEMINI_MODEL', 'gemini-3.5-flash-lite')
-/**
- * Só o chat do Life (01/11, dono): o Lite seguia as regras do prompt pela
- * metade. Flash no chat; scanner, receitas e check-in continuam no Lite.
- * Troca sem republicar: Secret GEMINI_MODEL_CHAT. Se o modelo do chat der
- * 404/400 de modelo, a chamada cai no MODELO (o chat nunca para).
- */
-const MODELO_CHAT = env('GEMINI_MODEL_CHAT', 'gemini-3.8-flash')
 
 /**
  * Custo por plano (01/11, dono). Grátis: mesmo Flash, mas contexto enxuto
@@ -106,13 +99,6 @@ const VERSAO_CONTEXTO = CONTEXTO_CAMADAS ? 'camadas-v1' : 'literal-15'
 /** Pausas do Life (dias congelados) em 30 dias — dono 12/10: só o Life oferece, com teto. */
 const MAX_PAUSAS_30_DIAS = 3
 
-// Preço por 1M tokens (USD, entrada/saída) — só pra estimar custo no log.
-const PRECOS: Record<string, [number, number]> = {
-  'gemini-2.5-flash': [0.3, 2.5],
-  'gemini-2.5-flash-lite': [0.1, 0.4],
-  'gemini-3.5-flash-lite': [0.3, 2.5],
-  'gemini-3.8-flash': [0.75, 3.75],
-}
 
 // ================================================================
 // CORS — app nativo (Capacitor) + dev local/rede. O JWT é a proteção
@@ -485,167 +471,6 @@ const RESPOSTA_FORA_DO_TEMA: Record<Idioma, string> = {
 // ================================================================
 // Gemini
 // ================================================================
-interface ChamadaFerramenta {
-  nome: string
-  args: Record<string, unknown>
-}
-
-interface ResultadoGemini {
-  ok: boolean
-  texto: string
-  /** Ações que o modelo pediu (function calling) — o servidor valida e executa. */
-  chamadas: ChamadaFerramenta[]
-  tokens: number
-  custo: number
-  bloqueado: boolean
-  /** Tokens separados, como o Google devolve (só pro log de custo). */
-  uso?: UsoTokens
-  /** Modelo que respondeu de fato (pro log). */
-  modelo?: string
-  /** Fase 7: instante (epoch ms) do primeiro pedaço de texto, quando veio em streaming. */
-  primeiraEm?: number
-}
-
-interface UsoTokens { entrada: number; saida: number; raciocinio: number; cache: number }
-
-function somarUso(a?: UsoTokens, b?: UsoTokens): UsoTokens | undefined {
-  if (!a || !b) return a ?? b
-  return { entrada: a.entrada + b.entrada, saida: a.saida + b.saida, raciocinio: a.raciocinio + b.raciocinio, cache: a.cache + b.cache }
-}
-
-/**
- * Se o Google recusar a requisição (400 — o erro vem genérico, "invalid
- * argument", sem dizer o campo), tenta de novo SEM thinkingConfig, com folga
- * no teto de saída, porque o raciocínio conta dentro de maxOutputTokens e
- * poderia deixar a resposta vazia. (28/09: família 3.x recusou
- * thinkingBudget 0 e o chat inteiro caiu com 502.)
- */
-/** `aoEscrever` (Fase 7): streaming — recebe o texto acumulado a cada pedaço. */
-async function chamarGemini(
-  corpo: Record<string, unknown>, timeoutMs = 25_000, modelo = MODELO, aoEscrever?: (acumulado: string) => void,
-): Promise<ResultadoGemini> {
-  // O raciocínio vai no nível que ESTE modelo aceita (02/11: o Flash 3.x recusa
-  // "minimal" com 400; sem limite, pensava demais e estourava o tempo).
-  const cfgAtual = corpo.generationConfig as Record<string, unknown> | undefined
-  const comRaciocinio = (cfg: Record<string, unknown> | undefined, thinking: Record<string, unknown> | null) => {
-    if (!cfg?.thinkingConfig) return corpo
-    const c = { ...cfg }
-    if (thinking) c.thinkingConfig = thinking
-    else { delete c.thinkingConfig; c.maxOutputTokens = Number(c.maxOutputTokens ?? 0) + 1024 }
-    return { ...corpo, generationConfig: c }
-  }
-  // Com reserva (modelo do chat ≠ padrão), o principal tem menos tempo: sobra pro reserva.
-  const temReserva = modelo !== MODELO
-  const tempo = temReserva ? Math.min(timeoutMs, 14_000) : timeoutMs
-  let r = await chamarGeminiUmaVez(comRaciocinio(cfgAtual, configRaciocinio(modelo)), tempo, modelo, aoEscrever)
-  if (!r.ok && r.status === 400 && cfgAtual?.thinkingConfig && /thinking/i.test(r.erro)) {
-    const outro = configRaciocinio(modelo).thinkingLevel === 'low' ? null : { thinkingLevel: 'low' }
-    r = await chamarGeminiUmaVez(comRaciocinio(cfgAtual, outro), tempo, modelo, aoEscrever)
-  }
-  // Modelo do chat fora, sobrecarregado ou lento demais: cai no padrão — o chat nunca para.
-  const vale = r.status === 0 || r.status === 400 || r.status === 404 || r.status === 429 || r.status >= 500
-  if (!r.ok && temReserva && !r.bloqueado && vale) {
-    console.warn('[gemini] modelo', modelo, 'falhou com', r.status || 'timeout', '— usando', MODELO)
-    return chamarGemini(corpo, timeoutMs, MODELO, aoEscrever)
-  }
-  return r
-}
-
-async function chamarGeminiUmaVez(
-  corpo: Record<string, unknown>,
-  timeoutMs: number,
-  modelo: string,
-  aoEscrever?: (acumulado: string) => void,
-): Promise<ResultadoGemini & { status: number; erro: string }> {
-  const falha = { ok: false, texto: '', chamadas: [] as ChamadaFerramenta[], tokens: 0, custo: 0, bloqueado: false, status: 0, erro: '' }
-  if (!GEMINI_KEY) return falha
-
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
-  try {
-    const res = await fetch(
-      aoEscrever
-        ? `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:streamGenerateContent?alt=sse`
-        : `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
-      {
-        method: 'POST',
-        // Chave no cabeçalho, não na URL (URL vai parar em log).
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
-        body: JSON.stringify(corpo),
-        signal: ctrl.signal,
-      },
-    )
-    if (!res.ok) {
-      const erro = (await res.text().catch(() => '')).slice(0, 300)
-      console.error('[gemini] http', res.status, modelo, erro)
-      return { ...falha, status: res.status, erro }
-    }
-    let primeiraEm: number | undefined
-    const data = aoEscrever && res.body
-      ? await juntarStream(res.body, (acc) => { primeiraEm ??= Date.now(); aoEscrever(acc) })
-      : await res.json()
-    const uso = data?.usageMetadata ?? {}
-    const entrada = Number(uso.promptTokenCount ?? 0)
-    const saida = Number(uso.candidatesTokenCount ?? 0) + Number(uso.thoughtsTokenCount ?? 0)
-    const [pe, ps] = PRECOS[modelo] ?? [0, 0]
-    const candidato = data?.candidates?.[0]
-    const bloqueado = Boolean(data?.promptFeedback?.blockReason) || candidato?.finishReason === 'SAFETY'
-    const txt: string =
-      candidato?.content?.parts?.filter((p: { text?: string }) => typeof p?.text === 'string')
-        .map((p: { text: string }) => p.text).join('') ?? ''
-    const chamadas: ChamadaFerramenta[] = (candidato?.content?.parts ?? [])
-      .map((p: { functionCall?: { name?: unknown; args?: unknown } }) => p?.functionCall)
-      .filter((fc: { name?: unknown } | undefined) => typeof fc?.name === 'string')
-      .map((fc: { name: string; args?: unknown }) => ({
-        nome: fc.name,
-        args: fc.args && typeof fc.args === 'object' ? (fc.args as Record<string, unknown>) : {},
-      }))
-    return {
-      ok: !bloqueado && (txt.length > 0 || chamadas.length > 0),
-      texto: txt,
-      chamadas,
-      tokens: Number(uso.totalTokenCount ?? entrada + saida),
-      custo: (entrada * pe + saida * ps) / 1_000_000,
-      bloqueado,
-      uso: {
-        entrada,
-        saida: Number(uso.candidatesTokenCount ?? 0),
-        raciocinio: Number(uso.thoughtsTokenCount ?? 0),
-        cache: Number(uso.cachedContentTokenCount ?? 0),
-      },
-      modelo,
-      primeiraEm,
-      status: res.status,
-      erro: '',
-    }
-  } catch (e) {
-    console.error('[gemini] erro de rede/timeout', String(e))
-    return falha
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
-/**
- * Raciocínio no mínimo. Gemini 2.x: thinkingBudget 0 (desliga). Gemini 3.x
- * não aceita thinkingBudget 0 (dá 400) — usa thinkingLevel "minimal".
- */
-function configRaciocinio(modelo = MODELO): Record<string, unknown> {
-  if (/^gemini-2\./.test(modelo)) return { thinkingBudget: 0 }
-  // 3.x: só o Lite aceita "minimal"; Flash/Pro começam em "low".
-  return /lite/.test(modelo) ? { thinkingLevel: 'minimal' } : { thinkingLevel: 'low' }
-}
-
-/** Config base: sem "raciocínio" (thinking gasta token escondido), saída curta. */
-function configGeracao(maxTokens: number, temperatura: number, json = false) {
-  return {
-    temperature: temperatura,
-    maxOutputTokens: maxTokens,
-    thinkingConfig: configRaciocinio(),
-    ...(json ? { responseMimeType: 'application/json' } : {}),
-  }
-}
-
 function extrairJSON(txt: string): unknown {
   const limpo = txt.replace(/```(?:json)?/g, '').trim()
   const m = limpo.match(/\{[\s\S]*\}/)
@@ -1430,6 +1255,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     checkinsDeHoje(sb, userId, hojeLocal),
     contextoAlo(sb, userId).catch(() => ''),
     lerResumos(sb, userId, hojeLocal),
+    modeloChatPausado(sb),
   ])
   leituras.catch(() => {}) // cota recusada: ninguém espera por elas
 
@@ -1451,10 +1277,11 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const cota = cotaHoje
 
   // 3. Histórico (do banco, não do cliente) + contexto do usuário.
-  const [histRes, ctxDia, { pago, gasto: gastoMes }, consentimento, padroes, falas, checkinsDia, alo, resumos] = await leituras
+  const [histRes, ctxDia, { pago, gasto: gastoMes }, consentimento, padroes, falas, checkinsDia, alo, resumos, flashPausado] = await leituras
   const economia = pago && (cota.usados > FLASH_MSGS_DIA || gastoMes > TETO_MES_USD)
   const perfil = pago ? PERFIL_PAGO : PERFIL_GRATIS
-  const modeloChat = economia ? MODELO : MODELO_CHAT
+  // Disjuntor: Flash falhou há pouco → direto no Lite, sem esperar estourar o tempo.
+  const modeloChat = economia || flashPausado ? MODELO : MODELO_CHAT
   const salvas = ((histRes.data ?? []) as MensagemSalva[]).reverse()
     .map((m) => ({ ...m, texto: m.texto.replace(MARCA_CARTAO_SALVA, '').trim() }))
     .slice(-(perfil.literais + perfil.antigas))
@@ -1561,6 +1388,9 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     // Nunca deixa "mandei pra conferir" sem cartão.
     else g = { ...g, texto: TXT_REGISTRO[loc.idioma].nada }
   }
+
+  // Pediu o Flash e quem respondeu (ou falhou) foi o Lite: o Flash falhou → pausa.
+  if (modeloChat !== MODELO && g.modelo === MODELO) emSegundoPlano(pausarModeloChat(sb))
 
   if (!g.ok) {
     await devolverCota(sb, userId, 'chat')

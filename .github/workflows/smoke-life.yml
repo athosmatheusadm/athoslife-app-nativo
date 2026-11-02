@@ -1,0 +1,30 @@
+name: Life respondendo (teste de fumaça)
+
+# Conversa com o Life a cada 3 horas e logo depois de qualquer push que mexa na
+# ai-proxy. Se falhar, o GitHub manda e-mail pro dono do repositório.
+# (02/11: o chat ficou fora do ar sem ninguém perceber.)
+#
+# Secrets necessários: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (já existem),
+# SMOKE_EMAIL e SMOKE_SENHA (conta de teste só pra isso, plano trial/vip).
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */3 * * *'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Conversar com o Life
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_SENHA: ${{ secrets.SMOKE_SENHA }}
+        run: node scripts/smoke-life.mjs
