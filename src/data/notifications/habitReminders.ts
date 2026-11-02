@@ -89,7 +89,8 @@ const AVULSO_BASE = 940_000
 const AVULSO_FIM = 950_000
 const DIAS_AVULSOS = 7
 /** Faixas de outros avisos do app (descanso do treino, lembretes do dia) — não são de hábito. */
-const FORA_DE_HABITO = (id: number) => (id >= 910_000 && id < 911_000) || (id >= 920_000 && id < 930_000) || (id >= AVULSO_BASE && id < AVULSO_FIM)
+// 950–960k: os alôs do Life (avisosLife.ts) — não são de hábito, não mexer.
+const FORA_DE_HABITO = (id: number) => (id >= 910_000 && id < 911_000) || (id >= 920_000 && id < 930_000) || (id >= AVULSO_BASE && id < AVULSO_FIM) || (id >= 950_000 && id < 960_000)
 
 interface Guardado {
   id: number

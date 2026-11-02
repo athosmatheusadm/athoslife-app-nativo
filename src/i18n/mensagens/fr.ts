@@ -734,6 +734,8 @@ export const fr: Mensagens = {
     descansoTexto: 'Allez, série suivante.',
     cronometroTitulo: 'Temps ! ✅',
     cronometroTexto: 'Série terminée.',
+    /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    avisoOi: ['Je passe te dire coucou 🙂', 'Coucou ! Tout va bien ?', 'Alors, ta journée se passe bien ?'],
     textos: {
       agua: [
         'Hé, un verre d’eau ? 💧',

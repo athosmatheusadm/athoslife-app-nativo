@@ -40,9 +40,10 @@ app → entra no próximo APK.
 ## Fase 4 — Água e hábito pelo chat + desfazer (guia item 7)  ← código pronto (falta migração + deploy; funciona no APK atual)
 - "Bebi 2 copos" sem IA e sem cota; `marcar_habito`; desfazer em toda ação.
 
-## Fase 5 — Aviso de recaída com licença (guia item 8)
+## Fase 5 — Aviso de recaída com licença (guia item 8)  ← código pronto, DESLIGADO (life_config); falta migração + deploy + APK + validação do psicólogo
 - `life_avisos`, licença, papo leve na abertura, notificação local.
-- Antes de publicar: régua validada com o psicólogo (guia item 12).
+- Antes de ligar: régua validada com o psicólogo (guia item 12).
+- Fica pra depois: janela de risco fixa semanal, licença também pela tela de Hábitos (hoje só pelo chat), cancelar o alô em dia pausado.
 
 ## Fase 6 — Jeito de falar desde a 1ª mensagem (guia item 10)
 - Confiança do estilo no prompt ("parece preferir" × regra).

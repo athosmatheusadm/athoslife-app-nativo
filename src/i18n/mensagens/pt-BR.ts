@@ -742,6 +742,8 @@ export const ptBR = {
     descansoTexto: 'Bora pra próxima série.',
     cronometroTitulo: 'Tempo! ✅',
     cronometroTexto: 'Série concluída.',
+    /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    avisoOi: ['Passando pra dar um oi 🙂', 'Oi! Tudo certo por aí?', 'E aí, como tá o dia?'],
     textos: {
       agua: [
         'Ei, bora um copo d’água? 💧',

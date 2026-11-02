@@ -47,6 +47,7 @@ import {
   type DiaSemana, type ExercicioCatalogo, type Local, type SerieDetalhe,
 } from './treino.ts'
 import { lerComandoAgua, pedeDesfazer, TXT_RAPIDO } from './rapido.ts'
+import { linhaAlo, papoLeve, pedeLigarAvisos, pedeParaAvisos, TXT_AVISO } from './aviso.ts'
 import {
   aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, type MemoriaCamada, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
 } from './memoria.ts'
@@ -790,7 +791,7 @@ async function rotear(req: Request): Promise<Response> {
       case 'checkin':
         return await handleCheckin(sb, user.id, corpo)
       case 'abertura':
-        return await handleAbertura(sb, user.id)
+        return await handleAbertura(sb, user.id, corpo)
       default:
         return json({ error: 'invalid_type' }, 400)
     }
@@ -1295,6 +1296,15 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: r.resposta })
     return json({ resposta: r.resposta, restantes: null, acao: r.acao })
   }
+  if ((pedeParaAvisos(mensagem) || pedeLigarAvisos(mensagem)) && await avisoLigado(sb)) {
+    const pode = pedeLigarAvisos(mensagem)
+    const { error } = await sb.rpc('life_responder_licenca_aviso', { p_pode: pode, p_user_id: userId })
+    if (!error) {
+      const resposta = pode ? TXT_AVISO[loc.idioma].religuei : TXT_AVISO[loc.idioma].parei
+      await gravarTroca(sb, userId, chegouEm, { texto: mensagem }, { texto: resposta })
+      return json({ resposta, restantes: null, acao: { tipo: 'aviso_agendado' } })
+    }
+  }
   const mlAgua = lerComandoAgua(mensagem)
   if (mlAgua) {
     const r = await registrarAguaChat(sb, userId, loc, mlAgua)
@@ -1339,11 +1349,12 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const hojeLocal = hojeNoFuso(loc.fuso)
   const consentimento = await lerConsentimentoMemoria(sb, userId)
   const pedeTudo = PEDE_LEMBRANCAS.test(normalizar(mensagem))
-  const [memorias, padroes, falas, checkinsDia] = await Promise.all([
+  const [memorias, padroes, falas, checkinsDia, alo] = await Promise.all([
     consentimento === true ? memoriasParaContexto(sb, userId, mensagem, hojeLocal, perfil.fatos, pedeTudo) : Promise.resolve([]),
     padroesDaPessoa(sb, userId, hojeLocal),
     mensagensDaPessoa(sb, userId),
     checkinsDeHoje(sb, userId, hojeLocal),
+    contextoAlo(sb, userId).catch(() => ''),
   ])
   const checkinsHoje = checkinsDia.linha
   // Prompt por assunto (01/11): base + check-in + quem ela é vão sempre; o resto
@@ -1402,6 +1413,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     adaptativo +
     (CONTEXTO_CAMADAS ? blocoConversaAnterior(camadas.linhas) + REGRA_RESUMO : '') +
     blocoUltimasRespostas(historico) +
+    alo +
     (catalogo ? blocoCatalogo(catalogo) : '') +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Siga QUANDO É GRAVE: acolha com calor e calma, pergunte como a pessoa está e se está segura, e lembre da linha de apoio e de um profissional, sem alarmar e sem se afastar.'
@@ -2253,6 +2265,8 @@ type AcaoCliente =
   | { tipo: 'treino_atualizado'; local: Local }
   /** Água anotada/desfeita pelo chat (Fase 4): o app recarrega o card (APK antigo ignora). */
   | { tipo: 'agua_atualizada' }
+  /** Os alôs mudaram (Fase 5): o app reagenda as notificações (APK antigo ignora). */
+  | { tipo: 'aviso_agendado' }
   /** Refeições planejadas (02/11): o app grava em refeicoes_planejadas quando a pessoa confirma. */
   | {
     tipo: 'programar_itens'
@@ -2438,6 +2452,22 @@ async function executarFerramenta(
 
   const modo = a.modo === 'adicionar' || a.modo === 'substituir' ? a.modo : 'perguntar'
   return executarRepeticao(sb, userId, id, { origem: o.ref, destino: d.ref, modo, forcar: false }, loc.idioma, hoje)
+}
+
+// ---------- o "oi" depois do tropeço (Fase 5) ----------
+/** Interruptor no banco (life_config.aviso_risco); começa desligado. */
+async function avisoLigado(sb: Sb): Promise<boolean> {
+  const { data, error } = await sb.rpc('life_config_ligada', { p_chave: 'aviso_risco' })
+  return !error && data === true
+}
+
+/** Linha do alô de hoje pro chat (a pessoa abriu pelo oi): o Life entende sem cobrar. */
+async function contextoAlo(sb: Sb, userId: string): Promise<string> {
+  const { data } = await sb.from('life_avisos').select('enviar_em, vicios_user(nome)')
+    .eq('user_id', userId).eq('estado', 'aberto').gt('enviar_em', new Date(Date.now() - 6 * 3_600_000).toISOString())
+    .order('enviar_em', { ascending: false }).limit(1).maybeSingle()
+  const nome = (data as { vicios_user?: { nome?: string } | null } | null)?.vicios_user?.nome
+  return nome ? linhaAlo(nome) : ''
 }
 
 // ---------- água, hábito e desfazer (Fase 4) ----------
@@ -2764,7 +2794,20 @@ async function anotarTropeco(sb: Sb, userId: string, idAcao: string, args: ArgsT
     : { resposta: tt.anotado, acao: { tipo: 'refeicao_atualizada', data: args.data }, status: 'tropeco_ok' }
   if (error) console.error('[tropeco] gravar falhou', error.message)
   await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r, undefined, nova ? { recaida_id: nova.id, vicio_id: args.vicio_id, foto } : undefined)
-  return r
+  if (error || !(await avisoLigado(sb))) return r
+  // Fase 5: licença pro oi da semana que vem — perguntada UMA vez.
+  const { data: perfil } = await sb.from('profiles').select('avisos_risco, consentimento_habitos, life_chat_ligado').eq('id', userId).maybeSingle()
+  if (perfil?.consentimento_habitos !== true || perfil?.life_chat_ligado === false) return r
+  if (perfil?.avisos_risco === true) return { ...r, acao: { tipo: 'aviso_agendado' } }
+  if (perfil?.avisos_risco === false) return r
+  const ta = TXT_AVISO[idioma]
+  const idLicenca = await criarPendencia(sb, userId, 'licenca_aviso', { data: args.data })
+  if (!idLicenca) return r
+  return {
+    resposta: `${r.resposta} ${ta.licenca(args.data)}`,
+    acao: { tipo: 'escolha', id: idLicenca, opcoes: [{ valor: 'salvar', rotulo: ta.pode }, { valor: 'cancelar', rotulo: ta.naoPrecisa }] },
+    status: r.status,
+  }
 }
 
 /**
@@ -2897,6 +2940,10 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
   } else if (pend.expira_em && Date.parse(pend.expira_em) < Date.now()) {
     r = { resposta: t.expirou, acao: null, status: 'acao_expirada' }
     await fecharAcao(sb, id, 'cancelada', r)
+  } else if (escolha === 'cancelar' && pend.tipo === 'licenca_aviso') {
+    await sb.rpc('life_responder_licenca_aviso', { p_pode: false, p_user_id: userId })
+    r = { resposta: TXT_AVISO[loc.idioma].tudoBem, acao: { tipo: 'aviso_agendado' }, status: 'licenca_nao' }
+    await fecharAcao(sb, id, 'cancelada', r)
   } else if (escolha === 'cancelar') {
     const resposta = pend.tipo === 'salvar_restricao' ? t.restricaoNao
       : pend.tipo === 'registrar_tropeco' ? TXT_TROPECO[loc.idioma].naoAnotei : t.cancelado
@@ -2911,6 +2958,13 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
     r = pend.tipo === 'adicionar_exercicio'
       ? await executarExercicio(sb, userId, id, pend.args as ArgsExercicio, loc.idioma)
       : await executarCopiaTreino(sb, userId, id, pend.args as ArgsCopiaTreino, escolha === 'substituir' ? 'substituir' : 'adicionar', loc.idioma)
+  } else if (pend.tipo === 'licenca_aviso') {
+    if (escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
+    const { error } = await sb.rpc('life_responder_licenca_aviso', { p_pode: true, p_user_id: userId })
+    r = error
+      ? { resposta: t.falhou, acao: null, status: 'licenca_falhou' }
+      : { resposta: TXT_AVISO[loc.idioma].combinado, acao: { tipo: 'aviso_agendado' }, status: 'licenca_ok' }
+    await fecharAcao(sb, id, error ? 'falhou' : 'feita', r)
   } else if (pend.tipo === 'marcar_habito') {
     if (escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
     const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
@@ -2943,7 +2997,9 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
   }
 
   // O que a pessoa tocou, com o rótulo que ela viu.
-  const rotulo = pend?.tipo === 'marcar_habito' && (escolha === 'salvar' || escolha === 'cancelar')
+  const rotulo = pend?.tipo === 'licenca_aviso'
+    ? (escolha === 'salvar' ? TXT_AVISO[loc.idioma].pode : TXT_AVISO[loc.idioma].naoPrecisa)
+    : pend?.tipo === 'marcar_habito' && (escolha === 'salvar' || escolha === 'cancelar')
     ? (escolha === 'salvar' ? TXT_RAPIDO[loc.idioma].marcar : TXT_RAPIDO[loc.idioma].deixa)
     : pend?.tipo === 'registrar_tropeco'
     ? (escolha === 'salvar' ? TXT_TROPECO[loc.idioma].anotar : TXT_TROPECO[loc.idioma].deixa)
@@ -3277,9 +3333,28 @@ async function handleCheckin(sb: Sb, userId: string, corpo: Record<string, unkno
 // regras fixas (evento lembrado, "como foi?", marco de hábito, dias
 // pesados, sumiço). Respeita pausa e "Life pode puxar conversa". Sem IA.
 // ================================================================
-async function handleAbertura(sb: Sb, userId: string) {
+async function handleAbertura(sb: Sb, userId: string, corpo: Record<string, unknown> = {}) {
   const loc = await lerLocalidade(sb, userId)
   const hoje = hojeNoFuso(loc.fuso)
+  // Fase 5: a pessoa tocou na notificação do alô → papo leve, sem IA, sem citar o hábito.
+  const avisoId = uuidValido(corpo.aviso_id)
+  if (avisoId && await avisoLigado(sb)) {
+    const { data: av } = await sb.from('life_avisos').update({ estado: 'aberto' })
+      .eq('id', avisoId).eq('user_id', userId).in('estado', ['agendado', 'aberto']).select('id').maybeSingle()
+    if (!av) return json({ mensagem: null })
+    const hora = Number(new Intl.DateTimeFormat('en-US', { timeZone: loc.fuso, hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
+    const texto = papoLeve(hoje, hora, loc.idioma)
+    await sb.from('life_iniciativas').insert({ user_id: userId, dia: hoje, motivo: 'alo', texto })
+    await sb.from('life_chat_mensagens').insert({ user_id: userId, autor: 'life', texto, tipo: 'iniciativa' })
+    return json({ mensagem: texto, motivo: 'alo' })
+  }
+  // Alô marcado pra mais tarde hoje: ele é a iniciativa do dia, as outras esperam.
+  if (await avisoLigado(sb)) {
+    const { count } = await sb.from('life_avisos').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('estado', 'agendado').gt('enviar_em', new Date().toISOString())
+      .lt('enviar_em', new Date(Date.now() + 18 * 3_600_000).toISOString())
+    if (count) return json({ mensagem: null })
+  }
   const escolha = escolherAbertura(await dadosAbertura(sb, userId, hoje, loc.idioma))
   if (!escolha) return json({ mensagem: null })
   // Chave (user_id, dia): se outro aparelho já registrou hoje, não repete.

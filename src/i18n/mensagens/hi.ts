@@ -735,6 +735,8 @@ export const hi: Mensagens = {
     descansoTexto: 'चलिए, अगला सेट।',
     cronometroTitulo: 'समय पूरा! ✅',
     cronometroTexto: 'सेट पूरा हुआ।',
+    /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    avisoOi: ['बस हाल पूछने आया 🙂', 'हाय! सब ठीक है?', 'कैसा चल रहा है आज का दिन?'],
     textos: {
       agua: [
         'अरे, एक गिलास पानी हो जाए? 💧',

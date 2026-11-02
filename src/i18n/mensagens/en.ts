@@ -728,6 +728,8 @@ export const en: Mensagens = {
     descansoTexto: 'On to the next set.',
     cronometroTitulo: 'Time! ✅',
     cronometroTexto: 'Set done.',
+    /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    avisoOi: ['Just dropping by to say hi 🙂', 'Hi! All good over there?', 'Hey, how\'s your day going?'],
     textos: {
       agua: [
         'Hey, how about a glass of water? 💧',

@@ -4220,3 +4220,30 @@ Validado: 98 testes Deno, deno check, typecheck, build.
 - App novo: `agua_atualizada` recarrega o card de água.
 
 Validado: 101 testes Deno, deno check, typecheck, build.
+
+## 2026-11-02 (5) — Fase 5: o "oi" depois do tropeço (pronto, DESLIGADO)
+
+- `db/athoslife_aviso_risco_migration.sql` (**não aplicada**; ordem: Fase 3
+  → Fase 4 → Fase 5): `life_config` (interruptor `aviso_risco`='0'),
+  `profiles.avisos_risco`, `life_avisos` (RLS dono lê), gatilho que marca o
+  alô a cada tropeço (7 dias depois, 30 min antes, fuso dela; um por hábito
+  por dia, vale o mais cedo; 2 alôs seguidos sem abrir → para; sem licença
+  fica 'proposto'), `life_responder_licenca_aviso`, tipo `licenca_aviso`.
+  Testada com rollback (desligado nada; proposto; Pode → agendado; Não
+  precisa → cancela e para).
+- ai-proxy (`aviso.ts`): depois do "Anotar" do tropeço, pergunta UMA vez
+  "Se quiser, domingo que vem, um pouco antes desse horário, eu passo pra
+  dar um oi. Pode ser?" [Pode] [Não precisa]. "não precisa me avisar" /
+  "pode me dar um oi" pelo chat, sem IA e sem cota. Abertura com aviso_id →
+  papo leve que muda por semana e nunca cita o hábito (teste varre 5
+  idiomas × 21 dias × 3 horários contra as palavras proibidas do guia); o
+  chat seguinte recebe a linha ALÔ DE HOJE (o Life entende sem cobrar);
+  alô marcado mais tarde hoje segura as outras aberturas. Tudo só com o
+  interruptor ligado.
+- App (`avisosLife.ts`): agenda no aparelho os alôs 'agendado' (faixa de
+  ids 950–960k, protegida dos lembretes de hábito), texto neutro variado nos
+  5 idiomas; toque → Hábitos + papo leve + chat aberto; reagenda ao abrir,
+  ao voltar pro app e com a ação `aviso_agendado`.
+
+Validado: 105 testes Deno, deno check, typecheck, build.
+**Ligar só depois do psicólogo:** `update life_config set valor='1' where chave='aviso_risco';`

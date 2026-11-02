@@ -31,6 +31,7 @@ import { RegistroNoChat } from './RegistroNoChat'
 import { ProgramarNoChat } from './ProgramarNoChat'
 import { avisarPlanoAplicado } from '@app/eventosLife'
 import { EVENTO_AGUA_MUDOU } from '@app/IntegracoesNativas'
+import { EVENTO_AVISOS } from '@data/notifications/avisosLife'
 import { useI18n } from '@/i18n/I18nProvider'
 import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
@@ -159,6 +160,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     if (acao?.tipo === 'programar_itens') setProgramar(acao)
     if (acao?.tipo === 'refeicao_atualizada') avisarRegistroDoDia()
     if (acao?.tipo === 'treino_atualizado') avisarPlanoAplicado({ tipo: 'treino', local: acao.local })
+    if (acao?.tipo === 'aviso_agendado') window.dispatchEvent(new Event(EVENTO_AVISOS))
     if (acao?.tipo === 'agua_atualizada') {
       window.dispatchEvent(new Event(EVENTO_AGUA_MUDOU))
       avisarRegistroDoDia()

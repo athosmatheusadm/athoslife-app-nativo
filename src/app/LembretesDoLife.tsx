@@ -7,6 +7,8 @@ import { aoAplicarPlano, pedirAbrirLife } from './eventosLife'
 import { aoMudarPausa } from '@data/lifePausa'
 import { aoRegistrarNoDia } from '@data/registroDoDia'
 import { nativo, replanejarLembretes } from '@data/notifications/lembretesDiarios'
+import { EVENTO_AVISOS, sincronizarAvisos } from '@data/notifications/avisosLife'
+import { buscarAberturaLife } from '@data/ai/aiProxy'
 
 const ROTAS = new Set(['/home', '/dieta', '/treinos', '/habitos'])
 
@@ -25,6 +27,10 @@ export function LembretesDoLife() {
   useEffect(() => {
     if (!nativo || !logado) return
     void replanejarLembretes(metaMl)
+    // Alôs do Life (Fase 5): agenda os que o servidor marcou.
+    const sincronizar = () => void sincronizarAvisos().catch(() => {})
+    sincronizar()
+    window.addEventListener(EVENTO_AVISOS, sincronizar)
 
     let espera: ReturnType<typeof setTimeout> | null = null
     // Vários registros seguidos (ex.: "adicionar tudo") viram um replanejamento só.
@@ -37,13 +43,17 @@ export function LembretesDoLife() {
     // Pausou/retomou ou mudou o "Life puxa conversa": refaz na hora.
     const tirarPausa = aoMudarPausa(logoMais)
     const app = CapApp.addListener('appStateChange', ({ isActive }) => {
-      if (isActive) void replanejarLembretes(metaMl)
+      if (isActive) {
+        void replanejarLembretes(metaMl)
+        sincronizar()
+      }
     })
     return () => {
       if (espera) clearTimeout(espera)
       tirarRegistro()
       tirarPlano()
       tirarPausa()
+      window.removeEventListener(EVENTO_AVISOS, sincronizar)
       void app.then((h) => h.remove())
     }
   }, [logado, metaMl])
@@ -55,6 +65,12 @@ export function LembretesDoLife() {
       if (typeof rota === 'string' && ROTAS.has(rota)) navigate(rota)
       // Check-in do Life: abre o chat (o Life do canto da Home escuta o pedido).
       if (notification.extra?.abrirLife === true) setTimeout(pedirAbrirLife, 400)
+      // Alô do Life (Fase 5): vai pra Hábitos, o servidor põe o papo leve no chat e ele abre.
+      const avisoId: unknown = notification.extra?.avisoId
+      if (typeof avisoId === 'string') {
+        navigate('/habitos')
+        void buscarAberturaLife(avisoId).catch(() => null).finally(() => setTimeout(pedirAbrirLife, 400))
+      }
     })
     return () => void h.then((x) => x.remove())
   }, [navigate])

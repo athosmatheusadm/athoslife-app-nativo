@@ -280,6 +280,8 @@ export type AcaoLife =
   | { tipo: 'treino_atualizado'; local: 'casa' | 'academia' }
   /** Água anotada ou desfeita pelo chat (Fase 4): recarrega o card de água. */
   | { tipo: 'agua_atualizada' }
+  /** Os alôs mudaram (Fase 5): reagenda as notificações do Life. */
+  | { tipo: 'aviso_agendado' }
   /**
    * Refeição digitada ("almocei arroz e feijão", ai-proxy v4.5): alimentos já
    * achados na base. O chat mostra o cartão de conferência; só grava quando a
@@ -407,8 +409,9 @@ export async function enviarCheckin(c: {
  * O Life puxa assunto (máx. 1 por dia, regras fixas, sem IA). O servidor
  * entrega a mensagem uma vez só e ela já fica no histórico do chat.
  */
-export async function buscarAberturaLife(): Promise<string | null> {
-  const cru = await chamar<{ mensagem: string | null }>('abertura', {})
+/** `avisoId`: a pessoa tocou na notificação do alô (Fase 5) — vem o papo leve. */
+export async function buscarAberturaLife(avisoId?: string): Promise<string | null> {
+  const cru = await chamar<{ mensagem: string | null }>('abertura', avisoId ? { aviso_id: avisoId } : {})
   return cru.mensagem ?? null
 }
 
