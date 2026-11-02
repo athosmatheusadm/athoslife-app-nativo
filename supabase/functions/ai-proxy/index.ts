@@ -43,6 +43,10 @@ import {
 } from './programar.ts'
 import { acharHabito, lerHora, TXT_TROPECO, type HabitoEvitar } from './tropeco.ts'
 import {
+  acharExercicio, diaDaData, FALA_DE_DOR, lerDia, lerDias, montarSeries, nomeDias, nomeLocal, TXT_TREINO,
+  type DiaSemana, type ExercicioCatalogo, type Local, type SerieDetalhe,
+} from './treino.ts'
+import {
   aplicarOps, blocoMemoriaCamadas, memoriasGuardadas, type MemoriaCamada, PEDE_LEMBRANCAS, promptExtracao, REGRAS_MEMORIA_AUTO, validarOps, valeExtrair,
 } from './memoria.ts'
 import { repoSupabase } from './scanner/repositorio.ts'
@@ -844,7 +848,7 @@ PODE:
 NUNCA:
 - Montar plano de dieta ou cardápio inteiro do nada, definir calorias/macros-alvo para a pessoa. (Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao.)
 - Dizer QUAL suplemento ou remédio tomar, nem QUANTO (dose, gramas, scoops, horários).
-- Recomendar treino, exercícios, séries, repetições ou carga.
+- Recomendar treino, exercícios, séries, repetições ou carga. (Pôr na ficha um exercício que a pessoa pediu, com as séries que ela disse ou o padrão do app, não é recomendar: é com adicionar_exercicio. Carga, nunca: quem define é ela.)
 - Diagnosticar nada físico ou emocional, nem fazer terapia.
 - Falar de peso/corpo de forma negativa ou comparativa; sugerir jejum ou restrição agressiva.
 - Acompanhar, dar dicas ou planos pra parar/reduzir álcool, cigarro/vape, drogas ou apostas. O ATHOSlife não trata dependência: se a pessoa trouxer isso, acolha sem julgar, diga com carinho que isso merece um serviço de saúde especializado (no Brasil, o CAPS AD, gratuito pelo SUS; em outros países, o serviço de saúde local) e siga com o que você pode fazer no app.
@@ -890,7 +894,11 @@ const MOD_COMIDA = `COMIDA (a conversa é sobre comida):
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de dieta que o app montou (se estiver no contexto): de onde vem a meta (fórmula de gasto + objetivo), por que proteína/carboidrato/gordura, como usar o dia-modelo e trocar alimentos equivalentes DENTRO dele. Nunca mude calorias, macros ou quantidades. Só se ela pedir pra mudar a META do plano, diga uma vez que o plano pode ser refeito no "Montar dieta" (chat do Life na Dieta). Fale "a meta de referência do seu plano é X kcal", nunca "você deve comer X kcal".`
 const MOD_TREINO = `TREINO (a conversa é sobre treino):
 - Só quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta uma dieta pra mim", "quero uma ficha de treino"): não monte você; diga UMA vez, numa frase, que o plano completo sai pelo botão "Montar treino" (chat do Life no Treino) ou "Montar dieta" (chat do Life na Dieta), com um check de saúde rápido na primeira vez. NUNCA indique esses botões quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor, nem repita a indicação na conversa (dono, 02/11): aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
-- Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude séries, repetições, carga ou dias do plano — se a pessoa quiser mudar, diga que ela ajusta na ficha ou monta de novo no botão "Montar treino" (chat do Life no Treino).`
+- Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude o plano por conta própria. Se ela pedir pra pôr um exercício num dia ou copiar o treino de outro dia, use adicionar_exercicio ou copiar_treino. Pra mudar séries, repetições ou carga do que já está na ficha, ela ajusta na ficha.
+- adicionar_exercicio: ela pediu pra pôr um exercício num dia ("põe o supino no meu treino de quinta"). Use as séries e repetições que ela disse, ou deixe vazio (o app usa o padrão). Carga só se ela disse. O app confirma com um toque; não diga que colocou.
+- copiar_treino: "copia o treino de quinta pra hoje". Se não ficou claro se é só hoje ou toda semana, pergunte antes ("Só hoje ou toda semana?") e não chame. "O que eu fiz quinta passada" é origem_data (o que ela fez, com as cargas dela).
+- Se ela falou de dor, lesão ou limitação física nesta conversa: não adicione nem copie exercício. Acolha e sugira um profissional (educador físico, fisioterapeuta, médico).
+- Se o check de saúde estiver BLOQUEADO ou com ressalva, siga o que a linha do check diz e não use essas ferramentas.`
 const MOD_HABITOS = `HÁBITOS (a conversa é sobre hábitos):
 - Hábito de EVITAR algo (ex.: doce) e a pessoa pede justamente isso: atenda o pedido, sem sermão e sem negar, e reconheça de leve o esforço uma vez (ex.: "Tá firme há 5 dias no doce — se quiser uma versão mais leve: ..."). Use as alternativas que a tela de Hábitos mostra (no contexto) quando couber. Não repita o hábito como advertência a cada mensagem.
 - Hábitos: use os gatilhos, o horário de risco, a melhor sequência e os tropeços do contexto pra ajudar no momento — tropeço é parte do caminho, nunca fracasso.
@@ -1424,7 +1432,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const foraDoTema = /^\s*\[\s*fora\s*\]/i.test(resposta)
   resposta = resposta.replace(MARCA_FORA, '').trim()
   const chamada = g.chamadas[0]
-  const feito = chamada ? await executarFerramenta(sb, userId, loc, chamada, uuidValido(corpo.id_envio)) : null
+  const feito = chamada ? await executarFerramenta(sb, userId, loc, chamada, uuidValido(corpo.id_envio), mensagem) : null
   if (foraDoTema && !feito) {
     status = 'fora_tema'
     if (!resposta) resposta = RESPOSTA_FORA_DO_TEMA[loc.idioma]
@@ -1565,6 +1573,9 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
     sb.from('triagens_saude')
       .select('apto_treino, apto_dieta, motivos, ciente_orientacao')
       .eq('user_id', userId).order('criado_em', { ascending: false }).limit(1).maybeSingle(),
+    // Ficha de treino por dia, só os nomes (Fase 3): o Life entende "aquele de quinta".
+    sb.from('treino_plano').select('local, dia_semana, ordem, exercicios_catalogo(nome)').eq('user_id', userId)
+      .order('ordem').limit(120),
     // Refeições planejadas pelo Life (02/11) — o que já está no lugar e falta o ✓.
     sb.from('refeicoes_planejadas').select('data, tipo, nome').eq('user_id', userId)
       .gte('data', hoje).lte('data', somarDias(hoje, 7)).order('data').limit(60),
@@ -1670,7 +1681,18 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
   }
 
   add(listaRefeicoes(itensDoisDias, (val(9)?.data ?? []) as ExtraContexto[], hoje, ontem), ['comida'])
-  const planejadas = (val(12)?.data ?? []) as { data: string; tipo: TipoPlanejavel; nome: string }[]
+  const ficha = (val(12)?.data ?? []) as { local: string; dia_semana: string; exercicios_catalogo: { nome: string } | null }[]
+  if (ficha.length) {
+    const porDia = new Map<string, string[]>()
+    for (const f of ficha) {
+      const k = `${f.local} ${f.dia_semana}`
+      const lista = porDia.get(k) ?? []
+      const nome = f.exercicios_catalogo?.nome
+      if (nome && !lista.includes(nome)) porDia.set(k, [...lista, nome])
+    }
+    add(`Ficha de treino (dia: exercícios): ${[...porDia].map(([k, v]) => `${k}: ${v.slice(0, 8).join(', ')}${v.length > 8 ? '…' : ''}`).join(' · ')}`, ['treino'])
+  }
+  const planejadas = (val(13)?.data ?? []) as { data: string; tipo: TipoPlanejavel; nome: string }[]
   if (planejadas.length) {
     const grupos = new Map<string, string[]>()
     for (const x of planejadas) {
@@ -1790,6 +1812,7 @@ function ferramentasPara(assuntos: Set<Assunto>, programar = false): typeof FERR
     ...(assuntos.has('comida') ? ['registrar_alimentos', 'repetir_refeicao', ...(programar ? ['programar_refeicao'] : [])] : []),
     ...(assuntos.has('emocional') ? ['pausar_life_hoje'] : []),
     ...(assuntos.has('habitos') ? ['registrar_tropeco'] : []),
+    ...(assuntos.has('treino') ? ['adicionar_exercicio', 'copiar_treino'] : []),
   ])
   if (!nomes.size) return null
   return [{ functionDeclarations: FERRAMENTAS_LIFE[0].functionDeclarations.filter((f) => nomes.has(f.name)) }] as typeof FERRAMENTAS_LIFE
@@ -1903,6 +1926,39 @@ const FERRAMENTAS_LIFE = [
             gatilho: { type: 'STRING', description: 'O que puxou, se ela disse (tédio, ansiedade, festa, cansaço)' },
           },
           required: ['habito'],
+        },
+      },
+      {
+        name: 'adicionar_exercicio',
+        description:
+          'Põe na ficha de treino um exercício que a pessoa pediu, num ou mais dias da semana ("põe esse no meu treino de quinta"). Séries e repetições: as que ela disse, ou o padrão do app. O app pergunta com um toque antes de gravar. Nunca defina carga. Não use se ela falou de dor ou lesão, nem com o check de saúde travado.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            exercicio: { type: 'STRING', description: 'Nome do exercício como a pessoa falou' },
+            dias_semana: { type: 'ARRAY', items: { type: 'STRING' }, description: "seg, ter, qua, qui, sex, sab, dom ou 'hoje'" },
+            local: { type: 'STRING', description: "'academia' ou 'casa', se ela disse. Vazio = o da ficha dela." },
+            series: { type: 'NUMBER', description: 'Só se ela disse' },
+            repeticoes: { type: 'NUMBER', description: 'Só se ela disse' },
+            carga_kg: { type: 'NUMBER', description: 'Só se ela disse. Nunca sugira.' },
+          },
+          required: ['exercicio', 'dias_semana'],
+        },
+      },
+      {
+        name: 'copiar_treino',
+        description:
+          'Copia o treino de outro dia ("copia o treino de quinta pra hoje"). Se não ficou claro se é só hoje ou toda semana, PERGUNTE antes e não chame. O app confirma com um toque; dia ocupado, pergunta se soma ou troca.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            origem_dia: { type: 'STRING', description: 'Dia da ficha: seg, ter, qua, qui, sex, sab, dom' },
+            origem_data: { type: 'STRING', description: "AAAA-MM-DD, quando ela fala do que FEZ numa data ('o que eu fiz quinta passada')" },
+            destino_dia: { type: 'STRING', description: "'hoje' ou seg, ter, qua, qui, sex, sab, dom" },
+            so_hoje: { type: 'BOOLEAN', description: 'true = só treinar hoje, sem mudar a ficha' },
+            local: { type: 'STRING', description: "'academia' ou 'casa', se ela disse" },
+          },
+          required: ['destino_dia', 'so_hoje'],
         },
       },
       {
@@ -2167,6 +2223,8 @@ type AcaoCliente =
   }
   | { tipo: 'pausa'; dia: string }
   | { tipo: 'escolha'; id: string; opcoes: { valor: Escolha; rotulo: string }[] }
+  /** Ficha mudou pelo chat (Fase 3): o app recarrega o Treino (APK antigo ignora). */
+  | { tipo: 'treino_atualizado'; local: Local }
   /** Refeições planejadas (02/11): o app grava em refeicoes_planejadas quando a pessoa confirma. */
   | {
     tipo: 'programar_itens'
@@ -2280,7 +2338,7 @@ async function executarRepeticao(sb: Sb, userId: string, idAcao: string, args: A
 
 /** Chamada de ferramenta vinda do chat. `idEnvio` = idempotência por mensagem. */
 async function executarFerramenta(
-  sb: Sb, userId: string, loc: Localidade, chamada: ChamadaFerramenta, idEnvio: string | null,
+  sb: Sb, userId: string, loc: Localidade, chamada: ChamadaFerramenta, idEnvio: string | null, mensagem = '',
 ): Promise<ResultadoAcao | null> {
   const t = TXT[loc.idioma]
   const hoje = hojeNoFuso(loc.fuso)
@@ -2301,6 +2359,14 @@ async function executarFerramenta(
   if (chamada.nome === 'registrar_alimentos') return await proporRegistro(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'programar_refeicao') return await proporProgramacao(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'registrar_tropeco') return await proporTropeco(sb, userId, loc, chamada.args, hoje)
+  if (chamada.nome === 'adicionar_exercicio' || chamada.nome === 'copiar_treino') {
+    // Dor/lesão nesta mensagem ou check de saúde travado: não mexe no treino.
+    const trava = await travaDoTreino(sb, userId, loc.idioma, mensagem)
+    if (trava) return trava
+    return chamada.nome === 'adicionar_exercicio'
+      ? await proporExercicio(sb, userId, loc, chamada.args, hoje)
+      : await proporCopiaTreino(sb, userId, loc, chamada.args, hoje)
+  }
 
   if (chamada.nome !== 'repetir_refeicao') return null
   const id = idEnvio ?? crypto.randomUUID()
@@ -2342,6 +2408,156 @@ async function executarFerramenta(
 
   const modo = a.modo === 'adicionar' || a.modo === 'substituir' ? a.modo : 'perguntar'
   return executarRepeticao(sb, userId, id, { origem: o.ref, destino: d.ref, modo, forcar: false }, loc.idioma, hoje)
+}
+
+// ---------- treino pelo chat (Fase 3) ----------
+interface ArgsExercicio { exercicio_id: string; nome: string; local: Local; dias: DiaSemana[]; series: SerieDetalhe[] }
+interface ArgsCopiaTreino { local: Local; destino: DiaSemana; origem_dia: DiaSemana | null; origem_data: string | null }
+
+/** Dor/lesão na mensagem ou check de saúde travado: devolve a resposta e não mexe no treino. */
+async function travaDoTreino(sb: Sb, userId: string, idioma: Idioma, mensagem: string): Promise<ResultadoAcao | null> {
+  const tt = TXT_TREINO[idioma]
+  if (FALA_DE_DOR.test(normalizar(mensagem))) return { resposta: tt.dor, acao: null, status: 'treino_dor' }
+  const { data: tri } = await sb.from('triagens_saude').select('apto_treino, motivos, ciente_orientacao')
+    .eq('user_id', userId).order('criado_em', { ascending: false }).limit(1).maybeSingle()
+  const motivos = (tri?.motivos ?? []) as string[]
+  if (motivos.includes('menor_de_idade') || motivos.includes('idade_divergente')) return { resposta: tt.bloqueado, acao: null, status: 'treino_bloqueado' }
+  if (tri && !tri.apto_treino && !tri.ciente_orientacao) return { resposta: tt.ressalva, acao: null, status: 'treino_ressalva' }
+  return null
+}
+
+/** O local da ficha dela: o pedido, senão o que ela mais usa, senão academia. */
+async function localDaFicha(sb: Sb, userId: string, pedido: unknown): Promise<Local> {
+  const p = normalizar(String(pedido ?? ''))
+  if (p === 'casa' || p === 'home' || p === 'en casa' || p === 'maison') return 'casa'
+  if (p === 'academia' || p === 'gym' || p === 'gimnasio' || p === 'salle') return 'academia'
+  const { data } = await sb.from('treino_plano').select('local').eq('user_id', userId).limit(300)
+  const n = ((data ?? []) as { local: Local }[]).reduce((acc, r) => ({ ...acc, [r.local]: (acc[r.local] ?? 0) + 1 }), {} as Record<Local, number>)
+  return (n.casa ?? 0) > (n.academia ?? 0) ? 'casa' : 'academia'
+}
+
+async function criarPendencia(sb: Sb, userId: string, tipo: string, args: unknown): Promise<string | null> {
+  const id = crypto.randomUUID()
+  const { error } = await sb.from('life_acoes').insert({
+    id, user_id: userId, tipo, status: 'pendente', args, expira_em: new Date(Date.now() + 60 * 60_000).toISOString(),
+  })
+  if (error) { console.warn('[acao] pendência falhou', tipo, error.message); return null }
+  return id
+}
+
+async function proporExercicio(sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string): Promise<ResultadoAcao> {
+  const tt = TXT_TREINO[loc.idioma]
+  const dias = lerDias(a.dias_semana, hoje)
+  if (!dias.length) return { resposta: tt.qualDia, acao: null, status: 'exercicio_sem_dia' }
+  const pedido = texto(a.exercicio, 80).trim()
+  const { data: cat } = await sb.from('exercicios_catalogo')
+    .select('id, nome, ambientes, series_padrao, repeticoes_padrao, medida, segundos_padrao, traducoes').limit(300)
+  const achado = acharExercicio(pedido, (cat ?? []) as ExercicioCatalogo[])
+  const nomeEx = (e: ExercicioCatalogo) => (loc.idioma !== 'pt-BR' && e.traducoes?.[loc.idioma.slice(0, 2)]?.nome) || e.nome
+  if (!achado) {
+    if (pedido) await sb.from('exercicios_pedidos').insert({ user_id: userId, texto: pedido.slice(0, 120) })
+    return { resposta: tt.naoTem(pedido || '?'), acao: null, status: 'exercicio_nao_tem' }
+  }
+  if (achado.tipo === 'varios') {
+    return { resposta: tt.qual(nomeEx(achado.opcoes[0]), nomeEx(achado.opcoes[1])), acao: null, status: 'exercicio_ambiguo' }
+  }
+  const e = achado.e
+  const local = await localDaFicha(sb, userId, a.local)
+  if (Array.isArray(e.ambientes) && e.ambientes.length && !e.ambientes.includes(local)) {
+    return { resposta: tt.localErrado(nomeEx(e), nomeLocal(local, loc.idioma)), acao: null, status: 'exercicio_local_errado' }
+  }
+  const { data: ja } = await sb.from('treino_plano').select('dia_semana')
+    .eq('user_id', userId).eq('local', local).eq('exercicio_id', e.id).in('dia_semana', dias)
+  const jaTem = new Set(((ja ?? []) as { dia_semana: DiaSemana }[]).map((r) => r.dia_semana))
+  const faltam = dias.filter((d) => !jaTem.has(d))
+  if (!faltam.length) return { resposta: tt.jaEsta(nomeEx(e), nomeDias(dias, loc.idioma)), acao: null, status: 'exercicio_ja_esta' }
+
+  const series = montarSeries(e, Number(a.series) || null, Number(a.repeticoes) || null, Number(a.carga_kg) || null)
+  const args: ArgsExercicio = { exercicio_id: e.id, nome: nomeEx(e), local, dias: faltam, series }
+  const id = await criarPendencia(sb, userId, 'adicionar_exercicio', args)
+  if (!id) return { resposta: tt.falhou, acao: null, status: 'exercicio_falhou' }
+  const descSeries = series[0].segundos ? tt.seriesSeg(series.length, series[0].segundos) : tt.seriesReps(series.length, series[0].reps ?? 12)
+  return {
+    resposta: tt.confira(nomeEx(e), descSeries, nomeDias(faltam, loc.idioma), nomeLocal(local, loc.idioma)),
+    acao: { tipo: 'escolha', id, opcoes: [{ valor: 'salvar', rotulo: tt.adicionar }, { valor: 'cancelar', rotulo: tt.deixa }] },
+    status: 'exercicio_proposto',
+  }
+}
+
+async function proporCopiaTreino(sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string): Promise<ResultadoAcao> {
+  const tt = TXT_TREINO[loc.idioma]
+  const destino = lerDia(a.destino_dia, hoje)
+  const origemDia = lerDia(a.origem_dia, hoje)
+  const origemData = typeof a.origem_data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.origem_data) && a.origem_data <= hoje ? a.origem_data : null
+  if (!destino || (!origemDia && !origemData)) return { resposta: tt.qualDia, acao: null, status: 'copia_sem_dia' }
+  const nomeOrigem = origemData ? rotuloDia(origemData, hoje, loc.idioma) : nomeDias([origemDia!], loc.idioma)
+  // "Só hoje": não muda a ficha — ela treina pela ficha do outro dia.
+  if (a.so_hoje === true) return { resposta: tt.soHoje(nomeOrigem), acao: null, status: 'copia_so_hoje' }
+  if (a.so_hoje !== false) return { resposta: tt.soHojeOuSemana, acao: null, status: 'copia_pergunta' }
+  if (!origemData && origemDia === destino) return { resposta: tt.mesmoDia, acao: null, status: 'copia_mesmo_dia' }
+
+  const local = await localDaFicha(sb, userId, a.local)
+  const [{ count: naOrigem }, { count: noDestino }] = await Promise.all([
+    origemData
+      ? sb.from('treinos_historico').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('data', origemData)
+      : sb.from('treino_plano').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('local', local).eq('dia_semana', origemDia!),
+    sb.from('treino_plano').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('local', local).eq('dia_semana', destino),
+  ])
+  if (!naOrigem) return { resposta: tt.copiarVazio(nomeOrigem), acao: null, status: 'copia_origem_vazia' }
+  const args: ArgsCopiaTreino = { local, destino, origem_dia: origemData ? null : origemDia, origem_data: origemData }
+  const id = await criarPendencia(sb, userId, 'copiar_treino', args)
+  if (!id) return { resposta: tt.falhou, acao: null, status: 'copia_falhou' }
+  const nomeDestino = nomeDias([destino], loc.idioma)
+  if (noDestino) {
+    return {
+      resposta: tt.copiarOcupado(nomeDestino, noDestino),
+      acao: { tipo: 'escolha', id, opcoes: opcoes(loc.idioma, ['adicionar', 'substituir', 'cancelar']) },
+      status: 'copia_ocupado',
+    }
+  }
+  return {
+    resposta: tt.copiarConfira(nomeOrigem, nomeDestino, nomeLocal(local, loc.idioma)),
+    acao: { tipo: 'escolha', id, opcoes: [{ valor: 'salvar', rotulo: tt.adicionar }, { valor: 'cancelar', rotulo: tt.deixa }] },
+    status: 'copia_proposta',
+  }
+}
+
+async function executarExercicio(sb: Sb, userId: string, idAcao: string, args: ArgsExercicio, idioma: Idioma): Promise<ResultadoAcao> {
+  const tt = TXT_TREINO[idioma]
+  const { data: ordens } = await sb.from('treino_plano').select('dia_semana, ordem').eq('user_id', userId).eq('local', args.local).in('dia_semana', args.dias)
+  const maxPorDia = new Map<string, number>()
+  for (const o of (ordens ?? []) as { dia_semana: string; ordem: number }[]) maxPorDia.set(o.dia_semana, Math.max(maxPorDia.get(o.dia_semana) ?? -1, o.ordem))
+  const { data: ja } = await sb.from('treino_plano').select('dia_semana').eq('user_id', userId).eq('local', args.local)
+    .eq('exercicio_id', args.exercicio_id).in('dia_semana', args.dias)
+  const jaTem = new Set(((ja ?? []) as { dia_semana: string }[]).map((r) => r.dia_semana))
+  const linhas = args.dias.filter((d) => !jaTem.has(d)).map((d) => ({
+    user_id: userId, local: args.local, dia_semana: d, exercicio_id: args.exercicio_id,
+    series: args.series.length, repeticoes: args.series[0]?.reps ?? 12, series_detalhe: args.series, ordem: (maxPorDia.get(d) ?? -1) + 1,
+  }))
+  const { error } = linhas.length ? await sb.from('treino_plano').insert(linhas) : { error: null }
+  const r: ResultadoAcao = error
+    ? { resposta: tt.falhou, acao: null, status: 'exercicio_falhou' }
+    : { resposta: tt.adicionado(args.nome, nomeDias(args.dias, idioma)), acao: { tipo: 'treino_atualizado', local: args.local }, status: 'exercicio_ok' }
+  if (error) console.error('[treino] adicionar falhou', error.message)
+  await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r)
+  return r
+}
+
+async function executarCopiaTreino(
+  sb: Sb, userId: string, idAcao: string, args: ArgsCopiaTreino, modo: 'adicionar' | 'substituir', idioma: Idioma,
+): Promise<ResultadoAcao> {
+  const tt = TXT_TREINO[idioma]
+  const { data, error } = await sb.rpc('life_copiar_treino', {
+    p_user_id: userId, p_local: args.local, p_destino_dia: args.destino,
+    p_origem_dia: args.origem_dia, p_origem_data: args.origem_data, p_modo: modo,
+  })
+  const res = data as { status?: string; itens?: number } | null
+  const r: ResultadoAcao = error || res?.status !== 'ok'
+    ? { resposta: res?.status === 'origem_vazia' ? tt.copiarVazio(args.origem_dia ? nomeDias([args.origem_dia], idioma) : '') : tt.falhou, acao: null, status: 'copia_falhou' }
+    : { resposta: tt.copiado(res.itens ?? 0, nomeDias([args.destino], idioma)), acao: { tipo: 'treino_atualizado', local: args.local }, status: 'copia_ok' }
+  if (error) console.error('[treino] copiar falhou', error.message)
+  await fecharAcao(sb, idAcao, r.status === 'copia_ok' ? 'feita' : 'falhou', r)
+  return r
 }
 
 interface ArgsTropeco { vicio_id: string; nome: string; data: string; hora: string | null; gatilho: string | null }
@@ -2536,6 +2752,15 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
       : pend.tipo === 'registrar_tropeco' ? TXT_TROPECO[loc.idioma].naoAnotei : t.cancelado
     r = { resposta, acao: null, status: 'acao_cancelada' }
     await fecharAcao(sb, id, 'cancelada', r)
+  } else if (pend.tipo === 'adicionar_exercicio' || pend.tipo === 'copiar_treino') {
+    if (pend.tipo === 'adicionar_exercicio' && escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
+    if (pend.tipo === 'copiar_treino' && !['salvar', 'adicionar', 'substituir'].includes(String(escolha))) return json({ error: 'invalid_action' }, 400)
+    const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
+      .eq('id', id).eq('status', 'pendente').select('id')
+    if (!travou?.length) return json({ resposta: t.andamento, acao: null })
+    r = pend.tipo === 'adicionar_exercicio'
+      ? await executarExercicio(sb, userId, id, pend.args as ArgsExercicio, loc.idioma)
+      : await executarCopiaTreino(sb, userId, id, pend.args as ArgsCopiaTreino, escolha === 'substituir' ? 'substituir' : 'adicionar', loc.idioma)
   } else if (pend.tipo === 'registrar_tropeco') {
     if (escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)
     const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
@@ -2564,7 +2789,9 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
   // O que a pessoa tocou, com o rótulo que ela viu.
   const rotulo = pend?.tipo === 'registrar_tropeco'
     ? (escolha === 'salvar' ? TXT_TROPECO[loc.idioma].anotar : TXT_TROPECO[loc.idioma].deixa)
-    : t.escolha[escolha as Escolha]
+    : (pend?.tipo === 'adicionar_exercicio' || pend?.tipo === 'copiar_treino') && (escolha === 'salvar' || escolha === 'cancelar')
+      ? (escolha === 'salvar' ? TXT_TREINO[loc.idioma].adicionar : TXT_TREINO[loc.idioma].deixa)
+      : t.escolha[escolha as Escolha]
   await gravarTroca(sb, userId, chegouEm, { texto: rotulo }, { texto: r.resposta })
   await auditar(sb, userId, 'acao', r.status)
   return json({ resposta: r.resposta, acao: r.acao })

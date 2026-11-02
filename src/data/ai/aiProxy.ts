@@ -276,6 +276,8 @@ export type AcaoLife =
   | { tipo: 'escolha'; id: string; opcoes: { valor: EscolhaAcao; rotulo: string }[] }
   /** Pesagem ou meta gravada pelo chat (sem IA, sem cota) — recarrega o card "Meu peso". */
   | { tipo: 'peso_atualizado' }
+  /** O Life mexeu na ficha pelo chat (Fase 3): o Treino troca pro local e recarrega. */
+  | { tipo: 'treino_atualizado'; local: 'casa' | 'academia' }
   /**
    * Refeição digitada ("almocei arroz e feijão", ai-proxy v4.5): alimentos já
    * achados na base. O chat mostra o cartão de conferência; só grava quando a

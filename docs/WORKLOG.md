@@ -4179,3 +4179,24 @@ Com autorização do dono: migrações `refeicoes_planejadas` e `tropeco_chat`
 removido, tipo novo em life_acoes) e **ai-proxy v41 publicada**.
 Testar no app atual: "comi um doce agora, não aguentei" (com hábito de doce)
 → botões Anotar / Deixa pra lá. Fase 1 só no APK novo.
+
+## 2026-11-02 (3) — Fase 3: treino pelo chat (funciona no APK atual)
+
+- `db/athoslife_treino_chat_migration.sql` (**não aplicada**):
+  `life_copiar_treino` (ficha de um dia ou o que fez numa data, com as
+  cargas dela; dia ocupado → pergunta; somar não duplica; substituir troca),
+  `exercicios_pedidos` (só servidor), tipos novos em `life_acoes`. Testada
+  com rollback (7 casos ok).
+- ai-proxy (`treino.ts`): `adicionar_exercicio` (acha no catálogo pelo nome
+  em pt e nas traduções; empate → pergunta qual; não tem → anota em
+  exercicios_pedidos; local da ficha dela; avisa se não dá pra fazer no
+  local; já está → diz; séries que ela disse ou padrão; carga vazia) e
+  `copiar_treino` ("só hoje ou toda semana?" antes; só hoje = não muda a
+  ficha; dia ocupado → Adicionar junto / Substituir). Tudo confirmado em um
+  toque. Trava: dor/lesão na mensagem, check de saúde bloqueado ou com
+  ressalva sem "ciente". Contexto do treino ganha a ficha por dia (nomes).
+  Ação `treino_atualizado` com o local → APK novo recarrega a ficha.
+- Prompt: NUNCA/plano de referência ajustados como o guia; regras das duas
+  ferramentas, dor e check de saúde.
+
+Validado: 98 testes Deno, deno check, typecheck, build.

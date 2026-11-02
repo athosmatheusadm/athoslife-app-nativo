@@ -33,8 +33,8 @@ app → entra no próximo APK.
 - Gatilho do horário local em `recaidas` (guia item 4).
 - `registrar_tropeco` com confirmação em um toque (sem gastar mensagem).
 
-## Fase 3 — Ações no treino (guia item 6)
-- `adicionar_exercicio`, `copiar_treino` (com "só hoje" → `abrir_treino`),
+## Fase 3 — Ações no treino (guia item 6)  ← código pronto (falta migração + deploy; funciona no APK atual)
+- `adicionar_exercicio`, `copiar_treino` ("só hoje" por enquanto é texto: abre a ficha do outro dia; botão `abrir_treino` fica pra depois),
   linha da ficha no contexto, `exercicios_pedidos`.
 
 ## Fase 4 — Água e hábito pelo chat + desfazer (guia item 7)
