@@ -4347,3 +4347,18 @@ Validado: 124 testes Deno, deno check, typecheck, build.
   Voador (Pec Deck); cross over/crucifixo na polia → Crossover.
 - Conferido contra o catálogo real do banco. 125 testes Deno.
 - **Precisa deploy da ai-proxy** (entra junto na v43).
+
+## 2026-11-02 (8) — Fases 6–9 no ar (ai-proxy v43)
+
+- Autorizado pelo dono: migrações `estilo_confianca`, `duracao_chat`,
+  `resumos` aplicadas; **ai-proxy v43** no ar (Fases 6–9 + correção da busca
+  de exercício). A função sobe (resposta própria `not_authenticated`).
+- Teste com rollback no banco: estilo confirmado 0,3→0,45; contrariado é
+  trocado (0,3); pedido explícito (1) não é trocado por dedução; contexto
+  devolve `confianca`; memória desligada apaga `life_resumos`.
+- Streaming, rosto do Life e contador escondido só aparecem no APK novo;
+  o resto já vale no APK atual.
+
+**Pendências:** token do GitHub (push da `verde-menta`), APK novo +
+`VITE_RC_GOOGLE_KEY`, psicólogo (Fase 5) e advogado (consentimento +
+resumos), e o roteiro de testes do bloco (6).
