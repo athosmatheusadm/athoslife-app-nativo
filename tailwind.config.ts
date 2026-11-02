@@ -64,7 +64,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        // Inter vai dentro do app (@fontsource-variable/inter): mesma letra em todo
+        // celular e sem internet. Antes pedia 'Inter' sem incluir — virava a do sistema.
+        sans: ['Inter Variable', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       fontSize: {
         // Piso de acessibilidade: nada abaixo de 12px.

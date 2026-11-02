@@ -1,3 +1,5 @@
+import type { Alergeno } from '@domain/rules/alergias'
+import type { TemaSazonal } from '@domain/rules/temasSazonais'
 /**
  * Entidades da Cozinha ATHOSlife.
  *
@@ -30,18 +32,20 @@ export const CATEGORIA_META: Record<
   CategoriaReceita,
   { rotulo: string; cor: string; emoji: string }
 > = {
-  emagrecimento: { rotulo: 'Emagrecimento', cor: '#22c55e', emoji: '🥗' },
-  massa: { rotulo: 'Ganho de massa', cor: '#3b82f6', emoji: '🍗' },
-  vegano: { rotulo: 'Vegano', cor: '#84cc16', emoji: '🌱' },
-  habitos: { rotulo: 'Hábitos', cor: '#f97316', emoji: '🍫' },
-  shakes: { rotulo: 'Shakes', cor: '#06b6d4', emoji: '🥤' },
-  chas: { rotulo: 'Chás', cor: '#10b981', emoji: '🍵' },
+  emagrecimento: { rotulo: 'Emagrecimento', cor: '#64c27b', emoji: '🥗' },
+  massa: { rotulo: 'Ganho de massa', cor: '#588cda', emoji: '🍗' },
+  vegano: { rotulo: 'Vegano', cor: '#91bb54', emoji: '🌱' },
+  habitos: { rotulo: 'Hábitos', cor: '#e3814a', emoji: '🍫' },
+  shakes: { rotulo: 'Shakes', cor: '#4ab1c8', emoji: '🥤' },
+  chas: { rotulo: 'Chás', cor: '#4eb18a', emoji: '🍵' },
 }
 
 /** Uma receita curada do mini e-book. */
 export interface Receita {
   readonly id: string
   readonly titulo: string
+  /** Nome do arquivo da foto (`public/receitas/<foto>.webp`), tirado do título em pt — não muda com o idioma. */
+  readonly foto: string
   readonly subtitulo: string | null
   readonly categoria: CategoriaReceita
   readonly macros: Macros
@@ -51,6 +55,12 @@ export interface Receita {
   readonly destaque: boolean
   readonly conteudo: string | null
   readonly ordem: number
+  /** Chaves de `receitas_cozinha.alergenos` (amendoim, gluten, lactose...). */
+  readonly alergenos: readonly string[]
+  /** Datas em que a receita entra no expositor (natal, pascoa...). Vazio = receita de sempre. */
+  readonly temas: readonly TemaSazonal[]
+  /** Calculado no serviço: alérgenos da receita que batem com as restrições da pessoa. */
+  readonly contemRestricao: readonly Alergeno[]
   /** Calculado no serviço: premium && usuário não tem acesso. */
   readonly bloqueada: boolean
   /** Calculado no serviço: está nas favoritas do usuário. */

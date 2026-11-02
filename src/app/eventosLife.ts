@@ -12,13 +12,15 @@ const PLANO_APLICADO = 'athoslife:plano-aplicado'
 
 export type PlanoAplicado = { readonly tipo: 'treino'; readonly local: LocalTreino } | { readonly tipo: 'dieta' }
 
-export function pedirAbrirLife(): void {
-  window.dispatchEvent(new Event(ABRIR_LIFE))
+/** `rascunho`: texto já escrito no campo do chat (ex.: "Pesei  kg" — a pessoa só completa). */
+export function pedirAbrirLife(rascunho?: string): void {
+  window.dispatchEvent(new CustomEvent<string | undefined>(ABRIR_LIFE, { detail: rascunho }))
 }
 
-export function aoPedirAbrirLife(fn: () => void): () => void {
-  window.addEventListener(ABRIR_LIFE, fn)
-  return () => window.removeEventListener(ABRIR_LIFE, fn)
+export function aoPedirAbrirLife(fn: (rascunho?: string) => void): () => void {
+  const h = (e: Event) => fn((e as CustomEvent<string | undefined>).detail)
+  window.addEventListener(ABRIR_LIFE, h)
+  return () => window.removeEventListener(ABRIR_LIFE, h)
 }
 
 /** Local do último plano de treino aplicado — o Treino abre nele (a tela pode nem estar montada no aviso). */

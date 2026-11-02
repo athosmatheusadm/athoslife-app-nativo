@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="la_canal">Workout in progress</string>
+    <string name="la_canal_desc">Sets, rest and timer on the lock screen</string>
+    <string name="la_serie_de">Set %1$d of %2$d</string>
+    <string name="la_proxima_de">Next: %1$d of %2$d</string>
+    <string name="la_chip_serie">In set</string>
+    <string name="la_chip_pronto">Ready</string>
+    <string name="la_chip_preparo">Get ready</string>
+    <string name="la_chip_descanso">Rest</string>
+    <string name="la_peso">weight</string>
+    <string name="la_reps">reps</string>
+    <string name="la_meta_serie">Goal per set</string>
+    <string name="la_posicione">Get in position</string>
+    <string name="la_comeca_sozinha">the countdown starts by itself</string>
+    <string name="la_segure">Hold it</string>
+    <string name="la_meta">goal %1$s</string>
+    <string name="la_iniciar">Start</string>
+    <string name="la_cancelar">Cancel</string>
+    <string name="la_concluir">Finish</string>
+    <string name="la_pular">Skip</string>
+    <string name="la_a_seguir">up next: %1$s</string>
+    <string name="la_proximo_ex">next: %1$s</string>
+    <string name="la_ate_proxima">until the next set</string>
+    <string name="la_confirmar_desc">Confirm set</string>
+    <string name="la_pausar">Pause</string>
+    <string name="la_retomar">Resume</string>
+    <string name="la_pausado">Paused</string>
+    <string name="la_faltam">%1$s left of %2$s</string>
+    <string name="la_chip_pausado">Paused</string>
+    <string name="la_chip_feito">Done</string>
+    <string name="la_treino_hoje">Today\'s workout</string>
+    <string name="la_concluido">Workout complete</string>
+    <string name="la_n_series">%1$d sets</string>
+    <string name="la_resumo_feito">%1$d sets · %2$s kg volume</string>
+    <string name="la_salvar_app">Save in the app</string>
+</resources>

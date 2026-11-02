@@ -63,10 +63,10 @@ export function ProgressRing(props: {
           <span className={`text-sm font-bold tabular-nums ${ativo ? '' : 'text-content-hi'}`}>{valor}</span>
         </span>
       </span>
-      <span className="max-w-full truncate text-micro font-semibold uppercase tracking-wide text-content-mid" aria-hidden="true">
+      <span className="max-w-full break-words text-center text-micro font-semibold uppercase leading-tight tracking-wide text-content-mid [hyphens:auto]" aria-hidden="true">
         {label}
       </span>
-      <span className="max-w-full truncate text-micro text-content-low" aria-hidden="true">{meta}</span>
+      <span className="max-w-full break-words text-center text-micro leading-tight text-content-low" aria-hidden="true">{meta}</span>
     </button>
   )
 }

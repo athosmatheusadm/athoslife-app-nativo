@@ -1,4 +1,6 @@
 import { supabase } from '@data/supabase/client'
+import { exigirRede, lerComCache } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
 import type { ReceitaCriada, ReceitaGerada } from '@domain/entities/receita'
 
 /**
@@ -53,18 +55,27 @@ function base64ParaBlob(base64: string, mime: string): Blob {
 
 export const criacoesRepository = {
   async listar(): Promise<ReceitaCriada[]> {
-    const { data, error } = await supabase
-      .from('receitas_criadas')
-      .select(COLUNAS)
-      .order('created_at', { ascending: false })
-      .returns<CriacaoRow[]>()
-    if (error) throw error
-    const linhas = data ?? []
+    // Sem rede: as receitas aparecem (a foto, que é privada e precisa de link assinado, não).
+    const linhas = await lerComCache(
+      'criacoes',
+      async () => {
+        const { data, error } = await supabase
+          .from('receitas_criadas')
+          .select(COLUNAS)
+          .order('created_at', { ascending: false })
+          .returns<CriacaoRow[]>()
+        if (error) throw error
+        return data ?? []
+      },
+      { padrao: [] },
+    )
     const urls = await urlsAssinadas(linhas.flatMap((r) => (r.foto_path ? [r.foto_path] : [])))
     return linhas.map((r) => paraDominio(r, urls))
   },
 
   async buscar(id: string): Promise<ReceitaCriada | null> {
+    const guardada = (await this.listar().catch(() => [])).find((r) => r.id === id)
+    if (guardada) return guardada
     const { data, error } = await supabase
       .from('receitas_criadas')
       .select(COLUNAS)
@@ -77,6 +88,7 @@ export const criacoesRepository = {
   },
 
   async salvar(receita: ReceitaGerada): Promise<string> {
+    exigirRede()
     const { data, error } = await supabase
       .from('receitas_criadas')
       .insert({ titulo: receita.titulo.slice(0, 80) || 'Receita do Life', dados: receita })
@@ -88,8 +100,8 @@ export const criacoesRepository = {
 
   /** Sobe a foto do prato (substitui a anterior) e marca a receita como feita. */
   async definirFoto(id: string, foto: { base64: string; mime: string }): Promise<string | null> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    exigirRede()
+    const userId = await usuarioId()
     const ext = foto.mime === 'image/png' ? 'png' : foto.mime === 'image/webp' ? 'webp' : 'jpg'
     const caminho = `${userId}/${id}.${ext}`
 
@@ -108,6 +120,7 @@ export const criacoesRepository = {
   },
 
   async excluir(id: string): Promise<void> {
+    exigirRede()
     const { data } = await supabase
       .from('receitas_criadas')
       .select('foto_path')

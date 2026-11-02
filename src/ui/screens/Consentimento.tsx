@@ -21,7 +21,8 @@ export function Consentimento() {
 
   const [termos, setTermos] = useState(false)
   const [saude, setSaude] = useState(false)
-  const [habitos, setHabitos] = useState(true)
+  // Opcional e dado sensível: começa desmarcada (LGPD — o aceite parte de quem usa).
+  const [habitos, setHabitos] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -43,10 +44,10 @@ export function Consentimento() {
   }
 
   return (
-    <main className="min-h-full bg-gradient-to-b from-[#070d09] to-[#07100a] pt-safe-t">
+    <main className="min-h-full bg-surface-1 pt-safe-t">
       <div className="mx-auto flex min-h-[100dvh] max-w-[430px] animate-rise flex-col px-5 pb-6 pt-4">
         <div className="text-lg font-extrabold tracking-tight text-content-hi">
-          ATHOS<span className="italic text-[#9cff45]">life</span>
+          ATHOS<span className="text-brand">life</span>
         </div>
 
         <div className="mt-4 flex justify-center">
@@ -54,20 +55,20 @@ export function Consentimento() {
         </div>
 
         <h1 className="mt-4 text-[1.375rem] font-extrabold leading-tight text-content-hi">{c.titulo}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[#98a69d]">{c.lead}</p>
+        <p className="mt-2 text-sm leading-relaxed text-content-low">{c.lead}</p>
 
         <ul className="mt-4 space-y-2">
           {c.itens.map((item) => (
-            <li key={item} className="flex gap-2 text-sm leading-relaxed text-[#cbd6ce]">
-              <span className="mt-0.5 text-[#9cff45]" aria-hidden="true">•</span>
+            <li key={item} className="flex gap-2 text-sm leading-relaxed text-content-mid">
+              <span className="mt-0.5 text-brand" aria-hidden="true">•</span>
               {item}
             </li>
           ))}
         </ul>
 
         <div className="mt-5 flex gap-4 text-sm font-semibold">
-          <Link to="/termos" className="text-[#9cff45] underline underline-offset-2">{c.verTermos}</Link>
-          <Link to="/politica-de-privacidade" className="text-[#9cff45] underline underline-offset-2">{c.verPolitica}</Link>
+          <Link to="/termos" className="text-brand underline underline-offset-2">{c.verTermos}</Link>
+          <Link to="/politica-de-privacidade" className="text-brand underline underline-offset-2">{c.verPolitica}</Link>
         </div>
 
         <div className="mt-5 space-y-3">
@@ -82,7 +83,7 @@ export function Consentimento() {
             type="button"
             disabled={salvando}
             onClick={() => void aceitar()}
-            className="min-h-[50px] w-full rounded-xl bg-gradient-to-b from-[#a7ff52] to-[#8df13d] text-base font-extrabold text-[#061006] disabled:opacity-60"
+            className="min-h-[50px] w-full rounded-xl bg-brand text-base font-extrabold text-brand-ink disabled:opacity-60"
           >
             {c.botao} →
           </button>
@@ -94,14 +95,14 @@ export function Consentimento() {
 
 function Caixa(props: { marcada: boolean; onMudar: (v: boolean) => void; children: string }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#294633] bg-[#08110c] p-3">
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-surface-4 bg-surface-2 p-3">
       <input
         type="checkbox"
         checked={props.marcada}
         onChange={(e) => props.onMudar(e.target.checked)}
-        className="mt-0.5 h-5 w-5 flex-none accent-[#9cff45]"
+        className="mt-0.5 h-5 w-5 flex-none accent-brand"
       />
-      <span className="text-sm leading-snug text-[#d8e2da]">{props.children}</span>
+      <span className="text-sm leading-snug text-content-mid">{props.children}</span>
     </label>
   )
 }

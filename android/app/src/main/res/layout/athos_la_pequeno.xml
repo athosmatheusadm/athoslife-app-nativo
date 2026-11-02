@@ -1,25 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Live Activity recolhida: nome + série à esquerda, relógio ou carga×reps à direita. -->
+<!-- Live Activity recolhida: miniatura, nome + série, e à direita o relógio ou carga × reps. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/la_raiz"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/athos_la_card"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp">
+    android:paddingStart="10dp"
+    android:paddingTop="5dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="5dp">
 
-    <TextView
-        android:id="@+id/la_ponto"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:text="●"
-        android:textColor="@color/athos_la_lima"
-        android:textSize="10sp" />
+    <FrameLayout
+        android:id="@+id/la_thumb"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@drawable/athos_la_thumb_lima">
+
+        <ImageView
+            android:id="@+id/la_icone"
+            android:layout_width="17dp"
+            android:layout_height="17dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/athos_la_ic_halter" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="8dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -28,15 +40,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
             android:maxLines="1"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textColor="@color/athos_la_texto"
+            android:textSize="14sp" />
 
         <TextView
-            android:id="@+id/la_serie"
+            android:id="@+id/la_sub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="monospace"
+            android:fontFeatureSettings="tnum"
+            android:maxLines="1"
+            android:textColor="@color/athos_la_texto_baixo"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -44,17 +59,19 @@
         android:id="@+id/la_relogio"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="monospace"
+        android:fontFamily="sans-serif-medium"
+        android:fontFeatureSettings="tnum"
         android:textColor="@color/athos_la_descanso"
-        android:textSize="22sp"
-        android:textStyle="bold"
+        android:textSize="21sp"
         android:visibility="gone" />
 
     <TextView
         android:id="@+id/la_resumo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="monospace"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:fontFamily="sans-serif-medium"
+        android:fontFeatureSettings="tnum"
+        android:maxLines="1"
+        android:textColor="@color/athos_la_texto"
+        android:textSize="16sp" />
 </LinearLayout>

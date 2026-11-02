@@ -1,4 +1,5 @@
 import type { DiaSemana } from '@domain/entities/treino'
+import { DIA_LEVE } from './diaLeve'
 
 /**
  * Lembretes do dia (água, refeições, treino, pesagem) — Camada 1 de
@@ -129,6 +130,8 @@ export function planejarLembretes(params: {
   readonly agora: Date
   /** Life pausado hoje (Life MVP 08/10): nada toca hoje; amanhã segue normal. */
   readonly pausadoHoje?: boolean
+  /** Dia leve hoje (rules/diaLeve): o Life cobra menos — poucos lembretes de água. */
+  readonly diaLeveHoje?: boolean
   /** Check-ins do Life — só com "Life puxa conversa" ligado. */
   readonly checkins?: ConfigCheckins | null
 }): LembretePlanejado[] {
@@ -184,7 +187,7 @@ export function planejarLembretes(params: {
 
     const doDia: { tipo: TipoLembrete; min: number }[] = [...fixos]
     if (config.agua.ligado && !(hoje && feitoHoje.aguaMetaBatida)) {
-      const vagas = MAX_POR_DIA - fixos.length
+      const vagas = Math.min(MAX_POR_DIA - fixos.length, hoje && params.diaLeveHoje ? DIA_LEVE.maxAgua : Infinity)
       const agua = horariosAgua(acordar, dormir, Math.max(30, config.agua.intervaloMin)).filter((m) =>
         fixos.every((f) => Math.abs(f.min - m) >= FOLGA_AGUA_MIN),
       )

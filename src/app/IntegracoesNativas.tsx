@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from './SessionProvider'
 import { widgetAgua } from '@data/native/widgetAgua'
+import { atualizarIconeDoMascote } from '@data/native/iconeMascote'
 import { aguaRepository } from '@data/repositories/aguaRepository'
 import { dataLocalISO } from '@domain/rules/datas'
 import { sincronizarCoposWidget, rotaDoWidget } from '@data/native/sincronizarCoposWidget'
@@ -54,6 +55,7 @@ export function IntegracoesNativas() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return
     void sincronizarWidget()
+    void atualizarIconeDoMascote()
     let tirarCopo: (() => void) | null = null
     let tirarApp: (() => void) | null = null
     let encerrado = false
@@ -61,7 +63,9 @@ export function IntegracoesNativas() {
     window.addEventListener('online', aoConectar)
     void widgetAgua.aoTocarCopo(aoConectar).then((f) => { if (encerrado) f(); else tirarCopo = f }).catch(() => {})
     void CapApp.addListener('appStateChange', ({ isActive }) => {
-      if (isActive) void sincronizarWidget()
+      if (!isActive) return
+      void sincronizarWidget()
+      void atualizarIconeDoMascote()
     }).then((h) => { if (encerrado) void h.remove(); else tirarApp = () => void h.remove() })
     return () => {
       encerrado = true

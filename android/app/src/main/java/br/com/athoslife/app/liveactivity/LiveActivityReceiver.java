@@ -11,10 +11,17 @@ import android.content.Intent;
  */
 public class LiveActivityReceiver extends BroadcastReceiver {
     static final String ACAO_BOTAO = "br.com.athoslife.app.LIVE_ACTIVITY_BOTAO";
+    /** Alarme do fim do descanso/cronômetro (LiveActivityNotificacao.agendarAlarme). */
+    static final String ACAO_RELOGIO = "br.com.athoslife.app.LIVE_ACTIVITY_RELOGIO";
     static final String EXTRA_ACAO = "acao";
 
     @Override
     public void onReceive(Context ctx, Intent intent) {
+        if (ACAO_RELOGIO.equals(intent.getAction())) {
+            // mostrar() avança o relógio (descanso acabou -> próxima série) e reagenda.
+            LiveActivityNotificacao.mostrar(ctx);
+            return;
+        }
         if (!ACAO_BOTAO.equals(intent.getAction())) return;
         String acao = intent.getStringExtra(EXTRA_ACAO);
         if (acao == null) return;

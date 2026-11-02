@@ -164,8 +164,11 @@ final class WidgetAguaEstado {
     }
 
     /** hydrated | dry (< 40% da meta) | empty — mesmo corte do HTML. */
-    String humor() {
-        if (totalMl <= 0) return "empty";
-        return totalMl < metaMl * 0.4 ? "dry" : "hydrated";
+    /** 0 vazio · 1 com sede (< 40%) · 2 indo bem · 3 quase lá (≥ 75%) · 4 meta batida. */
+    int faixa() {
+        if (totalMl <= 0) return 0;
+        if (totalMl < metaMl * 0.4) return 1;
+        if (totalMl >= metaMl) return 4;
+        return totalMl >= metaMl * 0.75 ? 3 : 2;
     }
 }

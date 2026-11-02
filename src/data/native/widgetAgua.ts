@@ -23,6 +23,8 @@ interface AthosWidgetAguaPlugin {
   copinhosPendentes(opcoes: { usuario: string }): Promise<{ copos: CopoPendente[] }>
   confirmarCopos(opcoes: { usuario: string; ids: string[] }): Promise<void>
   addListener(evento: 'copo', fn: () => void): Promise<PluginListenerHandle>
+  estadoNaTela(): Promise<{ podeFixar: boolean; jaNaTela: boolean }>
+  fixarNaTela(): Promise<{ pedido: boolean }>
 }
 
 const nativo = Capacitor.getPlatform() === 'android'
@@ -49,6 +51,19 @@ export const widgetAgua = {
   async confirmarCopos(usuario: string, ids: string[]): Promise<void> {
     if (!nativo) return
     await Plugin.confirmarCopos({ usuario, ids })
+  },
+
+  /** Mostrar o botão "Adicionar à tela inicial"? (Android 8+, launcher que aceita, widget ainda não colocado.) */
+  async podeOferecerNaTela(): Promise<boolean> {
+    if (!nativo) return false
+    const e = await Plugin.estadoNaTela().catch(() => null)
+    return !!e && e.podeFixar && !e.jaNaTela
+  },
+
+  /** O sistema mostra o pedido e coloca o widget com um toque. */
+  async colocarNaTela(): Promise<boolean> {
+    if (!nativo) return false
+    return (await Plugin.fixarNaTela().catch(() => ({ pedido: false }))).pedido
   },
 
   async aoTocarCopo(fn: () => void): Promise<() => void> {

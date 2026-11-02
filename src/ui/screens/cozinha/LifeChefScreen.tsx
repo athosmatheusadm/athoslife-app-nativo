@@ -10,6 +10,7 @@ import type { Macros } from '@domain/entities/food'
 import { profileRepository } from '@data/repositories/profileRepository'
 import { macrosRepository } from '@data/repositories/macrosRepository'
 import { AiProxyError } from '@data/ai/aiProxy'
+import { ehFalhaDeRede } from '@data/offline/conexao'
 import { CabecalhoCozinha } from './CabecalhoCozinha'
 import { ReceitaView } from './ReceitaView'
 
@@ -111,6 +112,7 @@ export function LifeChefScreen() {
   }
 
   function mensagemErro(e: unknown): string {
+    if (ehFalhaDeRede(e)) return m.offline.lifePrecisaInternet
     if (e instanceof AiProxyError) {
       switch (e.info.tipo) {
         case 'limit_reached':
@@ -241,7 +243,7 @@ export function LifeChefScreen() {
             {!premium && <p>✨ {t.gratisHoje}</p>}
           </div>
 
-          {erro && <p className="text-center text-micro text-[#f43f5e]">{erro}</p>}
+          {erro && <p className="text-center text-micro text-accent-danger">{erro}</p>}
           {acabouGratis && <LinkPlanos />}
 
           <button
@@ -259,7 +261,7 @@ export function LifeChefScreen() {
           key={receita.titulo}
           titulo={receita.titulo}
           subtitulo={receita.subtitulo || null}
-          corTema="#22c55e"
+          corTema="#64c27b"
           capa={
             <div className="mb-4 flex items-end gap-3">
               <img src="/life/chef.webp" alt="" className="h-24 w-auto flex-none" draggable={false} />
@@ -279,7 +281,7 @@ export function LifeChefScreen() {
           aviso={t.aproximado}
           acoes={
             <>
-              {erro && <p className="text-center text-micro text-[#f43f5e]">{erro}</p>}
+              {erro && <p className="text-center text-micro text-accent-danger">{erro}</p>}
               {(acabouGratis || (!premium && erro === t.limiteCriacoes)) && <LinkPlanos />}
               <button
                 type="button"

@@ -10,6 +10,13 @@ import {
   lerTamanhoTexto,
   type TamanhoTexto,
 } from '@ui/theme/preferenciasAcessibilidade'
+import { definirTema, lerTema, type Tema } from '@ui/theme/tema'
+
+const TEMAS: readonly { valor: Tema; fundo: string }[] = [
+  { valor: 'escuro', fundo: 'bg-[#161616]' },
+  { valor: 'claro', fundo: 'bg-white' },
+  { valor: 'auto', fundo: 'bg-[linear-gradient(135deg,#161616_50%,#ffffff_50%)]' },
+]
 
 const TAMANHOS: readonly { valor: TamanhoTexto; amostra: string }[] = [
   { valor: 'normal', amostra: 'text-sm' },
@@ -28,12 +35,38 @@ export function Acessibilidade() {
   const [tamanho, setTamanho] = useState<TamanhoTexto>(lerTamanhoTexto)
   const [reduzirAnimacoes, setReduzirAnimacoes] = useState(lerReduzirAnimacoes)
   const [altoContraste, setAltoContraste] = useState(lerAltoContraste)
+  const [tema, setTema] = useState<Tema>(lerTema)
 
   return (
     <main className="pb-24 pt-safe-t">
       <CabecalhoSubpagina titulo={t.titulo} />
 
       <section className="mx-5 mt-2">
+        <h2 className="mb-2 text-sm font-bold text-content-hi">{t.tema}</h2>
+        <div className="flex gap-2" role="radiogroup" aria-label={t.tema}>
+          {TEMAS.map((op) => (
+            <button
+              key={op.valor}
+              type="button"
+              role="radio"
+              aria-checked={tema === op.valor}
+              onClick={() => {
+                setTema(op.valor)
+                definirTema(op.valor)
+              }}
+              className={`flex min-h-16 flex-1 flex-col items-center justify-center rounded-xl border px-1 text-sm font-semibold transition-colors active:scale-[0.98] ${
+                tema === op.valor ? 'border-brand bg-brand/10 text-brand' : 'border-surface-4 text-content-mid'
+              }`}
+            >
+              <span className={`h-5 w-5 rounded-full border border-content-dim/40 ${op.fundo}`} aria-hidden="true" />
+              <span className="mt-1 block text-micro">{t.temas[op.valor]}</span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-micro text-content-low">{t.temaAutoSub}</p>
+      </section>
+
+      <section className="mx-5 mt-6">
         <h2 className="mb-2 text-sm font-bold text-content-hi">{t.tamanho}</h2>
         <div className="flex gap-2" role="radiogroup" aria-label={t.tamanho}>
           {TAMANHOS.map((op) => (

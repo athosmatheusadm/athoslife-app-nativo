@@ -1,3 +1,5 @@
+import { formatarNumero, usaImperial } from '@domain/rules/formatoNumero'
+import { mlParaOz } from '@domain/rules/unidades'
 /**
  * Domínio de hidratação.
  *
@@ -38,7 +40,8 @@ export function faltaParaMeta(totalMl: number, metaMl: number): number {
 
 /** Formata ml para leitura humana: 1560 -> "1,56 L", 800 -> "800 ml". */
 export function formatarVolume(ml: number): string {
-  if (ml < 1000) return `${ml} ml`
-  const litros = ml / 1000
-  return `${litros.toFixed(2).replace('.', ',')} L`
+  if (usaImperial()) return `${formatarNumero(mlParaOz(ml))} fl oz`
+  if (ml < 1000) return `${formatarNumero(ml)} ml`
+  // Até 2 casas, sem zero sobrando: 2,75 L / 2,8 L / 3 L — igual em todo o app.
+  return `${formatarNumero(ml / 1000, 2)} L`
 }

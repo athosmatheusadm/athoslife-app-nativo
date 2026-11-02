@@ -1,4 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
+import { fmtKcal } from '@domain/rules/formatoNumero'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
@@ -12,6 +13,8 @@ import {
   type AcaoLife,
   type EscolhaAcao,
   type FocoLife,
+  type HumorChat,
+  type LembrancaPendente,
   type MensagemChat,
 } from '@data/ai/aiProxy'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
@@ -24,15 +27,24 @@ import {
   marcarPausaLocal,
   retomarLifeHoje,
 } from '@data/lifePausa'
+import { TextoLife } from './baloes'
+import { RegistroNoChat } from './RegistroNoChat'
+import { ProgramarNoChat } from './ProgramarNoChat'
+import { avisarPlanoAplicado } from '@app/eventosLife'
+import { EVENTO_AGUA_MUDOU } from '@app/IntegracoesNativas'
+import { EVENTO_AVISOS } from '@data/notifications/avisosLife'
 import { useI18n } from '@/i18n/I18nProvider'
+import { ehFalhaDeRede } from '@data/offline/conexao'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { vibrar } from '@ui/feedback'
 import { LifeMascote, type HumorLife } from '@ui/components/LifeMascote'
 import { PlanosNoLife } from './PlanosNoLife'
+import { executarPesoNoApp, lerComandoPeso, resolverNoApp } from './pesoNoChat'
 
 /** Texto de erro por tipo — nunca finge que a conversa funcionou. */
-function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros']): string {
+function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros'], semRede: string): string {
+  if (ehFalhaDeRede(e)) return semRede
   if (!(e instanceof AiProxyError)) return t.geral
   switch (e.info.tipo) {
     case 'limit_reached':
@@ -59,7 +71,12 @@ function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros']): string {
  * Treino tem "Montar treino"; Dieta tem "Montar dieta", o Life-chef e o
  * scanner. Os planos ficam no fim da conversa (PlanosNoLife).
  */
-export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; humor?: HumorLife }) {
+/** Humor da resposta → expressões que já existem em /life/. */
+const ROSTO_DO_HUMOR: Record<HumorChat, HumorLife> = {
+  normal: 'normal', escutando: 'calmo', feliz: 'feliz', cozinhando: 'chef', treino: 'treino',
+}
+
+export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; humor?: HumorLife; rascunho?: string }) {
   const foco = props.foco ?? 'home'
   const navigate = useNavigate()
   const { refresh: recarregarPerfil } = useSession()
@@ -71,11 +88,31 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   const [historico, setHistorico] = useState<MensagemChat[]>([])
   // 'carregando' evita o "Oi…" piscar antes do histórico chegar.
   const [estadoHist, setEstadoHist] = useState<'carregando' | 'ok' | 'erro'>('carregando')
-  const [texto, setTexto] = useState('')
+  const [texto, setTexto] = useState(props.rascunho ?? '')
+  /** "82" sozinho: o Life perguntou se anota; aqui fica o peso esperando o Sim/Não. */
+  const [pesoAConfirmar, setPesoAConfirmar] = useState<number | null>(null)
+
+  // Rascunho "Pesei  kg": cursor no buraco, pronto pra digitar o número.
+  useEffect(() => {
+    const el = inputRef.current
+    if (!props.rascunho || !el) return
+    const buraco = props.rascunho.indexOf('  ')
+    const pos = buraco >= 0 ? buraco + 1 : props.rascunho.length
+    el.focus()
+    el.setSelectionRange(pos, pos)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [enviando, setEnviando] = useState(false)
+  // Fase 8: o rosto do Life acompanha a resposta (desabafo: escutando, nunca chef).
+  const [humorConversa, setHumorConversa] = useState<HumorLife | null>(null)
+  // Fase 7: o texto do Life enquanto ele escreve (a resposta final substitui).
+  const [rascunho, setRascunho] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [restantes, setRestantes] = useState<number | null>(null)
   const [escolha, setEscolha] = useState<Extract<AcaoLife, { tipo: 'escolha' }> | null>(null)
+  const pendentesMemoria = useRef<LembrancaPendente[]>([])
+  const [registro, setRegistro] = useState<Extract<AcaoLife, { tipo: 'registrar_itens' }> | null>(null)
+  const [programar, setProgramar] = useState<Extract<AcaoLife, { tipo: 'programar_itens' }> | null>(null)
   const [pausado, setPausado] = useState(false)
   const [mudandoPausa, setMudandoPausa] = useState(false)
   // Mensagem que falhou: reenviar o mesmo texto usa o mesmo id (sem ação em dobro).
@@ -92,6 +129,10 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   useEffect(() => {
     fimRef.current?.scrollIntoView({ block: 'end', behavior: historico.length > 0 ? 'smooth' : 'auto' })
   }, [historico, enviando])
+  // Rascunho crescendo: acompanha sem animação (smooth a cada pedaço dá tranco).
+  useEffect(() => {
+    if (rascunho) fimRef.current?.scrollIntoView({ block: 'end', behavior: 'auto' })
+  }, [rascunho])
 
   useEffect(() => {
     let vivo = true
@@ -128,7 +169,16 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   /** O que o Life fez no app — só chega depois que o servidor gravou. */
   function aplicarAcao(acao: AcaoLife | null) {
     setEscolha(acao?.tipo === 'escolha' ? acao : null)
+    setRegistro(acao?.tipo === 'registrar_itens' ? acao : null)
+    // O cartão de "deixar no lugar" fica até a pessoa responder (vira Desfazer depois).
+    if (acao?.tipo === 'programar_itens') setProgramar(acao)
     if (acao?.tipo === 'refeicao_atualizada') avisarRegistroDoDia()
+    if (acao?.tipo === 'treino_atualizado') avisarPlanoAplicado({ tipo: 'treino', local: acao.local })
+    if (acao?.tipo === 'aviso_agendado') window.dispatchEvent(new Event(EVENTO_AVISOS))
+    if (acao?.tipo === 'agua_atualizada') {
+      window.dispatchEvent(new Event(EVENTO_AGUA_MUDOU))
+      avisarRegistroDoDia()
+    }
     if (acao?.tipo === 'peso_atualizado') {
       avisarRegistroDoDia()
       void recarregarPerfil() // meta/objetivo novos pro card e pra linha-guia
@@ -136,6 +186,27 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     if (acao?.tipo === 'pausa') {
       setPausado(true)
       void marcarPausaLocal()
+    }
+  }
+
+  async function confirmarPeso(sim: boolean) {
+    const kg = pesoAConfirmar
+    if (kg === null || enviando) return
+    setPesoAConfirmar(null)
+    setHistorico((h) => [...h, { autor: 'usuario', texto: sim ? tc.peso.sim : tc.peso.nao }])
+    if (!sim) {
+      setHistorico((h) => [...h, { autor: 'life', texto: tc.peso.naoAnotei }])
+      return
+    }
+    setEnviando(true)
+    try {
+      const resposta = await executarPesoNoApp({ tipo: 'registrar', kg }, tc.peso)
+      setHistorico((h) => [...h, { autor: 'life', texto: resposta }])
+      aplicarAcao({ tipo: 'peso_atualizado' })
+    } catch {
+      setErro(tc.erros.geral)
+    } finally {
+      setEnviando(false)
     }
   }
 
@@ -153,7 +224,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     } catch (e) {
       setHistorico((h) => h.slice(0, -1))
       setEscolha({ tipo: 'escolha', id, opcoes: escolha.opcoes })
-      setErro(mensagemDeErro(e, tc.erros))
+      setErro(mensagemDeErro(e, tc.erros, m.offline.lifePrecisaInternet))
     } finally {
       setEnviando(false)
     }
@@ -179,6 +250,13 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     setErroMemoria(false)
     try {
       await lifeMemoriaRepository.definirConsentimento(aceitou)
+      // O que ela contou e motivou o convite entra agora (antes se perdia).
+      if (aceitou) {
+        for (const l of pendentesMemoria.current) {
+          await lifeMemoriaRepository.contar(l.texto, l.categoria, l.data).catch(() => {})
+        }
+      }
+      pendentesMemoria.current = []
       vibrar.leve()
       setConviteMemoria(aceitou ? 'aceito' : 'recusado')
     } catch {
@@ -203,20 +281,42 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
 
     const id = falhaRef.current?.texto === mensagem ? falhaRef.current.id : crypto.randomUUID()
     setEscolha(null)
+    setPesoAConfirmar(null)
     void marcarConversaComLife()
+    // Peso resolvido no app: número sozinho (pergunta antes) ou sem internet.
+    const cmdPeso = lerComandoPeso(mensagem)
+    if (cmdPeso && resolverNoApp(cmdPeso)) {
+      try {
+        const resposta = await executarPesoNoApp(cmdPeso, tc.peso)
+        setHistorico((h) => [...h, { autor: 'life', texto: resposta }])
+        if (cmdPeso.tipo === 'confirmar') setPesoAConfirmar(cmdPeso.kg)
+        else aplicarAcao({ tipo: 'peso_atualizado' })
+      } catch {
+        setErro(tc.erros.geral)
+      } finally {
+        setEnviando(false)
+      }
+      return
+    }
     try {
-      const r = await enviarMensagemChat(mensagem, foco, id)
+      setRascunho(null)
+      const r = await enviarMensagemChat(mensagem, foco, id, setRascunho)
+      setRascunho(null)
       falhaRef.current = null
       setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
-      if (r.restantes !== null) setRestantes(r.restantes)
+      if (r.contadorOculto) setRestantes(null)
+      else if (r.restantes !== null) setRestantes(r.restantes)
+      if (r.humor) setHumorConversa(ROSTO_DO_HUMOR[r.humor])
       aplicarAcao(r.acao)
       if (r.sugerirMemoria) setConviteMemoria((c) => c ?? 'mostrar')
+      if (r.memoriaPendente.length) pendentesMemoria.current = [...pendentesMemoria.current, ...r.memoriaPendente].slice(-12)
     } catch (e) {
+      setRascunho(null)
       falhaRef.current = { texto: mensagem, id }
       // A mensagem não foi aceita: tira do histórico e devolve pro campo.
       setHistorico((h) => h.slice(0, -1))
       setTexto(mensagem)
-      setErro(mensagemDeErro(e, tc.erros))
+      setErro(mensagemDeErro(e, tc.erros, m.offline.lifePrecisaInternet))
       if (e instanceof AiProxyError && e.info.tipo === 'limit_reached') setRestantes(0)
     } finally {
       setEnviando(false)
@@ -240,7 +340,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
         <div className="mx-auto mt-3 h-1 w-10 flex-none rounded-full bg-surface-4" aria-hidden="true" />
 
         <div className="flex flex-none items-center gap-3 px-6 pb-3 pt-3">
-          <LifeMascote humor={props.humor ?? 'normal'} alt="" className="h-14 flex-none" />
+          <LifeMascote humor={humorConversa ?? props.humor ?? 'normal'} alt="" className="h-14 flex-none" estatico />
           <div className="min-w-0 flex-1">
             <h2 className="text-xl font-bold text-content-hi">{m.lifeChat.titulo[foco]}</h2>
             <p className="mt-0.5 text-sm text-content-low">{m.lifeChat.sub[foco]}</p>
@@ -294,7 +394,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                         : 'border border-surface-4 bg-surface-2 text-content-mid'
                     }`}
                   >
-                    {c.texto}
+                    {msg.autor === 'life' ? <TextoLife texto={c.texto} /> : <span className="whitespace-pre-line">{c.texto}</span>}
                   </div>
                 )}
                 {c.receitas.map((id) => {
@@ -309,6 +409,25 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
               </Fragment>
             )
           })}
+
+          {pesoAConfirmar !== null && !enviando && (
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => void confirmarPeso(false)}
+                className="min-h-11 rounded-full border border-surface-4 px-4 text-sm font-semibold text-content-mid active:scale-[0.98]"
+              >
+                {tc.peso.nao}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarPeso(true)}
+                className="min-h-11 rounded-full border border-brand/50 bg-brand/10 px-4 text-sm font-semibold text-brand active:scale-[0.98]"
+              >
+                {tc.peso.sim}
+              </button>
+            </div>
+          )}
 
           {escolha && !enviando && (
             <div className="flex flex-wrap justify-end gap-2">
@@ -327,6 +446,42 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                 </button>
               ))}
             </div>
+          )}
+
+          {registro && !enviando && (
+            <RegistroNoChat
+              key={registro.dia + registro.itens.map((i) => i.alimentoId).join()}
+              acao={registro}
+              onPronto={(texto) => {
+                setRegistro(null)
+                setHistorico((h) => [...h, { autor: 'life', texto }])
+                avisarRegistroDoDia()
+              }}
+              onCancelar={() => {
+                setRegistro(null)
+                setHistorico((h) => [...h, { autor: 'life', texto: tc.registro.cancelado }])
+              }}
+            />
+          )}
+
+          {programar && (
+            <ProgramarNoChat
+              key={programar.dias.join() + programar.refeicoes.map((r) => r.tipo + r.itens.length).join()}
+              acao={programar}
+              onPronto={(texto) => {
+                setHistorico((h) => [...h, { autor: 'life', texto }])
+                avisarRegistroDoDia()
+              }}
+              onDesfeito={(texto) => {
+                setProgramar(null)
+                setHistorico((h) => [...h, { autor: 'life', texto }])
+                avisarRegistroDoDia()
+              }}
+              onCancelar={() => {
+                setProgramar(null)
+                setHistorico((h) => [...h, { autor: 'life', texto: tc.programar.cancelado }])
+              }}
+            />
           )}
 
           {(conviteMemoria === 'mostrar' || conviteMemoria === 'salvando') && (
@@ -370,7 +525,12 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             />
           )}
 
-          {enviando && (
+          {enviando && rascunho && (
+            <div className="max-w-[85%] rounded-2xl border border-surface-4 bg-surface-2 p-3.5 text-sm leading-relaxed text-content-mid" aria-busy="true">
+              <TextoLife texto={separarCartoes(rascunho).texto} />
+            </div>
+          )}
+          {enviando && !rascunho && (
             <div className="flex w-fit items-center gap-2 rounded-2xl border border-surface-4 bg-surface-2 p-3.5 text-sm text-content-low" role="status">
               <span className="flex gap-1" aria-hidden="true">
                 <span className="h-1.5 w-1.5 rounded-full bg-content-low motion-safe:animate-bounce" />
@@ -453,7 +613,7 @@ function CartaoReceita(props: { receita: ReceitaCrua; onClick: () => void }) {
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold text-content-hi">{r.titulo}</span>
         <span className="block text-micro text-content-low">
-          {Math.round(r.macros.calorias)} kcal{r.tempoPreparoMin ? ` · ${r.tempoPreparoMin} min` : ''}
+          {fmtKcal(r.macros.calorias)} kcal{r.tempoPreparoMin ? ` · ${r.tempoPreparoMin} min` : ''}
         </span>
       </span>
       <span aria-hidden="true" className="text-content-low">›</span>

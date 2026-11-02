@@ -12,7 +12,7 @@ name: Build Android (.aab)
 #   4. Baixe o .aab em "Artifacts" e envie na Play Console.
 #
 # Secrets necessários:
-#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_RC_GOOGLE_KEY (RevenueCat)
 #   ANDROID_KEYSTORE_BASE64  -> keystore de assinatura em base64
 #   ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
 
@@ -49,6 +49,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_RC_GOOGLE_KEY: ${{ secrets.VITE_RC_GOOGLE_KEY }}
         run: npm run build
 
       - name: Sincronizar Capacitor

@@ -4,7 +4,8 @@ import { useI18n } from '@/i18n/I18nProvider'
 import { cozinhaService } from '@domain/services/cozinhaService'
 import { estruturarGerada } from '@domain/rules/cozinha'
 import type { ReceitaCriada } from '@domain/entities/receita'
-import { capturarFoto, type OrigemFoto } from '@data/ai/photoCapture'
+import { CameraNegadaError, capturarFoto, type OrigemFoto } from '@data/ai/photoCapture'
+import { avisar } from '@ui/feedback'
 import { CabecalhoCozinha } from './CabecalhoCozinha'
 import { ReceitaView } from './ReceitaView'
 
@@ -38,7 +39,10 @@ export function CriacaoScreen() {
   async function porFoto(origem: OrigemFoto) {
     if (!criacao) return
     setEscolhendo(false)
-    const foto = await capturarFoto(origem)
+    const foto = await capturarFoto(origem).catch((e: unknown) => {
+      if (e instanceof CameraNegadaError) avisar.erro(m.comum.cameraNegada)
+      return null
+    })
     if (!foto) return
     setEstadoFoto('enviando')
     try {
@@ -70,7 +74,7 @@ export function CriacaoScreen() {
         onVoltar={() => navigate(-1)}
         direita={
           criacao && (
-            <button type="button" onClick={() => void excluir()} className="text-micro font-bold text-[#f43f5e]">
+            <button type="button" onClick={() => void excluir()} className="text-micro font-bold text-accent-danger">
               {t.excluir}
             </button>
           )
@@ -84,7 +88,7 @@ export function CriacaoScreen() {
         <ReceitaView
           titulo={r.titulo}
           subtitulo={r.subtitulo || null}
-          corTema="#22c55e"
+          corTema="#64c27b"
           capa={
             criacao.fotoUrl ? (
               <div className="relative mb-4 overflow-hidden rounded-2xl">
@@ -108,7 +112,7 @@ export function CriacaoScreen() {
             <>
               {estadoFoto === 'enviando' && <p className="text-center text-micro text-content-low">{t.enviandoFoto}</p>}
               {estadoFoto === 'ok' && <p className="text-center text-micro font-bold text-brand">{t.fotoGuardada}</p>}
-              {estadoFoto === 'erro' && <p className="text-center text-micro text-[#f43f5e]">{t.erroFoto}</p>}
+              {estadoFoto === 'erro' && <p className="text-center text-micro text-accent-danger">{t.erroFoto}</p>}
               {escolhendo ? (
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => void porFoto('camera')} className="rounded-pill bg-brand py-3 text-sm font-bold text-brand-ink">

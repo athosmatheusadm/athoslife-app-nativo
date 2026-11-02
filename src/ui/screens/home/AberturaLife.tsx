@@ -70,7 +70,7 @@ export function AberturaLife() {
       aria-label={t.rotulo}
       className="mx-4 mb-3 flex items-start gap-3 rounded-2xl border border-surface-4 border-l-[3px] border-l-brand bg-surface-2 px-3.5 py-3"
     >
-      <LifeMascote humor="normal" alt="" className="h-12 flex-none" />
+      <LifeMascote humor="normal" alt="" className="h-12 flex-none" estatico />
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-relaxed text-content-hi">{mensagem}</p>
         <button

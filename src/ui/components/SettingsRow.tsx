@@ -45,7 +45,8 @@ export function SettingsRow(props: {
           </span>
         )}
       </span>
-      {trailing && <span className="flex-none text-content-low">{trailing}</span>}
+      {/* flex: selo + seta na mesma linha (o "Premium" empurrava a seta pra baixo). */}
+      {trailing && <span className="flex flex-none items-center text-content-low">{trailing}</span>}
     </button>
   )
 }

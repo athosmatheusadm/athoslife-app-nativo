@@ -6,6 +6,7 @@ import {
 } from '@data/repositories/lifeMemoriaRepository'
 import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
 import { useI18n } from '@/i18n/I18nProvider'
+import { diaMes } from '@/i18n/formatos'
 import { avisar, vibrar } from '@ui/feedback'
 
 const CATEGORIAS: readonly CategoriaMemoria[] = ['gosto', 'rotina', 'objetivo', 'evento', 'pessoa', 'estilo', 'contexto']
@@ -133,7 +134,7 @@ export function MemoriaLife() {
     }
   }
 
-  const dataCurta = (iso: string) => iso.split('-').reverse().join('/')
+  const dataCurta = diaMes
 
   return (
     <main className="pb-24 pt-safe-t">

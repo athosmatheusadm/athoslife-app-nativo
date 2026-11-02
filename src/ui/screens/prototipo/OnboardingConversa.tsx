@@ -718,7 +718,7 @@ export function EscolherMusculos(props: { onConfirmar: (v: string[]) => void; va
     setSel(nova)
     props.onChange?.(nova)
   }
-  const cor = (m: string) => (sel.includes(m) ? '#22c55e' : '#3a3a3a')
+  const cor = (m: string) => (sel.includes(m) ? '#64c27b' : '#3a3a3a')
 
   // Função (não componente): um componente criado dentro do render remontaria a cada toque.
   const parte = (m: string, formas: ReactNode) => (
@@ -864,7 +864,7 @@ function PlanoPronto(props: { r: Respostas; onRecomecar: () => void }) {
           </div>
           <svg viewBox="0 0 320 40" className="h-10 w-full" preserveAspectRatio="none" aria-hidden="true">
             {[40, 120, 200, 280].map((x, i) => (
-              <path key={x} d={`M160 0 C160 22, ${x} 18, ${x} 40`} fill="none" stroke="#22c55e" strokeWidth="2" strokeDasharray="200" strokeDashoffset="200" style={{ animation: `desenhar .8s ${i * 0.12}s ease-out forwards` }} />
+              <path key={x} d={`M160 0 C160 22, ${x} 18, ${x} 40`} fill="none" stroke="#64c27b" strokeWidth="2" strokeDasharray="200" strokeDashoffset="200" style={{ animation: `desenhar .8s ${i * 0.12}s ease-out forwards` }} />
             ))}
           </svg>
           <div className="grid grid-cols-4 gap-2">

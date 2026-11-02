@@ -6,8 +6,8 @@
   /* Escuro (padrão). Valores "R G B" pra o Tailwind aplicar opacidade. */
   :root {
     color-scheme: dark;
-    --c-brand: 34 197 94;
-    --c-brand-dark: 22 163 74;
+    --c-brand: 100 194 123;
+    --c-brand-dark: 42 140 74;
     --c-brand-glow: 15 31 15;
     --c-brand-ink: 4 18 10;
     --c-surface-1: 22 22 22;
@@ -19,53 +19,49 @@
     --c-content-mid: 209 213 219;
     --c-content-low: 156 163 175;
     --c-content-dim: 107 114 128;
-    --c-accent-energy: 249 115 22;
-    --c-accent-water: 59 130 246;
-    --c-accent-gold: 251 191 36;
-    --c-accent-recaida: 139 92 246;
-    --c-accent-recaida-soft: 167 139 250;
-    --c-accent-danger: 244 63 94;
-    --c-accent-favorito: 251 113 133;
-    --c-macro-proteina: 96 165 250;
-    --c-macro-carbo: 251 146 60;
-    --c-macro-gordura: 250 204 21;
+    --c-accent-energy: 226 135 85;
+    --c-accent-water: 94 147 225;
+    --c-accent-gold: 237 197 110;
+    --c-accent-recaida: 144 122 217;
+    --c-accent-recaida-soft: 170 156 225;
+    --c-accent-danger: 224 108 117;
+    --c-accent-favorito: 233 135 146;
+    --c-macro-proteina: 121 167 226;
+    --c-macro-carbo: 233 157 102;
+    --c-macro-gordura: 237 207 111;
   }
-
-  /* Claro: segue o modo do celular. Fundo branco + ondas verdes (abaixo).
-     Verde e acentos um tom mais escuros pra ler bem sobre o branco. */
-  @media (prefers-color-scheme: light) {
-    :root {
-      color-scheme: light;
-      --c-brand: 22 163 74;
-      --c-brand-dark: 21 128 61;
-      --c-brand-glow: 232 246 236;
-      --c-surface-1: 255 255 255;
-      --c-surface-2: 246 248 246;
-      --c-surface-3: 238 242 239;
-      --c-surface-4: 220 226 221;
-      --c-surface-nav: 255 255 255;
-      --c-content-hi: 17 24 20;
-      --c-content-mid: 55 65 81;
-      --c-content-low: 87 96 108;
-      --c-content-dim: 136 144 153;
-      --c-accent-energy: 234 88 12;
-      --c-accent-water: 37 99 235;
-      --c-accent-gold: 202 138 4;
-      --c-accent-recaida: 124 58 237;
-      --c-accent-recaida-soft: 139 92 246;
-      --c-accent-danger: 225 29 72;
-      --c-accent-favorito: 244 63 94;
-      --c-macro-proteina: 37 99 235;
-      --c-macro-carbo: 234 88 12;
-      --c-macro-gordura: 161 98 7;
-    }
-
-    html {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 800' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%2316a34a' stroke-linecap='round'%3E%3Cpath d='M-20 610 C 60 570 140 650 220 610 S 360 560 420 600' stroke-width='2.5' opacity='.28'/%3E%3Cpath d='M-20 660 C 70 620 150 700 240 655 S 370 610 420 650' stroke-width='2' opacity='.2'/%3E%3Cpath d='M-20 710 C 80 675 160 745 250 705 S 375 665 420 700' stroke-width='1.5' opacity='.14'/%3E%3Cpath d='M220 90 C 280 60 330 120 420 80' stroke-width='2' opacity='.14'/%3E%3C/g%3E%3C/svg%3E");
-      background-size: 100% 100%;
-      background-attachment: fixed;
-      background-repeat: no-repeat;
-    }
+  /* Claro: escolhido em Perfil > Acessibilidade > Tema (ui/theme/tema.ts põe
+     .tema-claro no <html>). Verde e acentos um tom mais escuros pra ler no branco. */
+  :root.tema-claro {
+    color-scheme: light;
+    --c-brand: 42 140 74;
+    --c-brand-dark: 35 107 54;
+    --c-brand-glow: 208 253 215;
+    --c-surface-1: 255 255 255;
+    --c-surface-2: 246 248 246;
+    --c-surface-3: 238 242 239;
+    --c-surface-4: 220 226 221;
+    --c-surface-nav: 255 255 255;
+    --c-content-hi: 17 24 20;
+    --c-content-mid: 55 65 81;
+    --c-content-low: 87 96 108;
+    --c-content-dim: 136 144 153;
+    --c-accent-energy: 191 98 61;
+    --c-accent-water: 66 110 194;
+    --c-accent-gold: 165 118 39;
+    --c-accent-recaida: 116 89 189;
+    --c-accent-recaida-soft: 132 111 198;
+    --c-accent-danger: 191 75 85;
+    --c-accent-favorito: 197 88 99;
+    --c-macro-proteina: 66 110 194;
+    --c-macro-carbo: 191 98 61;
+    --c-macro-gordura: 153 101 42;
+  }
+  html.tema-claro {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 800' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%232a8c4a' stroke-linecap='round'%3E%3Cpath d='M-20 610 C 60 570 140 650 220 610 S 360 560 420 600' stroke-width='2.5' opacity='.28'/%3E%3Cpath d='M-20 660 C 70 620 150 700 240 655 S 370 610 420 650' stroke-width='2' opacity='.2'/%3E%3Cpath d='M-20 710 C 80 675 160 745 250 705 S 375 665 420 700' stroke-width='1.5' opacity='.14'/%3E%3Cpath d='M220 90 C 280 60 330 120 420 80' stroke-width='2' opacity='.14'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   html,
@@ -76,6 +72,11 @@
   }
   html {
     background-color: theme('colors.surface.1');
+  }
+  /* Nada empurra a página pro lado (360 px + texto "Extra grande"). `clip`
+     não cria área de rolagem, então os cabeçalhos fixos continuam fixos. */
+  #root {
+    overflow-x: clip;
   }
 
   body {
@@ -117,11 +118,9 @@
     --c-content-low: 209 213 219;
     --c-content-dim: 156 163 175;
   }
-  @media (prefers-color-scheme: light) {
-    .alto-contraste {
-      --c-content-low: 55 65 81;
-      --c-content-dim: 87 96 108;
-    }
+  .tema-claro.alto-contraste {
+    --c-content-low: 55 65 81;
+    --c-content-dim: 87 96 108;
   }
 }
 
@@ -168,3 +167,85 @@
 @keyframes desenhar {
   to { stroke-dashoffset: 0; }
 }
+
+/* Scanner: vidro sobre a foto/câmera. O vidro é sempre escuro (como numa
+   câmera), então quem está dentro usa os tokens do tema escuro. */
+.tema-escuro {
+  color-scheme: dark;
+  --c-brand: 100 194 123;
+  --c-brand-ink: 4 18 10;
+  --c-surface-1: 22 22 22;
+  --c-surface-2: 26 26 26;
+  --c-surface-3: 31 31 31;
+  --c-surface-4: 42 42 42;
+  --c-content-hi: 255 255 255;
+  --c-content-mid: 209 213 219;
+  --c-content-low: 156 163 175;
+  --c-content-dim: 107 114 128;
+  --c-accent-gold: 237 197 110;
+  --c-accent-danger: 224 108 117;
+  --c-macro-proteina: 121 167 226;
+  --c-macro-carbo: 233 157 102;
+  --c-macro-gordura: 237 207 111;
+  color: rgb(var(--c-content-hi));
+}
+.vidro {
+  background: rgb(14 16 15 / 0.42);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgb(255 255 255 / 0.14);
+}
+
+/* Leitura de código: a câmera fica atrás da WebView. Some com o app inteiro
+   (fundo transparente) e mostra só a tela da câmera. */
+html.barcode-scanner-active,
+html.barcode-scanner-active body,
+html.barcode-scanner-active #root {
+  background: transparent !important;
+  background-image: none !important;
+}
+html.barcode-scanner-active body {
+  visibility: hidden;
+}
+.barcode-scanner-modal {
+  visibility: visible;
+}
+.laser-codigo {
+  animation: laser-codigo 1.8s ease-in-out infinite alternate;
+}
+@keyframes laser-codigo {
+  from { top: 18%; }
+  to { top: 82%; }
+}
+
+/* check-in do dia: card compacto + folha (verde menta, 01/11) */
+.athos-ck-base{margin:0 16px 12px;border-radius:16px;border:1px solid rgb(var(--c-surface-4));background:rgb(var(--c-surface-2))}
+.athos-ck{padding:4px 0 12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.athos-ck-topo{display:flex;align-items:center;gap:0;padding:0 2px 0 14px;min-height:44px}
+.athos-ck-x{display:flex;flex:none;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;color:rgb(var(--c-content-low));font-size:15px}
+.athos-ck-x:active{background:rgb(var(--c-content-hi)/.06)}
+.athos-ck-expandir svg{width:16px;height:16px}
+.athos-ck-carrossel{display:flex;gap:8px;overflow-x:auto;padding:2px 14px 0;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent)}
+.athos-ck-carrossel::-webkit-scrollbar{display:none}
+.athos-ck-chip{flex:none;scroll-snap-align:start;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgb(var(--c-surface-4));
+  background:rgb(var(--c-surface-1)/.5);color:rgb(var(--c-content-mid));font-size:14px;font-weight:500;white-space:nowrap;transition:transform .12s,background-color .15s}
+.athos-ck-chip:last-child{margin-right:24px}
+.athos-ck-chip:active{transform:scale(.96)}
+.athos-ck-chip.on{border-color:rgb(var(--c-brand));background:rgb(var(--c-brand)/.15);color:rgb(var(--c-brand))}
+.athos-ck-chip.mais{border-style:dashed;color:rgb(var(--c-content-low))}
+.athos-ck-chip:disabled{opacity:.6}
+.athos-ck-erro{padding:6px 14px 0}
+.athos-ck-folha-fundo{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.athos-ck-veu{position:absolute;inset:0;background:rgb(0 0 0/.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:athosVeu .2s ease}
+.athos-ck-folha{position:relative;width:100%;max-width:448px;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;background:rgb(var(--c-surface-2));
+  border:1px solid rgb(var(--c-surface-4));border-bottom:0;border-radius:24px 24px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));
+  animation:athosFolha .3s cubic-bezier(.22,1,.36,1);color:rgb(var(--c-content-hi))}
+.athos-ck-alca{width:36px;height:4px;border-radius:4px;background:rgb(var(--c-content-dim)/.5);margin:0 auto 12px}
+.athos-ck-folha-topo{display:flex;align-items:center;gap:12px}
+.athos-ck-life{height:56px;width:auto;flex:none;user-select:none}
+.athos-ck-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}
+.athos-ck-tile{min-height:56px;padding:4px 2px;font-size:13px;font-weight:600;line-height:1.15}
+@keyframes athosFolha{from{transform:translateY(100%)}to{transform:none}}
+@keyframes athosVeu{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.athos-ck-folha,.athos-ck-veu{animation:none}}

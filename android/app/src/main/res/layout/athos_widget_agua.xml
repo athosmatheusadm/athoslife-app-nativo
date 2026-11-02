@@ -97,12 +97,136 @@
     </LinearLayout>
 
     <!-- Life: abre o app. Fica por cima da cápsula, estourando pra cima. -->
-    <ImageView
+    <!-- Life animado (life_agua.html do dono, 25/10): widget não roda o motor,
+         então são 20 quadros gravados dele (respira e pisca, 3 s em loop) e o
+         ViewFlipper troca a cada 150 ms. Um conjunto por faixa da meta. -->
+    <ViewFlipper
         android:id="@+id/wg_life"
         android:layout_width="58dp"
         android:layout_height="80dp"
         android:layout_gravity="start|top"
         android:layout_marginStart="8dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/athos_widget_life" />
+        android:autoStart="true"
+        android:flipInterval="150">
+        <ImageView
+            android:id="@+id/wg_life_0"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_00" />
+        <ImageView
+            android:id="@+id/wg_life_1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_01" />
+        <ImageView
+            android:id="@+id/wg_life_2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_02" />
+        <ImageView
+            android:id="@+id/wg_life_3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_03" />
+        <ImageView
+            android:id="@+id/wg_life_4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_04" />
+        <ImageView
+            android:id="@+id/wg_life_5"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_05" />
+        <ImageView
+            android:id="@+id/wg_life_6"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_06" />
+        <ImageView
+            android:id="@+id/wg_life_7"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_07" />
+        <ImageView
+            android:id="@+id/wg_life_8"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_08" />
+        <ImageView
+            android:id="@+id/wg_life_9"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_09" />
+        <ImageView
+            android:id="@+id/wg_life_10"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_10" />
+        <ImageView
+            android:id="@+id/wg_life_11"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_11" />
+        <ImageView
+            android:id="@+id/wg_life_12"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_12" />
+        <ImageView
+            android:id="@+id/wg_life_13"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_13" />
+        <ImageView
+            android:id="@+id/wg_life_14"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_14" />
+        <ImageView
+            android:id="@+id/wg_life_15"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_15" />
+        <ImageView
+            android:id="@+id/wg_life_16"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_16" />
+        <ImageView
+            android:id="@+id/wg_life_17"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_17" />
+        <ImageView
+            android:id="@+id/wg_life_18"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_18" />
+        <ImageView
+            android:id="@+id/wg_life_19"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/athos_wg_life_indo_19" />
+    </ViewFlipper>
 </FrameLayout>

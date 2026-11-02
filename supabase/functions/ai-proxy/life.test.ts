@@ -46,11 +46,41 @@ Deno.test('bloco de memória: desligada avisa o modelo para não prometer', () =
 })
 
 Deno.test('jeito de falar: curto, sem emoji, com humor', () => {
-  igual(estiloDaPessoa(['oi', 'tudo bem']), null) // poucas mensagens
+  igual(estiloDaPessoa([]), null)
   const curto = estiloDaPessoa(['oi', 'blz kkkk', 'treinei hj', 'tô cansado', 'kkkkk vdd', 'sim'])!
-  ok(curto.includes('escreve curto') && curto.includes('evite emoji') && curto.includes('humor leve'), curto)
+  ok(curto.includes('COMO_FALAR_COM_ELA') && curto.includes('curto') && curto.includes('sem emoji') && curto.includes('brincadeira'), curto)
+  ok(curto.includes('Tende a'), curto) // 6 mensagens: tendência, não regra
   const emoji = estiloDaPessoa(['bom dia ☀️', 'treino feito 💪', 'amei 😍', 'comi salada 🥗', 'boa noite 🌙'])!
   ok(emoji.includes('1 emoji combina'), emoji)
+})
+
+Deno.test('jeito de falar: desde a 1ª mensagem, como palpite', () => {
+  const um = estiloDaPessoa(['oi, vc pode me ajudar c a dieta? tô perdido'])!
+  ok(um.includes('Primeiro palpite') && um.includes('parece preferir') && um.includes('informal'), um)
+  ok(!um.includes('sem emoji'), um) // 1 mensagem não basta pra dizer que não usa emoji
+  const formal = estiloDaPessoa(['Boa tarde. Gostaria de saber como organizar minhas refeições durante a semana, considerando que trabalho em horário comercial.'])!
+  ok(formal.includes('formal') && !formal.includes('informal'), formal)
+  const muitas = Array.from({ length: 12 }, (_, i) => `ok ${i}`)
+  const regra = estiloDaPessoa(muitas)!
+  ok(!regra.includes('Tende') && !regra.includes('palpite') && regra.includes('Curto'), regra)
+  igual(estiloDaPessoa(['a semana foi corrida mas consegui treinar três vezes, o que pra mim já é uma vitória e tanto']), null)
+})
+
+Deno.test('jeito de falar: pedido explícito vale na hora e o último vence', () => {
+  const direto = estiloDaPessoa(['oi', 'pode ser direto, não precisa explicar'])!
+  ok(direto.includes('Pediu respostas diretas') && direto.includes('vale sempre'), direto)
+  const depois = estiloDaPessoa(['pode ser direto', 'hmm', 'explica melhor isso'])!
+  ok(depois.includes('Pediu explicação') && !depois.includes('Pediu respostas diretas'), depois)
+  const semEmoji = estiloDaPessoa(['bom dia 😀', 'oi 😀', 'para de mandar emoji'])!
+  ok(semEmoji.includes('Pediu sem emoji') && !semEmoji.includes('1 emoji'), semEmoji)
+  ok(estiloDaPessoa(['Be more direct please'])!.includes('Pediu respostas diretas'))
+  ok(estiloDaPessoa(['sé directo'])!.includes('Pediu respostas diretas'))
+})
+
+Deno.test('jeito de falar: "só quero conversar" vale só no momento', () => {
+  ok(estiloDaPessoa(['não quero organizar nada, só quero conversar'])!.includes('quer ser ouvida'))
+  const passou = estiloDaPessoa(['só quero desabafar', 'a', 'b', 'c'])
+  ok(!passou || !passou.includes('quer ser ouvida'), passou ?? '')
 })
 
 Deno.test('check-in: vocabulário fixo, energia vem do servidor, etiquetas filtradas', () => {
@@ -99,7 +129,7 @@ Deno.test('abertura: marco de hábito, dias pesados e volta depois de sumiço', 
   const pesado = escolherAbertura({ ...base, agradavelUltimosDias: [{ data: '2026-10-15', agradavel: 1 }, { data: '2026-10-16', agradavel: 2 }] })!
   igual(pesado.motivo, 'pesado')
   igual(escolherAbertura({ ...base, agradavelUltimosDias: [{ data: '2026-10-15', agradavel: 1 }, { data: '2026-10-16', agradavel: 4 }] }), null)
-  igual(escolherAbertura({ ...base, ultimaAtividade: '2026-10-10' })!.texto, 'Matheus, que bom te ver por aqui! Sem cobrança: bora começar leve hoje?')
+  igual(escolherAbertura({ ...base, ultimaAtividade: '2026-10-10' })!.texto, 'Matheus, que bom te ver por aqui! No seu ritmo: bora começar leve hoje?')
   igual(escolherAbertura({ ...base, ultimaAtividade: '2026-10-10', motivosRecentes: [{ motivo: 'voltou', dia: '2026-10-12' }] }), null)
 })
 
@@ -107,4 +137,32 @@ Deno.test('dias firmes: mesma regra do contexto do Life', () => {
   igual(diasFirme({ nome: 'Ler', categoria: 'leitura', streak_atual: 14, ultimo_checkin: '2026-10-15', criado_em: '2026-09-01T00:00:00Z', ultima_recaida: null }, '2026-10-16'), 14)
   igual(diasFirme({ nome: 'Ler', categoria: 'leitura', streak_atual: 14, ultimo_checkin: '2026-10-10', criado_em: '2026-09-01T00:00:00Z', ultima_recaida: null }, '2026-10-16'), 0)
   igual(diasFirme({ nome: 'Doce', categoria: 'doce', streak_atual: 0, ultimo_checkin: null, criado_em: '2026-09-01T00:00:00Z', ultima_recaida: '2026-09-16T10:00:00Z' }, '2026-10-16'), 30)
+})
+
+Deno.test('marca de memória cortada no fim não aparece no chat', () => {
+  const r = extrairMarcasMemoria('Boa, bora nessa! [[LEMBRAR: rotina | Trabalha de madru')
+  igual(r.texto, 'Boa, bora nessa!')
+  igual(r.lembrar.length, 0)
+})
+
+Deno.test('linha Agora: data, dia da semana e hora no fuso da pessoa', async () => {
+  const { linhaAgora } = await import('./life.ts')
+  // domingo, 1/11/2026 18:30 UTC = 15:30 em São Paulo
+  const l = linhaAgora('America/Sao_Paulo', new Date('2026-11-01T18:30:00Z'))
+  ok(l.startsWith('Agora: domingo, 01/11/2026'), l)
+  ok(l.includes('15:30'), l)
+  ok(l.includes('(America/Sao_Paulo)'), l)
+  // fuso inválido não derruba o chat
+  ok(linhaAgora('Nada/Disso', new Date('2026-11-01T18:30:00Z')).includes('America/Sao_Paulo'))
+})
+
+Deno.test('últimas respostas: só as 3 últimas do Life, numa linha cada', async () => {
+  const { blocoUltimasRespostas } = await import('./life.ts')
+  igual(blocoUltimasRespostas([{ autor: 'usuario', texto: 'oi' }]), '')
+  const b = blocoUltimasRespostas([
+    { autor: 'life', texto: 'r1' }, { autor: 'usuario', texto: 'u' }, { autor: 'life', texto: 'r2\ncom quebra' },
+    { autor: 'life', texto: 'r3' }, { autor: 'life', texto: 'r4' },
+  ])
+  ok(!b.includes('r1'))
+  ok(b.includes('- r2 com quebra') && b.includes('- r4'))
 })

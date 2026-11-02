@@ -1,4 +1,7 @@
 import { supabase } from '@data/supabase/client'
+import { lerComCache } from '@data/offline/cache'
+import { usuarioId } from '@data/offline/usuario'
+import { escrever, inserir, novoId } from '@data/offline/fila'
 import {
   somarMacros,
   type ItemRascunho,
@@ -28,25 +31,30 @@ export const refeicoesRepository = {
    * Alimenta os cards de refeição da Home (café, almoço, lanche, jantar).
    */
   async doDia(): Promise<RefeicaoResumoDia[]> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) throw new Error('not_authenticated')
+    const userId = await usuarioId()
 
     const hoje = new Date()
     const hojeStr = dataLocalISO(hoje)
-    const [{ data, error }, manuais] = await Promise.all([
-      supabase
-        .from('refeicoes')
-        .select('tipo, calorias')
-        .eq('user_id', userId)
-        .eq('data', hojeStr)
-        .returns<{ tipo: TipoRefeicao; calorias: number }[]>(),
+    const [antigas, manuais] = await Promise.all([
+      lerComCache(
+        `refeicoes-scanner-antigo:${hojeStr}`,
+        async () => {
+          const { data, error } = await supabase
+            .from('refeicoes')
+            .select('tipo, calorias')
+            .eq('user_id', userId)
+            .eq('data', hojeStr)
+            .returns<{ tipo: TipoRefeicao; calorias: number }[]>()
+          if (error) throw error
+          return data ?? []
+        },
+        { padrao: [] },
+      ),
       itensRefeicaoRepository.macrosDoDia(hoje),
     ])
 
-    if (error) throw error
-
     const porTipo = new Map<TipoRefeicao, number>()
-    for (const row of data ?? []) {
+    for (const row of antigas) {
       porTipo.set(row.tipo, (porTipo.get(row.tipo) ?? 0) + row.calorias)
     }
     for (const m of manuais) {
@@ -62,17 +70,19 @@ export const refeicoesRepository = {
    * desfaz nada do que a pessoa salvou.
    */
   async registrarScan(params: { rascunho: RefeicaoRascunho; data: string }): Promise<void> {
-    const userId = (await supabase.auth.getUser()).data.user?.id
+    const userId = await usuarioId().catch(() => null)
     if (!userId) return
     const incluidos = params.rascunho.itens.filter((i) => i.incluir)
-    const { error } = await supabase.from('scan_historico').insert({
-      user_id: userId,
-      descricao_ia: params.rascunho.descricao || montarNome(incluidos, ''),
-      resultado_final: { itens: incluidos, totais: somarMacros(incluidos), observacao: params.rascunho.observacao },
-      confianca: params.rascunho.confianca,
-      data: params.data,
-    })
-    if (error) console.warn('scan_historico falhou (itens preservados):', error.message)
+    await escrever(
+      inserir('scan_historico', {
+        id: novoId(),
+        user_id: userId,
+        descricao_ia: params.rascunho.descricao || montarNome(incluidos, ''),
+        resultado_final: { itens: incluidos, totais: somarMacros(incluidos), observacao: params.rascunho.observacao } as unknown as Record<string, unknown>,
+        confianca: params.rascunho.confianca,
+        data: params.data,
+      }),
+    ).catch((e: { message?: string }) => console.warn('scan_historico falhou (itens preservados):', e.message))
   },
 }
 

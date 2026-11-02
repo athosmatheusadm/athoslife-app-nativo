@@ -26,10 +26,12 @@ export function Sobre() {
       <nav className="mx-5 divide-y divide-surface-4/50 overflow-hidden rounded-2xl border border-surface-4 bg-surface-2">
         <LinhaLink titulo={t.termos} onClick={() => navigate('/termos')} />
         <LinhaLink titulo={t.politica} onClick={() => navigate('/politica-de-privacidade')} />
+        <LinhaLink titulo={t.licencas} onClick={() => navigate('/perfil/sobre/licencas')} />
         <LinhaEmBreve titulo={t.suporte} rotulo={t.emBreve} />
       </nav>
 
       <p className="mx-5 mt-4 text-micro text-content-low">{t.suporteNota}</p>
+      <p className="mx-5 mt-6 text-center text-micro text-brand/70">{t.creditos}</p>
     </main>
   )
 }

@@ -44,15 +44,15 @@ export interface Conquista {
 export function corCategoria(cat: CategoriaConquista): string {
   switch (cat) {
     case 'streak':
-      return '#f97316' // energia/fogo
+      return '#e3814a' // energia/fogo
     case 'treino':
-      return '#22c55e' // brand
+      return '#64c27b' // brand
     case 'dieta':
-      return '#22c55e'
+      return '#64c27b'
     case 'hidratacao':
-      return '#3b82f6' // água
+      return '#588cda' // água
     case 'peso':
-      return '#fbbf24' // ouro
+      return '#e8be62' // ouro
   }
 }
 
@@ -60,15 +60,15 @@ export function corCategoria(cat: CategoriaConquista): string {
 export function corNivel(nivel: NivelConquista): string {
   switch (nivel) {
     case 'bronze':
-      return '#cd7f32'
+      return '#bf8350'
     case 'prata':
       return '#c0c0c0'
     case 'ouro':
-      return '#ffd700'
+      return '#e3ca69'
     case 'diamante':
-      return '#5ee7ff'
+      return '#79d4e4'
     case 'lendario':
-      return '#ff5ec4'
+      return '#da83be'
   }
 }
 

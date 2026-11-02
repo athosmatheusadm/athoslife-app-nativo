@@ -34,6 +34,12 @@ export interface AlimentoBase extends Macros {
   readonly nome: string
   readonly porcaoG: number
   readonly categoria: CategoriaAlimento | null
+  /** Óleo de preparo caseiro (% do peso) — scanner v1.1. Ausente = sem dado. */
+  readonly gorduraPreparoPct?: number | null
+  /** Ligado à TACO 4ª ed. */
+  readonly tacoId?: number | null
+  /** Peso de 1 unidade/porção caseira (ovo, fatia de pão, colher de azeite), quando a base sabe. */
+  readonly porcaoTipicaG?: number | null
 }
 
 /**
@@ -78,6 +84,39 @@ export interface ItemRascunho extends Macros {
   alimentoBaseId: string | null
   fonte: FonteMacro
   incluir: boolean
+  /** Só no scanner v1.1: o que o servidor resolveu e a base pra recalcular. */
+  scan?: ItemScanInfo
+}
+
+/** Variante de preparo (óleo) do scanner v1.1. */
+export type VarianteOleo = 'sem_oleo' | 'caseiro' | 'bastante_oleo'
+
+/** Base nutricional que o servidor manda pra o app recalcular sem IA. */
+export interface BaseScan {
+  readonly alimentoId: string
+  readonly nome: string
+  readonly porcaoG: number
+  readonly kcal: number | null
+  readonly proteina: number | null
+  readonly carboidrato: number | null
+  readonly gordura: number | null
+  readonly gorduraPreparoPct: number | null
+  readonly fonte: 'taco' | 'base'
+}
+
+export interface ItemScanInfo {
+  readonly itemId: string
+  readonly nomeVisto: string
+  readonly resolucao: 'matched' | 'needs_choice' | 'unresolved'
+  /** null = falta a pessoa escolher/buscar o alimento (não salva assim). */
+  base: BaseScan | null
+  readonly candidatos: readonly BaseScan[]
+  variante: VarianteOleo | null
+  readonly varianteOrigem: 'padrao' | 'visual' | null
+  readonly faixa: { readonly min: number; readonly max: number } | null
+  readonly motivos: readonly string[]
+  /** Sem número ainda (sem alimento): não entra no total. */
+  semNumeros: boolean
 }
 
 /** O rascunho completo que a tela de revisão edita e depois confirma. */
@@ -86,6 +125,8 @@ export interface RefeicaoRascunho {
   confianca: number
   itens: ItemRascunho[]
   observacao: string | null
+  /** Scanner v1.1: a confirmação vai pro servidor, que recalcula tudo. */
+  scan?: { readonly scanId: string; readonly revisao: number; readonly commitKey: string; readonly parcial: boolean }
 }
 
 export const MACROS_ZERO: Macros = {
@@ -98,7 +139,7 @@ export const MACROS_ZERO: Macros = {
 /** Soma os macros dos itens marcados para inclusão. Base do total exibido. */
 export function somarMacros(itens: readonly ItemRascunho[]): Macros {
   return itens.reduce<Macros>((acc, item) => {
-    if (!item.incluir) return acc
+    if (!item.incluir || item.scan?.semNumeros) return acc
     return {
       calorias: acc.calorias + item.calorias,
       proteina: acc.proteina + item.proteina,

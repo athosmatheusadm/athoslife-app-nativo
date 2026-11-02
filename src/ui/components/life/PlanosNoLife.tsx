@@ -308,9 +308,80 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
             setCiente(false)
             setPasso({ tipo: 'ressalva', depoisDeGravado: true })
           }}
+          onCorrigido={setTriagem}
         />
       )}
 
+      {erro && <p className="text-micro text-accent-danger">{erro}</p>}
+    </div>
+  )
+}
+
+/**
+ * Quem digitou a data de nascimento errada corrige aqui, uma vez (o banco
+ * aceita no máximo duas datas por conta). O botão some se já foi usado.
+ */
+function CorrigirNascimento(props: { onCorrigido: (tr: TriagemVigente) => void }) {
+  const { m } = useI18n()
+  const t = m.lifePlanos
+  const [pode, setPode] = useState(false)
+  const [aberto, setAberto] = useState(false)
+  const [data, setData] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const hoje = useMemo(() => dataLocalISO(), [])
+
+  useEffect(() => {
+    let vivo = true
+    void planosRepository.podeCorrigirNascimento().then((p) => vivo && setPode(p)).catch(() => {})
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  if (!pode) return null
+  if (!aberto) {
+    return (
+      <button type="button" onClick={() => setAberto(true)} className="mt-2 text-sm font-semibold text-brand underline-offset-2 active:underline">
+        {t.corrigirNascimento}
+      </button>
+    )
+  }
+
+  async function salvar() {
+    if (!data) return
+    setSalvando(true)
+    setErro(null)
+    try {
+      props.onCorrigido(await planosRepository.corrigirNascimento(data))
+    } catch (e) {
+      setErro(e instanceof Error && e.message === 'data_nascimento_invalida' ? t.erroNascimento : m.comum.erroGenerico)
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      <label className="block text-sm font-semibold text-content-hi">
+        {t.nascimento}
+        <input
+          type="date"
+          value={data}
+          max={hoje}
+          onChange={(e) => setData(e.target.value)}
+          className="mt-1.5 block min-h-12 w-full rounded-xl border border-surface-4 bg-surface-1 px-3 text-base text-content-hi focus:border-brand focus:outline-none"
+        />
+      </label>
+      <p className="text-micro text-content-mid">{t.corrigirAviso}</p>
+      <button
+        type="button"
+        disabled={!data || salvando}
+        onClick={() => void salvar()}
+        className="min-h-12 w-full rounded-xl bg-brand text-sm font-bold text-brand-ink disabled:opacity-50 active:scale-[0.98]"
+      >
+        {t.corrigirConfirmar}
+      </button>
       {erro && <p className="text-micro text-accent-danger">{erro}</p>}
     </div>
   )
@@ -385,6 +456,7 @@ function Pronto(props: {
   onMontarDieta: () => void
   onTrocar: () => void
   onQueroMesmoAssim: () => void
+  onCorrigido: (tr: TriagemVigente) => void
 }) {
   const { m } = useI18n()
   const t = m.lifePlanos
@@ -402,6 +474,7 @@ function Pronto(props: {
               <li key={mo}>{m.plano.inapto.motivos[mo]}</li>
             ))}
         </ul>
+        <CorrigirNascimento onCorrigido={props.onCorrigido} />
       </BalaoLife>
     )
   }

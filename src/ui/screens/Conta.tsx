@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { useSession } from '@app/SessionProvider'
+import { pesoRepository } from '@data/repositories/pesoRepository'
 import { profileRepository } from '@data/repositories/profileRepository'
 import type { Sexo } from '@domain/entities/profile'
 import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
@@ -143,7 +144,9 @@ export function Conta() {
             rotulo={t.peso}
             valorInicial={profile.pesoAtual}
             decimal
-            onSalvar={(v) => salvar(profileRepository.atualizarDadosPessoais('peso_atual', v))}
+            // Vira a pesagem de hoje (registros_peso + perfil): antes só mudava o
+            // perfil e o card "Meu peso" continuava com o número antigo.
+            onSalvar={(v) => salvar(v === null ? Promise.resolve() : pesoRepository.registrar(v))}
           />
         </div>
       </div>

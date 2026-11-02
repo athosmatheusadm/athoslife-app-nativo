@@ -7,6 +7,10 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
+import android.os.Build;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -16,6 +20,9 @@ import org.json.JSONObject;
  *   copinhosPendentes()                  — lê a fila sem apagar
  *   confirmarCopos({ ids })              — remove só os copos já gravados
  *   evento "copo"                        — copo tocado com o app vivo
+ *   estadoNaTela() / fixarNaTela()       — botão "Adicionar à tela inicial"
+ *                                          (Android 8+: o sistema pergunta e
+ *                                          coloca o widget com um toque)
  */
 @CapacitorPlugin(name = "AthosWidgetAgua")
 public class WidgetAguaPlugin extends Plugin {
@@ -88,5 +95,34 @@ public class WidgetAguaPlugin extends Plugin {
         JSArray ids = call.getArray("ids", new JSArray());
         WidgetAguaEstado.confirmar(getContext(), ids);
         call.resolve();
+    }
+
+    private ComponentName componente() {
+        return new ComponentName(getContext(), WidgetAguaProvider.class);
+    }
+
+    /** Dá pra pedir pro sistema colocar o widget? Já tem algum na tela? */
+    @PluginMethod
+    public void estadoNaTela(PluginCall call) {
+        AppWidgetManager gerenciador = AppWidgetManager.getInstance(getContext());
+        JSObject r = new JSObject();
+        boolean pode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && gerenciador.isRequestPinAppWidgetSupported();
+        r.put("podeFixar", pode);
+        r.put("jaNaTela", gerenciador.getAppWidgetIds(componente()).length > 0);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void fixarNaTela(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            call.reject("sem_suporte"); return;
+        }
+        AppWidgetManager gerenciador = AppWidgetManager.getInstance(getContext());
+        if (!gerenciador.isRequestPinAppWidgetSupported()) {
+            call.reject("sem_suporte"); return;
+        }
+        JSObject r = new JSObject();
+        r.put("pedido", gerenciador.requestPinAppWidget(componente(), null, null));
+        call.resolve(r);
     }
 }

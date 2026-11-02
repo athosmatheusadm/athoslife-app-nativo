@@ -2,30 +2,39 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { AiProxyError, cotaIaHoje, estimarAlimento } from '@data/ai/aiProxy'
-import { capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
+import { ehFalhaDeRede, valeTentarRede } from '@data/offline/conexao'
+import { CameraNegadaError, capturarFoto, type FotoCapturada, type OrigemFoto } from '@data/ai/photoCapture'
 import type { RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
-import { produtoCodigoBarrasRepository } from '@data/repositories/produtoCodigoBarrasRepository'
-import { leitorDisponivel, lerCodigoBarras } from '@data/native/codigoBarras'
+import { produtoCodigoBarrasRepository, type ProdutoRotulo } from '@data/repositories/produtoCodigoBarrasRepository'
+import { leitorDisponivel } from '@data/native/codigoBarras'
 import { foodCaptureService } from '@domain/services/foodCaptureService'
 import { reescalarItem } from '@domain/rules/foodReconciliation'
+import { atualizarItemScan } from '@domain/rules/scanCalculo'
 import { temAcessoPremium } from '@domain/rules/access'
+import { refeicaoPeloHorario } from '@domain/rules/cozinha'
 import type { ItemRascunho, RefeicaoRascunho } from '@domain/entities/food'
-import { LifeMascote } from '@ui/components/LifeMascote'
+import { LifeCozinhando } from '@ui/components/life/LifeCozinhando'
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useI18n } from '@/i18n/I18nProvider'
 import type { Mensagens } from '@/i18n/mensagens/tipo'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { avisar, vibrar } from '@ui/feedback'
-import { mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
+import { PlanoParaEstimar, fimDaEstimativaGratis, mensagemErroEstimar } from '@ui/screens/diet/InlineFoodSearch'
+import { CameraCodigo } from '@ui/screens/scanner/CameraCodigo'
+import { RevisaoScanner } from '@ui/screens/scanner/RevisaoScanner'
+import { CadastroRotulo } from '@ui/screens/scanner/CadastroRotulo'
+import { limitarGramas } from '@domain/rules/limites'
 
 /**
  * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
  * alimento da refeição escolhida na Dieta (mesma lista, dá pra excluir e
  * copiar depois). Nada entra no diário sem passar pela revisão.
  *
- * Entrada normal: menu da refeição na Dieta ("Escanear comida"), que manda
- * a refeição e o dia em `location.state`. Chegando direto por /scanner, a
- * pessoa escolhe a refeição aqui (dia = hoje).
+ * Entrada pela Dieta ("Escanear comida"): a refeição e o dia vêm em
+ * `location.state`. Chegando direto por /scanner (câmera do widget), a tela
+ * abre já na escolha foto × código e a refeição sai do horário — dá pra
+ * trocar no topo ou na revisão, antes de salvar (dono, 25/10: escolher a
+ * refeição antes travava a agilidade do scanner). Dia = hoje.
  *
  * Plano: foto com IA é recurso pago (5/dia) — o servidor é quem barra de
  * verdade; aqui só evitamos a pessoa tirar foto à toa. Código de barras é
@@ -47,7 +56,8 @@ const FIXAS = [
   { tipo: 'jantar' },
 ] as const
 
-function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros']): string {
+function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros'], semRede: string): string {
+  if (ehFalhaDeRede(e)) return semRede
   if (e instanceof AiProxyError) {
     switch (e.info.tipo) {
       case 'premium_required':
@@ -62,6 +72,9 @@ function mensagemDeErro(e: unknown, t: Mensagens['scanner']['erros']): string {
         return t.pausado
       case 'not_authenticated':
         return t.sessao
+      case 'proxy_error':
+        if (e.info.detalhe === 'no_food') return t.semComida
+        break
       default:
         break
     }
@@ -74,8 +87,14 @@ export function Scanner() {
   const navigate = useNavigate()
   const entrada = (useLocation().state ?? {}) as EstadoEntrada
 
-  const [alvo, setAlvo] = useState<RefeicaoAlvo | null>(entrada.alvo ?? null)
-  const [nomeRefeicao, setNomeRefeicao] = useState(entrada.nomeRefeicao ?? '')
+  const { m } = useI18n()
+  const [alvo, setAlvo] = useState<RefeicaoAlvo>(() => entrada.alvo ?? { tipo: refeicaoPeloHorario() })
+  const [nomeRefeicao, setNomeRefeicao] = useState(() =>
+    entrada.alvo ? (entrada.nomeRefeicao ?? '') : m.dieta.refeicoes[refeicaoPeloHorario()],
+  )
+  // Refeição escolhida pelo horário: mostra "pelo horário" e deixa trocar.
+  const [pelaHora, setPelaHora] = useState(!entrada.alvo)
+  const [trocando, setTrocando] = useState(false)
   const data = useMemo(() => (entrada.dataISO ? new Date(entrada.dataISO) : new Date()), [entrada.dataISO])
 
   const [etapa, setEtapa] = useState<Etapa>('captura')
@@ -87,14 +106,30 @@ export function Scanner() {
   const [imagemProduto, setImagemProduto] = useState<string | null>(null)
   const [digitando, setDigitando] = useState(false)
   const [codigoDigitado, setCodigoDigitado] = useState('')
-  // Código que o Open Food Facts não conhece: o Life estima pelo nome.
-  const [semBase, setSemBase] = useState(false)
+  // Código que nenhuma base conhece (ou sem tabela): copiar o rótulo ou o Life estima pelo nome.
+  const [faltando, setFaltando] = useState<{
+    codigo: string
+    nome: string
+    marca: string | null
+    imagemUrl: string | null
+    semTabela: boolean
+  } | null>(null)
+  const semBase = faltando !== null
   const [nomeProduto, setNomeProduto] = useState('')
   const [estimando, setEstimando] = useState(false)
+  // Grátis sem a estimativa da semana: convite pro plano no lugar do botão.
+  const [pedirPlano, setPedirPlano] = useState(false)
+  const [camera, setCamera] = useState(false)
 
   const pago = profile ? temAcessoPremium(profile) : false
-  const { m } = useI18n()
   const t = m.scanner
+
+  function escolherRefeicao(tipo: (typeof FIXAS)[number]['tipo']) {
+    setAlvo({ tipo })
+    setNomeRefeicao(m.dieta.refeicoes[tipo])
+    setPelaHora(false)
+    setTrocando(false)
+  }
   // Limite vem do servidor (antes o texto dizia "5" fixo).
   const [limite, setLimite] = useState<number | null>(null)
 
@@ -110,7 +145,7 @@ export function Scanner() {
   // Voltar do Android na revisão: 1º toque avisa, 2º descarta (a análise já
   // gastou um scan da cota — sair sem querer jogava ela fora).
   const avisouVoltar = useRef(0)
-  useFecharNoVoltar(etapa === 'revisao', () => {
+  function sairDaRevisao() {
     if (Date.now() - avisouVoltar.current > 3000) {
       avisouVoltar.current = Date.now()
       avisar.ok(t.voltarDescarta)
@@ -119,22 +154,17 @@ export function Scanner() {
     setRascunho(null)
     setFoto(null)
     setEtapa('captura')
-  })
+  }
+  useFecharNoVoltar(etapa === 'revisao', sairDaRevisao)
 
-  async function lerCodigo() {
+  function lerCodigo() {
     setErro(null)
     if (!leitorDisponivel) {
       // Navegador: sem leitor de câmera, digita o número de baixo do código.
       setDigitando(true)
       return
     }
-    try {
-      const codigo = await lerCodigoBarras()
-      if (codigo) await buscarProduto(codigo)
-    } catch (e) {
-      setErro(String(e).includes('modulo_baixando') ? t.erros.baixandoLeitor : t.erros.leitor)
-      setDigitando(true)
-    }
+    setCamera(true)
   }
 
   async function buscarProduto(codigo: string) {
@@ -143,22 +173,44 @@ export function Scanner() {
     setFoto(null)
     setEtapa('analisando')
     try {
-      const produto = await produtoCodigoBarrasRepository.buscar(codigo)
-      if (!produto) {
-        setSemBase(true)
+      const r = await produtoCodigoBarrasRepository.buscar(codigo)
+      if (r.tipo !== 'achado') {
+        setFaltando(
+          r.tipo === 'semTabela'
+            ? { codigo: r.codigo, nome: r.nome, marca: r.marca, imagemUrl: r.imagemUrl, semTabela: true }
+            : { codigo: r.codigo, nome: '', marca: null, imagemUrl: null, semTabela: false },
+        )
+        if (r.tipo === 'semTabela') setNomeProduto(r.marca ? `${r.nome} ${r.marca}` : r.nome)
+        setDigitando(false)
         setEtapa('captura')
         return
       }
-      setSemBase(false)
-      setImagemProduto(produto.imagemUrl)
-      setRascunho(foodCaptureService.rascunhoDeProduto(produto, t.rotuloSemPorcao))
-      setDigitando(false)
-      setCodigoDigitado('')
-      setEtapa('revisao')
-    } catch {
+      abrirRevisaoDoProduto(r.produto)
+    } catch (e) {
+      if (ehFalhaDeRede(e)) {
+        setErro(m.offline.precisaInternet)
+        setEtapa('captura')
+        return
+      }
       setErro(t.erros.buscaProduto)
       setEtapa('captura')
     }
+  }
+
+  function abrirRevisaoDoProduto(produto: ProdutoRotulo) {
+    setFaltando(null)
+    setImagemProduto(produto.imagemUrl)
+    setRascunho(foodCaptureService.rascunhoDeProduto(produto, t.rotuloSemPorcao))
+    setDigitando(false)
+    setCodigoDigitado('')
+    setEtapa('revisao')
+  }
+
+  async function cadastrarRotulo(produto: ProdutoRotulo) {
+    setOrigem('codigo')
+    abrirRevisaoDoProduto(produto)
+    const naBase = await produtoCodigoBarrasRepository.cadastrarPeloRotulo(produto)
+    if (!naBase) avisar.ok(t.rotulo2.soNoCelular)
   }
 
   async function estimarProduto() {
@@ -193,13 +245,14 @@ export function Scanner() {
           },
         ],
       })
-      setSemBase(false)
+      setFaltando(null)
       setNomeProduto('')
       setDigitando(false)
       setCodigoDigitado('')
       setEtapa('revisao')
     } catch (err) {
-      setErro(mensagemErroEstimar(err, m.dieta.busca.estimar))
+      if (fimDaEstimativaGratis(err, pago)) setPedirPlano(true)
+      else setErro(mensagemErroEstimar(err, m.dieta.busca.estimar, m.offline.precisaInternet))
     } finally {
       setEstimando(false)
     }
@@ -209,7 +262,18 @@ export function Scanner() {
     setErro(null)
     setOrigem('foto')
     setImagemProduto(null)
-    const f = await capturarFoto(origem)
+    // Sem rede a foto não teria pra onde ir: avisa antes de abrir a câmera.
+    if (!valeTentarRede()) {
+      setErro(m.offline.precisaInternet)
+      return
+    }
+    let f: FotoCapturada | null
+    try {
+      f = await capturarFoto(origem)
+    } catch (e) {
+      if (e instanceof CameraNegadaError) setErro(m.comum.cameraNegada)
+      return
+    }
     if (!f) return
     setFoto(f)
     setEtapa('analisando')
@@ -224,9 +288,14 @@ export function Scanner() {
       setEtapa('revisao')
       setRestantes((n) => (n === null ? n : Math.max(n - 1, 0)))
     } catch (e) {
-      setErro(mensagemDeErro(e, t.erros))
+      setErro(mensagemDeErro(e, t.erros, m.offline.precisaInternet))
       setEtapa('captura')
     }
+  }
+
+  function mudarGramas(i: ItemRascunho, gramas: number): ItemRascunho {
+    const g = limitarGramas(gramas)
+    return i.scan ? atualizarItemScan(i, { gramas: g }) : reescalarItem(i, g)
   }
 
   function mudarItem(id: string, fn: (i: ItemRascunho) => ItemRascunho) {
@@ -251,11 +320,26 @@ export function Scanner() {
   const blocoCodigo = (
     <div className="mt-2 space-y-2">
       <button
-        onClick={() => void lerCodigo()}
-        className="min-h-12 w-full rounded-pill border border-brand/40 text-sm font-semibold text-brand active:bg-brand/10"
+        onClick={lerCodigo}
+        className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[18px] border border-surface-4 bg-surface-2 py-3 pl-3 pr-3.5 text-left transition-colors active:bg-surface-3"
       >
-        {t.lerCodigo}
+        <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-brand/15 text-brand">
+          <svg viewBox="0 0 24 24" className="h-[22px] w-[22px]" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+            <path d="M7 8v8M10 8v8M13.5 8v8M17 8v8" strokeWidth="1.6" />
+          </svg>
+        </span>
+        <span className="grid min-w-0 gap-0.5">
+          <span className="text-[15px] font-bold text-content-hi">{t.lerCodigo}</span>
+          <span className="text-micro text-content-low">{t.vidro.lerSub}</span>
+        </span>
+        <span className="rounded-pill bg-brand px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-ink">{t.vidro.gratis}</span>
       </button>
+      {leitorDisponivel && !digitando && (
+        <button onClick={() => setDigitando(true)} className="min-h-10 w-full text-[13px] font-semibold text-content-low underline underline-offset-4">
+          {t.vidro.prefereDigitar}
+        </button>
+      )}
       {digitando && (
         <form
           onSubmit={(e) => {
@@ -284,15 +368,26 @@ export function Scanner() {
           </button>
         </form>
       )}
+      {faltando && (
+        <CadastroRotulo
+          key={faltando.codigo}
+          codigo={faltando.codigo}
+          nomeInicial={faltando.nome}
+          marcaInicial={faltando.marca}
+          imagemUrl={faltando.imagemUrl}
+          semTabela={faltando.semTabela}
+          onPronto={(p) => void cadastrarRotulo(p)}
+        />
+      )}
       {semBase && (
         <form
           onSubmit={(e) => {
             e.preventDefault()
             void estimarProduto()
           }}
-          className="rounded-card border border-brand/40 bg-surface-2 p-3"
+          className="rounded-card border border-surface-4 bg-surface-2 p-3"
         >
-          <p className="text-sm text-content-mid">{t.semProdutoEstimar}</p>
+          <p className="text-sm text-content-mid">{t.rotulo2.estimarTitulo}</p>
           <input
             type="text"
             autoFocus
@@ -303,14 +398,27 @@ export function Scanner() {
             aria-label={t.nomeProduto}
             className="mt-2 min-h-12 w-full rounded-card border border-surface-4 bg-surface-1 px-3 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
           />
-          <button
-            type="submit"
-            disabled={estimando || nomeProduto.trim().length < 2}
-            className="mt-2 min-h-12 w-full rounded-pill bg-brand px-4 text-sm font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
-          >
-            {estimando ? m.dieta.busca.estimar.estimando : m.dieta.busca.estimar.botao(nomeProduto.trim() || '…')}
-          </button>
-          <p className="mt-1 text-center text-micro text-content-low">{m.dieta.busca.estimar.custo}</p>
+          {estimando && (
+            <div className="mt-3 flex justify-center">
+              <LifeCozinhando className="h-32" />
+            </div>
+          )}
+          {pedirPlano ? (
+            <PlanoParaEstimar />
+          ) : (
+            <>
+              <button
+                type="submit"
+                disabled={estimando || nomeProduto.trim().length < 2}
+                className="mt-2 min-h-12 w-full rounded-pill bg-brand px-4 text-sm font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
+              >
+                {estimando ? m.dieta.busca.estimar.estimando : m.dieta.busca.estimar.botao(nomeProduto.trim() || '…')}
+              </button>
+              <p className="mt-1 text-center text-micro text-content-low">
+                {pago ? m.dieta.busca.estimar.custoPago : m.dieta.busca.estimar.custoGratis}
+              </p>
+            </>
+          )}
         </form>
       )}
     </div>
@@ -331,29 +439,28 @@ export function Scanner() {
         </button>
         <div className="min-w-0">
           <h1 className="text-xl font-extrabold text-content-hi">{t.titulo}</h1>
-          <p className="truncate text-sm text-content-low">{alvo ? t.vaiPra(nomeRefeicao) : t.escolha}</p>
+          <button
+            onClick={() => setTrocando((x) => !x)}
+            aria-expanded={trocando}
+            aria-label={t.trocarRefeicao}
+            className="flex max-w-full items-center gap-1 truncate text-sm text-content-low"
+          >
+            <span className="truncate">
+              {t.vaiPra(nomeRefeicao)}
+              {pelaHora && alvo.tipo !== 'extra' && ` · ${t.pelaHora}`}
+            </span>
+            <span aria-hidden="true" className={`text-brand transition-transform ${trocando ? 'rotate-180' : ''}`}>
+              ▾
+            </span>
+          </button>
         </div>
       </header>
 
-      {!alvo && (
-        <div className="mb-4 grid grid-cols-2 gap-2">
-          {FIXAS.map((f) => (
-            <button
-              key={f.tipo}
-              onClick={() => {
-                setAlvo({ tipo: f.tipo })
-                setNomeRefeicao(m.dieta.refeicoes[f.tipo])
-              }}
-              className="rounded-2xl border border-surface-4 bg-surface-2 p-4 text-left transition-colors active:bg-surface-3"
-            >
-              <ActivityIcon icone={f.tipo} className="h-10 w-10" />
-              <div className="mt-1 text-sm font-semibold text-content-hi">{m.dieta.refeicoes[f.tipo]}</div>
-            </button>
-          ))}
-        </div>
+      {trocando && etapa === 'captura' && (
+        <SeletorRefeicao atual={alvo} nomes={m.dieta.refeicoes} onEscolher={escolherRefeicao} />
       )}
 
-      {alvo && !pago && etapa === 'captura' && (
+      {!pago && etapa === 'captura' && (
         <section className="rounded-card border border-accent-gold/40 bg-surface-2 p-5 text-center">
           <ActivityIcon icone="cadeado" tile={false} cor="inherit" className="mx-auto h-9 w-9 text-accent-gold" />
           <p className="mt-2 font-semibold text-content-hi">{t.pagoTitulo}</p>
@@ -366,7 +473,7 @@ export function Scanner() {
           </button>
         </section>
       )}
-      {alvo && !pago && etapa === 'captura' && (
+      {!pago && etapa === 'captura' && (
         <section className="mt-4">
           <p className="text-center text-sm text-content-low">{t.codigoGratis}</p>
           {erro && <p role="alert" className="mt-2 text-center text-sm font-medium text-accent-danger">{erro}</p>}
@@ -374,7 +481,7 @@ export function Scanner() {
         </section>
       )}
 
-      {alvo && pago && etapa === 'captura' && (
+      {pago && etapa === 'captura' && (
         <section className="flex flex-1 flex-col">
           <div className="flex flex-1 flex-col items-center justify-center rounded-card border border-dashed border-brand/40 bg-surface-2 p-6 text-center">
             <ActivityIcon icone="almoco" className="h-16 w-16" />
@@ -410,10 +517,9 @@ export function Scanner() {
       {etapa === 'analisando' && (
         <section className="flex flex-1 flex-col items-center justify-center text-center">
           {foto && (
-            <img src={foto.dataUrl} alt="" className="mb-5 h-48 w-48 rounded-3xl object-cover opacity-80" />
+            <img src={foto.dataUrl} alt="" className="mb-4 h-36 w-36 rounded-3xl object-cover opacity-80" />
           )}
-          <LifeMascote humor="chef" className="mb-3 h-28 motion-safe:animate-pulse" />
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-surface-4 border-t-brand" />
+          <LifeCozinhando className="h-40" />
           <p className="mt-4 font-semibold text-content-hi" role="status">
             {origem === 'codigo' ? t.buscandoProduto : t.olhando}
           </p>
@@ -422,135 +528,78 @@ export function Scanner() {
       )}
 
       {(etapa === 'revisao' || etapa === 'salvando') && rascunho && total && (
-        <section>
-          <div className="flex gap-3 rounded-card border border-surface-4 bg-surface-2 p-3">
-            {(foto?.dataUrl ?? imagemProduto) && (
-              <img
-                src={foto?.dataUrl ?? imagemProduto ?? undefined}
-                alt=""
-                className="h-20 w-20 flex-none rounded-xl bg-white object-contain"
-              />
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-content-hi">{rascunho.descricao || t.seuPrato}</p>
-              {origem === 'foto' ? (
-                <p className="mt-0.5 text-micro text-content-low">
-                  {t.confianca} <span className="font-semibold text-content-mid">{Math.round(rascunho.confianca)}%</span>
-                </p>
-              ) : (
-                <p className="mt-0.5 text-micro text-content-low">{t.rotulo}</p>
-              )}
-              {rascunho.observacao && <p className="mt-1 text-micro text-content-low">{rascunho.observacao}</p>}
-            </div>
-          </div>
+        <RevisaoScanner
+          rascunho={rascunho}
+          origem={origem}
+          fotoPrato={foto?.dataUrl ?? null}
+          imagemProduto={imagemProduto}
+          nomeRefeicao={nomeRefeicao}
+          seletorRefeicao={<SeletorRefeicao atual={alvo} nomes={m.dieta.refeicoes} onEscolher={escolherRefeicao} vidro />}
+          total={total}
+          incluidos={incluidos}
+          salvando={etapa === 'salvando'}
+          erro={erro}
+          onMudarItem={mudarItem}
+          mudarGramas={mudarGramas}
+          onSalvar={() => void salvar()}
+          onRefazer={() => {
+            setRascunho(null)
+            setFoto(null)
+            setEtapa('captura')
+            if (origem === 'codigo') lerCodigo()
+          }}
+          onVoltar={sairDaRevisao}
+        />
+      )}
 
-          <p className="mb-2 mt-4 text-micro text-content-low">
-            {origem === 'codigo' ? t.ajusteCodigo : t.ajusteFoto}
-          </p>
-          <ul className="space-y-2">
-            {rascunho.itens.map((item) => (
-              <li
-                key={item.id}
-                className={`rounded-2xl border p-3 ${item.incluir ? 'border-surface-4 bg-surface-2' : 'border-surface-3 opacity-50'}`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <button
-                    onClick={() => mudarItem(item.id, (i) => ({ ...i, incluir: !i.incluir }))}
-                    role="checkbox"
-                    aria-checked={item.incluir}
-                    aria-label={item.incluir ? t.tirar(item.nome) : t.incluir(item.nome)}
-                    className="-m-2 flex h-12 w-12 flex-none items-center justify-center rounded-xl active:bg-content-hi/5"
-                  >
-                    <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 text-sm font-bold ${
-                        item.incluir ? 'border-brand bg-brand text-brand-ink' : 'border-content-dim text-transparent'
-                      }`}
-                    >
-                      ✓
-                    </span>
-                  </button>
-                  <input
-                    value={item.nome}
-                    onChange={(e) => mudarItem(item.id, (i) => ({ ...i, nome: e.target.value }))}
-                    aria-label={t.nomeAria}
-                    className="min-h-11 min-w-0 flex-1 rounded-lg bg-transparent px-1 text-base font-semibold text-content-hi focus:bg-surface-3 focus:outline-none"
-                  />
-                  <span
-                    className={`flex-none rounded-pill px-2 py-0.5 text-micro font-semibold ${
-                      item.fonte === 'ia' ? 'bg-surface-3 text-content-low' : 'bg-brand/15 text-brand'
-                    }`}
-                  >
-                    {item.fonte === 'base' ? t.fonteBase : item.fonte === 'rotulo' ? t.fonteRotulo : t.fonteIa}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG - 10))}
-                      aria-label={t.menos10}
-                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
-                    >
-                      −
-                    </button>
-                    <span className="w-16 text-center font-mono text-sm text-content-hi">{item.quantidadeG} g</span>
-                    <button
-                      onClick={() => mudarItem(item.id, (i) => reescalarItem(i, i.quantidadeG + 10))}
-                      aria-label={t.mais10}
-                      className="h-11 w-11 rounded-full border border-surface-4 text-lg text-content-hi active:bg-content-hi/5"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <span className="text-right text-micro text-content-low">
-                    <span className="font-semibold text-content-hi">{item.calorias} kcal</span>{' '}
-                    · <span className="text-macro-proteina">{item.proteina}g</span> · <span className="text-macro-carbo">{item.carboidrato}g</span> ·{' '}
-                    <span className="text-macro-gordura">{item.gordura}g</span>
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4 grid grid-cols-4 gap-1.5 rounded-card border border-surface-4 bg-surface-2 p-3 text-center">
-            {(
-              [
-                ['kcal', Math.round(total.calorias), 'text-content-hi'],
-                [m.dieta.busca.chipProt, `${Math.round(total.proteina)}g`, 'text-macro-proteina'],
-                [m.dieta.busca.chipCarb, `${Math.round(total.carboidrato)}g`, 'text-macro-carbo'],
-                [m.dieta.busca.chipGord, `${Math.round(total.gordura)}g`, 'text-macro-gordura'],
-              ] as const
-            ).map(([r, v, cor]) => (
-              <div key={r}>
-                <div className="text-micro text-content-low">{r}</div>
-                <div className={`font-mono text-sm font-bold ${cor}`}>{v}</div>
-              </div>
-            ))}
-          </div>
-
-          {erro && <p role="alert" className="mt-3 text-center text-sm font-medium text-accent-danger">{erro}</p>}
-
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={() => void salvar()}
-              disabled={incluidos === 0 || etapa === 'salvando'}
-              className="min-h-14 w-full rounded-pill bg-brand px-4 text-base font-bold text-surface-1 active:scale-[0.98] disabled:opacity-50"
-            >
-              {etapa === 'salvando' ? t.salvando : t.adicionarEm(incluidos, nomeRefeicao)}
-            </button>
-            <button
-              onClick={() => {
-                setRascunho(null)
-                setFoto(null)
-                setEtapa('captura')
-              }}
-              disabled={etapa === 'salvando'}
-              className="min-h-12 w-full text-sm font-semibold text-content-mid"
-            >
-              {origem === 'codigo' ? t.outroCodigo : t.outraFoto}
-            </button>
-          </div>
-        </section>
+      {camera && (
+        <CameraCodigo
+          nomeRefeicao={nomeRefeicao}
+          onCodigo={(codigo) => {
+            setCamera(false)
+            void buscarProduto(codigo)
+          }}
+          onDigitar={() => {
+            setCamera(false)
+            setDigitando(true)
+          }}
+          onFechar={() => setCamera(false)}
+          onErro={(msg) => {
+            setCamera(false)
+            setErro(msg)
+            setDigitando(true)
+          }}
+        />
       )}
     </main>
+  )
+}
+
+/** As 4 refeições fixas, pra trocar o destino do scanner. */
+function SeletorRefeicao(props: {
+  atual: RefeicaoAlvo
+  nomes: Mensagens['dieta']['refeicoes']
+  onEscolher: (tipo: (typeof FIXAS)[number]['tipo']) => void
+  vidro?: boolean
+}) {
+  return (
+    <div className="mb-4 grid grid-cols-4 gap-2">
+      {FIXAS.map((f) => {
+        const ativo = props.atual.tipo === f.tipo
+        return (
+          <button
+            key={f.tipo}
+            onClick={() => props.onEscolher(f.tipo)}
+            aria-pressed={ativo}
+            className={`flex flex-col items-center gap-1 rounded-2xl p-2 text-center transition-colors ${
+              props.vidro ? 'vidro' : 'border border-surface-4 bg-surface-2 active:bg-surface-3'
+            } ${ativo ? '!border-brand ring-1 ring-brand' : ''}`}
+          >
+            <ActivityIcon icone={f.tipo} className="h-8 w-8" />
+            <span className={`text-micro font-semibold ${props.vidro ? '' : 'text-content-hi'}`}>{props.nomes[f.tipo]}</span>
+          </button>
+        )
+      })}
+    </div>
   )
 }

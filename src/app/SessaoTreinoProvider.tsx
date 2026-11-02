@@ -23,6 +23,10 @@ import {
   ajustarReps,
   ajustarSegundos,
   avancarRelogio,
+  cancelarCronometro,
+  pausarCronometro,
+  retomarCronometro,
+  pausado,
   confirmarSerie,
   criarSessao,
   iniciarCronometro,
@@ -55,7 +59,7 @@ interface SessaoTreinoState {
   readonly sessao: SessaoTreino | null
   readonly carregando: boolean
   readonly agora: number
-  iniciar(params: { itens: readonly ExercicioPlano[]; local: LocalTreino; diaSemana: DiaSemana }): void
+  iniciar(params: { itens: readonly ExercicioPlano[]; local: LocalTreino; diaSemana: DiaSemana; leve?: boolean }): void
   aplicar(fn: Transformacao): void
   finalizar(): Promise<void>
   descartar(): void
@@ -75,6 +79,9 @@ function transformacaoDaAcao(acao: AcaoLiveActivity): Transformacao {
     case 'seg-': return (s) => ajustarSegundos(s, -PASSO_SEGUNDOS)
     case 'confirmar': return confirmarSerie
     case 'iniciar': return iniciarCronometro
+    case 'cancelar': return (s) => cancelarCronometro(s)
+    case 'pausar': return pausarCronometro
+    case 'retomar': return retomarCronometro
     case 'descanso+15': return (s, agora) => adicionarDescanso(s, 15, agora)
     case 'pular': return (s) => pularDescanso(s)
   }
@@ -90,7 +97,7 @@ async function agendarAviso(s: SessaoTreino | null): Promise<void> {
   if (!nativo) return
   await LocalNotifications.cancel({ notifications: [{ id: ID_AVISO }] }).catch(() => {})
   if (!s) return
-  const fim = s.status === 'descanso' ? s.descansoFimEm : s.status === 'cronometro' ? s.cronometroFimEm : null
+  const fim = s.status === 'descanso' ? s.descansoFimEm : s.status === 'cronometro' && !pausado(s) ? s.cronometroFimEm : null
   if (fim === null || fim <= Date.now() + 1000) return
   const m = mensagensAtuais()
   await LocalNotifications.schedule({
@@ -139,13 +146,12 @@ export function SessaoTreinoProvider({ children }: { children: ReactNode }) {
   // Persiste + espelha na Live Activity + agenda aviso, a cada mudança.
   useEffect(() => {
     if (carregando) return
-    if (sessao && sessao.status !== 'concluida') {
+    if (sessao) {
+      // Concluída também aparece ("Treino concluído") até salvar ou descartar.
       void Preferences.set({ key: CHAVE, value: JSON.stringify(sessao) })
       const estado = paraLiveActivity(sessao)
       if (estado) void liveActivity.mostrar(estado)
-    } else if (sessao) {
-      void Preferences.set({ key: CHAVE, value: JSON.stringify(sessao) })
-      void liveActivity.encerrar()
+      else void liveActivity.encerrar()
     } else {
       void Preferences.remove({ key: CHAVE })
       void liveActivity.encerrar()
@@ -194,11 +200,11 @@ export function SessaoTreinoProvider({ children }: { children: ReactNode }) {
       sessao,
       carregando,
       agora,
-      iniciar: ({ itens, local, diaSemana }) => {
+      iniciar: ({ itens, local, diaSemana, leve }) => {
         // A Live Activity e o aviso de fim de descanso são notificações:
         // pede a permissão (Android 13+) já no começo do treino.
         if (nativo) void LocalNotifications.requestPermissions().catch(() => {})
-        setSessao(criarSessao({ itens, local, diaSemana, agora: Date.now() }))
+        setSessao(criarSessao({ itens, local, diaSemana, agora: Date.now(), ...(leve ? { leve } : {}) }))
       },
       aplicar,
       finalizar: async () => {
