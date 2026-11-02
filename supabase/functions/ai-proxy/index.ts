@@ -524,17 +524,28 @@ function somarUso(a?: UsoTokens, b?: UsoTokens): UsoTokens | undefined {
 async function chamarGemini(
   corpo: Record<string, unknown>, timeoutMs = 25_000, modelo = MODELO, aoEscrever?: (acumulado: string) => void,
 ): Promise<ResultadoGemini> {
-  let r = await chamarGeminiUmaVez(corpo, timeoutMs, modelo, aoEscrever)
+  // O raciocínio vai no nível que ESTE modelo aceita (02/11: o Flash 3.x recusa
+  // "minimal" com 400; sem limite, pensava demais e estourava o tempo).
   const cfgAtual = corpo.generationConfig as Record<string, unknown> | undefined
-  if (!r.ok && r.status === 400 && cfgAtual?.thinkingConfig) {
-    const cfg = { ...cfgAtual }
-    delete cfg.thinkingConfig
-    cfg.maxOutputTokens = Number(cfg.maxOutputTokens ?? 0) + 1024
-    r = await chamarGeminiUmaVez({ ...corpo, generationConfig: cfg }, timeoutMs, modelo, aoEscrever)
+  const comRaciocinio = (cfg: Record<string, unknown> | undefined, thinking: Record<string, unknown> | null) => {
+    if (!cfg?.thinkingConfig) return corpo
+    const c = { ...cfg }
+    if (thinking) c.thinkingConfig = thinking
+    else { delete c.thinkingConfig; c.maxOutputTokens = Number(c.maxOutputTokens ?? 0) + 1024 }
+    return { ...corpo, generationConfig: c }
   }
-  // Modelo do chat indisponível (404 ou 400): cai no padrão — o chat nunca para.
-  if (!r.ok && modelo !== MODELO && (r.status === 404 || r.status === 400)) {
-    console.warn('[gemini] modelo', modelo, 'falhou com', r.status, '— usando', MODELO)
+  // Com reserva (modelo do chat ≠ padrão), o principal tem menos tempo: sobra pro reserva.
+  const temReserva = modelo !== MODELO
+  const tempo = temReserva ? Math.min(timeoutMs, 14_000) : timeoutMs
+  let r = await chamarGeminiUmaVez(comRaciocinio(cfgAtual, configRaciocinio(modelo)), tempo, modelo, aoEscrever)
+  if (!r.ok && r.status === 400 && cfgAtual?.thinkingConfig && /thinking/i.test(r.erro)) {
+    const outro = configRaciocinio(modelo).thinkingLevel === 'low' ? null : { thinkingLevel: 'low' }
+    r = await chamarGeminiUmaVez(comRaciocinio(cfgAtual, outro), tempo, modelo, aoEscrever)
+  }
+  // Modelo do chat fora, sobrecarregado ou lento demais: cai no padrão — o chat nunca para.
+  const vale = r.status === 0 || r.status === 400 || r.status === 404 || r.status === 429 || r.status >= 500
+  if (!r.ok && temReserva && !r.bloqueado && vale) {
+    console.warn('[gemini] modelo', modelo, 'falhou com', r.status || 'timeout', '— usando', MODELO)
     return chamarGemini(corpo, timeoutMs, MODELO, aoEscrever)
   }
   return r
@@ -619,8 +630,10 @@ async function chamarGeminiUmaVez(
  * Raciocínio no mínimo. Gemini 2.x: thinkingBudget 0 (desliga). Gemini 3.x
  * não aceita thinkingBudget 0 (dá 400) — usa thinkingLevel "minimal".
  */
-function configRaciocinio(): Record<string, unknown> {
-  return /^gemini-2\./.test(MODELO) ? { thinkingBudget: 0 } : { thinkingLevel: 'minimal' }
+function configRaciocinio(modelo = MODELO): Record<string, unknown> {
+  if (/^gemini-2\./.test(modelo)) return { thinkingBudget: 0 }
+  // 3.x: só o Lite aceita "minimal"; Flash/Pro começam em "low".
+  return /lite/.test(modelo) ? { thinkingLevel: 'minimal' } : { thinkingLevel: 'low' }
 }
 
 /** Config base: sem "raciocínio" (thinking gasta token escondido), saída curta. */
