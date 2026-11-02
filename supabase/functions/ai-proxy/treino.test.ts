@@ -44,3 +44,17 @@ Deno.test('dor ou lesão trava o treino', () => {
   ok(FALA_DE_DOR.test('machuquei o ombro'))
   ok(!FALA_DE_DOR.test('poe o supino na quinta'))
 })
+
+Deno.test('exercício: nome em hindi não vira curinga; apelidos de academia', () => {
+  const e = (nome: string, hi: string): ExercicioCatalogo => ({
+    id: nome, nome, ambientes: ['academia'], series_padrao: 3, repeticoes_padrao: 12, medida: null, segundos_padrao: null,
+    traducoes: { en: { nome }, hi: { nome: hi } },
+  })
+  const cat = [e('Gêmeos em Pé', 'स्टैंडिंग काफ़ रेज़'), e('Voador (Pec Deck)', 'पेक डेक'), e('Crossover', 'क्रॉसओवर'), e('Supino Reto', 'बेंच प्रेस')]
+  const nome = (p: string) => { const r = acharExercicio(p, cat); return r?.tipo === 'um' ? r.e.nome : r ? 'varios' : null }
+  igual(nome('crucifixo na máquina'), 'Voador (Pec Deck)')
+  igual(nome('peck deck'), 'Voador (Pec Deck)')
+  igual(nome('cross over'), 'Crossover')
+  igual(nome('crucifixo na polia'), 'Crossover')
+  igual(nome('remada curvada'), null) // antes: "Gêmeos em Pé" (o nome em hindi vazio cabia em tudo)
+})

@@ -51,7 +51,8 @@ export interface ExercicioCatalogo {
 }
 
 function nomesDe(e: ExercicioCatalogo): string[] {
-  return [e.nome, ...Object.values(e.traducoes ?? {}).map((t) => t?.nome ?? '')].filter(Boolean).map(sem)
+  // Filtra DEPOIS de normalizar: nome em hindi (devanágari) vira '' e '' "cabia" em qualquer pedido.
+  return [e.nome, ...Object.values(e.traducoes ?? {}).map((t) => t?.nome ?? '')].map(sem).filter((n) => n.length >= 3)
 }
 
 function pontos(pedido: string, nome: string): number {
@@ -64,11 +65,18 @@ function pontos(pedido: string, nome: string): number {
   return Math.round((comum / Math.max(a.size, b.size)) * 50)
 }
 
+// Como se fala na academia → nome do catálogo (já normalizados). Vale se o pedido contém o apelido.
+const APELIDOS: [RegExp, string][] = [
+  [/\b(crucifixo|fly|flyes?) (na |no |de )?(maquina|aparelho)\b|\bpec?k? ?deck\b|\bmachine fly\b|\baperturas? en maquina\b/, 'voador pec deck'],
+  [/\bcross ?over\b|\bcrucifixo (na |no )?(polia|cabo)\b|\bcable (fly|crossover)\b|\bcruce de poleas\b/, 'crossover'],
+]
+
 /** Acha o exercício pelo nome (pt e traduções). Duas opções próximas → as duas, pra perguntar. */
 export function acharExercicio(
   pedido: string, catalogo: ExercicioCatalogo[],
 ): { tipo: 'um'; e: ExercicioCatalogo } | { tipo: 'varios'; opcoes: ExercicioCatalogo[] } | null {
-  const p = sem(pedido)
+  let p = sem(pedido)
+  for (const [re, nome] of APELIDOS) if (re.test(p)) { p = nome; break }
   if (p.length < 3) return null
   const notas = catalogo
     .map((e) => ({ e, n: Math.max(...nomesDe(e).map((x) => pontos(p, x))) }))
