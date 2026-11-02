@@ -4247,3 +4247,49 @@ Validado: 101 testes Deno, deno check, typecheck, build.
 
 Validado: 105 testes Deno, deno check, typecheck, build.
 **Ligar só depois do psicólogo:** `update life_config set valor='1' where chave='aviso_risco';`
+
+## 2026-11-02 — FIM DA SESSÃO: pendências (ler isto primeiro)
+
+**Onde está o código:** branch local `verde-menta` (saiu de `onboarding-novo`),
+16 commits **só no PC** — o push falhou (token do GitHub inválido). Plano das
+fases: `docs/PLANO_LIFE_ACOES.md`.
+
+**No ar (Supabase):** ai-proxy **v41** = itens 1–3 do guia, Flash no chat
+(cai no Lite), memória em camadas + importância dos eventos, custo por plano
+(pago sempre completo; 40 msgs/dia e US$ 1/mês trocam só o modelo), prompt por
+assunto, Fase 1 (refeições planejadas, só aparece no APK novo) e Fase 2
+(tropeço pelo chat, funciona no APK atual). Migrações aplicadas: memoria_camadas,
+memoria_importancia, refeicoes_planejadas, tropeco_chat.
+
+**Pendências do dono:**
+1. Token novo do GitHub → subir a branch `verde-menta` (e decidir o merge).
+2. Autorizar: migrações das Fases 3, 4 e 5 **nesta ordem**
+   (`treino_chat` → `agua_habito_desfazer` → `aviso_risco`) + deploy da
+   ai-proxy (vira v42). 3 e 4 funcionam no APK atual; 5 fica desligada.
+3. APK novo (verde menta, check-in compacto, refeições planejadas,
+   "Momento marcante", notificações do oi). Falta também o secret
+   `VITE_RC_GOOGLE_KEY` no GitHub pra assinatura funcionar no APK.
+4. Psicólogo: régua do oi (Fase 5) e escada de cuidado. Só depois ligar:
+   `update life_config set valor='1' where chave='aviso_risco';`
+5. Advogado: texto do consentimento de memória (guarda como a pessoa tem se
+   sentido) × promessa de não guardar saúde.
+6. Ainda de antes: webhook do RevenueCat, PR #2.
+
+**Testar no app atual depois do deploy:** "comi um doce agora, não aguentei"
+(Anotar), "bebi 2 copos de água", "desfaz isso", "li 20 páginas hoje",
+"põe o supino inclinado no meu treino de quinta", "copia o treino de quinta
+pra hoje", "tô com dor no joelho, põe leg press na quarta" (tem que recusar),
+"o que você lembra de mim?". Conferir em `ai_audit_logs`: `modelo` do chat
+(gemini-3.8-flash ou caiu no Lite?), linhas `memoria` com status ok, e o
+custo por mensagem (`versao_contexto` traz os assuntos).
+
+**Próximas fases a construir:** 6 (estilo desde a 1ª msg, confiança no
+prompt), 7 (streaming/latência), 8 (cota humana, desabafo não cortado, humor
+do Life no chat), 9 (resumos diários/semanais + busca por sentido).
+Adiados: botão "abrir treino de outro dia só hoje", tirar item planejado na
+Dieta, licença do oi pela tela de Hábitos, oi fixo semanal, cancelar oi em
+dia pausado, enxugar mais o prompt (guia: roteiro de 29 testes).
+
+**Ferramentas desta sessão:** Deno instalado no scratchpad (some ao reiniciar);
+na próxima, `npm i deno@2` numa pasta temporária pra rodar
+`deno test -A supabase/functions/`. 105 testes passando no último commit.
