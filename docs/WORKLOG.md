@@ -4432,3 +4432,42 @@ usar, apagar o usuário lá.
 3. Secrets no GitHub: `VITE_RC_GOOGLE_KEY`, `SMOKE_EMAIL`, `SMOKE_SENHA`.
 4. Merge do PR #3 depois dos testes; revogar o token do GitHub usado hoje.
 5. Psicólogo (Fase 5) e advogado (consentimento + resumos).
+
+## 2026-11-05 — Decisão: trocar a IA do chat (Luna + Haiku)
+
+Só conversa e decisão; nenhum código mudou, nada publicado.
+
+**Decidido pelo dono:**
+- Chat do Life sai do Gemini → **gpt-6-luna** (OpenAI), raciocínio `none`
+  no grátis e `low` no pago (precisa da API **Responses**, `store: false`,
+  sem `temperature`, teto de resposta maior que 280/400).
+- **Reserva: Claude Haiku 5.5** (`claude-haiku-5-5`, US$ 0,10/0,50 por 1M,
+  igual ao Luna; aceita ferramentas; pensa por padrão → desligar/baixo;
+  não aceita `temperature`). Gemini sai do chat (fica no scanner por ora).
+- **Grátis: 5 mensagens por dia.** Crise e desabafo continuam fora da cota.
+- Planos (estimativa do GPT): grátis R$ 0,30/mês máx; teste 7 dias igual ao
+  pago; pago 80 msgs + 5 fotos/dia (~R$ 9–13/mês máx com extras).
+
+**Conferido no código (precisa corrigir na migração):**
+- `IA_TETO_TOKENS_DIA` é em tokens (padrão 2.000.000, `index.ts:91`), não
+  em dinheiro → recalcular pro Luna; scanner fica fora do teto.
+- Modo economia do pago (>40 msgs/dia, `index.ts:1281-1284`) cai em
+  `MODELO` (Lite) → inverter, senão o usuário intensivo vai pro mais caro.
+- `PRECOS` (`gemini.ts:28`) sem Luna/Haiku → custo sairia zero no log.
+
+**Esclarecido:** `store: false` só impede a OpenAI de guardar; o app
+continua gravando memória no Supabase. Psicólogo (Fase 5 = como o Life
+responde a sofrimento) e advogado continuam necessários. Política de
+privacidade tem que citar OpenAI e Anthropic.
+
+**Pendências (ler isto primeiro):**
+1. Dono: ok pra branch nova + chaves OpenAI e Anthropic com limite de gasto
+   (~US$ 5 cada), via `! export OPENAI_API_KEY=...` / `ANTHROPIC_API_KEY`.
+2. Implementar: `openai.ts` e `anthropic.ts` com a interface do
+   `gemini.ts`; converter FERRAMENTAS_LIFE; cadeia Luna → Haiku; disjuntor
+   da v45 pausando o Luna; preços; economia; teto; cota grátis 5/dia.
+3. Teste por fora (dados fictícios): roteiro de 29 com Luna none/low e
+   Haiku — qualidade, tempo, custo real.
+4. Política de privacidade (OpenAI + Anthropic) antes de publicar.
+5. Continuam: secrets no GitHub, merge do PR #3, revogar token, psicólogo
+   e advogado. v45 do Gemini não será publicada como está.
