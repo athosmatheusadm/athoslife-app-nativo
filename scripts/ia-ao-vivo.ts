@@ -124,6 +124,7 @@ if (temHaiku) {
     ['2º sem ferramenta', base],
     ['3º com ferramenta', { ...base, ferramentas: [REGISTRAR] }],
     ['4º sem ferramenta', base],
+    ['5º com ferramenta', { ...base, ferramentas: [REGISTRAR] }],
   ] as [string, PedidoIA][]) {
     const r = await chamarOpenAI(p, LUNA, 25_000)
     console.log(`  ${rotulo.padEnd(18)} ${r.uso?.entrada ?? '?'} / ${r.uso?.cache ?? '?'}`)

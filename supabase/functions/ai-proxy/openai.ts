@@ -4,7 +4,7 @@
 // Sem temperature: modelo de raciocínio não aceita.
 // ================================================================
 import {
-  custo, falha, FOLGA_RACIOCINIO, normalizarMensagens, sistemaComJson,
+  custo, falha, FOLGA_RACIOCINIO, normalizarMensagens,
   type ChamadaFerramenta, type PedidoIA, type ResultadoIA, type UsoTokens,
 } from './ia.ts'
 import { lerSSE } from './stream.ts'
@@ -13,6 +13,11 @@ const URL_RESPONSES = 'https://api.openai.com/v1/responses'
 
 export function corpoOpenAI(p: PedidoIA, modelo: string, stream: boolean): Record<string, unknown> {
   const mensagens = normalizarMensagens(p.mensagens)
+  // Modo JSON: a OpenAI exige a palavra "json" nas MENSAGENS (nas instruções não basta — 400 em 08/11).
+  if (p.json && !mensagens.some((m) => /json/i.test(m.texto))) {
+    const ultima = mensagens.map((m) => m.papel).lastIndexOf('usuario')
+    if (ultima >= 0) mensagens[ultima] = { ...mensagens[ultima], texto: `${mensagens[ultima].texto}\n\n(Responda em JSON.)` }
+  }
   const ultimaDaPessoa = mensagens.map((m) => m.papel).lastIndexOf('usuario')
   const input = mensagens.map((m, i) => {
     if (m.papel === 'life') return { role: 'assistant', content: m.texto }
@@ -27,7 +32,7 @@ export function corpoOpenAI(p: PedidoIA, modelo: string, stream: boolean): Recor
     }
     return { role: 'user', content: m.texto }
   })
-  const sistema = sistemaComJson(p)
+  const sistema = p.sistema
   const ferramentas = p.ferramentas?.length ? p.ferramentas : null
   return {
     model: modelo,

@@ -139,13 +139,15 @@ Deno.test('corpo do Luna: ferramenta forçada, JSON e foto na última fala', () 
   igual(input.length, 1) // fala do Life no começo sai; as duas da pessoa juntam
   igual(input[0].content, [
     { type: 'input_image', image_url: 'data:image/png;base64,AAAA' },
-    { type: 'input_text', text: 'a\nb' },
+    { type: 'input_text', text: 'a\nb\n\n(Responda em JSON.)' },
   ])
 })
 
-Deno.test('modo JSON sem a palavra no pedido: acrescenta', () => {
-  const c = corpoOpenAI({ mensagens: [{ papel: 'usuario', texto: 'x' }], maxSaida: 10, json: true }, 'gpt-6-luna', false)
-  igual(c.instructions, 'Responda só JSON.')
+Deno.test('modo JSON: a palavra vai na mensagem da pessoa (a OpenAI exige lá)', () => {
+  const c = corpoOpenAI({ sistema: 'Responda só JSON.', mensagens: [{ papel: 'usuario', texto: 'x' }], maxSaida: 10, json: true }, 'gpt-6-luna', false)
+  igual((c.input as { content: unknown }[])[0].content, 'x\n\n(Responda em JSON.)')
+  const ja = corpoOpenAI({ mensagens: [{ papel: 'usuario', texto: 'responda em json' }], maxSaida: 10, json: true }, 'gpt-6-luna', false)
+  igual((ja.input as { content: unknown }[])[0].content, 'responda em json')
 })
 
 Deno.test('resposta do Luna: ferramenta, uso e custo com cache', () => {

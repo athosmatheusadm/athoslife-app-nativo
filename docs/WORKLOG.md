@@ -4531,3 +4531,28 @@ Dono 08/11: o Luna lê imagem, então o scanner vai junto e o Gemini sai de vez
    `node scripts/smoke-life.mjs`. Depois apagar o Secret `GEMINI_API_KEY`.
 4. Continuam: push (sem token do GitHub nesta sessão), PR #3, secrets do
    GitHub, psicólogo (Fase 5) e advogado (agora com OpenAI/Anthropic na política).
+
+### 2026-11-08 (2) — Luna testado ao vivo (chave de teste do dono)
+
+- `scripts/ia-ao-vivo.ts` com o gpt-6-luna real: conversa (1,0–2,8 s),
+  raciocínio low, streaming, ferramenta, ferramenta forçada e JSON — tudo ok.
+  Custo por chamada curta: US$ 0,00002–0,00005.
+- **Corrigido:** modo JSON dava 400 — a OpenAI exige a palavra "json" nas
+  MENSAGENS, não nas instruções. `openai.ts` acrescenta "(Responda em JSON.)"
+  na última fala da pessoa quando falta (o estimar teria caído).
+- **Cache medido:** prompt fixo de 2.929 tokens → 2.926 lidos do cache no 2º
+  pedido. A lista de ferramentas entra ANTES na conta: trocar a lista zera o
+  cache, mas cada lista vira seu próprio cache (a mesma lista repetida: 3.003
+  de 3.006). Como as listas são poucas (por assunto) e o cache é da conta
+  toda, todo mundo aproveita.
+- As 8 ferramentas reais do Life (FERRAMENTAS_LIFE) foram aceitas pela
+  OpenAI; 7 chamadas certas; "copia o treino de segunda pra quarta" fez uma
+  pergunta (só esta quarta ou a ficha?) — razoável. `quantidade: 0` quando a
+  pessoa não diz = sem quantidade (já tratado em `lerItens`).
+- Chave de teste só na pasta temporária da sessão (não está no repo nem nos Secrets).
+
+**Pendências:** chave da Anthropic (Haiku não testado ao vivo); teste com o
+prompt REAL do Life e histórico (roteiro de 29) e fotos reais no scanner;
+deploy com autorização (Secrets OPENAI_API_KEY/ANTHROPIC_API_KEY → migração
+grátis 5 → ai-proxy → smoke-life); trocar a chave de teste por uma com
+limite de gasto antes de produção.
