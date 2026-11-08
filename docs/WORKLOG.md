@@ -4509,6 +4509,12 @@ Dono 08/11: o Luna lê imagem, então o scanner vai junto e o Gemini sai de vez
   Anthropic; `VERSAO_DOCUMENTOS` v2.4-2026-11-08 (só registra no aceite).
 - Removidos `gemini.ts` e `gemini.test.ts`; `ia.test.ts` novo (13 casos).
 - `scripts/ia-ao-vivo.ts` (novo): teste de verdade com dados fictícios.
+- Prompt do Life com começo fixo (dono pediu, 08/11): as ações da conversa
+  (registrar refeição, programar, pausar) e a frase do "programar" saíram do
+  meio do PROMPT_BASE e foram pro fim, em "AÇÕES DESTA CONVERSA". O
+  PROMPT_BASE (~2.700 tokens) fica idêntico em toda mensagem → cache.
+  Mesmas regras, só mudou a ordem. O teste ao vivo mede se a lista de
+  ferramentas (varia por assunto) quebra esse cache na OpenAI.
 
 **Validado:** 131 testes Deno ok, `deno check` ok, `npm run typecheck` e
 `npm run build` ok.

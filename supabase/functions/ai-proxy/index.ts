@@ -714,17 +714,17 @@ QUANDO É GRAVE (desespero, "não aguento mais", "sou um peso", "ninguém liga p
 - Não comece nem termine do mesmo jeito que nas SUAS ÚLTIMAS RESPOSTAS. Evite: "Tô aqui só te ouvindo", "Quer desabafar mais?", "super", "com certeza", "que tal focarmos".
 - Nunca exagere o risco ("colapso", "perigo") e nunca dê diagnóstico. Em sinal de crise, QUANDO É GRAVE vale acima de todas estas regras.
 
-AÇÕES NO APP (você só executa as que estão listadas aqui, pelas ferramentas; se não houver nenhuma, nesta conversa você não registra nada):
+AÇÕES NO APP (você só executa as listadas em AÇÕES DESTA CONVERSA, no fim destas regras, pelas ferramentas; se não houver nenhuma, nesta conversa você não registra nada):
 - Água ("bebi 2 copos de água") e "desfaz isso" o app faz sozinho, antes de chegar em você. Se ela pedir pra desfazer algo, diga que é só escrever "desfaz isso" logo depois.
 - Fora isso, você não registra, marca nem muda nada no app. Nunca diga "pronto", "coloquei" ou "registrei" por conta própria — quem confirma é o app, depois de gravar.
-- Nunca ofereça montar, colocar, programar ou mudar no app algo que estas ferramentas não fazem (ex.: "quer que eu coloque na sua dieta da semana?", "monto pra você?"). Hoje você não mexe no treino nem na ficha. Se a pessoa pedir, diga numa frase o que dá pra fazer agora (ex.: ela adiciona na refeição do dia, na tela de Dieta) e siga ajudando na conversa.
+- Nunca ofereça montar, colocar, programar ou mudar no app algo que estas ferramentas não fazem (ex.: "quer que eu coloque na sua dieta da semana?", "monto pra você?"). Se a pessoa pedir, diga numa frase o que dá pra fazer agora (ex.: ela adiciona na refeição do dia, na tela de Dieta) e siga ajudando na conversa.
 
 PODE:
 - Conversar sobre o dia, humor, hábitos e consistência; celebrar esforço; acolher dia ruim sem forçar positividade.
 - Lembrar de leve registros do app (água, refeições, hábitos) usando o contexto abaixo.
 
 NUNCA:
-- Montar plano de dieta ou cardápio inteiro do nada, definir calorias/macros-alvo para a pessoa. (Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao.)
+- Montar plano de dieta ou cardápio inteiro do nada, definir calorias/macros-alvo para a pessoa.
 - Dizer QUAL suplemento ou remédio tomar, nem QUANTO (dose, gramas, scoops, horários).
 - Recomendar treino, exercícios, séries, repetições ou carga. (Pôr na ficha um exercício que a pessoa pediu, com as séries que ela disse ou o padrão do app, não é recomendar: é com adicionar_exercicio. Carga, nunca: quem define é ela.)
 - Diagnosticar nada físico ou emocional, nem fazer terapia.
@@ -789,7 +789,6 @@ const ACAO_PROGRAMAR = `- programar_refeicao: quando ela pedir pra deixar comida
 - Se o contexto tem "Plano de referência de dieta", cada dia da Dieta JÁ mostra esse plano apagadinho em cada refeição, com o ✓ pra registrar. Quando ela quiser "o dia de amanhã no lugar" e tiver plano, diga isso (não precisa programar nada); use programar_refeicao só pra trocar ou acrescentar algo.`
 const ACAO_EMOCIONAL = `- pausar_life_hoje: ver PAUSA DO DIA.`
 
-const PAREN_PROGRAMAR = ' (Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao.)'
 
 /**
  * Monta o prompt do chat com a base e só os módulos do assunto.
@@ -800,12 +799,11 @@ function montarPromptLife(assuntos: Set<Assunto>, programar = false): string {
   const comida = assuntos.has('comida')
   const acoes = [comida ? ACAO_COMIDA : '', comida && programar ? ACAO_PROGRAMAR : '', assuntos.has('emocional') ? ACAO_EMOCIONAL : '']
     .filter(Boolean).join('\n')
-  const titulo = 'nesta conversa você não registra nada):'
-  let base = acoes ? PROMPT_BASE.replace(titulo, `${titulo}\n${acoes}`) : PROMPT_BASE
-  if (!programar) {
-    base = base.replace(PAREN_PROGRAMAR, '')
-      .replace('Hoje você não mexe no treino nem na ficha.', 'Hoje você não põe comida em dias futuros nem mexe no treino.')
-  }
+  // O que muda por conversa vai DEPOIS do PROMPT_BASE, que fica idêntico em
+  // toda mensagem: é o começo do pedido e cai no cache do modelo (10% do preço).
+  const blocoAcoes = 'AÇÕES DESTA CONVERSA:\n' + (acoes || '- Nenhuma: nesta conversa você não registra nada.') + '\n' + (programar
+    ? 'Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao. Hoje você não mexe no treino nem na ficha.'
+    : 'Hoje você não põe comida em dias futuros nem mexe no treino.')
   const mods = [
     assuntos.has('emocional') ? MOD_EMOCIONAL : '',
     assuntos.has('comida') ? MOD_COMIDA : '',
@@ -813,7 +811,7 @@ function montarPromptLife(assuntos: Set<Assunto>, programar = false): string {
     assuntos.has('habitos') ? MOD_HABITOS : '',
     assuntos.has('peso') ? MOD_PESO : '',
   ].filter(Boolean)
-  return mods.length ? `${base}\n\n${mods.join('\n\n')}` : base
+  return [PROMPT_BASE, ...mods, blocoAcoes].join('\n\n')
 }
 
 const NOME_IDIOMA: Record<Idioma, string> = {

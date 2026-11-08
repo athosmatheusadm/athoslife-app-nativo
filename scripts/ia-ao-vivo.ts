@@ -113,5 +113,22 @@ if (temHaiku) {
   console.log(`${erro ? 'FALHOU' : 'OK    '} cadeia: Luna fora → Haiku${erro ? ` — ${erro}` : ''}`)
 }
 
+// Cache do Luna (só mede, não reprova): prompt fixo longo, 3 pedidos seguidos.
+// Responde se a lista de ferramentas (muda por assunto) quebra o cache do prompt fixo.
+{
+  const longo = SISTEMA + '\n' + Array.from({ length: 120 }, (_, i) => `- Regra fixa ${i + 1}: fale com calma, sem julgar, e use o contexto só quando fizer sentido.`).join('\n')
+  const base: PedidoIA = { sistema: longo, mensagens: [{ papel: 'usuario', texto: 'oi' }], maxSaida: 60 }
+  console.log('\nCache do Luna (tokens de entrada / lidos do cache):')
+  for (const [rotulo, p] of [
+    ['1º sem ferramenta', base],
+    ['2º sem ferramenta', base],
+    ['3º com ferramenta', { ...base, ferramentas: [REGISTRAR] }],
+    ['4º sem ferramenta', base],
+  ] as [string, PedidoIA][]) {
+    const r = await chamarOpenAI(p, LUNA, 25_000)
+    console.log(`  ${rotulo.padEnd(18)} ${r.uso?.entrada ?? '?'} / ${r.uso?.cache ?? '?'}`)
+  }
+}
+
 console.log(falhas ? `\n${falhas} falha(s).` : '\nTudo certo.')
 Deno.exit(falhas ? 1 : 0)
