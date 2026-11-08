@@ -35,7 +35,7 @@ export function corpoAnthropic(p: PedidoIA, modelo: string): Anthropic.MessageCr
     }
     return { role: 'user', content: m.texto }
   })
-  const sistema = sistemaComJson(p)
+  const sistema = sistemaComJson(p.fixo ? { ...p, sistema: p.sistema ? `${p.fixo}\n\n${p.sistema}` : p.fixo } : p)
   const ferramentas = p.ferramentas?.length ? p.ferramentas : null
   return {
     model: modelo,

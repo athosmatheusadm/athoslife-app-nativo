@@ -23,7 +23,15 @@ if (!login.ok) { console.error('login falhou', login.status); process.exit(1) }
 const { access_token: jwt } = await login.json()
 
 /** Uma mensagem no chat com streaming; mede primeira palavra e total. */
+// Trava anti-abuso do app: 6 mensagens por minuto. Uma pessoa digitando não chega
+// nisso; o roteiro espaça (ESTRESSE_INTERVALO_MS) pra não testar a trava sem querer.
+let ultimoEnvio = 0
 async function chat(mensagem, extra = {}) {
+  const intervalo = Number(process.env.ESTRESSE_INTERVALO_MS ?? 11_000)
+  const falta = ultimoEnvio + intervalo - Date.now()
+  if (falta > 0 && !extra.rajada) await new Promise((r) => setTimeout(r, falta))
+  ultimoEnvio = Date.now()
+  delete extra.rajada
   const t0 = Date.now()
   const r = await fetch(AI_URL, {
     method: 'POST',
@@ -173,7 +181,7 @@ if (!so || so.has('rajada')) {
   console.log('\nRajada (estresse de cota e de tempo):')
   const rajada = []
   for (let i = 0; i < 90; i++) {
-    const r = await chat(i % 3 === 0 ? 'bebi água agora' : i % 3 === 1 ? 'o que eu como no lanche?' : 'valeu, e amanhã?')
+    const r = await chat(i % 3 === 0 ? 'bebi água agora' : i % 3 === 1 ? 'o que eu como no lanche?' : 'valeu, e amanhã?', { rajada: true })
     rajada.push(r)
     if (r.error === 'limit_reached' || r.status === 403) break
     if (r.error === 'rate_limited' || r.status === 429) await espera(10_000)

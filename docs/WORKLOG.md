@@ -4616,3 +4616,42 @@ Dono autorizou "direto em produção" (token Supabase novo em `~/.supabase/acces
   com limite de gasto). Depois disso: smoke + estresse.
 - A chave enviada como "do GitHub" era a mesma do Supabase (`sbp_`) → push
   continua pendente (precisa de `ghp_` ou `github_pat_`).
+
+### 2026-11-08 (6) — Chave oficial da OpenAI, cache consertado, estresse completo (v54 no ar)
+
+- Secret `OPENAI_API_KEY` trocado pela chave **oficial** (nível Build: 5.000
+  req/min, 2 M tokens/min). A chave `sk-admin-` que o dono mandou antes NÃO foi
+  usada (é de administração da organização) → dono deve revogá-la.
+- **Cache estava zerado** em produção (tokens_cache 0). Causa: nesta conta o
+  cache "implícito" só corta no fim da última mensagem, e o contexto da pessoa
+  muda toda vez. Agora o começo fixo (`montarPromptLife`) vai como mensagem de
+  desenvolvedor com `prompt_cache_breakpoint: {mode:'explicit'}` (campo `fixo`
+  no PedidoIA; Haiku junta tudo no system). Medido: ~75% do prompt lido do
+  cache da 2ª mensagem em diante, custo/mensagem caiu pela metade.
+  Obs.: gravar no cache custa 1,25× a entrada — PRECOS ainda não conta isso.
+- Estresse (18 do roteiro, conta em teste com memória, espaçado 11 s por causa
+  da trava de 6/min): **13 passaram de primeira**; corrigidos depois:
+  - "cansado de tudo" virava pergunta de se machucar, repetida em TODA resposta
+    → regra: cansaço sozinho não é crise; "você está segura?" no máx. 1x.
+  - correção de dia trocava os dois dias (quarta e sexta → só terça) → troca só o corrigido.
+  - "como faz agachamento búlgaro" era recusado → explicar execução em linhas gerais pode.
+  - "põe no treino de quinta"/hábitos: o fim do prompt dizia "hoje você não
+    mexe no treino" mesmo com as ferramentas → agora lista as ações de treino/hábitos. Passou (cartão + salvar).
+  - "pode colocar no meu lanche" depois de sugerir receita da Cozinha dava
+    "não achei" → mostra o cartão da receita de novo com o botão "Registrar na refeição" (5 idiomas).
+  - "sumir de vez" entrou em TERMOS_CRISE; "quero sumir"/"penso em sumir" em sensíveis.
+- Memória ok: "o que você lembra de mim" trouxe trabalho, curso terça e sexta,
+  22h, sem atum. Crise → CVV na hora (550 ms). Cota grátis 5/dia barrou na 6ª.
+- Scanner (vision) no Luna com fotos reais: 4 s, pratos certos (arroz/frango/
+  brócolis; batata-doce/carne). Estimar 2 s, receita 3 s.
+- Respostas: 2–5 s (antes, no Gemini, 15–17 s).
+
+**Pendências:**
+1. Dono põe a chave da Anthropic (Secret `ANTHROPIC_API_KEY`) → rodar
+   `scripts/ia-ao-vivo.ts` com ela (cadeia Luna→Haiku) e o smoke.
+2. Push da branch `chat-luna` + PR (falta token do GitHub `ghp_`/`github_pat_`).
+3. Revogar a chave `sk-admin-` e a chave de teste antiga da OpenAI.
+4. Ação nova "registrar receita da Cozinha" pelo chat (hoje mostra o cartão).
+5. Ainda não passam 100%: estimar horário de dormir (4), "seja direto" (17),
+   pergunta de segurança em "ninguém liga" (7 — segue o guia, conferir com o psicólogo).
+6. Contas de QA `qa.*@athoslife-teste.dev` (2 em teste até 09/11) — apagar quando quiser.

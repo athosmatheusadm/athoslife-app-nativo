@@ -236,7 +236,7 @@ const TERMOS_CRISE = [
   'me cortando', 'automutilacao', 'me enforcar', 'pular da ponte', 'me jogar da',
   'overdose', 'tomar todos os remedios', 'nao aguento mais viver',
   'sem motivo pra viver', 'sem motivo para viver', 'melhor sem mim',
-  'dormir e nao acordar', 'sumir pra sempre', 'sumir para sempre',
+  'dormir e nao acordar', 'sumir pra sempre', 'sumir para sempre', 'sumir de vez',
   // en
   'suicide', 'kill myself', 'want to die', 'end my life', 'take my life',
   'hurt myself', 'cut myself', 'self harm', 'don t want to live', 'dont want to live', 'better off without me',
@@ -258,7 +258,7 @@ const TERMOS_CRISE = [
 
 // Sensível (pode ser só desabafo): a IA responde, mas com instrução extra de cuidado.
 const TERMOS_SENSIVEIS = [
-  'nao aguento mais', 'desaparecer', 'largar tudo', 'me sinto um lixo', 'odeio minha vida',
+  'nao aguento mais', 'desaparecer', 'quero sumir', 'penso em sumir', 'largar tudo', 'me sinto um lixo', 'odeio minha vida',
   'vomitar depois de comer', 'provocar vomito', 'induzir vomito', 'laxante pra emagrecer',
   'laxante para emagrecer', 'ficar sem comer', 'passar fome', 'jejum de dias',
   'nao comer nada', 'odeio meu corpo', 'comer escondido', 'compulsao',
@@ -694,6 +694,8 @@ COMO CONVERSAR:
 QUANDO É GRAVE (desespero, "não aguento mais", "sou um peso", "ninguém liga pra mim", violência ou abuso em casa, perda recente, doença grave, crise de pânico):
 - Leve muito a sério e vá devagar. Diga que ela importa e que fez bem em contar. Nada de pressa pra resolver.
 - Se aparecer desesperança, pergunte com cuidado e direto se ela está segura agora e se tem pensado em se machucar — perguntar não piora, ajuda.
+- Cansaço, estresse ou "cansado de tudo" sozinhos não são crise: acolha com calor, sem perguntar se ela vai se machucar.
+- A pergunta "você está segura?" vai no máximo UMA vez na conversa. Se já está nas SUAS ÚLTIMAS RESPOSTAS e ela seguiu em outro assunto, não repita: responda o que ela pediu, com o mesmo cuidado. Só volte nela se aparecer sinal novo de desespero.
 - Incentive com carinho a não ficar sozinha: alguém de confiança por perto e ajuda de um profissional (psicólogo, médico). Quando houver risco ou desespero, passe a linha de apoio do país dela (ver LINHA DE APOIO no fim).
 - Você pode ser honesto que uma pessoa pode ajudar mais do que você, mas NUNCA use isso pra se afastar ("sou só uma IA, não posso ajudar"). Você continua na conversa, do lado dela.
 - Se o histórico tem uma mensagem de apoio com telefone de crise, continue presente e acolhedor nas respostas seguintes; pergunte se ela conseguiu falar com alguém, sem repetir o texto inteiro.
@@ -703,7 +705,7 @@ QUANDO É GRAVE (desespero, "não aguento mais", "sou um peso", "ninguém liga p
 - Nunca diga que lembra, viu ou fez algo que não está no contexto ou no resultado de uma ação.
 - Metas e lembretes são apoio, nunca "cobrança" — não use essa palavra.
 - Responda primeiro o que a pessoa perguntou. Se a mensagem tem duas partes, responda as duas, na ordem em que vieram.
-- Se a pessoa corrigir um dado (dia, horário, preferência), confirme em meia frase logo no começo ("Anotado: curso na quarta e na sexta.") — mesmo que a mensagem também traga um desabafo. Não espere ela perguntar se você viu.
+- Se a pessoa corrigir um dado (dia, horário, preferência), troque só o que ela corrigiu e mantenha o resto (curso "quarta e sexta" + "o dia errado era quarta, é terça" = terça e sexta; se não der pra saber qual dos dois, pergunte). Confirme em meia frase logo no começo ("Anotado: curso na terça e na sexta.") — mesmo que a mensagem também traga um desabafo. Não espere ela perguntar se você viu.
 - Só ofereça o que você consegue fazer (ver AÇÕES NO APP). Se ofereceu e a pessoa aceitou, faça nesta resposta. Nunca mande a pessoa procurar um botão pra fazer o que você mesmo ofereceu.
 - Use o que você lembra só quando isso muda a resposta: no máximo duas lembranças por resposta, e não repita uma lembrança que já apareceu nas SUAS ÚLTIMAS RESPOSTAS. Nunca traga ingrediente que ela disse que não tem.
 - Quando ela pedir pra organizar ou planejar, proponha (com os dias e horários que você sabe dela) em vez de devolver a pergunta.
@@ -726,7 +728,7 @@ PODE:
 NUNCA:
 - Montar plano de dieta ou cardápio inteiro do nada, definir calorias/macros-alvo para a pessoa.
 - Dizer QUAL suplemento ou remédio tomar, nem QUANTO (dose, gramas, scoops, horários).
-- Recomendar treino, exercícios, séries, repetições ou carga. (Pôr na ficha um exercício que a pessoa pediu, com as séries que ela disse ou o padrão do app, não é recomendar: é com adicionar_exercicio. Carga, nunca: quem define é ela.)
+- Recomendar treino, exercícios, séries, repetições ou carga. (Explicar como se faz um exercício que ela perguntou, em linhas gerais e com os cuidados básicos, pode e deve.) (Pôr na ficha um exercício que a pessoa pediu, com as séries que ela disse ou o padrão do app, não é recomendar: é com adicionar_exercicio. Carga, nunca: quem define é ela.)
 - Diagnosticar nada físico ou emocional, nem fazer terapia.
 - Falar de peso/corpo de forma negativa ou comparativa; sugerir jejum ou restrição agressiva.
 - Acompanhar, dar dicas ou planos pra parar/reduzir álcool, cigarro/vape, drogas ou apostas. O ATHOSlife não trata dependência: se a pessoa trouxer isso, acolha sem julgar, diga com carinho que isso merece um serviço de saúde especializado (no Brasil, o CAPS AD, gratuito pelo SUS; em outros países, o serviço de saúde local) e siga com o que você pode fazer no app.
@@ -797,13 +799,20 @@ const ACAO_EMOCIONAL = `- pausar_life_hoje: ver PAUSA DO DIA.`
  */
 function montarPromptLife(assuntos: Set<Assunto>, programar = false): string {
   const comida = assuntos.has('comida')
-  const acoes = [comida ? ACAO_COMIDA : '', comida && programar ? ACAO_PROGRAMAR : '', assuntos.has('emocional') ? ACAO_EMOCIONAL : '']
+  const treino = assuntos.has('treino')
+  const acoes = [
+    comida ? ACAO_COMIDA : '', comida && programar ? ACAO_PROGRAMAR : '', assuntos.has('emocional') ? ACAO_EMOCIONAL : '',
+    assuntos.has('habitos') ? '- registrar_tropeco e marcar_habito: ver HÁBITOS.' : '',
+    treino ? '- adicionar_exercicio e copiar_treino: ver TREINO.' : '',
+  ]
     .filter(Boolean).join('\n')
   // O que muda por conversa vai DEPOIS do PROMPT_BASE, que fica idêntico em
   // toda mensagem: é o começo do pedido e cai no cache do modelo (10% do preço).
+  // Com assunto treino, adicionar_exercicio/copiar_treino estão nas ferramentas
+  // (ver MOD_TREINO): aí não pode dizer que não mexe no treino (08/11, estresse 26/27).
   const blocoAcoes = 'AÇÕES DESTA CONVERSA:\n' + (acoes || '- Nenhuma: nesta conversa você não registra nada.') + '\n' + (programar
-    ? 'Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao. Hoje você não mexe no treino nem na ficha.'
-    : 'Hoje você não põe comida em dias futuros nem mexe no treino.')
+    ? 'Deixar no lugar comida que ela pediu ou aceitou, ou repetir um dia que ela já comeu, não é montar dieta: é com programar_refeicao.' + (treino ? '' : ' Hoje você não mexe no treino nem na ficha.')
+    : 'Hoje você não põe comida em dias futuros' + (treino ? '.' : ' nem mexe no treino.'))
   const mods = [
     assuntos.has('emocional') ? MOD_EMOCIONAL : '',
     assuntos.has('comida') ? MOD_COMIDA : '',
@@ -956,6 +965,14 @@ function blocoCatalogo(cat: ReceitaCatalogo[]): string {
   if (!cat.length) return '\n\nCATÁLOGO DA COZINHA: nenhuma receita da Cozinha serve pra esta pessoa agora — vá direto pras ideias (passo 2).'
   const linhas = cat.map((r) => `${r.codigo} | ${r.nome} | ${r.tipo} | ${r.contem.map((c) => ROTULO_ALERGENO[c]).join(', ') || 'nada da lista'}`)
   return `\n\nCATÁLOGO DA COZINHA (receitas que esta pessoa pode abrir; as que batem com as restrições dela já saíram). código | nome | tipo | contém:\n${linhas.join('\n')}`
+}
+
+const TXT_RECEITA_COZINHA: Record<Idioma, string> = {
+  'pt-BR': 'Essa é receita da Cozinha, então entra pelo cartão dela: abre aqui embaixo e toca em "Registrar na refeição".',
+  en: 'That one is a Kitchen recipe, so it goes in through its card: open it below and tap "Log to a meal".',
+  es: 'Esa es una receta de la Cocina, así que entra por su tarjeta: ábrela aquí abajo y toca "Registrar en una comida".',
+  fr: 'C’est une recette de la Cuisine, elle s’ajoute depuis sa fiche : ouvre-la ci-dessous et touche « Noter dans un repas ».',
+  hi: 'यह किचन की रेसिपी है, इसलिए इसके कार्ड से जुड़ती है: नीचे खोलो और "खाने में दर्ज करें" दबाओ।',
 }
 
 // Marcas que a IA escreve ([[R15]], [[CHEF]]) e como ficam salvas na conversa
@@ -1281,7 +1298,10 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const [histRes, ctxDia, { pago, gasto: gastoMes }, consentimento, padroes, falas, checkinsDia, alo, resumos, principalFora] = await leituras
   const economia = pago && (cota.usados > PENSAR_MSGS_DIA || gastoMes > TETO_MES_USD)
   const perfil = pago ? PERFIL_PAGO : PERFIL_GRATIS
-  const salvas = ((histRes.data ?? []) as MensagemSalva[]).reverse()
+  const brutas = ((histRes.data ?? []) as MensagemSalva[]).reverse()
+  // Cartão de receita da última resposta do Life (o texto pro modelo vai sem as marcas).
+  const receitaSugerida = /\[\[(receita:[0-9a-f-]{36})\]\]/.exec([...brutas].reverse().find((m) => m.autor === 'life')?.texto ?? '')?.[1] ?? null
+  const salvas = brutas
     .map((m) => ({ ...m, texto: m.texto.replace(MARCA_CARTAO_SALVA, '').trim() }))
     .slice(-(perfil.literais + perfil.antigas))
   const camadas = CONTEXTO_CAMADAS ? dividirHistorico(salvas, perfil.literais) : { literais: salvas, linhas: [] }
@@ -1338,8 +1358,10 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const catalogo = PEDE_COMIDA.test(normalizar(mensagem))
     ? await catalogoCozinha(sb, userId, loc.idioma, pago, falaDaPessoa)
     : null
+  // Começo fixo (regras + módulos do assunto + ações): igual pra todo mundo → cache.
+  const fixo = montarPromptLife(assuntos, programar)
   const sistema =
-    `${montarPromptLife(assuntos, programar)}${blocoCultura(loc)}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
+    `${blocoCultura(loc).replace(/^\n+/, '')}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
     linhaDiaLeve(corpo.dia_leve) +
     adaptativo +
     (consentimento === true && resumos ? blocoResumos(resumos, hojeLocal) : '') +
@@ -1363,14 +1385,14 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const pensar = pago && !economia
   // Disjuntor: o principal falhou há pouco → direto na reserva, sem esperar estourar o tempo.
   let g = await chamarIA(
-    { sistema, mensagens: conversa, ferramentas, maxSaida: perfil.saida, pensar },
+    { fixo, sistema, mensagens: conversa, ferramentas, maxSaida: perfil.saida, pensar },
     { timeoutMs: 25_000, pularPrincipal: principalFora, aoEscrever: rascunho ? (acc) => rascunho.aoEscrever(acc) : undefined },
   )
   // Prometeu o cartão da refeição sem chamar a ferramenta: pede de novo,
   // obrigando registrar_alimentos (custo extra só nesse caso).
   if (g.ok && !g.chamadas.length && prometeuRegistro(mensagem, g.texto)) {
     const g2 = await chamarIA(
-      { sistema, mensagens: conversa, ferramentas: FERRAMENTAS_LIFE, forcar: 'registrar_alimentos', maxSaida: perfil.saida, pensar },
+      { fixo, sistema, mensagens: conversa, ferramentas: FERRAMENTAS_LIFE, forcar: 'registrar_alimentos', maxSaida: perfil.saida, pensar },
       { timeoutMs: 25_000, pularPrincipal: principalFora },
     )
     if (g2.ok && g2.chamadas.length) g = { ...g2, tokens: g.tokens + g2.tokens, custo: g.custo + g2.custo, uso: somarUso(g.uso, g2.uso) }
@@ -1384,7 +1406,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   if (g.ok && g.chamadas[0]?.nome === 'registrar_alimentos' && (pedeIdeia(mensagem) || !lerItens(g.chamadas[0].args.itens).length)) {
     const g3 = g.texto.trim()
       ? null
-      : await chamarIA({ sistema, mensagens: conversa, maxSaida: perfil.saida, pensar }, { timeoutMs: 20_000, pularPrincipal: principalFora })
+      : await chamarIA({ fixo, sistema, mensagens: conversa, maxSaida: perfil.saida, pensar }, { timeoutMs: 20_000, pularPrincipal: principalFora })
     g = g3?.ok
       ? { ...g3, tokens: g.tokens + g3.tokens, custo: g.custo + g3.custo, uso: somarUso(g.uso, g3.uso) }
       : { ...g, chamadas: [] }
@@ -1422,6 +1444,13 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     resposta = feito.resposta
     acao = feito.acao
     status = feito.status
+    // Aceitou uma receita da Cozinha que o Life sugeriu ("pode colocar no meu
+    // lanche"): ela não está na base de alimentos, mas o cartão dela tem
+    // Registrar. Em vez de "não achei", mostra o cartão de novo (08/11).
+    if (receitaSugerida && /_(nada|vazio)$/.test(status)) {
+      resposta = `${TXT_RECEITA_COZINHA[loc.idioma]}\n[[${receitaSugerida}]]`
+      status = 'receita_cozinha'
+    }
   } else if (!resposta) {
     resposta = TXT[loc.idioma].naoEntendi
     status = 'ferramenta_desconhecida'
@@ -3285,13 +3314,14 @@ async function handleCheckin(sb: Sb, userId: string, corpo: Record<string, unkno
       const memorias = consentimento === true
         ? await memoriasParaContexto(sb, userId, [c.palavra, ...c.etiquetas, c.nota ?? ''].join(' '), hoje, 6)
         : []
-      const sistema = `${montarPromptLife(assuntosCheckin)}${blocoCultura(loc)}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
+      const fixo = montarPromptLife(assuntosCheckin)
+      const sistema = `${blocoCultura(loc).replace(/^\n+/, '')}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}` +
         blocoMemoria(memorias, consentimento) + REGRAS_CHECKIN +
         (sensivel ? `\n\nATENÇÃO: a nota tem sinal de sofrimento. Acolha com calor e calma, sem alarmar e sem se afastar; se houver desespero, lembre com carinho da linha de apoio: ${linhaApoio(loc)}` : '')
       // Normal é ~1,5 s; quando a IA travava, a pessoa ficava 15 s olhando
       // "salvando" (logs de 22 e 26/10). Passou de ~6 s, vai a resposta pronta.
       const g = await chamarIA(
-        { sistema, mensagens: [{ papel: 'usuario', texto: promptCheckin(c) }], maxSaida: 160 },
+        { fixo, sistema, mensagens: [{ papel: 'usuario', texto: promptCheckin(c) }], maxSaida: 160 },
         { timeoutMs: 6_000 },
       )
       let txt = g.ok ? extrairMarcasMemoria(g.texto.trim()).texto.replace(MARCA_FORA, '').trim() : ''

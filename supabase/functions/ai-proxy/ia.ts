@@ -37,6 +37,9 @@ export interface MensagemIA {
 
 export interface PedidoIA {
   sistema?: string
+  /** Começo fixo do prompt (igual pra todo mundo). Na OpenAI vai com ponto de
+   * corte do cache (08/11: sem isso o contexto variável no fim zerava o cache). */
+  fixo?: string
   /** Começa pela pessoa; falas seguidas do mesmo lado são juntadas. */
   mensagens: MensagemIA[]
   /** Foto (base64 sem prefixo) — vai junto da última mensagem da pessoa. */

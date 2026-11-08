@@ -33,10 +33,18 @@ export function corpoOpenAI(p: PedidoIA, modelo: string, stream: boolean): Recor
     return { role: 'user', content: m.texto }
   })
   const sistema = p.sistema
+  // Com começo fixo: vai como mensagem de desenvolvedor com ponto de corte do
+  // cache (instructions não aceita) e o resto do prompt logo depois.
+  if (p.fixo) {
+    input.unshift(
+      { role: 'developer', content: [{ type: 'input_text', text: p.fixo, prompt_cache_breakpoint: { mode: 'explicit' } }] } as never,
+      ...(sistema ? [{ role: 'developer', content: sistema } as never] : []),
+    )
+  }
   const ferramentas = p.ferramentas?.length ? p.ferramentas : null
   return {
     model: modelo,
-    ...(sistema ? { instructions: sistema } : {}),
+    ...(sistema && !p.fixo ? { instructions: sistema } : {}),
     input,
     store: false,
     stream,

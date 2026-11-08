@@ -194,3 +194,11 @@ Deno.test('custo de modelo sem preço é zero; pausa expira', () => {
   ok(!pausado(new Date(Date.now() - 1).toISOString()))
   ok(!pausado(null))
 })
+
+Deno.test('OpenAI: começo fixo vai com ponto de corte do cache, sem instructions', () => {
+  const c = corpoOpenAI({ fixo: 'REGRAS', sistema: 'CONTEXTO', mensagens: [{ papel: 'usuario', texto: 'oi' }], maxSaida: 100 }, 'gpt-6-luna', false) as { instructions?: string; input: { role: string; content: unknown }[] }
+  igual(c.instructions, undefined)
+  igual(c.input[0], { role: 'developer', content: [{ type: 'input_text', text: 'REGRAS', prompt_cache_breakpoint: { mode: 'explicit' } }] })
+  igual(c.input[1], { role: 'developer', content: 'CONTEXTO' })
+  igual(c.input[2], { role: 'user', content: 'oi' })
+})
