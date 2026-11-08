@@ -4556,3 +4556,17 @@ prompt REAL do Life e histórico (roteiro de 29) e fotos reais no scanner;
 deploy com autorização (Secrets OPENAI_API_KEY/ANTHROPIC_API_KEY → migração
 grátis 5 → ai-proxy → smoke-life); trocar a chave de teste por uma com
 limite de gasto antes de produção.
+
+### 2026-11-08 (3) — Estresse do Life completo: pronto, esperando o dono
+
+- `scripts/estresse-life.mjs` (novo): 18 dos 29 testes do guia que cabem
+  numa sessão (memória 1→5, correção, estimativa, "seja direto", desabafo,
+  cartões de comida e treino, doce, evento, dor, 10 mensagens de comida,
+  crise), juiz automático (2ª chamada ao Luna com o "Falhou se"), tempo da
+  primeira palavra e total, e uma rajada até a cota acabar + desabafo depois
+  (teste 11). Relatório em `estresse-life-*.json` (no .gitignore).
+- Rodar no PC foi bloqueado pelo auto mode (ler a chave de serviço do
+  Supabase = "Credential Materialization"). Dono escolheu **esperar**.
+- Quando for rodar: publicar a v4.7 como função separada `ai-proxy-teste`
+  (app não chama) + Secret `OPENAI_API_KEY`; dono cria uma conta zerada no
+  app (fica em teste de 7 dias), liga a memória e passa e-mail/senha.
