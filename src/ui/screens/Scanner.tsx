@@ -26,7 +26,7 @@ import { CadastroRotulo } from '@ui/screens/scanner/CadastroRotulo'
 import { limitarGramas } from '@domain/rules/limites'
 
 /**
- * Scanner — foto do prato -> Gemini estima -> a pessoa revisa -> vira
+ * Scanner — foto do prato -> IA estima -> a pessoa revisa -> vira
  * alimento da refeição escolhida na Dieta (mesma lista, dá pra excluir e
  * copiar depois). Nada entra no diário sem passar pela revisão.
  *

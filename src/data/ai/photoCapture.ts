@@ -43,7 +43,7 @@ export async function capturarFoto(origem: OrigemFoto): Promise<FotoCapturada | 
       resultType: CameraResultType.Base64,
       source: origem === 'camera' ? CameraSource.Camera : CameraSource.Photos,
       // Foto de comida não precisa ser gigante: menos upload, menos custo,
-      // resposta mais rápida do Gemini.
+      // resposta mais rápida da IA.
       width: 1280,
       correctOrientation: true,
     })

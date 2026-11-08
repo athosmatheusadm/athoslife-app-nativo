@@ -4471,3 +4471,54 @@ privacidade tem que citar OpenAI e Anthropic.
 4. Política de privacidade (OpenAI + Anthropic) antes de publicar.
 5. Continuam: secrets no GitHub, merge do PR #3, revogar token, psicólogo
    e advogado. v45 do Gemini não será publicada como está.
+
+## 2026-11-08 — Gemini sai de vez: tudo no gpt-6-luna, Haiku 5.5 de reserva (branch `chat-luna`)
+
+Dono 08/11: o Luna lê imagem, então o scanner vai junto e o Gemini sai de vez
+(chat, scanner novo e antigo, estimar, receita, check-in, memória, resumos).
+**Nada publicado. Ainda não testado contra a API de verdade** (sem chave).
+
+**O que mudou (ai-proxy v4.7, só na branch):**
+- `ia.ts` (novo): pedido em formato neutro (`chamarIA`) → principal
+  `gpt-6-luna` com ~60% do tempo; falhou sem ser recusa → `claude-haiku-5-5`
+  com o resto (mín. 4 s). Troca sem republicar: Secrets `IA_MODELO` e
+  `IA_MODELO_RESERVA`. Disjuntor da v45 mantido (pausa o principal 10 min em
+  `life_config.modelo_chat_pausado_ate`). Preços: entrada 0,10 · cache 0,01 ·
+  saída 0,50 por 1M nos dois (gravação de cache da OpenAI, 0,125, não entra
+  na estimativa).
+- `openai.ts` (novo): API Responses via fetch, `store: false`, sem
+  temperature, `reasoning.effort` none (grátis) / low (pago), JSON por
+  `text.format`, foto como `input_image`, streaming pelos eventos
+  `response.output_text.delta` / `response.completed`.
+- `anthropic.ts` (novo): SDK oficial `npm:@anthropic-ai/sdk@1.1.0`,
+  `maxRetries: 0`, raciocínio desligado no grátis / adaptativo no pago,
+  effort low, sem temperature.
+- `FERRAMENTAS_LIFE` em JSON Schema comum (era formato Gemini).
+- `stream.ts`: `juntarStream` (Gemini) → `lerSSE` genérico.
+- Modo economia do pago (>40 msgs/dia ou >US$1/mês) agora só desliga o
+  raciocínio (mesmo modelo). Secret renomeado: `FLASH_MSGS_DIA` → `PENSAR_MSGS_DIA`.
+- `IA_TETO_TOKENS_DIA` padrão 2M → 10M (chat médio = 5.910 tokens de entrada
+  nos logs de 30 dias; 2M daria só ~330 mensagens/dia pro app todo).
+  Se o Secret estiver definido no painel, ele vale no lugar do padrão.
+- Scanner: dependência `gemini` → `ia`; log do scan grava o modelo que respondeu.
+- `db/athoslife_chat_gratis_5_migration.sql` (novo, NÃO aplicada): grátis 10 → 5.
+- Política de privacidade (pt/en/es/fr/hi): Google/Gemini → OpenAI e
+  Anthropic; `VERSAO_DOCUMENTOS` v2.4-2026-11-08 (só registra no aceite).
+- Removidos `gemini.ts` e `gemini.test.ts`; `ia.test.ts` novo (13 casos).
+- `scripts/ia-ao-vivo.ts` (novo): teste de verdade com dados fictícios.
+
+**Validado:** 131 testes Deno ok, `deno check` ok, `npm run typecheck` e
+`npm run build` ok.
+
+**Pendências (ler isto primeiro):**
+1. Chaves: o dono disse que a do Luna estava "no outro chat", mas não está em
+   nenhuma conversa salva neste PC, nem no ambiente, nem nos Secrets. Falta
+   receber a da OpenAI (conta com crédito; nível grátis não funciona) e a da
+   Anthropic.
+2. Com as chaves: `scripts/ia-ao-vivo.ts`, depois o roteiro de 29 com fotos
+   reais de prato no scanner (qualidade + custo por foto).
+3. Deploy (só com autorização): Secrets `OPENAI_API_KEY` e `ANTHROPIC_API_KEY`
+   → aplicar a migração do grátis 5 → deploy da ai-proxy →
+   `node scripts/smoke-life.mjs`. Depois apagar o Secret `GEMINI_API_KEY`.
+4. Continuam: push (sem token do GitHub nesta sessão), PR #3, secrets do
+   GitHub, psicólogo (Fase 5) e advogado (agora com OpenAI/Anthropic na política).

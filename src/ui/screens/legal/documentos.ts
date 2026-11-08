@@ -9,7 +9,7 @@ import type { Idioma } from '@domain/rules/localidade'
  * perfil no aceite (profiles.consentimento_versao) e permite pedir novo
  * aceite depois.
  */
-export const VERSAO_DOCUMENTOS = 'v2.3-2026-10-21'
+export const VERSAO_DOCUMENTOS = 'v2.4-2026-11-08'
 
 export interface Secao {
   readonly titulo: string
@@ -116,7 +116,7 @@ const termosPt: Documento = {
 
 const politicaPt: Documento = {
   titulo: 'Política de privacidade',
-  atualizado: 'Última atualização: 21 de outubro de 2026',
+  atualizado: 'Última atualização: 8 de novembro de 2026',
   secoes: [
     {
       titulo: '1. Controlador e contato',
@@ -147,14 +147,14 @@ const politicaPt: Documento = {
     {
       titulo: '4. Inteligência artificial',
       paragrafos: [
-        'Quando você conversa com o Life, analisa uma foto de prato ou pede uma receita, o texto ou a imagem e um resumo do seu dia (por exemplo, água e refeições registradas) são enviados à API Gemini, do Google, para gerar a resposta. Pela configuração da API paga, o Google não usa esses dados para treinar modelos.',
+        'Quando você conversa com o Life, analisa uma foto de prato ou pede uma receita, o texto ou a imagem e um resumo do seu dia (por exemplo, água e refeições registradas) são enviados à API da OpenAI (e, se ela estiver fora do ar, à da Anthropic) para gerar a resposta. Pelas condições dessas APIs, nenhuma das duas usa esses dados para treinar modelos.',
         'Mensagens com sinais de risco à vida recebem uma resposta fixa com contatos de ajuda. Nesses casos guardamos só o termo que disparou o alerta, nunca o texto completo, para fins de segurança.',
       ],
     },
     {
       titulo: '5. Com quem compartilhamos',
       paragrafos: [
-        'Supabase (banco de dados, autenticação e armazenamento), Google (IA Gemini e, quando houver assinatura, Google Play para pagamentos) e Open Food Facts (recebe apenas o número do código de barras lido, sem nenhum dado seu).',
+        'Supabase (banco de dados, autenticação e armazenamento), OpenAI e Anthropic (IA do Life), Google (Google Play, quando houver assinatura) e Open Food Facts (recebe apenas o número do código de barras lido, sem nenhum dado seu).',
         'Esses fornecedores tratam os dados em nosso nome e seguindo nossas instruções. Também podemos compartilhar dados quando a lei ou uma autoridade exigir.',
       ],
     },
@@ -289,7 +289,7 @@ const termsEn: Documento = {
 
 const privacyEn: Documento = {
   titulo: 'Privacy Policy',
-  atualizado: 'Last updated: October 21, 2026',
+  atualizado: 'Last updated: November 8, 2026',
   secoes: [
     {
       titulo: '1. Controller and contact',
@@ -318,14 +318,14 @@ const privacyEn: Documento = {
     {
       titulo: '4. Artificial intelligence',
       paragrafos: [
-        "When you chat with Life, analyze a meal photo or ask for a recipe, the text or image and a summary of your day (for example logged water and meals) are sent to Google's Gemini API to generate the answer. Under the paid API terms, Google does not use this data to train its models.",
+        "When you chat with Life, analyze a meal photo or ask for a recipe, the text or image and a summary of your day (for example logged water and meals) are sent to the OpenAI API (or, if it is down, the Anthropic API) to generate the answer. Under the terms of these APIs, neither company uses this data to train its models.",
         'Messages showing signs of risk to life get a fixed reply with help contacts. In those cases we store only the term that triggered the alert, never the full message, for safety purposes.',
       ],
     },
     {
       titulo: '5. Who we share it with',
       paragrafos: [
-        'Supabase (database, authentication and storage), Google (Gemini AI and, for subscriptions, Google Play billing) and Open Food Facts (receives only the scanned barcode number, none of your data).',
+        'Supabase (database, authentication and storage), OpenAI and Anthropic (Life’s AI), Google (Google Play billing, for subscriptions) and Open Food Facts (receives only the scanned barcode number, none of your data).',
         'These providers process data on our behalf and under our instructions. We may also share data when required by law or by an authority.',
       ],
     },
@@ -460,7 +460,7 @@ const terminosEs: Documento = {
 
 const politicaEs: Documento = {
   titulo: 'Política de privacidad',
-  atualizado: 'Última actualización: 21 de octubre de 2026',
+  atualizado: 'Última actualización: 8 de noviembre de 2026',
   secoes: [
     {
       titulo: '1. Responsable y contacto',
@@ -491,14 +491,14 @@ const politicaEs: Documento = {
     {
       titulo: '4. Inteligencia artificial',
       paragrafos: [
-        'Cuando conversas con Life, analizas una foto de un plato o pides una receta, el texto o la imagen y un resumen de tu día (por ejemplo, agua y comidas registradas) se envían a la API Gemini de Google para generar la respuesta. Según la configuración de la API de pago, Google no usa estos datos para entrenar modelos.',
+        'Cuando conversas con Life, analizas una foto de un plato o pides una receta, el texto o la imagen y un resumen de tu día (por ejemplo, agua y comidas registradas) se envían a la API de OpenAI (o, si no está disponible, a la de Anthropic) para generar la respuesta. Según las condiciones de esas API, ninguna de las dos usa estos datos para entrenar modelos.',
         'Los mensajes con señales de riesgo para la vida reciben una respuesta fija con contactos de ayuda. En esos casos guardamos solo el término que activó la alerta, nunca el texto completo, por motivos de seguridad.',
       ],
     },
     {
       titulo: '5. Con quién los compartimos',
       paragrafos: [
-        'Supabase (base de datos, autenticación y almacenamiento), Google (IA Gemini y, cuando haya suscripción, Google Play para los pagos) y Open Food Facts (recibe solo el número del código de barras leído, sin ningún dato tuyo).',
+        'Supabase (base de datos, autenticación y almacenamiento), OpenAI y Anthropic (IA de Life), Google (Google Play para los pagos, cuando haya suscripción) y Open Food Facts (recibe solo el número del código de barras leído, sin ningún dato tuyo).',
         'Estos proveedores tratan los datos en nuestro nombre y siguiendo nuestras instrucciones. También podemos compartir datos cuando la ley o una autoridad lo exija.',
       ],
     },
@@ -636,7 +636,7 @@ const conditionsFr: Documento = {
 
 const confidentialiteFr: Documento = {
   titulo: 'Politique de confidentialité',
-  atualizado: 'Dernière mise à jour : 21 octobre 2026',
+  atualizado: 'Dernière mise à jour : 8 novembre 2026',
   secoes: [
     {
       titulo: '1. Responsable du traitement et contact',
@@ -665,14 +665,14 @@ const confidentialiteFr: Documento = {
     {
       titulo: '4. Intelligence artificielle',
       paragrafos: [
-        'Quand tu discutes avec Life, analyses une photo de repas ou demandes une recette, le texte ou l’image et un résumé de ta journée (par exemple l’eau et les repas enregistrés) sont envoyés à l’API Gemini de Google pour générer la réponse. Selon les conditions de l’API payante, Google n’utilise pas ces données pour entraîner ses modèles.',
+        'Quand tu discutes avec Life, analyses une photo de repas ou demandes une recette, le texte ou l’image et un résumé de ta journée (par exemple l’eau et les repas enregistrés) sont envoyés à l’API d’OpenAI (ou, si elle est indisponible, à celle d’Anthropic) pour générer la réponse. Selon les conditions de ces API, aucune des deux n’utilise ces données pour entraîner ses modèles.',
         'Les messages présentant des signes de risque pour la vie reçoivent une réponse fixe avec des contacts d’aide. Dans ces cas, nous conservons uniquement le terme qui a déclenché l’alerte, jamais le message complet, pour des raisons de sécurité.',
       ],
     },
     {
       titulo: '5. Avec qui nous les partageons',
       paragrafos: [
-        'Supabase (base de données, authentification et stockage), Google (IA Gemini et, pour les abonnements, la facturation Google Play) et Open Food Facts (reçoit uniquement le numéro du code-barres scanné, aucune de tes données).',
+        'Supabase (base de données, authentification et stockage), OpenAI et Anthropic (IA de Life), Google (facturation Google Play, pour les abonnements) et Open Food Facts (reçoit uniquement le numéro du code-barres scanné, aucune de tes données).',
         'Ces prestataires traitent les données pour notre compte et selon nos instructions. Nous pouvons aussi partager des données lorsque la loi ou une autorité l’exige.',
       ],
     },
@@ -807,7 +807,7 @@ const termsHi: Documento = {
 
 const privacyHi: Documento = {
   titulo: 'प्राइवेसी पॉलिसी',
-  atualizado: 'अंतिम अपडेट: 21 अक्टूबर 2026',
+  atualizado: 'अंतिम अपडेट: 8 नवंबर 2026',
   secoes: [
     {
       titulo: '1. डेटा नियंत्रक और संपर्क',
@@ -836,14 +836,14 @@ const privacyHi: Documento = {
     {
       titulo: '4. आर्टिफ़िशियल इंटेलिजेंस',
       paragrafos: [
-        'जब आप Life से चैट करते हैं, खाने की फ़ोटो का विश्लेषण करते हैं या रेसिपी माँगते हैं, तो टेक्स्ट या इमेज और आपके दिन का सारांश (जैसे दर्ज पानी और भोजन) जवाब बनाने के लिए Google की Gemini API को भेजा जाता है। पेड API की शर्तों के तहत Google इस डेटा से अपने मॉडल ट्रेन नहीं करता।',
+        'जब आप Life से चैट करते हैं, खाने की फ़ोटो का विश्लेषण करते हैं या रेसिपी माँगते हैं, तो टेक्स्ट या इमेज और आपके दिन का सारांश (जैसे दर्ज पानी और भोजन) जवाब बनाने के लिए OpenAI की API को (और अगर वह बंद हो, तो Anthropic की API को) भेजा जाता है। इन API की शर्तों के तहत दोनों में से कोई भी कंपनी इस डेटा से अपने मॉडल ट्रेन नहीं करती।',
         'जिन मैसेज में जान के जोखिम के संकेत हों, उन्हें मदद के संपर्कों वाला एक तय जवाब मिलता है। ऐसे मामलों में सुरक्षा के लिए हम सिर्फ़ वह शब्द सेव करते हैं जिससे अलर्ट आया, पूरा मैसेज कभी नहीं।',
       ],
     },
     {
       titulo: '5. हम किसके साथ साझा करते हैं',
       paragrafos: [
-        'Supabase (डेटाबेस, ऑथेंटिकेशन और स्टोरेज), Google (Gemini AI और, सब्सक्रिप्शन के लिए, Google Play बिलिंग) और Open Food Facts (सिर्फ़ स्कैन किए गए बारकोड का नंबर पाता है, आपका कोई डेटा नहीं)।',
+        'Supabase (डेटाबेस, ऑथेंटिकेशन और स्टोरेज), OpenAI और Anthropic (Life की AI), Google (सब्सक्रिप्शन के लिए Google Play बिलिंग) और Open Food Facts (सिर्फ़ स्कैन किए गए बारकोड का नंबर पाता है, आपका कोई डेटा नहीं)।',
         'ये प्रोवाइडर हमारी ओर से और हमारे निर्देशों पर डेटा प्रोसेस करते हैं। क़ानून या किसी प्राधिकरण की माँग पर भी हम डेटा साझा कर सकते हैं।',
       ],
     },

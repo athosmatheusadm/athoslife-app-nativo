@@ -1,68 +1,37 @@
 // ================================================================
 // Streaming do chat (Fase 7, guia item 11).
 //
-// O Gemini manda a resposta em pedaços (SSE). O ai-proxy junta tudo no mesmo
-// formato do generateContent (o resto do código não muda) e, enquanto junta,
-// mostra um RASCUNHO na bolha do app. A resposta final continua sendo a do
-// servidor (filtros, cartões, ações) e substitui o rascunho no fim.
+// O modelo manda a resposta em pedaços (SSE). Enquanto chega, o app mostra
+// um RASCUNHO na bolha. A resposta final continua sendo a do servidor
+// (filtros, cartões, ações) e substitui o rascunho no fim.
 // ================================================================
 
-interface Parte { text?: string; functionCall?: unknown; thought?: boolean }
-interface Pedaco {
-  candidates?: { content?: { parts?: Parte[] }; finishReason?: string }[]
-  usageMetadata?: Record<string, unknown>
-  promptFeedback?: Record<string, unknown>
-}
-
-/** Junta os eventos `data: {...}` do streamGenerateContent num corpo só. */
-export async function juntarStream(
+/** Lê um corpo SSE e entrega cada evento `data: {...}` já como objeto. */
+export async function lerSSE(
   corpo: ReadableStream<Uint8Array>,
-  aoEscrever?: (acumulado: string) => void,
-): Promise<Pedaco> {
+  aoEvento: (ev: Record<string, unknown>) => void,
+): Promise<void> {
   const leitor = corpo.pipeThrough(new TextDecoderStream()).getReader()
   let buffer = ''
-  let texto = ''
-  const chamadas: Parte[] = []
-  let finishReason: string | undefined
-  let usageMetadata: Record<string, unknown> | undefined
-  let promptFeedback: Record<string, unknown> | undefined
-
-  const evento = (linha: string) => {
-    if (!linha.startsWith('data:')) return
-    const bruto = linha.slice(5).trim()
+  const linha = (l: string) => {
+    if (!l.startsWith('data:')) return
+    const bruto = l.slice(5).trim()
     if (!bruto || bruto === '[DONE]') return
-    let p: Pedaco
-    try { p = JSON.parse(bruto) } catch { return }
-    if (p.usageMetadata) usageMetadata = p.usageMetadata
-    if (p.promptFeedback) promptFeedback = p.promptFeedback
-    const c = p.candidates?.[0]
-    if (c?.finishReason) finishReason = c.finishReason
-    let mudou = false
-    for (const parte of c?.content?.parts ?? []) {
-      if (parte.thought) continue
-      if (typeof parte.text === 'string' && parte.text) { texto += parte.text; mudou = true }
-      if (parte.functionCall) chamadas.push({ functionCall: parte.functionCall })
-    }
-    if (mudou && aoEscrever) aoEscrever(texto)
+    let ev: unknown
+    try { ev = JSON.parse(bruto) } catch { return }
+    if (ev && typeof ev === 'object') aoEvento(ev as Record<string, unknown>)
   }
-
   for (;;) {
     const { value, done } = await leitor.read()
     if (value) buffer += value
     let i: number
     while ((i = buffer.indexOf('\n')) >= 0) {
-      evento(buffer.slice(0, i).replace(/\r$/, ''))
+      linha(buffer.slice(0, i).replace(/\r$/, ''))
       buffer = buffer.slice(i + 1)
     }
     if (done) break
   }
-  if (buffer) evento(buffer)
-
-  return {
-    candidates: [{ content: { parts: [...(texto ? [{ text: texto }] : []), ...chamadas] }, finishReason }],
-    usageMetadata,
-    promptFeedback,
-  }
+  if (buffer) linha(buffer)
 }
 
 /**

@@ -1,4 +1,4 @@
-// ATHOSlife — scanner: casa o que o Gemini viu com o catálogo (seção 7).
+// ATHOSlife — scanner: casa o que a IA viu com o catálogo (seção 7).
 //
 // Ordem: termo canônico exato -> nome/alias exato -> busca aproximada, tudo
 // com preparo compatível. Empate ou dúvida vira escolha (até 3 candidatos);

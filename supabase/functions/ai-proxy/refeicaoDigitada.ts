@@ -1,5 +1,5 @@
 // ATHOSlife — refeição digitada no chat (v4.5): "almocei arroz, feijão e um
-// bife" vira registro. O Gemini só separa os alimentos e as quantidades (pela
+// bife" vira registro. A IA só separa os alimentos e as quantidades (pela
 // ferramenta registrar_alimentos); quem acha cada um na base, calcula gramas
 // e macros é este arquivo, sem IA. Nada é gravado aqui: o app mostra um
 // cartão pra pessoa conferir e só grava quando ela toca em Registrar.

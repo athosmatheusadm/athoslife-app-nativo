@@ -1,6 +1,6 @@
 // ATHOSlife — scanner v1.1: contratos (seção 6 da especificação).
 //
-// O Gemini só RECONHECE (o que é, preparo, quanto). Nutrientes vêm do
+// A IA só RECONHECE (o que é, preparo, quanto). Nutrientes vêm do
 // catálogo (`alimentos`, ligado à TACO), calculados aqui no servidor. O app
 // nunca manda nutrientes nem decide cota.
 
@@ -14,7 +14,7 @@ export type Ancora = 'plate' | 'cutlery' | 'glass' | 'hand' | 'package' | 'other
 export type SinalGordura = 'none' | 'some' | 'high' | 'unknown'
 export type Unidade = 'g' | 'ml' | 'unit'
 
-/** Item como o Gemini descreve (nomes de campo do contrato da spec). */
+/** Item como a IA descreve (nomes de campo do contrato da spec). */
 export interface ItemVisual {
   localId: string
   name: string

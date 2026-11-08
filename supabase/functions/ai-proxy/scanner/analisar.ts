@@ -5,7 +5,7 @@
 //   { tipo:'scan', op:'confirmar', scan_id, revisao, commit_key, data, alvo:{tipo, extra_id?},
 //     itens:[{item_id, alimento_id, gramas, variante, incluir}] }
 //
-// Caminho normal: 1 chamada ao Gemini. No máximo 2 (só se o JSON vier
+// Caminho normal: 1 chamada à IA. No máximo 2 (só se o JSON vier
 // quebrado e ainda houver tempo). Mesmo request_id + mesma foto devolve o
 // resultado guardado, sem gastar cota de novo. Falha devolve a cota uma vez.
 
@@ -18,7 +18,7 @@ import { PROMPT_VERSAO, SCHEMA_VERSAO } from './tipos.ts'
 import type { ItemScan, ResultadoScan, Variante } from './tipos.ts'
 import { validarVisao } from './validar.ts'
 
-export interface RespostaGemini {
+export interface RespostaIA {
   ok: boolean
   texto: string
   tokens: number
@@ -33,11 +33,11 @@ export interface DepsScan {
   /** Quantos nomes do catálogo vão no prompt (SCANNER_VOCAB_MAX). */
   vocabularioMax: number
   /** Uma chamada de visão (foto + prompt). */
-  gemini(imagem: string, mime: string, prompt: string, timeoutMs: number): Promise<RespostaGemini>
+  ia(imagem: string, mime: string, prompt: string, timeoutMs: number): Promise<RespostaIA>
   extrairJSON(txt: string): unknown
   consumirCota(): Promise<{ ok: true } | { ok: false; resposta: Response }>
   devolverCota(): Promise<void>
-  auditar(status: string, g?: RespostaGemini): Promise<void>
+  auditar(status: string, g?: RespostaIA): Promise<void>
   json(data: unknown, status?: number): Response
   agora(): number
 }
@@ -131,7 +131,7 @@ async function analisar(d: DepsScan, corpo: Record<string, unknown>): Promise<Re
 
 async function processar(d: DepsScan, job: Job, tentativa: number, imagem: string, mime: string): Promise<Response> {
   const t0 = d.agora()
-  const falhar = async (erro: string, resposta: Response, g?: RespostaGemini) => {
+  const falhar = async (erro: string, resposta: Response, g?: RespostaIA) => {
     if (await d.repo.falhar(job.id, tentativa, erro)) await d.devolverCota()
     await d.auditar(erro, g)
     return resposta
@@ -147,11 +147,11 @@ async function processar(d: DepsScan, job: Job, tentativa: number, imagem: strin
   const prompt = promptVisual({ idioma: d.idioma, pais: d.pais, vocabulario: vocabularioCanonico(cat, d.vocabularioMax) })
   const tCat = d.agora()
 
-  let g = await d.gemini(imagem, mime, prompt, TIMEOUT_PRINCIPAL)
+  let g = await d.ia(imagem, mime, prompt, TIMEOUT_PRINCIPAL)
   let visao = g.ok ? validarVisao(d.extrairJSON(g.texto)) : 'INVALID_MODEL_OUTPUT' as const
   let chamadas = 1
   if (g.ok && visao === 'INVALID_MODEL_OUTPUT' && d.agora() - t0 + TIMEOUT_RECUPERACAO < ORCAMENTO_MS) {
-    const g2 = await d.gemini(imagem, mime, `${prompt}\n\n${PROMPT_RECUPERACAO}`, TIMEOUT_RECUPERACAO)
+    const g2 = await d.ia(imagem, mime, `${prompt}\n\n${PROMPT_RECUPERACAO}`, TIMEOUT_RECUPERACAO)
     chamadas = 2
     g = { ...g2, tokens: g.tokens + g2.tokens, custo: g.custo + g2.custo }
     visao = g2.ok ? validarVisao(d.extrairJSON(g2.texto)) : 'INVALID_MODEL_OUTPUT'

@@ -1,9 +1,9 @@
 // Fluxo do scanner com banco em memória: idempotência, cota devolvida uma
 // vez só, lease vencido, tentativa atrasada descartada e confirmar sem
-// duplicar (seções 9 e 9.1). O Gemini aqui é falso — isto testa integração,
+// duplicar (seções 9 e 9.1). A IA aqui é falsa — isto testa integração,
 // não reconhecimento (seção 14).
 import { assert, assertEquals } from 'jsr:@std/assert@1'
-import { handleScan, type DepsScan, type RespostaGemini } from './analisar.ts'
+import { handleScan, type DepsScan, type RespostaIA } from './analisar.ts'
 import { CAT, IDS } from './fixtures.ts'
 import type { ArgsConfirmar, Job, RepoScan } from './repositorio.ts'
 
@@ -68,13 +68,13 @@ function repoMemoria() {
 
 function montar(respostas: string[] = [RESPOSTA_OK]) {
   const m = repoMemoria()
-  const cont = { gemini: 0, cota: 0, devolvida: 0 }
+  const cont = { ia: 0, cota: 0, devolvida: 0 }
   let agora = 1_000_000
   const deps: DepsScan = {
     repo: m.repo, idioma: 'pt-BR', pais: 'BR', modelo: 'teste', vocabularioMax: 600,
-    gemini: async (): Promise<RespostaGemini> => {
-      const texto = respostas[Math.min(cont.gemini, respostas.length - 1)]
-      cont.gemini++
+    ia: async (): Promise<RespostaIA> => {
+      const texto = respostas[Math.min(cont.ia, respostas.length - 1)]
+      cont.ia++
       return { ok: texto !== 'FALHA', texto, tokens: 10, custo: 0 }
     },
     extrairJSON: (t) => { try { return JSON.parse(t) } catch { return null } },
@@ -99,7 +99,7 @@ Deno.test('analisa uma vez; repetir o mesmo pedido não gasta cota nem IA', asyn
   assertEquals(a.body.itens[0].base.fonte, 'taco')
   const b = await corpo(await analisar(t.deps))
   assertEquals(b.body.scan_id, a.body.scan_id)
-  assertEquals(t.cont, { gemini: 1, cota: 1, devolvida: 0 })
+  assertEquals(t.cont, { ia: 1, cota: 1, devolvida: 0 })
 })
 
 Deno.test('mesmo request_id com outra foto é conflito', async () => {
@@ -111,12 +111,12 @@ Deno.test('mesmo request_id com outra foto é conflito', async () => {
 Deno.test('JSON quebrado: 1 recuperação; falhou de novo, devolve a cota uma vez só', async () => {
   const t = montar(['não é json', 'ainda não'])
   assertEquals((await analisar(t.deps)).status, 502)
-  assertEquals(t.cont.gemini, 2)
+  assertEquals(t.cont.ia, 2)
   assertEquals(t.cont.devolvida, 1)
   const de_novo = await corpo(await analisar(t.deps))
   assertEquals(de_novo.status, 409)
   assertEquals(de_novo.body.error, 'request_failed')
-  assertEquals(t.cont, { gemini: 2, cota: 1, devolvida: 1 })
+  assertEquals(t.cont, { ia: 2, cota: 1, devolvida: 1 })
 })
 
 Deno.test('recuperação que funciona publica normal', async () => {
@@ -136,7 +136,7 @@ Deno.test('sem comida: 422 e cota de volta', async () => {
 Deno.test('provedor fora: 502 e cota de volta', async () => {
   const t = montar(['FALHA'])
   assertEquals((await analisar(t.deps)).status, 502)
-  assertEquals(t.cont, { gemini: 1, cota: 1, devolvida: 1 })
+  assertEquals(t.cont, { ia: 1, cota: 1, devolvida: 1 })
 })
 
 Deno.test('em andamento devolve 202; lease vencido é assumido sem cobrar de novo', async () => {

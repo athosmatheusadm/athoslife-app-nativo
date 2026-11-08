@@ -1,6 +1,6 @@
 // Testes do streaming do chat (Fase 7). Rodar: deno test -A supabase/functions/ai-proxy/stream.test.ts
 import { deepStrictEqual as igual, ok } from 'node:assert'
-import { juntarStream, novoRascunho } from './stream.ts'
+import { lerSSE, novoRascunho } from './stream.ts'
 
 function sse(eventos: unknown[], cortarEm = 7): ReadableStream<Uint8Array> {
   const txt = eventos.map((e) => `data: ${JSON.stringify(e)}\r\n\r\n`).join('')
@@ -16,26 +16,22 @@ function sse(eventos: unknown[], cortarEm = 7): ReadableStream<Uint8Array> {
   })
 }
 
-Deno.test('stream: junta os pedaços no formato do generateContent', async () => {
-  const vistos: string[] = []
-  const r = await juntarStream(sse([
-    { candidates: [{ content: { parts: [{ text: 'Oi, ' }] } }] },
-    { candidates: [{ content: { parts: [{ text: 'pensei', thought: true }] } }] },
-    { candidates: [{ content: { parts: [{ text: 'tudo bem?' }] }, finishReason: 'STOP' }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 4 } },
-  ]), (acc) => vistos.push(acc))
-  igual(r.candidates?.[0].content?.parts, [{ text: 'Oi, tudo bem?' }])
-  igual(r.candidates?.[0].finishReason, 'STOP')
-  igual(r.usageMetadata, { promptTokenCount: 10, candidatesTokenCount: 4 })
-  igual(vistos, ['Oi, ', 'Oi, tudo bem?'])
+Deno.test('stream: lerSSE entrega cada evento mesmo com o JSON quebrado no meio', async () => {
+  const vistos: Record<string, unknown>[] = []
+  await lerSSE(sse([
+    { type: 'response.output_text.delta', delta: 'Oi, ' },
+    { type: 'response.output_text.delta', delta: 'tudo bem?' },
+    { type: 'response.completed', response: { status: 'completed' } },
+  ]), (ev) => vistos.push(ev))
+  igual(vistos.map((v) => v.type), ['response.output_text.delta', 'response.output_text.delta', 'response.completed'])
+  igual(vistos[1].delta, 'tudo bem?')
 })
 
-Deno.test('stream: chamada de ferramenta e bloqueio passam inteiros', async () => {
-  const r = await juntarStream(sse([
-    { candidates: [{ content: { parts: [{ functionCall: { name: 'registrar_agua', args: { ml: 500 } } }] } }] },
-    { promptFeedback: { blockReason: 'SAFETY' } },
-  ], 3))
-  igual(r.candidates?.[0].content?.parts, [{ functionCall: { name: 'registrar_agua', args: { ml: 500 } } }])
-  igual(r.promptFeedback, { blockReason: 'SAFETY' })
+Deno.test('stream: lerSSE ignora [DONE], linha vazia e lixo', async () => {
+  const txt = 'event: x\ndata: [DONE]\n\ndata: {quebrado\ndata: {"type":"a"}\n'
+  const vistos: Record<string, unknown>[] = []
+  await lerSSE(new Response(txt).body!, (ev) => vistos.push(ev))
+  igual(vistos, [{ type: 'a' }])
 })
 
 Deno.test('rascunho: esconde marcas, [fora] e "[" solto; só cresce', () => {

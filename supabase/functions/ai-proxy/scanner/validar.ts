@@ -1,4 +1,4 @@
-// ATHOSlife — scanner: valida a resposta do Gemini (schema v2).
+// ATHOSlife — scanner: valida a resposta da IA (schema v2).
 //
 // Saída estruturada organiza o formato, não garante o conteúdo. Aqui:
 // campo desconhecido vira o valor neutro, número inválido vira null (nunca

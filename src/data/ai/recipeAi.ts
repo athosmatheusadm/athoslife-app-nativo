@@ -5,7 +5,7 @@ import type { ContextoReceita, ReceitaGerada } from '@domain/entities/receita'
  * Cliente de IA para o Life montar uma receita a partir da dieta do usuário.
  * Handler 'recipe' do `ai-proxy` — só plano pago (cota: 10/dia). Erros
  * chegam como AiProxyError (premium_required, limit_reached, ...).
- * A chave do Gemini nunca vem ao cliente.
+ * A chave da IA nunca vem ao cliente.
  */
 
 interface ReceitaGeradaCrua {

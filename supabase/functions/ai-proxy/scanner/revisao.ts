@@ -1,4 +1,4 @@
-// ATHOSlife — scanner: do que o Gemini viu ao resultado editável (seções
+// ATHOSlife — scanner: do que a IA viu ao resultado editável (seções
 // 5.1, 7.1, 7.2, 8 e 8.1 da especificação). Tudo determinístico e testável:
 // nenhuma IA aqui.
 

@@ -9,7 +9,7 @@ import type {
 /**
  * RECONCILIAÇÃO — o coração do "scanner".
  *
- * Problema que resolve: o Gemini estima os macros de cada item. A tabela
+ * Problema que resolve: a IA estima os macros de cada item. A tabela
  * `alimentos` tem valores canônicos e confiáveis. Se "frango na foto" e
  * "frango na mão" derem números diferentes, o app se contradiz.
  *
@@ -120,7 +120,7 @@ export function reconciliarItem(
 }
 
 /**
- * Transforma a resposta crua do Gemini num rascunho editável e reconciliado.
+ * Transforma a resposta crua da IA num rascunho editável e reconciliado.
  * É este rascunho que a tela de revisão recebe. Todo item entra com
  * `incluir: true` — o usuário desmarca o que a IA errou.
  */

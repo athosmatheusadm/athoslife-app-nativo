@@ -7,7 +7,7 @@ import { dataLocalISO } from '@domain/rules/datas'
 import { somarMacros, type ItemRascunho, type Macros, type RefeicaoRascunho } from '@domain/entities/food'
 import type { ProdutoRotulo } from '@data/repositories/produtoCodigoBarrasRepository'
 
-// Scanner v1.1 (Gemini só reconhece, nutriente vem da base/TACO). Enquanto o
+// Scanner v1.1 (a IA só reconhece, nutriente vem da base/TACO). Enquanto o
 // servidor responder `scanner_v2_off`, a sessão fica no scanner antigo.
 let scannerV2 = true
 
@@ -56,7 +56,7 @@ function deRespostaScan(r: RespostaScan): RefeicaoRascunho {
 /**
  * Serviço de captura de comida — a fachada do "scanner".
  *
- * A UI conversa só com este serviço. Ela não sabe que existe Gemini,
+ * A UI conversa só com este serviço. Ela não sabe qual IA existe,
  * tabela `alimentos` ou onde os itens moram.
  *
  * Fluxo em duas etapas, de propósito:
@@ -68,7 +68,7 @@ function deRespostaScan(r: RespostaScan): RefeicaoRascunho {
  */
 export const foodCaptureService = {
   /**
-   * Etapa 1: manda a foto pro Gemini, reconcilia com a base e devolve
+   * Etapa 1: manda a foto pra IA, reconcilia com a base e devolve
    * um rascunho pronto para a tela de revisão. Não persiste nada.
    */
   async capturar(base64: string, mime?: string): Promise<RefeicaoRascunho> {

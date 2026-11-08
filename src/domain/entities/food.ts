@@ -2,7 +2,7 @@
  * Entidades de captura de comida ("scanner").
  *
  * O que a gente chama de "scanner" é, tecnicamente, uma captura por IA:
- * foto -> Gemini Vision identifica e estima os macros -> usuário revisa -> salva.
+ * foto -> IA de visão identifica e estima os macros -> usuário revisa -> salva.
  * Não é leitor de código de barras (isso não existe no app hoje).
  *
  * TypeScript puro. Sem React, sem Supabase, sem Capacitor.
@@ -43,7 +43,7 @@ export interface AlimentoBase extends Macros {
 }
 
 /**
- * Item cru como o Gemini Vision devolve.
+ * Item cru como a IA de visão devolve.
  * Espelha exatamente o retorno de analyzePhoto (tipo_chamada='vision').
  * São ESTIMATIVAS — nunca tratar como verdade sem revisão.
  */
@@ -52,7 +52,7 @@ export interface ItemVisao extends Macros {
   readonly quantidadeG: number
 }
 
-/** Resposta completa do Gemini Vision. */
+/** Resposta completa da IA de visão. */
 export interface ResultadoVisao {
   readonly descricao: string
   readonly itens: readonly ItemVisao[]

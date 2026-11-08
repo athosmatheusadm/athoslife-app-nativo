@@ -9,10 +9,10 @@ import type { BaseScan, ResultadoVisao, VarianteOleo } from '@domain/entities/fo
 /**
  * Cliente do Edge Function `ai-proxy`.
  *
- * A chave do Gemini NUNCA vem para o cliente — ela vive só no servidor.
+ * A chave da IA NUNCA vem para o cliente — ela vive só no servidor.
  * Aqui a gente só chama o proxy (`supabase/functions/ai-proxy`), que aplica
  * a cota do plano (consumir_cota_ia), audita custo (ai_audit_logs) e fala
- * com o Gemini. Contrato: JSON plano `{ tipo, ...campos }`.
+ * com a IA. Contrato: JSON plano `{ tipo, ...campos }`.
  */
 
 /** Erros que o proxy pode devolver, tipados para a UI tratar sem adivinhar. */
@@ -161,7 +161,7 @@ function lancarErro(status: number, corpo: unknown): never {
 }
 
 /**
- * Envia uma foto (base64, sem prefixo data:) para o Gemini Vision.
+ * Envia uma foto (base64, sem prefixo data:) para a IA de visão.
  * Devolve os itens já identificados COM macros estimados.
  * Converte snake_case do backend para o domínio na fronteira.
  */
