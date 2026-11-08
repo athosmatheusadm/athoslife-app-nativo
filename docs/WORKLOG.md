@@ -4497,8 +4497,11 @@ Dono 08/11: o Luna lê imagem, então o scanner vai junto e o Gemini sai de vez
 - `stream.ts`: `juntarStream` (Gemini) → `lerSSE` genérico.
 - Modo economia do pago (>40 msgs/dia ou >US$1/mês) agora só desliga o
   raciocínio (mesmo modelo). Secret renomeado: `FLASH_MSGS_DIA` → `PENSAR_MSGS_DIA`.
-- `IA_TETO_TOKENS_DIA` padrão 2M → 10M (chat médio = 5.910 tokens de entrada
-  nos logs de 30 dias; 2M daria só ~330 mensagens/dia pro app todo).
+- `IA_TETO_TOKENS_DIA` padrão 2M → 10M. Chat com o prompt modular (desde
+  02/11, só 6 amostras): ~3.500 tokens de entrada sem assunto, 4.900–5.400
+  com 1–2 assuntos, 8.551 com comida+emocional+treino (antes do modular,
+  01/11: 6.200–6.600). O PROMPT_BASE (~9.900 caracteres, ~2.700 tokens) vai
+  em toda mensagem e é o que mais pesa; no Luna ele cai no cache (10% do preço).
   Se o Secret estiver definido no painel, ele vale no lugar do padrão.
 - Scanner: dependência `gemini` → `ia`; log do scan grava o modelo que respondeu.
 - `db/athoslife_chat_gratis_5_migration.sql` (novo, NÃO aplicada): grátis 10 → 5.
