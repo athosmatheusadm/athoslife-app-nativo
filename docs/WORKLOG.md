@@ -4602,3 +4602,17 @@ Dono autorizou "direto em produção" (token Supabase novo em `~/.supabase/acces
    publicar a branch `chat-luna` → smoke.
 3. Grátis já está em 5/dia no banco, também com o Gemini.
 4. Continuam: push (sem token do GitHub), PR #3, psicólogo, advogado.
+
+### 2026-11-08 (5) — Luna de volta em produção (v50), esperando pagamento na OpenAI
+
+- Dono não quer o Gemini nem como reserva → **v50 = branch `chat-luna`**
+  (com pedeIdeia e o disjuntor corrigido). Uso real é baixo (25 msgs de chat
+  em 30 dias), então o limite da chave não justificava manter o Gemini.
+- Causa real dos 502: `429 rate_limit_exceeded` — "tokens per min (TPM):
+  Limit 100000 … try again in 57m … adding a payment method". A conta da
+  OpenAI da chave de teste **não tem forma de pagamento** (nível gratuito):
+  ~100 mil tokens (≈16 mensagens do Life) e bloqueia ~1 h.
+- Dono vai cadastrar o pagamento (platform.openai.com → Settings → Billing,
+  com limite de gasto). Depois disso: smoke + estresse.
+- A chave enviada como "do GitHub" era a mesma do Supabase (`sbp_`) → push
+  continua pendente (precisa de `ghp_` ou `github_pat_`).
