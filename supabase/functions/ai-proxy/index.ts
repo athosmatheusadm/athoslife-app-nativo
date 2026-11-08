@@ -34,7 +34,7 @@
 
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
 import { blocoConversaAnterior, dividirHistorico, extrairResumo, JANELA_TOTAL, REGRA_RESUMO, type MensagemSalva } from './historico.ts'
-import { acharNaBase, lerItens, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
+import { acharNaBase, lerItens, pedeIdeia, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
 import { handleScan } from './scanner/analisar.ts'
 import { detectarAssuntos, fatoDoAssunto, type Assunto } from './assuntos.ts'
 import {
@@ -1378,8 +1378,22 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     else g = { ...g, texto: TXT_REGISTRO[loc.idioma].nada }
   }
 
-  // Tentou o principal e quem respondeu (ou falhou) foi a reserva: o principal falhou → pausa.
-  if (!principalFora && g.modelo === MODELO_RESERVA && MODELO !== MODELO_RESERVA) emSegundoPlano(pausarPrincipal(sb))
+  // Registro sem alimento, ou pra pedido de ideia (08/11: o Luna chamou
+  // registrar_alimentos pra "me dá uma ideia de lanche", inventando os itens):
+  // ignora a chamada e vale a conversa — se não veio texto junto, pede de novo sem ferramentas.
+  if (g.ok && g.chamadas[0]?.nome === 'registrar_alimentos' && (pedeIdeia(mensagem) || !lerItens(g.chamadas[0].args.itens).length)) {
+    const g3 = g.texto.trim()
+      ? null
+      : await chamarIA({ sistema, mensagens: conversa, maxSaida: perfil.saida, pensar }, { timeoutMs: 20_000, pularPrincipal: principalFora })
+    g = g3?.ok
+      ? { ...g3, tokens: g.tokens + g3.tokens, custo: g.custo + g3.custo, uso: somarUso(g.uso, g3.uso) }
+      : { ...g, chamadas: [] }
+  }
+
+  // Tentou o principal e quem RESPONDEU foi a reserva: o principal falhou → pausa.
+  // Se a reserva também falhou (ou está sem chave), não pausa: pular o principal
+  // só deixaria o chat fora por 10 min (08/11, v48).
+  if (!principalFora && g.ok && g.modelo === MODELO_RESERVA && MODELO !== MODELO_RESERVA) emSegundoPlano(pausarPrincipal(sb))
 
   if (!g.ok) {
     await devolverCota(sb, userId, 'chat')
@@ -1861,7 +1875,7 @@ const FERRAMENTAS_LIFE: Ferramenta[] = [
   {
     name: 'registrar_alimentos',
     description:
-      'Monta o registro de alimentos que a pessoa contou que comeu ("almocei arroz, feijão e bife"). O app mostra um cartão pra ela conferir as quantidades e confirmar; nada é gravado sem ela tocar em Registrar.',
+      'Monta o registro de alimentos que a pessoa contou que JÁ comeu ("almocei arroz, feijão e bife") ou pediu pra registrar. Nunca use pra pedido de ideia, sugestão ou pergunta sobre o que comer ("me dá uma ideia de lanche", "o que eu janto?") — aí é só conversa. O app mostra um cartão pra ela conferir as quantidades e confirmar; nada é gravado sem ela tocar em Registrar.',
     parameters: {
       type: 'object',
       properties: {

@@ -4570,3 +4570,35 @@ limite de gasto antes de produção.
 - Quando for rodar: publicar a v4.7 como função separada `ai-proxy-teste`
   (app não chama) + Secret `OPENAI_API_KEY`; dono cria uma conta zerada no
   app (fica em teste de 7 dias), liga a memória e passa e-mail/senha.
+
+### 2026-11-08 (4) — Luna em produção (v46–v48) e volta pro Gemini (v49)
+
+Dono autorizou "direto em produção" (token Supabase novo em `~/.supabase/access-token`).
+- Secret `OPENAI_API_KEY` criado (chave de TESTE do dono). Migração
+  `athoslife_chat_gratis_5_migration.sql` **aplicada** (grátis 5, pago 80) — fica.
+- v46 publicada; smoke passou, mas "me dá uma ideia de lanche rápido" virou
+  "não achei esses alimentos" (Luna chamou registrar_alimentos sem itens).
+  v47: descrição da ferramenta mais clara + descarta registro vazio → o Luna
+  passou a INVENTAR os itens (cartão de lanche que a pessoa não comeu).
+  v48: `pedeIdeia()` (refeicaoDigitada.ts, com testes) descarta o registro em
+  pedido de ideia/sugestão e pede a resposta de novo sem ferramentas → ok
+  (sugeriu receita da Cozinha). Refeição contada continua dando cartão (2,2 s).
+- **Por que voltou:** a chave de teste tem limite de **50 pedidos/dia**
+  (cabeçalho x-ratelimit-limit-requests: 50; 38 gastos nos testes) → em
+  produção o chat de todo mundo pararia. E bug do disjuntor: com o Luna
+  falhando e o Haiku sem chave, pausava o Luna mesmo assim → 10 min de
+  ia_falhou. **v49 = código da v44 (Gemini)**, smoke ok (15–17 s, lento como antes).
+- Corrigido na branch (não publicado): disjuntor só pausa se a reserva
+  respondeu. Flag `modelo_chat_pausado_ate` apagada do life_config.
+- Contas de QA criadas pelo cadastro normal (grátis): `qa.luna.11081820@` e
+  `qa.luna2.*@athoslife-teste.dev`; senhas só na pasta temporária da sessão.
+
+**Pendências (ler isto primeiro):**
+1. Chave da OpenAI de conta **paga** (nível Build: 5.000 req/min) com limite
+   de gasto, e chave da Anthropic. Trocar o Secret `OPENAI_API_KEY`, criar
+   `ANTHROPIC_API_KEY`. Revogar a chave de teste (apareceu no chat).
+2. Com as chaves: `scripts/ia-ao-vivo.ts` (Haiku incluso) → estresse
+   (`scripts/estresse-life.mjs`, conta em teste/paga com memória ligada) →
+   publicar a branch `chat-luna` → smoke.
+3. Grátis já está em 5/dia no banco, também com o Gemini.
+4. Continuam: push (sem token do GitHub), PR #3, psicólogo, advogado.

@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1'
-import { gramasDoItem, lerItens, prometeuRegistro, refeicaoPelaHora, singularDe } from './refeicaoDigitada.ts'
+import { gramasDoItem, lerItens, pedeIdeia, prometeuRegistro, refeicaoPelaHora, singularDe } from './refeicaoDigitada.ts'
 
 const arroz = { porcaoG: 100, unidadeG: null }
 const ovo = { porcaoG: 100, unidadeG: 50 }
@@ -66,4 +66,12 @@ Deno.test('prometeuRegistro: refeição contada + resposta prometendo o cartão'
   assertEquals(prometeuRegistro('comí tacos', 'Revisa las cantidades.'), true)
   assertEquals(prometeuRegistro('comi demais hoje, to mal', 'Calma, um dia não define nada. Quer conversar?'), false)
   assertEquals(prometeuRegistro('qual a melhor fruta?', 'Mandei umas ideias.'), false)
+})
+
+Deno.test('pedeIdeia: pedido de sugestão sem ter comido', () => {
+  for (const m of ['me dá uma ideia de lanche rápido', 'o que eu janto hoje?', 'sugere um café da manhã', 'what should I eat tonight?', 'dame ideas para la cena', 'Tu as des idées de goûter ?']) assertEquals(pedeIdeia(m), true, m)
+})
+
+Deno.test('pedeIdeia: contou o que comeu ou pediu pra registrar não é ideia', () => {
+  for (const m of ['almocei arroz e feijão', 'comi 2 ovos, me dá uma ideia pra janta', 'registra uma banana', 'pode colocar no meu lanche de hoje', 'I had a sandwich']) assertEquals(pedeIdeia(m), false, m)
 })

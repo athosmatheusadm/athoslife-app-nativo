@@ -110,6 +110,18 @@ export function prometeuRegistro(mensagem: string, resposta: string): boolean {
   return comeu && prometeu
 }
 
+/**
+ * Pedido de ideia/sugestão de comida, sem contar que já comeu (08/11: o Luna
+ * chamava registrar_alimentos pra "me dá uma ideia de lanche" e mandava um
+ * cartão de registro). Nesse caso a chamada é descartada e vale a conversa.
+ */
+export function pedeIdeia(mensagem: string): boolean {
+  const msg = normalizar(mensagem)
+  const comeu = /\b(comi|almocei|jantei|lanchei|merendei|tomei|bebi|registra|anota|salva|ate|had|drank|log|almorce|cene|desayune|tome|merende|j ai mange)\b/.test(msg)
+  const ideia = /\b(ideias?|sugest\w*|sugere|sugira|indica|o que (eu )?(como|janto|almoco|lancho|faco)|que tal|recipes?|ideas?|suggest\w*|what (should|can) i (eat|have|cook)|recetas?|sugiere\w*|que (como|ceno|almuerzo)|idees?|propose\w*)\b/.test(msg)
+  return ideia && !comeu
+}
+
 /** Plural simples -> singular, só pra 2ª tentativa da busca ("tacos" -> "taco"). */
 export function singularDe(nome: string): string | null {
   const t = nome.trim()
