@@ -17,7 +17,7 @@ export const JANELA_LITERAL = 6
 const MAX_RESUMO = 200
 const CORTE_RESERVA = 90
 
-export interface MensagemSalva { autor: string; texto: string; resumo?: string | null }
+export interface MensagemSalva { autor: string; texto: string; resumo?: string | null; criado_em?: string }
 
 const MARCA_RESUMO = /\[\[\s*RESUMO\s*:\s*([^\]]+?)\s*\]\]/i
 const MARCA_RESUMO_QUALQUER = /\[\[\s*RESUMO\b[^\]]*\]\]/gi

@@ -87,9 +87,52 @@ export function acharExercicio(
   return { tipo: 'varios', opcoes: notas.slice(0, 2).map((x) => x.e) }
 }
 
-/** Dor, lesão, limitação física: o Life não mexe no treino (acolhe e indica profissional). */
+/** Qualquer fala de dor (o chat usa só pra saber se o assunto apareceu). */
 export const FALA_DE_DOR =
-  /\b(dor|dores|doi|doendo|doeu|lesao|lesionad\w*|machuc\w*|machuq\w*|torci|torcao|tendinite|bursite|hernia|luxa\w*|fratur\w*|fisioterap\w*|pain|hurts?|injur\w*|dolor|duele|lesion|blessure|douleur)\b/
+  /\b(dor|dores|doi|doendo|doeu|dolorid\w*|lesao|lesionad\w*|machuc\w*|machuq\w*|torci|torcao|tendinite|bursite|hernia|luxa\w*|fratur\w*|fisioterap\w*|pain|hurts?|sore|injur\w*|dolor|duele|lesion|blessure|douleur)\b/
+
+// Dor nem sempre é lesão (dono, 09/11): o dolorido do dia seguinte ao treino
+// não trava; lesão clara trava; dor sem detalhe vira UMA pergunta curta.
+// Os textos chegam sem acento e minúsculos (normalizar do index).
+const NEGA_DOR =
+  /\b(nao|sem|nem)\s+(e|foi|tenho|to|tou|estou|sinto|tem|ta|esta)?\s*(nenhuma\s+|mais\s+)?(dor|lesao|machucad\w*|machuquei|lesionad\w*)\b|\bnao\s+(doi|doeu|machuquei)\b|\bja\s+(passou|sarou|melhorou|curou)\b|\b(no|not)\s+(pain|injur\w*|hurt\w*)\b|\b(ya\s+(paso|se\s+me\s+paso)|no\s+es\s+lesion|sin\s+dolor)\b|\b(pas\s+de\s+douleur|ce\s+n.est\s+pas\s+une\s+blessure)\b/
+const LESAO =
+  /\b(lesao|lesoes|lesionad\w*|machuc\w*|machuq\w*|torci|torceu|torcao|entorse|tendinite|bursite|hernia|luxa\w*|fratur\w*|trincad\w*|rompi\w*|ruptura|fisioterap\w*|pontadas?|fisgadas?|inchad\w*|inchou|inchaco|estalou|formigament\w*|dormente|dormencia|travou|dor\s+(forte|aguda|intensa|insuportavel|de\s+verdade)|nao\s+consigo\s+(andar|pisar|mexer|dobrar|levantar)|injur\w*|sprain\w*|swollen|torn|sharp\s+pain|lesion\w*|esguince|torcedura|hinchad\w*|pinchazo|blessure|blesse\w*|foulure|pincement|gonfle\w*|tendinit\w*)\b/
+const DOLORIDO =
+  /\b(dolorid\w*|dor(es)?\s+(muscular(es)?|(de|do|da|pos)[\s-]*(treino|academia|musculacao|malhar|exercicio)|tardia)|sore|soreness|doms|muscle\s+ache\w*|agujetas|adolorid\w*|dolor\s+muscular|courbatu\w*)\b/
+const DOR = /\b(dor|dores|doi|doendo|doeu|pain\w*|hurts?|hurting|aches?|aching|dolor|dolores|duele|douleur\w*|mal\s+(au|aux|a\s+la))\b/
+// Resposta curta à pergunta ("é de treino", "só dolorido", "muscular").
+const RESPOSTA_DOLORIDO = /\b(de|do)\s+treino\b|\bmuscular\b|\bdolorid\w*|\bfrom\s+(training|the\s+gym|working\s+out)\b|\bjust\s+sore\b|\bdel\s+entreno\b|\bde\s+l.entrainement\b/
+
+type Dor = 'lesao' | 'dolorido' | 'duvida' | null
+
+function tipoDeDor(t: string): Dor {
+  if (/चोट|मोच|सूज/.test(t)) return 'lesao'
+  if (LESAO.test(t)) return 'lesao'
+  if (DOLORIDO.test(t)) return 'dolorido'
+  if (DOR.test(t) || /दर्द/.test(t)) return 'duvida'
+  return null
+}
+
+/**
+ * Pode mexer no treino? Lê as últimas falas dela (em ordem) e a atual.
+ * `lifePerguntou`: a última fala do Life foi a pergunta "dolorido ou dor que incomoda?".
+ */
+export function decidirDor(atual: string, anteriores: string[], lifePerguntou: boolean): 'livre' | 'trava' | 'pergunta' {
+  if (tipoDeDor(atual.replace(NEGA_DOR, ' ')) === 'lesao') return 'trava'
+  if (lifePerguntou) {
+    if (NEGA_DOR.test(atual) || RESPOSTA_DOLORIDO.test(atual) || tipoDeDor(atual) === 'dolorido') return 'livre'
+    return 'trava'
+  }
+  let estado: Dor = null
+  for (const t of [...anteriores, atual]) {
+    if (NEGA_DOR.test(t)) estado = null
+    const d = tipoDeDor(t.replace(NEGA_DOR, ' '))
+    if (d === 'lesao' || estado === 'lesao') estado = 'lesao'
+    else if (d) estado = d
+  }
+  return estado === 'lesao' ? 'trava' : estado === 'duvida' ? 'pergunta' : 'livre'
+}
 
 export interface SerieDetalhe { reps: number | null; carga_kg: number | null; segundos: number | null }
 
@@ -133,6 +176,7 @@ export const TXT_TREINO: Record<Idioma, {
   bloqueado: string
   ressalva: string
   dor: string
+  dorPergunta: string
   copiarConfira: (origem: string, destino: string, local: string) => string
   copiarOcupado: (destino: string, n: number) => string
   copiarVazio: (origem: string) => string
@@ -156,6 +200,7 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} não dá pra fazer no treino ${l}. Quer que eu ponha no outro?`,
     bloqueado: 'Por segurança, o app não monta nem mexe no treino nesse caso. Mas sigo contigo no resto.',
     ressalva: 'Com a ressalva do check de saúde, mexer no treino é pelo botão "Montar treino", depois do "Quero mesmo assim".',
+    dorPergunta: 'Antes de mexer no treino: é aquele dolorido de treino ou uma dor que incomoda, tipo pontada? Se for dolorido de treino, eu coloco.',
     dor: 'Com dor ou lesão, melhor não mexer no treino agora. Vale falar com um educador físico ou fisioterapeuta antes — e se piorar, com um médico.',
     copiarConfira: (o, d, l) => `Confere: copio o treino de ${o} pra ${d} ${l}, toda semana. Sua ficha de ${o} continua igual.`,
     copiarOcupado: (d, n) => `${d.charAt(0).toUpperCase() + d.slice(1)} já tem ${n} exercício${n === 1 ? '' : 's'}. Somo ou troco?`,
@@ -180,6 +225,7 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} can't be done in the ${l} workout. Want me to put it in the other one?`,
     bloqueado: "For safety, the app doesn't build or change workouts in this case. I'm still here for the rest.",
     ressalva: 'With the health check caveat, changing the workout goes through "Build workout", after "I want it anyway".',
+    dorPergunta: "Before I change the workout: is it the usual soreness from training, or a pain that bothers you, like a sharp one? If it's training soreness, I'll add it.",
     dor: "With pain or an injury, better not to change the workout now. Talk to a trainer or physio first — and a doctor if it gets worse.",
     copiarConfira: (o, d, l) => `Check: I copy your ${o} workout to ${d} (${l}), every week. Your ${o} stays the same.`,
     copiarOcupado: (d, n) => `${d} already has ${n} exercise${n === 1 ? '' : 's'}. Add to it or replace?`,
@@ -204,6 +250,7 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} no se puede hacer en el entreno ${l}. ¿Lo pongo en el otro?`,
     bloqueado: 'Por seguridad, la app no arma ni cambia el entreno en este caso. Sigo contigo en lo demás.',
     ressalva: 'Con la observación del check de salud, cambiar el entreno es por el botón "Armar entreno", después de "Quiero igual".',
+    dorPergunta: 'Antes de tocar el entreno: ¿son las agujetas del entreno o un dolor que molesta, tipo pinchazo? Si son agujetas, lo pongo.',
     dor: 'Con dolor o lesión, mejor no cambiar el entreno ahora. Habla antes con un entrenador o fisioterapeuta — y con un médico si empeora.',
     copiarConfira: (o, d, l) => `Revisa: copio el entreno del ${o} al ${d} ${l}, cada semana. Tu ${o} queda igual.`,
     copiarOcupado: (d, n) => `El ${d} ya tiene ${n} ejercicio${n === 1 ? '' : 's'}. ¿Sumo o reemplazo?`,
@@ -228,6 +275,7 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} ne se fait pas dans la séance ${l}. Je le mets dans l'autre ?`,
     bloqueado: "Par sécurité, l'app ne crée ni ne modifie la séance dans ce cas. Je reste là pour le reste.",
     ressalva: 'Avec la réserve du bilan santé, modifier la séance passe par « Créer ma séance », après « Je le veux quand même ».',
+    dorPergunta: "Avant de toucher à la séance : ce sont des courbatures d'entraînement ou une douleur qui gêne, genre pincement ? Si ce sont des courbatures, je l'ajoute.",
     dor: "Avec une douleur ou une blessure, mieux vaut ne pas toucher à la séance. Parle d'abord à un coach ou un kiné — et à un médecin si ça empire.",
     copiarConfira: (o, d, l) => `Regarde : je copie la séance du ${o} vers le ${d} ${l}, chaque semaine. Ton ${o} reste pareil.`,
     copiarOcupado: (d, n) => `Le ${d} a déjà ${n} exercice${n === 1 ? '' : 's'}. J'ajoute ou je remplace ?`,
@@ -252,6 +300,7 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} ${l} वाले वर्कआउट में नहीं हो सकता। दूसरे में डाल दूँ?`,
     bloqueado: 'सुरक्षा के लिए, ऐसे में ऐप वर्कआउट नहीं बनाता या बदलता। बाकी में मैं साथ हूँ।',
     ressalva: 'स्वास्थ्य जाँच की सावधानी के साथ, वर्कआउट "वर्कआउट बनाएँ" बटन से बदलता है, "फिर भी चाहिए" के बाद।',
+    dorPergunta: 'वर्कआउट बदलने से पहले: क्या यह ट्रेनिंग वाली मांसपेशियों की थकान/दुखन है, या कोई चुभने वाला दर्द? अगर ट्रेनिंग वाली दुखन है, तो मैं जोड़ दूँगा।',
     dor: 'दर्द या चोट में अभी वर्कआउट न बदलें। पहले ट्रेनर या फ़िज़ियोथेरेपिस्ट से बात करें — और बढ़े तो डॉक्टर से।',
     copiarConfira: (o, d, l) => `देख लीजिए: ${o} का वर्कआउट ${d} में (${l}) कॉपी करूँगा, हर हफ़्ते। ${o} वैसा ही रहेगा।`,
     copiarOcupado: (d, n) => `${d} में पहले से ${n} एक्सरसाइज़ हैं। जोड़ूँ या बदलूँ?`,

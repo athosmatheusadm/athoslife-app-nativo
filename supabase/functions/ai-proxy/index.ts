@@ -43,7 +43,7 @@ import {
 } from './programar.ts'
 import { acharHabito, lerHora, TXT_TROPECO, type HabitoEvitar } from './tropeco.ts'
 import {
-  acharExercicio, diaDaData, FALA_DE_DOR, lerDia, lerDias, montarSeries, nomeDias, nomeLocal, TXT_TREINO,
+  acharExercicio, decidirDor, diaDaData, lerDia, lerDias, montarSeries, nomeDias, nomeLocal, TXT_TREINO,
   type DiaSemana, type ExercicioCatalogo, type Local, type SerieDetalhe,
 } from './treino.ts'
 import { lerComandoAgua, pedeDesfazer, TXT_RAPIDO } from './rapido.ts'
@@ -101,6 +101,8 @@ const CONTEXTO_CAMADAS = env('CONTEXTO_CAMADAS', '1') !== '0'
 const VERSAO_CONTEXTO = CONTEXTO_CAMADAS ? 'camadas-v1' : 'literal-15'
 /** Pausas do Life (dias congelados) em 30 dias — dono 12/10: só o Life oferece, com teto. */
 const MAX_PAUSAS_30_DIAS = 3
+/** Dor contada há até tantas horas ainda conta pra trava do treino. */
+const HORAS_DOR = 12
 
 
 // ================================================================
@@ -777,7 +779,7 @@ const MOD_TREINO = `TREINO (a conversa é sobre treino):
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude o plano por conta própria. Se ela pedir pra pôr um exercício num dia ou copiar o treino de outro dia, use adicionar_exercicio ou copiar_treino. Pra mudar séries, repetições ou carga do que já está na ficha, ela ajusta na ficha.
 - adicionar_exercicio: ela pediu pra pôr um exercício num dia ("põe o supino no meu treino de quinta"). Use as séries e repetições que ela disse, ou deixe vazio (o app usa o padrão). Carga só se ela disse. O app confirma com um toque; não diga que colocou.
 - copiar_treino: "copia o treino de quinta pra hoje". Se não ficou claro se é só hoje ou toda semana, pergunte antes ("Só hoje ou toda semana?") e não chame. "O que eu fiz quinta passada" é origem_data (o que ela fez, com as cargas dela).
-- Se ela falou de dor, lesão ou limitação física nesta conversa: não adicione nem copie exercício. Acolha e sugira um profissional (educador físico, fisioterapeuta, médico).
+- Dor e treino: se ela pedir pra pôr ou copiar exercício e tiver falado de dor, chame a ferramenta mesmo assim — o app decide (dolorido de treino passa; lesão, pontada ou inchaço não; dor sem detalhe, o app pergunta). Se ela responder que é dolorido de treino, chame de novo com o pedido dela. Se falou de lesão ou dor que incomoda, acolha e sugira um profissional (educador físico, fisioterapeuta, médico).
 - Se o check de saúde estiver BLOQUEADO ou com ressalva, siga o que a linha do check diz e não use essas ferramentas.`
 const MOD_HABITOS = `HÁBITOS (a conversa é sobre hábitos):
 - Hábito de EVITAR algo (ex.: doce) e a pessoa pede justamente isso: atenda o pedido, sem sermão e sem negar, e reconheça de leve o esforço uma vez (ex.: "Tá firme há 5 dias no doce — se quiser uma versão mais leve: ..."). Use as alternativas que a tela de Hábitos mostra (no contexto) quando couber. Não repita o hábito como advertência a cada mensagem.
@@ -1257,7 +1259,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   // ela é conferida — antes eram umas 8 idas ao banco em fila.
   const hojeLocal = hojeNoFuso(loc.fuso)
   const histP = sb.from('life_chat_mensagens')
-    .select('autor, texto, resumo')
+    .select('autor, texto, resumo, criado_em')
     .eq('user_id', userId)
     .order('criado_em', { ascending: false })
     .limit(CONTEXTO_CAMADAS ? JANELA_TOTAL : JANELA_HISTORICO)
@@ -1434,7 +1436,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const foraDoTema = /^\s*\[\s*fora\s*\]/i.test(resposta)
   resposta = resposta.replace(MARCA_FORA, '').trim()
   const chamada = g.chamadas[0]
-  const feito = chamada ? await executarFerramenta(sb, userId, loc, chamada, uuidValido(corpo.id_envio), mensagem) : null
+  const feito = chamada ? await executarFerramenta(sb, userId, loc, chamada, uuidValido(corpo.id_envio), mensagem, brutas) : null
   if (foraDoTema && !feito) {
     status = 'fora_tema'
     if (!resposta) resposta = RESPOSTA_FORA_DO_TEMA[loc.idioma]
@@ -1985,7 +1987,7 @@ const FERRAMENTAS_LIFE: Ferramenta[] = [
   {
     name: 'adicionar_exercicio',
     description:
-      'Põe na ficha de treino um exercício que a pessoa pediu, num ou mais dias da semana ("põe esse no meu treino de quinta"). Séries e repetições: as que ela disse, ou o padrão do app. O app pergunta com um toque antes de gravar. Nunca defina carga. Não use se ela falou de dor ou lesão, nem com o check de saúde travado.',
+      'Põe na ficha de treino um exercício que a pessoa pediu, num ou mais dias da semana ("põe esse no meu treino de quinta"). Séries e repetições: as que ela disse, ou o padrão do app. O app pergunta com um toque antes de gravar. Nunca defina carga. Se ela falou de dor, chame mesmo assim: o app decide se pode. Não use com o check de saúde travado.',
     parameters: {
       type: 'object',
       properties: {
@@ -2406,6 +2408,7 @@ async function executarRepeticao(sb: Sb, userId: string, idAcao: string, args: A
 /** Chamada de ferramenta vinda do chat. `idEnvio` = idempotência por mensagem. */
 async function executarFerramenta(
   sb: Sb, userId: string, loc: Localidade, chamada: ChamadaFerramenta, idEnvio: string | null, mensagem = '',
+  historico: MensagemSalva[] = [],
 ): Promise<ResultadoAcao | null> {
   const t = TXT[loc.idioma]
   const hoje = hojeNoFuso(loc.fuso)
@@ -2428,8 +2431,8 @@ async function executarFerramenta(
   if (chamada.nome === 'registrar_tropeco') return await proporTropeco(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'marcar_habito') return await proporMarcarHabito(sb, userId, loc, chamada.args)
   if (chamada.nome === 'adicionar_exercicio' || chamada.nome === 'copiar_treino') {
-    // Dor/lesão nesta mensagem ou check de saúde travado: não mexe no treino.
-    const trava = await travaDoTreino(sb, userId, loc.idioma, mensagem)
+    // Lesão (agora ou nas últimas falas), dor sem detalhe ou check de saúde travado: não mexe no treino.
+    const trava = await travaDoTreino(sb, userId, loc.idioma, mensagem, historico)
     if (trava) return trava
     return chamada.nome === 'adicionar_exercicio'
       ? await proporExercicio(sb, userId, loc, chamada.args, hoje)
@@ -2611,10 +2614,17 @@ async function desfazerUltima(sb: Sb, userId: string, idioma: Idioma): Promise<{
 interface ArgsExercicio { exercicio_id: string; nome: string; local: Local; dias: DiaSemana[]; series: SerieDetalhe[] }
 interface ArgsCopiaTreino { local: Local; destino: DiaSemana; origem_dia: DiaSemana | null; origem_data: string | null }
 
-/** Dor/lesão na mensagem ou check de saúde travado: devolve a resposta e não mexe no treino. */
-async function travaDoTreino(sb: Sb, userId: string, idioma: Idioma, mensagem: string): Promise<ResultadoAcao | null> {
+/** Dor/lesão (mensagem atual + falas das últimas horas) ou check de saúde travado: responde e não mexe no treino. */
+async function travaDoTreino(sb: Sb, userId: string, idioma: Idioma, mensagem: string, historico: MensagemSalva[] = []): Promise<ResultadoAcao | null> {
   const tt = TXT_TREINO[idioma]
-  if (FALA_DE_DOR.test(normalizar(mensagem))) return { resposta: tt.dor, acao: null, status: 'treino_dor' }
+  const desde = Date.now() - HORAS_DOR * 3_600_000
+  const recentes = historico.filter((m) => !m.criado_em || Date.parse(m.criado_em) >= desde)
+  const anteriores = recentes.filter((m) => m.autor === 'usuario').slice(-3).map((m) => normalizar(m.texto))
+  const ultimaLife = normalizar([...recentes].reverse().find((m) => m.autor === 'life')?.texto ?? '')
+  const lifePerguntou = Object.values(TXT_TREINO).some((x) => ultimaLife.startsWith(normalizar(x.dorPergunta).slice(0, 30)))
+  const dor = decidirDor(normalizar(mensagem), anteriores, lifePerguntou)
+  if (dor === 'trava') return { resposta: tt.dor, acao: null, status: 'treino_dor' }
+  if (dor === 'pergunta') return { resposta: tt.dorPergunta, acao: null, status: 'treino_dor_pergunta' }
   const { data: tri } = await sb.from('triagens_saude').select('apto_treino, motivos, ciente_orientacao')
     .eq('user_id', userId).order('criado_em', { ascending: false }).limit(1).maybeSingle()
   const motivos = (tri?.motivos ?? []) as string[]

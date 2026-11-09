@@ -4655,3 +4655,30 @@ Dono autorizou "direto em produção" (token Supabase novo em `~/.supabase/acces
 5. Ainda não passam 100%: estimar horário de dormir (4), "seja direto" (17),
    pergunta de segurança em "ninguém liga" (7 — segue o guia, conferir com o psicólogo).
 6. Contas de QA `qa.*@athoslife-teste.dev` (2 em teste até 09/11) — apagar quando quiser.
+
+## 2026-11-09 — Dor nem sempre é lesão (ai-proxy publicada)
+
+Dono: "nem sempre uma dor significa lesão", o usuário ficaria bravo sem ajuda.
+Antes, qualquer "dor" na mensagem travava TODO adicionar/copiar exercício.
+
+**Mudou (`treino.ts` → `decidirDor`, `index.ts` → `travaDoTreino`):**
+- Dolorido de treino ("dolorido", "dor muscular", "dor do treino", sore, agujetas,
+  courbatures) → passa.
+- Lesão clara (lesão, torci, machuquei, pontada, inchou, estalou, travou,
+  tendinite, hérnia, dor forte…) → trava, como antes.
+- Dor sem detalhe ("dor na lombar") → UMA pergunta: "é dolorido de treino ou
+  dor que incomoda, tipo pontada?" (5 idiomas). "Dolorido"/"de treino"/"não é
+  lesão" → coloca; qualquer outra resposta → trava.
+- A trava agora lê as últimas 3 falas dela das últimas 12 h, não só a atual
+  ("torci o pé" numa mensagem e "põe supino" na seguinte → trava; "já passou" libera).
+- Prompt e descrição da ferramenta: o modelo chama a ferramenta mesmo com dor;
+  quem decide é o servidor.
+- Trava por região do corpo (joelho → só perna) ficou de fora de propósito:
+  é orientação de saúde, precisa de educador físico/psicólogo antes.
+
+**Validado:** 135 testes (24 frases novas); ao vivo na conta qa.estresse: peito
+dolorido → cartão; dor na lombar → pergunta → "é só dolorido" → cartão; torci o
+joelho → trava; pedido seguinte → trava. Smoke ok.
+
+**Também:** cartão de receita no chat com miniatura da foto (commit 873bf73,
+só aparece no próximo APK).
