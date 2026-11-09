@@ -20,6 +20,7 @@ import {
 import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { lifeMemoriaRepository } from '@data/repositories/lifeMemoriaRepository'
 import { receitasRepository, type ReceitaCrua } from '@data/repositories/receitasRepository'
+import { FotoReceita } from '@ui/screens/cozinha/CardReceita'
 import {
   aoMudarPausa,
   lifePausadoHoje,
@@ -609,7 +610,7 @@ function CartaoReceita(props: { receita: ReceitaCrua; onClick: () => void }) {
       onClick={props.onClick}
       className="flex min-h-14 w-full max-w-[85%] items-center gap-3 rounded-2xl border border-surface-4 bg-surface-2 p-3 text-left active:scale-[0.99]"
     >
-      <span aria-hidden="true" className="h-10 w-1.5 flex-none rounded-full" style={{ background: r.corTema }} />
+      <FotoReceita receita={r} className="h-12 w-12 flex-none rounded-xl" />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold text-content-hi">{r.titulo}</span>
         <span className="block text-micro text-content-low">
