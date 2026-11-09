@@ -2926,8 +2926,9 @@ async function anotarTropeco(sb: Sb, userId: string, idAcao: string, args: ArgsT
   await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r, undefined, nova ? { recaida_id: nova.id, vicio_id: args.vicio_id, foto } : undefined)
   if (error || !(await avisoLigado(sb))) return r
   // Fase 5: licença pro oi da semana que vem — perguntada UMA vez.
-  const { data: perfil } = await sb.from('profiles').select('avisos_risco, consentimento_habitos, life_chat_ligado').eq('id', userId).maybeSingle()
-  if (perfil?.consentimento_habitos !== true || perfil?.life_chat_ligado === false) return r
+  // A licença é o próprio "Pode ser?" (09/11): não depende do "Life pode te chamar" do Perfil.
+  const { data: perfil } = await sb.from('profiles').select('avisos_risco, consentimento_habitos').eq('id', userId).maybeSingle()
+  if (perfil?.consentimento_habitos !== true) return r
   if (perfil?.avisos_risco === true) return { ...r, acao: { tipo: 'aviso_agendado' } }
   if (perfil?.avisos_risco === false) return r
   const ta = TXT_AVISO[idioma]

@@ -4740,3 +4740,21 @@ sistema) — conferir no APK: card aberto, assistente, lista de trocas com foto.
 
 **Pendências:** APK desta branch (tem Luna, comparação, check-in, receita);
 push/PR das branches `chat-luna` e `habitos-valor` (falta token GitHub).
+
+## 2026-11-09 — Fase 5 LIGADA (o "oi" depois do tropeço) + APK de teste
+
+- Dono decidiu ligar sem esperar o psicólogo (vai levar, mas não quer
+  depender): `life_config.aviso_risco = '1'`.
+- Achado: o oi exigia o "Life pode te chamar" do Perfil, que começa desligado
+  (12 de 13 contas) → ninguém veria. Agora vale só a licença própria ("Pode
+  ser?" → Pode); "Não precisa" segue parando tudo. Trigger
+  (`db/athoslife_aviso_risco_licenca_basta_migration.sql`, **aplicada**) e
+  ai-proxy publicada.
+- Ao vivo: tropeço pelo chat → Anotar → "Se quiser, segunda que vem… Pode
+  ser?" → Pode → alô `agendado` 7 dias depois, 30 min antes. Smoke ok.
+- Licença só é perguntada no tropeço pelo CHAT; o "Hoje eu cedi" da tela não
+  pergunta (pendência antiga da Fase 5).
+- APK de teste da `habitos-valor`: run 42601882294 (artefato até 23/11).
+- Dieta e treino seguem como estão; dono vai buscar nutricionista e personal
+  quando der.
+- **Psicólogo continua pendente:** régua do oi, frases, escada de cuidado.
