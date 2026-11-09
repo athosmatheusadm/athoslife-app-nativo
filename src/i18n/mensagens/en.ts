@@ -626,6 +626,7 @@ export const en: Mensagens = {
     fechar: 'Close',
     oi: 'Hi. What would you like to talk about right now?',
     carregando: 'Loading the conversation…',
+    comparacao: 'Comparison of the two exercises',
     erroHistorico: "Couldn't load the previous conversation — but you can write and Life will answer.",
     digitando: 'Life is typing…',
     placeholder: 'Write to Life…',

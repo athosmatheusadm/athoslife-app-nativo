@@ -177,6 +177,8 @@ export const TXT_TREINO: Record<Idioma, {
   ressalva: string
   dor: string
   dorPergunta: string
+  comparar: (a: string, b: string) => string
+  compararIgual: (ex: string) => string
   copiarConfira: (origem: string, destino: string, local: string) => string
   copiarOcupado: (destino: string, n: number) => string
   copiarVazio: (origem: string) => string
@@ -200,6 +202,8 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} não dá pra fazer no treino ${l}. Quer que eu ponha no outro?`,
     bloqueado: 'Por segurança, o app não monta nem mexe no treino nesse caso. Mas sigo contigo no resto.',
     ressalva: 'Com a ressalva do check de saúde, mexer no treino é pelo botão "Montar treino", depois do "Quero mesmo assim".',
+    comparar: (a, b) => `${a} e ${b}, lado a lado:`,
+    compararIgual: (ex) => `É o mesmo exercício: ${ex}. Quer comparar com qual outro?`,
     dorPergunta: 'Antes de mexer no treino: é aquele dolorido de treino ou uma dor que incomoda, tipo pontada? Se for dolorido de treino, eu coloco.',
     dor: 'Com dor ou lesão, melhor não mexer no treino agora. Vale falar com um educador físico ou fisioterapeuta antes — e se piorar, com um médico.',
     copiarConfira: (o, d, l) => `Confere: copio o treino de ${o} pra ${d} ${l}, toda semana. Sua ficha de ${o} continua igual.`,
@@ -225,6 +229,8 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} can't be done in the ${l} workout. Want me to put it in the other one?`,
     bloqueado: "For safety, the app doesn't build or change workouts in this case. I'm still here for the rest.",
     ressalva: 'With the health check caveat, changing the workout goes through "Build workout", after "I want it anyway".',
+    comparar: (a, b) => `${a} and ${b}, side by side:`,
+    compararIgual: (ex) => `That's the same exercise: ${ex}. Which other one should I compare it with?`,
     dorPergunta: "Before I change the workout: is it the usual soreness from training, or a pain that bothers you, like a sharp one? If it's training soreness, I'll add it.",
     dor: "With pain or an injury, better not to change the workout now. Talk to a trainer or physio first — and a doctor if it gets worse.",
     copiarConfira: (o, d, l) => `Check: I copy your ${o} workout to ${d} (${l}), every week. Your ${o} stays the same.`,
@@ -250,6 +256,8 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} no se puede hacer en el entreno ${l}. ¿Lo pongo en el otro?`,
     bloqueado: 'Por seguridad, la app no arma ni cambia el entreno en este caso. Sigo contigo en lo demás.',
     ressalva: 'Con la observación del check de salud, cambiar el entreno es por el botón "Armar entreno", después de "Quiero igual".',
+    comparar: (a, b) => `${a} y ${b}, lado a lado:`,
+    compararIgual: (ex) => `Es el mismo ejercicio: ${ex}. ¿Con cuál otro lo comparo?`,
     dorPergunta: 'Antes de tocar el entreno: ¿son las agujetas del entreno o un dolor que molesta, tipo pinchazo? Si son agujetas, lo pongo.',
     dor: 'Con dolor o lesión, mejor no cambiar el entreno ahora. Habla antes con un entrenador o fisioterapeuta — y con un médico si empeora.',
     copiarConfira: (o, d, l) => `Revisa: copio el entreno del ${o} al ${d} ${l}, cada semana. Tu ${o} queda igual.`,
@@ -275,6 +283,8 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} ne se fait pas dans la séance ${l}. Je le mets dans l'autre ?`,
     bloqueado: "Par sécurité, l'app ne crée ni ne modifie la séance dans ce cas. Je reste là pour le reste.",
     ressalva: 'Avec la réserve du bilan santé, modifier la séance passe par « Créer ma séance », après « Je le veux quand même ».',
+    comparar: (a, b) => `${a} et ${b}, côte à côte :`,
+    compararIgual: (ex) => `C'est le même exercice : ${ex}. Je le compare avec lequel ?`,
     dorPergunta: "Avant de toucher à la séance : ce sont des courbatures d'entraînement ou une douleur qui gêne, genre pincement ? Si ce sont des courbatures, je l'ajoute.",
     dor: "Avec une douleur ou une blessure, mieux vaut ne pas toucher à la séance. Parle d'abord à un coach ou un kiné — et à un médecin si ça empire.",
     copiarConfira: (o, d, l) => `Regarde : je copie la séance du ${o} vers le ${d} ${l}, chaque semaine. Ton ${o} reste pareil.`,
@@ -300,6 +310,8 @@ export const TXT_TREINO: Record<Idioma, {
     localErrado: (ex, l) => `${ex} ${l} वाले वर्कआउट में नहीं हो सकता। दूसरे में डाल दूँ?`,
     bloqueado: 'सुरक्षा के लिए, ऐसे में ऐप वर्कआउट नहीं बनाता या बदलता। बाकी में मैं साथ हूँ।',
     ressalva: 'स्वास्थ्य जाँच की सावधानी के साथ, वर्कआउट "वर्कआउट बनाएँ" बटन से बदलता है, "फिर भी चाहिए" के बाद।',
+    comparar: (a, b) => `${a} और ${b}, साथ-साथ:`,
+    compararIgual: (ex) => `यह एक ही एक्सरसाइज़ है: ${ex}। किससे तुलना करूँ?`,
     dorPergunta: 'वर्कआउट बदलने से पहले: क्या यह ट्रेनिंग वाली मांसपेशियों की थकान/दुखन है, या कोई चुभने वाला दर्द? अगर ट्रेनिंग वाली दुखन है, तो मैं जोड़ दूँगा।',
     dor: 'दर्द या चोट में अभी वर्कआउट न बदलें। पहले ट्रेनर या फ़िज़ियोथेरेपिस्ट से बात करें — और बढ़े तो डॉक्टर से।',
     copiarConfira: (o, d, l) => `देख लीजिए: ${o} का वर्कआउट ${d} में (${l}) कॉपी करूँगा, हर हफ़्ते। ${o} वैसा ही रहेगा।`,

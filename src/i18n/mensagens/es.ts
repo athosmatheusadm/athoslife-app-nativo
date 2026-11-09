@@ -626,6 +626,7 @@ export const es: Mensagens = {
     fechar: 'Cerrar',
     oi: 'Hola. ¿De qué quieres hablar ahora?',
     carregando: 'Cargando la conversación…',
+    comparacao: 'Comparación de los dos ejercicios',
     erroHistorico: 'No se pudo cargar la conversación anterior — pero puedes escribir y Life te responde.',
     digitando: 'Life está escribiendo…',
     placeholder: 'Escríbele a Life…',

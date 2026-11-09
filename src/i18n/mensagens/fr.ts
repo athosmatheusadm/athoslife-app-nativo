@@ -632,6 +632,7 @@ export const fr: Mensagens = {
     fechar: 'Fermer',
     oi: 'Salut. De quoi tu veux parler maintenant ?',
     carregando: 'Chargement de la conversation…',
+    comparacao: 'Comparaison des deux exercices',
     erroHistorico: 'Je n’ai pas pu charger la conversation précédente — mais tu peux écrire, Life répond.',
     digitando: 'Life écrit…',
     placeholder: 'Écris à Life…',

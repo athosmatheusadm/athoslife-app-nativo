@@ -21,6 +21,8 @@ import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { lifeMemoriaRepository } from '@data/repositories/lifeMemoriaRepository'
 import { receitasRepository, type ReceitaCrua } from '@data/repositories/receitasRepository'
 import { FotoReceita } from '@ui/screens/cozinha/CardReceita'
+import { exercicioCatalogoRepository } from '@data/repositories/exercicioCatalogoRepository'
+import { iconeDoExercicio, type ExercicioCatalogo } from '@domain/entities/treino'
 import {
   aoMudarPausa,
   lifePausadoHoje,
@@ -121,6 +123,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   const fimRef = useRef<HTMLDivElement>(null)
   // Cards de receita da Cozinha que o Life mostrou (ai-proxy v3.10).
   const [receitas, setReceitas] = useState<Map<string, ReceitaCrua> | null>(null)
+  const [exercicios, setExercicios] = useState<Map<string, ExercicioCatalogo> | null>(null)
+  const buscouExerciciosRef = useRef(false)
   const buscouReceitasRef = useRef(false)
   // Convite da memória (ai-proxy v4.0): aparece quando o Life acha que vale lembrar algo.
   const [conviteMemoria, setConviteMemoria] = useState<'mostrar' | 'salvando' | 'aceito' | 'recusado' | null>(null)
@@ -164,6 +168,19 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       .then((lista) => setReceitas(new Map(lista.map((r) => [r.id, r]))))
       .catch(() => {
         buscouReceitasRef.current = false
+      })
+  }, [historico])
+
+  // Catálogo de exercícios (já fica em cache no aparelho) só quando aparece o primeiro cartão lado a lado.
+  useEffect(() => {
+    if (buscouExerciciosRef.current) return
+    if (!historico.some((h) => h.autor === 'life' && separarCartoes(h.texto).comparacoes.length > 0)) return
+    buscouExerciciosRef.current = true
+    void exercicioCatalogoRepository
+      .listar()
+      .then((lista) => setExercicios(new Map(lista.map((e) => [e.id, e]))))
+      .catch(() => {
+        buscouExerciciosRef.current = false
       })
   }, [historico])
 
@@ -384,7 +401,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
           )}
 
           {historico.map((msg, i) => {
-            const c = msg.autor === 'life' ? separarCartoes(msg.texto) : { texto: msg.texto, receitas: [], chef: false }
+            const c = msg.autor === 'life' ? separarCartoes(msg.texto) : { texto: msg.texto, receitas: [], chef: false, comparacoes: [] }
             return (
               <Fragment key={i}>
                 {c.texto && (
@@ -401,6 +418,11 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                 {c.receitas.map((id) => {
                   const r = receitas?.get(id)
                   return r ? <CartaoReceita key={id} receita={r} onClick={() => ir(`/dieta/cozinha/${id}`)} /> : null
+                })}
+                {c.comparacoes.map((cmp, j) => {
+                  const ea = exercicios?.get(cmp.a)
+                  const eb = exercicios?.get(cmp.b)
+                  return ea && eb ? <CartaoComparar key={j} rotulo={tc.comparacao} lados={[[ea, cmp.ba], [eb, cmp.bb]]} /> : null
                 })}
                 {c.chef && (
                   <div className="max-w-[85%]">
@@ -598,6 +620,45 @@ function Atalho(props: { texto: string; onClick: () => void }) {
       <span className="flex-1">{props.texto}</span>
       <span aria-hidden="true">›</span>
     </button>
+  )
+}
+
+/** Dois exercícios lado a lado (09/11): ícone, nome e 3 benefícios de cada. */
+function CartaoComparar(props: { rotulo: string; lados: [ExercicioCatalogo, string[]][] }) {
+  return (
+    <div
+      role="group"
+      aria-label={props.rotulo}
+      className="relative grid w-full max-w-[92%] grid-cols-2 gap-3 rounded-2xl border border-surface-4 bg-surface-2 p-3"
+    >
+      {props.lados.map(([e, beneficios]) => {
+        const icone = iconeDoExercicio(e)
+        return (
+          <div key={e.id} className="min-w-0">
+            {icone ? (
+              <img src={icone} alt="" className="mx-auto h-16 w-16 rounded-xl object-cover" />
+            ) : (
+              <span className="mx-auto block h-16 w-16 rounded-xl bg-surface-3" />
+            )}
+            <p className="mt-2 line-clamp-2 text-center text-sm font-bold leading-tight text-content-hi">{e.nome}</p>
+            <ul className="mt-2 space-y-1.5">
+              {beneficios.map((b) => (
+                <li key={b} className="flex gap-1.5 text-micro leading-snug text-content-mid">
+                  <span aria-hidden="true" className="mt-[5px] h-1.5 w-1.5 flex-none rounded-full bg-brand" />
+                  <span className="min-w-0">{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      })}
+      <span
+        aria-hidden="true"
+        className="absolute left-1/2 top-[38px] flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border border-surface-4 bg-surface-1 text-micro font-bold text-content-low"
+      >
+        vs
+      </span>
+    </div>
   )
 }
 

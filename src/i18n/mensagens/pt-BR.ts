@@ -640,6 +640,7 @@ export const ptBR = {
     fechar: 'Fechar',
     oi: 'Oi. Sobre o que você quer conversar agora?',
     carregando: 'Carregando a conversa…',
+    comparacao: 'Comparação dos dois exercícios',
     erroHistorico: 'Não deu pra carregar a conversa anterior — mas pode escrever que o Life responde.',
     digitando: 'Life está digitando…',
     placeholder: 'Escreve pro Life…',

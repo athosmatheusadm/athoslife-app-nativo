@@ -307,16 +307,38 @@ export interface MensagemChat {
  * sua receita com o Life". Ficam salvos no texto, então voltam no histórico.
  */
 const MARCA_CARTAO = /\[\[(receita:[0-9a-f-]{36}|chef)\]\]/g
+/** `[[comparar:<json>]]` (09/11): dois exercícios lado a lado, com 3 benefícios de cada. */
+const MARCA_COMPARAR = /\[\[comparar:([^\]\s]+)\]\]/g
 
-export function separarCartoes(texto: string): { texto: string; receitas: string[]; chef: boolean } {
+export interface ComparacaoExercicios { a: string; b: string; ba: string[]; bb: string[] }
+
+function lerComparacao(dados: string): ComparacaoExercicios | null {
+  try {
+    const d = JSON.parse(decodeURIComponent(dados)) as Partial<ComparacaoExercicios>
+    const lista = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 3) : [])
+    if (typeof d.a !== 'string' || typeof d.b !== 'string') return null
+    return { a: d.a, b: d.b, ba: lista(d.ba), bb: lista(d.bb) }
+  } catch {
+    return null
+  }
+}
+
+export function separarCartoes(texto: string): { texto: string; receitas: string[]; chef: boolean; comparacoes: ComparacaoExercicios[] } {
   const receitas: string[] = []
+  const comparacoes: ComparacaoExercicios[] = []
   let chef = false
-  const limpo = texto.replace(MARCA_CARTAO, (_, m: string) => {
-    if (m === 'chef') chef = true
-    else receitas.push(m.slice('receita:'.length))
-    return ''
-  })
-  return { texto: limpo.trim(), receitas, chef }
+  const limpo = texto
+    .replace(MARCA_COMPARAR, (_, dados: string) => {
+      const c = lerComparacao(dados)
+      if (c) comparacoes.push(c)
+      return ''
+    })
+    .replace(MARCA_CARTAO, (_, m: string) => {
+      if (m === 'chef') chef = true
+      else receitas.push(m.slice('receita:'.length))
+      return ''
+    })
+  return { texto: limpo.trim(), receitas, chef, comparacoes }
 }
 
 export type EscolhaAcao = 'adicionar' | 'substituir' | 'forcar' | 'salvar' | 'cancelar'
@@ -445,7 +467,7 @@ export async function enviarMensagemChat(
     id_envio: idEnvio,
     ...(diaLeve ? { dia_leve: diaLeve } : {}),
     // O que este app sabe mostrar (02/11): o servidor só oferece a ação se o app tiver o cartão.
-    recursos: ['programar'],
+    recursos: ['programar', 'comparar'],
   }
   const cru = aoRascunho && temStreaming()
     ? await chamarChatStream<Cru>(payload, aoRascunho)

@@ -4682,3 +4682,23 @@ joelho → trava; pedido seguinte → trava. Smoke ok.
 
 **Também:** cartão de receita no chat com miniatura da foto (commit 873bf73,
 só aparece no próximo APK).
+
+## 2026-11-09 — Life compara dois exercícios lado a lado (ai-proxy publicada; app no próximo APK)
+
+Dono já mostrou a mecânica pra clientes: "compara supino com flexão" → os dois
+ícones lado a lado e 3 benefícios diferentes de cada.
+
+- **Servidor:** ferramenta `comparar_exercicios` (assunto treino, só se o app
+  manda `recursos: ['comparar']` — APK antigo segue recebendo texto). Acha os
+  dois no catálogo; benefícios: até 3, sem número/prescrição, sem repetir entre
+  os dois. Devolve "A e B, lado a lado:" + `[[comparar:<json>]]` (fica salvo no
+  histórico; pro modelo vira uma linha legível). Empate "leg press" → fica com o
+  nome mais curto que contém o pedido. Exercício que não existe (terra romeno)
+  → "ainda não está no app" + `exercicios_pedidos`. Não passa pela trava de dor
+  (não mexe na ficha). Palavras novas no assunto treino (flexão, prancha, stiff…).
+- **App:** `separarCartoes` lê a marca; `CartaoComparar` no chat (ícone 64 px,
+  nome, 3 benefícios com ponto verde, "vs" no meio); `comparacao` nos 5 idiomas.
+- **Validado:** typecheck, build, 135 testes; ao vivo: supino × flexão,
+  agachamento × leg press, stiff × terra → cartão; terra romeno → não tem;
+  app antigo → texto. Smoke ok. **Cartão não visto no aparelho.**
+- Prancha × abdominal pergunta qual prancha (Frontal ou Lateral) — de propósito.

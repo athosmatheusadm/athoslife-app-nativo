@@ -633,6 +633,7 @@ export const hi: Mensagens = {
     fechar: 'बंद करें',
     oi: 'नमस्ते। अभी किस बारे में बात करनी है?',
     carregando: 'बातचीत लोड हो रही है…',
+    comparacao: 'दोनों एक्सरसाइज़ की तुलना',
     erroHistorico: 'पिछली बातचीत लोड नहीं हो सकी — पर आप लिखिए, Life जवाब देगा।',
     digitando: 'Life लिख रहा है…',
     placeholder: 'Life को लिखें…',

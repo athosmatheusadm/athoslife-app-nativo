@@ -29,6 +29,7 @@ const PALAVRAS: Record<Assunto, RegExp> = {
     'trein\\w*', 'academia', 'exercic\\w*', 'series?', 'repetic\\w*', 'carga', 'supino', 'agachament\\w*', 'leg', 'musculac\\w*',
     'corrida', 'correr', 'corri', 'cardio', 'alongament\\w*', 'halter\\w*', 'ficha', 'esteira', 'bike', 'pedal\\w*', 'futebol',
     'natacao', 'nadar', 'crossfit', 'pilates', 'yoga', 'muscul\\w*', 'hipertrofia', 'em casa', 'remada', 'rosca', 'abdominal\\w*',
+    'flexao\\w*', 'crucifixo', 'puxada', 'stiff', 'afundo', 'prancha', 'triceps', 'biceps', 'panturrilha', 'gluteo\\w*', 'levantamento terra',
     'workout', 'gym', 'exercise\\w*', 'squat', 'running', 'entren\\w*', 'gimnasio', 'ejercicio\\w*', 'musculation', 'seance', 'sport',
   ].join('|') + ')\\b'),
   habitos: new RegExp('\\b(' + [

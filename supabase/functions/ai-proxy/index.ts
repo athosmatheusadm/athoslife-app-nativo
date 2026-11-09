@@ -774,6 +774,8 @@ const MOD_COMIDA = `COMIDA (a conversa é sobre comida):
 - Explicar o que é um suplemento, pra que serve em geral, composição e diferenças entre tipos/marcas — como informação pública.
 - Só quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta uma dieta pra mim", "quero uma ficha de treino"): não monte você; diga UMA vez, numa frase, que o plano completo sai pelo botão "Montar treino" (chat do Life no Treino) ou "Montar dieta" (chat do Life na Dieta), com um check de saúde rápido na primeira vez. NUNCA indique esses botões quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor, nem repita a indicação na conversa (dono, 02/11): aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de dieta que o app montou (se estiver no contexto): de onde vem a meta (fórmula de gasto + objetivo), por que proteína/carboidrato/gordura, como usar o dia-modelo e trocar alimentos equivalentes DENTRO dele. Nunca mude calorias, macros ou quantidades. Só se ela pedir pra mudar a META do plano, diga uma vez que o plano pode ser refeito no "Montar dieta" (chat do Life na Dieta). Fale "a meta de referência do seu plano é X kcal", nunca "você deve comer X kcal".`
+const ACAO_COMPARAR = '- comparar_exercicios: ela pediu pra comparar dois exercícios ou quer saber a diferença ("supino ou flexão?", "qual a diferença entre terra e stiff?"). Mande 3 benefícios de cada, diferentes entre si, curtos (até 8 palavras), no idioma dela — o que o exercício trabalha ou facilita, sem séries, carga, calorias nem promessa de resultado. O app mostra os dois lado a lado; não repita a lista no texto.'
+
 const MOD_TREINO = `TREINO (a conversa é sobre treino):
 - Só quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta uma dieta pra mim", "quero uma ficha de treino"): não monte você; diga UMA vez, numa frase, que o plano completo sai pelo botão "Montar treino" (chat do Life no Treino) ou "Montar dieta" (chat do Life na Dieta), com um check de saúde rápido na primeira vez. NUNCA indique esses botões quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor, nem repita a indicação na conversa (dono, 02/11): aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude o plano por conta própria. Se ela pedir pra pôr um exercício num dia ou copiar o treino de outro dia, use adicionar_exercicio ou copiar_treino. Pra mudar séries, repetições ou carga do que já está na ficha, ela ajusta na ficha.
@@ -799,13 +801,14 @@ const ACAO_EMOCIONAL = `- pausar_life_hoje: ver PAUSA DO DIA.`
  * `programar`: o app sabe mostrar o cartão de "deixar no lugar" (APK novo);
  * no antigo o Life não oferece dia futuro (senão promete um cartão que não aparece).
  */
-function montarPromptLife(assuntos: Set<Assunto>, programar = false): string {
+function montarPromptLife(assuntos: Set<Assunto>, programar = false, comparar = false): string {
   const comida = assuntos.has('comida')
   const treino = assuntos.has('treino')
   const acoes = [
     comida ? ACAO_COMIDA : '', comida && programar ? ACAO_PROGRAMAR : '', assuntos.has('emocional') ? ACAO_EMOCIONAL : '',
     assuntos.has('habitos') ? '- registrar_tropeco e marcar_habito: ver HÁBITOS.' : '',
     treino ? '- adicionar_exercicio e copiar_treino: ver TREINO.' : '',
+    treino && comparar ? ACAO_COMPARAR : '',
   ]
     .filter(Boolean).join('\n')
   // O que muda por conversa vai DEPOIS do PROMPT_BASE, que fica idêntico em
@@ -981,6 +984,14 @@ const TXT_RECEITA_COZINHA: Record<Idioma, string> = {
 // ([[receita:<uuid>]], [[chef]]) — o app troca as salvas por card/botão.
 const MARCA_CARTAO_IA = /\[\[\s*(R\d{1,3}|CHEF)\s*\]\]/gi
 const MARCA_CARTAO_SALVA = /\[\[(receita:[0-9a-f-]{36}|chef)\]\]/g
+// Cartão "lado a lado" (09/11): os dados vão no próprio texto pra voltar no histórico.
+const MARCA_COMPARAR = /\[\[comparar:([^\]\s]+)\]\]/g
+function textoDaComparacao(_: string, dados: string): string {
+  try {
+    const d = JSON.parse(decodeURIComponent(dados)) as { ba?: string[]; bb?: string[] }
+    return `(cartão lado a lado — 1º: ${(d.ba ?? []).join('; ')} | 2º: ${(d.bb ?? []).join('; ')})`
+  } catch { return '' }
+}
 
 function cartoesDaResposta(resposta: string, cat: ReceitaCatalogo[]): string {
   const ids: string[] = []
@@ -1304,7 +1315,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   // Cartão de receita da última resposta do Life (o texto pro modelo vai sem as marcas).
   const receitaSugerida = /\[\[(receita:[0-9a-f-]{36})\]\]/.exec([...brutas].reverse().find((m) => m.autor === 'life')?.texto ?? '')?.[1] ?? null
   const salvas = brutas
-    .map((m) => ({ ...m, texto: m.texto.replace(MARCA_CARTAO_SALVA, '').trim() }))
+    .map((m) => ({ ...m, texto: m.texto.replace(MARCA_COMPARAR, textoDaComparacao).replace(MARCA_CARTAO_SALVA, '').trim() }))
     .slice(-(perfil.literais + perfil.antigas))
   const camadas = CONTEXTO_CAMADAS ? dividirHistorico(salvas, perfil.literais) : { literais: salvas, linhas: [] }
   const historico = camadas.literais
@@ -1329,6 +1340,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   })
   const contexto = textoContexto(ctxDia, assuntos)
   const programar = Array.isArray(corpo.recursos) && corpo.recursos.includes('programar')
+  const comparar = Array.isArray(corpo.recursos) && corpo.recursos.includes('comparar')
   const memoriasDoAssunto = pedeTudo
     ? memorias
     : (memorias as MemoriaCamada[]).filter((m) => (m.nivel ?? 'fato') !== 'fato' || m.fixada || fatoDoAssunto(m.chave, assuntos))
@@ -1361,7 +1373,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     ? await catalogoCozinha(sb, userId, loc.idioma, pago, falaDaPessoa)
     : null
   // Começo fixo (regras + módulos do assunto + ações): igual pra todo mundo → cache.
-  const fixo = montarPromptLife(assuntos, programar)
+  const fixo = montarPromptLife(assuntos, programar, comparar)
   const sistema =
     `${blocoCultura(loc).replace(/^\n+/, '')}${cozinha}\n\n${foco}\n\nCONTEXTO DO USUÁRIO AGORA:\n${contexto}${checkinsHoje}` +
     linhaDiaLeve(corpo.dia_leve) +
@@ -1380,7 +1392,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 
   // 4. IA. Com streaming (Fase 7), o rascunho passa pelos mesmos filtros de saída
   //    antes de aparecer; se um deles pegar, o rascunho para e a resposta final troca o texto.
-  const ferramentas = ferramentasPara(assuntos, programar)
+  const ferramentas = ferramentasPara(assuntos, programar, comparar)
   const rascunho = aoRascunho
     ? novoRascunho((t) => violaPrescricao(t) || pareceReceitaCompleta(t), aoRascunho)
     : null
@@ -1865,12 +1877,12 @@ function listaRefeicoes(itens: ItemContexto[], extras: ExtraContexto[], hoje: st
 }
 
 /** Só as ferramentas do assunto: comida → registrar/repetir; desabafo → pausar. */
-function ferramentasPara(assuntos: Set<Assunto>, programar = false): Ferramenta[] | null {
+function ferramentasPara(assuntos: Set<Assunto>, programar = false, comparar = false): Ferramenta[] | null {
   const nomes = new Set<string>([
     ...(assuntos.has('comida') ? ['registrar_alimentos', 'repetir_refeicao', ...(programar ? ['programar_refeicao'] : [])] : []),
     ...(assuntos.has('emocional') ? ['pausar_life_hoje'] : []),
     ...(assuntos.has('habitos') ? ['registrar_tropeco', 'marcar_habito'] : []),
-    ...(assuntos.has('treino') ? ['adicionar_exercicio', 'copiar_treino'] : []),
+    ...(assuntos.has('treino') ? ['adicionar_exercicio', 'copiar_treino', ...(comparar ? ['comparar_exercicios'] : [])] : []),
   ])
   if (!nomes.size) return null
   return FERRAMENTAS_LIFE.filter((f) => nomes.has(f.name))
@@ -2015,6 +2027,21 @@ const FERRAMENTAS_LIFE: Ferramenta[] = [
         local: { type: 'string', description: "'academia' ou 'casa', se ela disse" },
       },
       required: ['destino_dia', 'so_hoje'],
+    },
+  },
+  {
+    name: 'comparar_exercicios',
+    description:
+      'Mostra dois exercícios lado a lado, com o ícone de cada um e 3 benefícios de cada, quando ela pede pra comparar ou quer saber a diferença ("supino ou flexão, qual a diferença?"). Benefícios curtos e diferentes entre os dois; nada de séries, carga ou promessa. Não muda a ficha.',
+    parameters: {
+      type: 'object',
+      properties: {
+        exercicio_a: { type: 'string', description: 'Nome do 1º exercício como ela falou' },
+        exercicio_b: { type: 'string', description: 'Nome do 2º exercício como ela falou' },
+        beneficios_a: { type: 'array', items: { type: 'string' }, description: '3 benefícios do 1º, até 8 palavras cada, no idioma dela' },
+        beneficios_b: { type: 'array', items: { type: 'string' }, description: '3 benefícios do 2º, diferentes dos do 1º' },
+      },
+      required: ['exercicio_a', 'exercicio_b', 'beneficios_a', 'beneficios_b'],
     },
   },
   {
@@ -2430,6 +2457,7 @@ async function executarFerramenta(
   if (chamada.nome === 'programar_refeicao') return await proporProgramacao(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'registrar_tropeco') return await proporTropeco(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'marcar_habito') return await proporMarcarHabito(sb, userId, loc, chamada.args)
+  if (chamada.nome === 'comparar_exercicios') return await compararExercicios(sb, userId, loc, chamada.args)
   if (chamada.nome === 'adicionar_exercicio' || chamada.nome === 'copiar_treino') {
     // Lesão (agora ou nas últimas falas), dor sem detalhe ou check de saúde travado: não mexe no treino.
     const trava = await travaDoTreino(sb, userId, loc.idioma, mensagem, historico)
@@ -2631,6 +2659,66 @@ async function travaDoTreino(sb: Sb, userId: string, idioma: Idioma, mensagem: s
   if (motivos.includes('menor_de_idade') || motivos.includes('idade_divergente')) return { resposta: tt.bloqueado, acao: null, status: 'treino_bloqueado' }
   if (tri && !tri.apto_treino && !tri.ciente_orientacao) return { resposta: tt.ressalva, acao: null, status: 'treino_ressalva' }
   return null
+}
+
+/** Benefícios do cartão: até 3, curtos, sem prescrição; repetido entre os dois sai. */
+function beneficiosLimpos(v: unknown, outros: string[] = []): string[] {
+  const vistos = new Set(outros.map((x) => normalizar(x)))
+  const saida: string[] = []
+  for (const b of Array.isArray(v) ? v : []) {
+    const t = texto(b, 90).replace(/\s+/g, ' ').replace(/^[-•*\d.)\s]+/, '').replace(/[.;]+$/, '').trim()
+    if (!t || violaPrescricao(t) || /\d/.test(t) || vistos.has(normalizar(t))) continue
+    vistos.add(normalizar(t))
+    saida.push(t.charAt(0).toUpperCase() + t.slice(1))
+    if (saida.length === 3) break
+  }
+  return saida
+}
+
+/** "Supino ou flexão?": acha os dois no catálogo e devolve o cartão lado a lado (não grava nada). */
+async function compararExercicios(sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>): Promise<ResultadoAcao> {
+  const tt = TXT_TREINO[loc.idioma]
+  const { data: cat } = await sb.from('exercicios_catalogo')
+    .select('id, nome, ambientes, series_padrao, repeticoes_padrao, medida, segundos_padrao, traducoes').limit(300)
+  const lista = (cat ?? []) as ExercicioCatalogo[]
+  const nomeEx = (e: ExercicioCatalogo) => (loc.idioma !== 'pt-BR' && e.traducoes?.[loc.idioma.slice(0, 2)]?.nome) || e.nome
+  const pedidos = [texto(a.exercicio_a, 80).trim(), texto(a.exercicio_b, 80).trim()]
+  const achados: ExercicioCatalogo[] = []
+  for (const pedido of pedidos) {
+    const r = acharExercicio(pedido, lista)
+    if (!r) {
+      if (pedido) await sb.from('exercicios_pedidos').insert({ user_id: userId, texto: pedido.slice(0, 120) })
+      return { resposta: tt.naoTem(pedido || '?'), acao: null, status: 'comparar_nao_tem' }
+    }
+    if (r.tipo === 'varios') {
+      // Só leitura: se um dos dois contém o que ela disse e é mais curto ("leg press" → Leg Press 45°, não
+      // "Elevação de Panturrilha no Leg Press"), fica com ele; senão pergunta.
+      const p = normalizar(pedido)
+      const cabe = r.opcoes.filter((e) => normalizar(nomeEx(e)).includes(p)).sort((x, y) => nomeEx(x).length - nomeEx(y).length)
+      if (cabe.length && (cabe.length === 1 || nomeEx(cabe[0]).length < nomeEx(cabe[1]).length)) { achados.push(cabe[0]); continue }
+      return { resposta: tt.qual(nomeEx(r.opcoes[0]), nomeEx(r.opcoes[1])), acao: null, status: 'comparar_ambiguo' }
+    }
+    achados.push(r.e)
+  }
+  if (achados[0].id === achados[1].id) {
+    // "deadlift" × "romanian deadlift": o catálogo achou o mesmo pros dois; o que não cabe no nome é o que falta no app.
+    const nomes = [normalizar(achados[0].nome), normalizar(nomeEx(achados[0]))]
+    const fora = pedidos.filter((x) => !nomes.some((n) => n.includes(normalizar(x))))
+    if (fora.length === 1) {
+      await sb.from('exercicios_pedidos').insert({ user_id: userId, texto: fora[0].slice(0, 120) })
+      return { resposta: tt.naoTem(fora[0].charAt(0).toUpperCase() + fora[0].slice(1)), acao: null, status: 'comparar_nao_tem' }
+    }
+    return { resposta: tt.compararIgual(nomeEx(achados[0])), acao: null, status: 'comparar_igual' }
+  }
+  const ba = beneficiosLimpos(a.beneficios_a)
+  const bb = beneficiosLimpos(a.beneficios_b, ba)
+  if (!ba.length || !bb.length) return { resposta: tt.falhou, acao: null, status: 'comparar_sem_beneficios' }
+  const dados = encodeURIComponent(JSON.stringify({ a: achados[0].id, b: achados[1].id, ba, bb }))
+  return {
+    resposta: `${tt.comparar(nomeEx(achados[0]), nomeEx(achados[1]))}\n[[comparar:${dados}]]`,
+    acao: null,
+    status: 'comparar_ok',
+  }
 }
 
 /** O local da ficha dela: o pedido, senão o que ela mais usa, senão academia. */
