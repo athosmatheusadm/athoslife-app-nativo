@@ -13,6 +13,7 @@ const TABELAS_EXPORTAVEIS = [
   'checkins_emocionais',
   'vicios_user',
   'recaidas',
+  'habitos_vontades',
   'treino_plano',
   'conquistas_user',
   'receitas_favoritas',

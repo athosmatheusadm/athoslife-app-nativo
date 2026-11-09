@@ -3,7 +3,7 @@ import { useSession } from '@app/SessionProvider'
 import { habitosRepository } from '@data/repositories/habitosRepository'
 import { profileRepository } from '@data/repositories/profileRepository'
 import { cancelarLembrete } from '@data/notifications/habitReminders'
-import type { Habito } from '@domain/entities/habito'
+import type { EventoHabito, Habito } from '@domain/entities/habito'
 import { LifeMascote } from '@ui/components/LifeMascote'
 import { useI18n } from '@/i18n/I18nProvider'
 import { temAcessoPremium } from '@domain/rules/access'
@@ -14,6 +14,7 @@ export function Habitos() {
   const { profile, refresh } = useSession()
   const { m } = useI18n()
   const [habitos, setHabitos] = useState<Habito[]>([])
+  const [eventos, setEventos] = useState<EventoHabito[]>([])
   const [carregando, setCarregando] = useState(true)
   const autorizado = profile?.consentimentoHabitos ?? false
 
@@ -23,6 +24,7 @@ export function Habitos() {
       .then(setHabitos)
       .catch(() => avisar.erro(m.habitos.erroSalvar))
       .finally(() => setCarregando(false))
+    void habitosRepository.eventos().then(setEventos).catch(() => {})
   }
 
   useEffect(() => {
@@ -42,10 +44,20 @@ export function Habitos() {
     <HabitsScreen
       habitos={habitos}
       carregando={carregando}
-      insightIA={null}
-      onRegistrarTropeco={(habitoId) => {
+      eventos={eventos}
+      onVitoria={(habitoId, caminho, gatilho, alternativa) => {
         void habitosRepository
-          .registrarRecaida({ habitoId, gatilho: null, contexto: null })
+          .registrarVitoria({ habitoId, caminho, gatilho, alternativa })
+          .then(() => {
+            vibrar.sucesso()
+            avisar.ok(m.habitos.vitoriaOk)
+            recarregar()
+          })
+          .catch(() => avisar.erro(m.habitos.erroSalvar))
+      }}
+      onRegistrarTropeco={(habitoId, gatilho) => {
+        void habitosRepository
+          .registrarRecaida({ habitoId, gatilho, contexto: null })
           .then(() => {
             vibrar.leve()
             avisar.ok(m.habitos.tropecoOk)

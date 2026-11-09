@@ -60,7 +60,7 @@ interface RespostaVisaoCrua {
   }
 }
 
-type TipoChamada = 'vision' | 'scan' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura'
+type TipoChamada = 'vision' | 'scan' | 'chat' | 'recipe' | 'acao' | 'estimar' | 'checkin' | 'abertura' | 'alternativas'
 
 export async function chamar<T>(tipo: TipoChamada, payload: Record<string, unknown>): Promise<T> {
   const res = await abrir(tipo, payload)
@@ -575,4 +575,12 @@ export async function consultarCodigoBarras(_code: string): Promise<never> {
     tipo: 'proxy_error',
     detalhe: 'barcode_nao_implementado_v1',
   })
+}
+
+/** Trocas sob medida na hora da vontade (09/11). Falhou: quem chama mostra a lista fixa. */
+export async function alternativasDaVontade(vicioId: string, gatilho: string | null): Promise<{ texto: string; receitaId: string | null }[]> {
+  const r = await chamar<{ alternativas?: { texto?: unknown; receita_id?: unknown }[] }>('alternativas', { vicio_id: vicioId, gatilho })
+  return (r.alternativas ?? []).flatMap((a) =>
+    typeof a.texto === 'string' && a.texto ? [{ texto: a.texto, receitaId: typeof a.receita_id === 'string' ? a.receita_id : null }] : [],
+  )
 }

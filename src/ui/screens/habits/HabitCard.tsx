@@ -2,10 +2,16 @@ import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useEffect, useState } from 'react'
 import {
   faltamParaConquista,
+  GATILHOS,
   progressoConquista,
+  semanaDoHabito,
   statusHabito,
+  vitoriasNaSemana,
+  type EstadoDia,
+  type EventoHabito,
   type Habito,
 } from '@domain/entities/habito'
+import { dataLocalISO } from '@domain/rules/datas'
 import { agendarLembrete, buscarLembrete, cancelarLembrete } from '@data/notifications/habitReminders'
 import { useI18n } from '@/i18n/I18nProvider'
 
@@ -27,8 +33,10 @@ import { useI18n } from '@/i18n/I18nProvider'
  */
 export function HabitCard(props: {
   habito: Habito
+  /** Vitórias e tropeços (todos os hábitos; o card filtra o dele). */
+  eventos: readonly EventoHabito[]
   onEstouComVontade: () => void
-  onTropeco: () => void
+  onTropeco: (gatilho: string | null) => void
   /** Check-in "Fiz hoje" do tipo "construir" — persiste via RPC. */
   onFizHoje: () => void
   /** Desativa o hábito (some da lista; histórico fica no banco). */
@@ -42,10 +50,13 @@ export function HabitCard(props: {
   // Recaída zera a sequência: pede um 2º toque (antes registrava no 1º, e um
   // toque sem querer apagava semanas). Texto acolhedor, nunca bronca.
   const [confirmandoTropeco, setConfirmandoTropeco] = useState(false)
+  const [gatilhoTropeco, setGatilhoTropeco] = useState<string | null>(null)
+  const nomeGatilho = (g: string) => (m.habitos.gatilhos as Record<string, string>)[g] ?? g
   const status = statusHabito(habito)
   const firme = status === 'firme'
   const pct = progressoConquista(habito.streakAtual, habito.proximaConquista)
   const faltam = faltamParaConquista(habito.streakAtual, habito.proximaConquista)
+  const vitorias = vitoriasNaSemana(habito.id, props.eventos, dataLocalISO())
 
   // Lembrete local (Camada 1 — ver docs/ATHOSlife_Notificacoes_Life.md).
   // Só carrega quando o card abre, pra não pedir permissão de notificação
@@ -107,10 +118,33 @@ export function HabitCard(props: {
     confirmandoTropeco ? (
       <div className="mt-3 rounded-xl border border-accent-recaida/40 bg-accent-recaida/10 p-3">
         <p className="text-sm text-content-mid">{t.confirmarTropeco}</p>
-        <div className="mt-2 flex gap-2">
+        {habito.tipo === 'evitar' && (
+          <>
+            <p className="mt-2 text-micro text-content-low">{t.gatilhoPergunta}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {GATILHOS.map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  aria-pressed={gatilhoTropeco === g}
+                  onClick={() => setGatilhoTropeco((v) => (v === g ? null : g))}
+                  className={`min-h-9 rounded-pill border px-3 text-micro font-semibold transition-colors ${
+                    gatilhoTropeco === g ? 'border-accent-recaida bg-accent-recaida/20 text-content-hi' : 'border-surface-4 text-content-mid'
+                  }`}
+                >
+                  {nomeGatilho(g)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <div className="mt-3 flex gap-2">
           <button
             type="button"
-            onClick={() => setConfirmandoTropeco(false)}
+            onClick={() => {
+              setConfirmandoTropeco(false)
+              setGatilhoTropeco(null)
+            }}
             className="min-h-11 flex-1 rounded-lg border border-surface-4 text-sm font-semibold text-content-mid active:bg-content-hi/5"
           >
             {m.comum.cancelar}
@@ -119,7 +153,8 @@ export function HabitCard(props: {
             type="button"
             onClick={() => {
               setConfirmandoTropeco(false)
-              props.onTropeco()
+              props.onTropeco(gatilhoTropeco)
+              setGatilhoTropeco(null)
             }}
             className="min-h-11 flex-1 rounded-lg bg-accent-recaida text-sm font-bold text-white active:scale-[0.98]"
           >
@@ -162,8 +197,16 @@ export function HabitCard(props: {
 
       {aberto && (
         <div className="px-4 pb-4">
+          <SemanaDoHabito habito={habito} eventos={props.eventos} rotulo={t.semana} legenda={t.legenda} />
+          <p className="mt-2 text-micro text-content-low">
+            {t.melhor(habito.melhorStreak)}
+            {habito.tipo === 'evitar' && vitorias > 0 && <span className="text-brand"> · {t.vitorias(vitorias)}</span>}
+          </p>
           {habito.gatilhos.length > 0 && (
-            <p className="text-micro text-content-low">{t.gatilhos(habito.gatilhos.join(', '))}</p>
+            <p className="mt-1 text-micro text-content-low">{t.gatilhos(habito.gatilhos.map(nomeGatilho).join(', '))}</p>
+          )}
+          {habito.tipo === 'evitar' && habito.horarioRisco && (
+            <p className="mt-1 text-micro text-content-low">{t.horarioRisco(habito.horarioRisco.slice(0, 5))}</p>
           )}
 
           <span className={`mt-2 inline-block rounded-pill px-2.5 py-1 text-micro font-bold ${acento.selo}`}>
@@ -290,6 +333,36 @@ export function HabitCard(props: {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+const COR_DIA: Record<EstadoDia, string> = {
+  antes: 'border border-dashed border-surface-4',
+  vazio: 'bg-surface-4',
+  firme: 'bg-brand/35',
+  feito: 'bg-brand',
+  venceu: 'bg-brand ring-2 ring-brand/40 ring-offset-2 ring-offset-surface-2',
+  tropecou: 'bg-accent-recaida',
+}
+
+/** 7 bolinhas: firme, vontade vencida, tropeço (evitar) ou feito (construir). */
+function SemanaDoHabito(props: { habito: Habito; eventos: readonly EventoHabito[]; rotulo: string; legenda: Record<string, string> }) {
+  const { idioma } = useI18n()
+  const dias = semanaDoHabito(props.habito, props.eventos, dataLocalISO())
+  const letra = new Intl.DateTimeFormat(idioma, { weekday: 'narrow' })
+  return (
+    <div className="mt-3">
+      <p className="text-micro font-bold uppercase tracking-wide text-content-low">{props.rotulo}</p>
+      <ol className="mt-2 flex justify-between gap-1">
+        {dias.map((d) => (
+          <li key={d.data} className="flex flex-1 flex-col items-center gap-1" title={props.legenda[d.estado === 'antes' ? 'vazio' : d.estado]}>
+            <span className={`h-3.5 w-3.5 rounded-full ${COR_DIA[d.estado]}`} />
+            <span className="text-[10px] uppercase text-content-low" aria-hidden="true">{letra.format(new Date(`${d.data}T12:00:00`))}</span>
+            <span className="sr-only">{`${d.data}: ${props.legenda[d.estado === 'antes' ? 'vazio' : d.estado]}`}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }

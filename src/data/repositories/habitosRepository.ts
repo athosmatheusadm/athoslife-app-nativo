@@ -6,6 +6,8 @@ import {
   streakConstruir,
   streakEvitar,
   tipoDaCategoria,
+  type CaminhoVitoria,
+  type EventoHabito,
   type Habito,
   type IntensidadeHabito,
 } from '@domain/entities/habito'
@@ -74,7 +76,20 @@ function paraDominio(r: HabitoRow, pausados: ReadonlySet<string>): Habito {
     ultimaRecaida,
     proximaConquista: proxima,
     feitoHoje: r.ultimo_checkin === hoje,
+    intensidade: r.intensidade ?? 'medio',
+    criadoEm: dataLocalISO(new Date(r.criado_em)),
   }
+}
+
+const CHAVE_EVENTOS = 'habitos:eventos'
+
+function horaAgora(): string {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`
+}
+
+async function anotarEvento(e: EventoHabito): Promise<void> {
+  await mexerNoCache<EventoHabito[]>(CHAVE_EVENTOS, (atual = []) => [...atual.filter((x) => x.id !== e.id), e])
 }
 
 /** Emoji por categoria (o banco guarda categoria; o emoji é da UI). */
@@ -144,9 +159,11 @@ export const habitosRepository = {
   }): Promise<void> {
     const userId = await usuarioId()
     const agora = new Date().toISOString()
+    const id = novoId()
+    await anotarEvento({ id, vicioId: params.habitoId, tipo: 'tropeco', data: hojeISO(), horario: horaAgora(), gatilho: params.gatilho, alternativa: null })
     await escrever(
       inserir('recaidas', {
-        id: novoId(),
+        id,
         user_id: userId,
         vicio_id: params.habitoId,
         gatilho: params.gatilho,
@@ -163,6 +180,51 @@ export const habitosRepository = {
           streak_atual: 0,
           total_recaidas: (h.total_recaidas ?? 0) + 1,
         })),
+    )
+  },
+
+  /**
+   * Vontade vencida (09/11): "esperei", "já passou" ou "fui na alternativa".
+   * Antes só o tropeço ficava salvo — o app só lembrava quando a pessoa falhava.
+   */
+  async registrarVitoria(params: { habitoId: string; caminho: CaminhoVitoria; gatilho: string | null; alternativa: string | null }): Promise<void> {
+    const userId = await usuarioId()
+    const id = novoId()
+    await anotarEvento({ id, vicioId: params.habitoId, tipo: 'vitoria', data: hojeISO(), horario: horaAgora(), gatilho: params.gatilho, alternativa: params.alternativa })
+    await escrever(
+      inserir('habitos_vontades', {
+        id,
+        user_id: userId,
+        vicio_id: params.habitoId,
+        caminho: params.caminho,
+        gatilho: params.gatilho,
+        alternativa: params.alternativa?.slice(0, 160) ?? null,
+        data: hojeISO(),
+        created_at: new Date().toISOString(),
+      }),
+    )
+  },
+
+  /** Vitórias e tropeços dos últimos 60 dias (semana do card, percepção do Life, "já funcionou"). */
+  async eventos(): Promise<EventoHabito[]> {
+    const userId = await usuarioId()
+    const desde = diasAtras(60)
+    return lerComCache(
+      CHAVE_EVENTOS,
+      async () => {
+        const [rec, vit] = await Promise.all([
+          supabase.from('recaidas').select('id, vicio_id, data, horario, gatilho').eq('user_id', userId).gte('data', desde).limit(500),
+          supabase.from('habitos_vontades').select('id, vicio_id, data, horario, gatilho, alternativa').eq('user_id', userId).gte('data', desde).limit(500),
+        ])
+        if (rec.error) throw rec.error
+        type L = { id: string; vicio_id: string; data: string; horario: string | null; gatilho: string | null; alternativa?: string | null }
+        const map = (tipo: EventoHabito['tipo']) => (r: L): EventoHabito => ({
+          id: r.id, vicioId: r.vicio_id, tipo, data: r.data, horario: r.horario, gatilho: r.gatilho, alternativa: r.alternativa ?? null,
+        })
+        // Sem a migração de 09/11 a tabela de vitórias não existe: segue só com os tropeços.
+        return [...((rec.data ?? []) as L[]).map(map('tropeco')), ...(vit.error ? [] : ((vit.data ?? []) as L[]).map(map('vitoria')))]
+      },
+      { padrao: [] },
     )
   },
 

@@ -44,6 +44,110 @@ export interface Habito {
   readonly proximaConquista: number
   /** Só relevante pro tipo "construir": já fez o check-in de hoje. */
   readonly feitoHoje: boolean
+  readonly intensidade: IntensidadeHabito
+  /** Dia (AAAA-MM-DD, local) em que começou a acompanhar. */
+  readonly criadoEm: string
+}
+
+/** Vontade vencida (habitos_vontades) ou tropeço (recaidas), com dia e hora locais. */
+export interface EventoHabito {
+  readonly id: string
+  readonly vicioId: string
+  readonly tipo: 'vitoria' | 'tropeco'
+  readonly data: string
+  readonly horario: string | null
+  readonly gatilho: string | null
+  readonly alternativa: string | null
+}
+
+export type CaminhoVitoria = 'esperar' | 'alternativa' | 'passou'
+export const GATILHOS = ['tedio', 'ansiedade', 'cansaco', 'fome', 'estresse', 'social', 'rotina'] as const
+export type Gatilho = (typeof GATILHOS)[number]
+
+/** Espera da vontade pela intensidade que a pessoa escolheu: leve 5, médio 10, forte 15 min. */
+export function minutosDeEspera(intensidade: IntensidadeHabito): number {
+  return intensidade === 'leve' ? 5 : intensidade === 'forte' ? 15 : 10
+}
+
+export type EstadoDia = 'antes' | 'firme' | 'venceu' | 'tropecou' | 'feito' | 'vazio'
+
+function somarDias(iso: string, n: number): string {
+  const d = new Date(`${iso}T12:00:00`)
+  d.setDate(d.getDate() + n)
+  return dataLocalISO(d)
+}
+
+/**
+ * Os últimos 7 dias do hábito, do mais antigo pra hoje. Evitar: tropeço >
+ * vitória > firme. Construir: feito (pela sequência atual) ou tropeço.
+ */
+export function semanaDoHabito(
+  h: Pick<Habito, 'id' | 'tipo' | 'criadoEm' | 'streakAtual' | 'feitoHoje'>,
+  eventos: readonly EventoHabito[],
+  hoje: string,
+): { data: string; estado: EstadoDia }[] {
+  const meus = eventos.filter((e) => e.vicioId === h.id)
+  // Construir: a sequência atual termina hoje (se feito hoje) ou ontem.
+  const fimSeq = h.feitoHoje ? hoje : somarDias(hoje, -1)
+  const iniSeq = somarDias(fimSeq, -(h.streakAtual - 1))
+  return Array.from({ length: 7 }, (_, i) => {
+    const data = somarDias(hoje, i - 6)
+    if (data < h.criadoEm) return { data, estado: 'antes' as const }
+    const doDia = meus.filter((e) => e.data === data)
+    if (doDia.some((e) => e.tipo === 'tropeco')) return { data, estado: 'tropecou' as const }
+    if (h.tipo === 'construir') {
+      const feito = h.streakAtual > 0 && data >= iniSeq && data <= fimSeq
+      return { data, estado: feito ? ('feito' as const) : ('vazio' as const) }
+    }
+    if (doDia.some((e) => e.tipo === 'vitoria')) return { data, estado: 'venceu' as const }
+    return { data, estado: 'firme' as const }
+  })
+}
+
+export function vitoriasNaSemana(vicioId: string, eventos: readonly EventoHabito[], hoje: string): number {
+  const desde = somarDias(hoje, -6)
+  return eventos.filter((e) => e.vicioId === vicioId && e.tipo === 'vitoria' && e.data >= desde).length
+}
+
+export type Periodo = 'madrugada' | 'manha' | 'tarde' | 'noite'
+function periodoDaHora(h: number): Periodo {
+  return h < 6 ? 'madrugada' : h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite'
+}
+
+/**
+ * O que o Life percebeu de verdade (sem frase inventada): o hábito de evitar
+ * com mais registros em 30 dias, se tiver 3+; o período que mais aparece (só
+ * se for metade ou mais dos registros) e o gatilho que se repete (2+).
+ */
+export function percepcaoHabitos(
+  habitos: readonly Pick<Habito, 'id' | 'nome' | 'tipo'>[],
+  eventos: readonly EventoHabito[],
+  hoje: string,
+): { habitoId: string; nome: string; periodo: Periodo; gatilho: string | null; vitorias: number } | null {
+  const desde = somarDias(hoje, -29)
+  let melhor: { h: Pick<Habito, 'id' | 'nome' | 'tipo'>; evs: EventoHabito[] } | null = null
+  for (const h of habitos) {
+    if (h.tipo !== 'evitar') continue
+    const evs = eventos.filter((e) => e.vicioId === h.id && e.data >= desde)
+    if (evs.length >= 3 && (!melhor || evs.length > melhor.evs.length)) melhor = { h, evs }
+  }
+  if (!melhor) return null
+  const conta = <K extends string>(lista: K[]) => {
+    const m = new Map<K, number>()
+    lista.forEach((k) => m.set(k, (m.get(k) ?? 0) + 1))
+    return [...m.entries()].sort((a, b) => b[1] - a[1])[0] ?? null
+  }
+  const horas = melhor.evs.flatMap((e) => (e.horario ? [periodoDaHora(Number(e.horario.slice(0, 2)))] : []))
+  const per = conta(horas)
+  if (!per || per[1] * 2 < horas.length) return null
+  const gat = conta(melhor.evs.flatMap((e) => (e.gatilho ? [e.gatilho] : [])))
+  return {
+    habitoId: melhor.h.id,
+    nome: melhor.h.nome,
+    periodo: per[0],
+    gatilho: gat && gat[1] >= 2 ? gat[0] : null,
+    vitorias: vitoriasNaSemana(melhor.h.id, eventos, hoje),
+  }
 }
 
 /** Categorias hoje classificadas como "hábito a construir" (aumentar). */

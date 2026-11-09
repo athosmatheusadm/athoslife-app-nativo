@@ -10,9 +10,13 @@ import { useI18n } from '@/i18n/I18nProvider'
 import {
   corTermometro,
   nivelBemEstar,
+  percepcaoHabitos,
+  type CaminhoVitoria,
+  type EventoHabito,
   type Habito,
   type IntensidadeHabito,
 } from '@domain/entities/habito'
+import { dataLocalISO } from '@domain/rules/datas'
 
 /**
  * Tela "Meus Hábitos".
@@ -28,8 +32,9 @@ import {
 export function HabitsScreen(props: {
   habitos: readonly Habito[]
   carregando: boolean
-  insightIA: string | null
-  onRegistrarTropeco: (habitoId: string) => void
+  eventos: readonly EventoHabito[]
+  onRegistrarTropeco: (habitoId: string, gatilho: string | null) => void
+  onVitoria: (habitoId: string, caminho: CaminhoVitoria, gatilho: string | null, alternativa: string | null) => void
   onRegistrarCheckin: (habitoId: string) => void
   onExcluirHabito: (habitoId: string) => Promise<void>
   onCriarHabito: (params: {
@@ -48,6 +53,13 @@ export function HabitsScreen(props: {
   const [chatAberto, setChatAberto] = useState(false)
   const { m } = useI18n()
   const t = m.habitos
+
+  // O que o Life percebeu de verdade nos registros (sem frase inventada).
+  const percebido = percepcaoHabitos(habitos, props.eventos, dataLocalISO())
+  const nomeGatilho = (g: string) => ((t.gatilhos as Record<string, string>)[g] ?? g).toLowerCase()
+  const insight = percebido
+    ? t.insight(percebido.nome.toLowerCase(), t.periodos[percebido.periodo], percebido.gatilho ? nomeGatilho(percebido.gatilho) : null, percebido.vitorias)
+    : null
 
   const nivel = nivelBemEstar(habitos)
   const corLife = corTermometro(nivel)
@@ -77,8 +89,9 @@ export function HabitsScreen(props: {
           <HabitCard
             key={h.id}
             habito={h}
+            eventos={props.eventos}
             onEstouComVontade={() => setVontadeDe(h)}
-            onTropeco={() => props.onRegistrarTropeco(h.id)}
+            onTropeco={(gatilho) => props.onRegistrarTropeco(h.id, gatilho)}
             feitoHoje={h.feitoHoje}
             onFizHoje={() => props.onRegistrarCheckin(h.id)}
             onExcluir={() => props.onExcluirHabito(h.id)}
@@ -104,6 +117,8 @@ export function HabitsScreen(props: {
       {vontadeDe && (
         <CravingAssistant
           habito={vontadeDe}
+          eventos={props.eventos}
+          onVitoria={(caminho, gatilho, alternativa) => props.onVitoria(vontadeDe.id, caminho, gatilho, alternativa)}
           onConversar={() => {
             setVontadeDe(null)
             setChatAberto(true)
@@ -125,11 +140,10 @@ export function HabitsScreen(props: {
 
       {chatAberto && <LifeChatSheet foco="habitos" onFechar={() => setChatAberto(false)} />}
 
-      {/* Balão de insight real da IA (hoje sempre null — ver docs/STATUS.md).
-          Só aparece quando existir de verdade; nada de frase inventada aqui. */}
-      {props.insightIA && (
+      {/* O que o Life percebeu (09/11): só com 3+ registros e um padrão claro. */}
+      {insight && (
         <div className="fixed bottom-[calc(196px+env(safe-area-inset-bottom))] left-4 z-20 max-w-[240px] rounded-2xl border border-surface-4 bg-surface-2 p-3 text-sm leading-relaxed text-content-mid shadow-lg">
-          {props.insightIA}
+          {insight}
         </div>
       )}
 

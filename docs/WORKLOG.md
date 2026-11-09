@@ -4702,3 +4702,41 @@ Dono já mostrou a mecânica pra clientes: "compara supino com flexão" → os d
   agachamento × leg press, stiff × terra → cartão; terra romeno → não tem;
   app antigo → texto. Smoke ok. **Cartão não visto no aparelho.**
 - Prancha × abdominal pergunta qual prancha (Frontal ou Lateral) — de propósito.
+
+## 2026-11-09 — Hábitos com valor (branch `habitos-valor`, a partir da `chat-luna`)
+
+Dono achou a página fraca (análise no chat): só guardava o tropeço, gatilho e
+horário de risco nunca eram preenchidos, sem histórico, intensidade ignorada,
+balão do Life sempre vazio, alternativas fixas. Feito:
+
+- **Banco** (`db/athoslife_habitos_vitorias_migration.sql`, **aplicada**):
+  `habitos_vontades` (vontade vencida: esperar/alternativa/passou + gatilho +
+  troca), RLS própria; `aprender_padrao_habito` preenche `vicios_user.gatilhos`
+  (top 4) e `horario_risco` (hora com 3+ registros) a cada vitória/tropeço;
+  cota `alternativas` (grátis 3/dia, pago 20); constraints de ia_uso_diario e
+  ai_audit_logs com o tipo novo.
+- **Vitórias contam:** esperar até o fim, "já passou" e "vou nessa" viram
+  vitória (1 por abertura do assistente). Toast "Vontade vencida. Isso conta 💚".
+- **Gatilho com um toque** (opcional): no assistente e na confirmação do tropeço
+  (tédio, ansiedade, cansaço, fome, estresse, social, costume).
+- **Card aberto:** 7 bolinhas (firme / venceu / tropeçou; construir: feito),
+  melhor sequência, vitórias da semana, gatilhos traduzidos, horário de risco.
+- **Balão do Life** com o que ele percebeu de verdade (`percepcaoHabitos`: 3+
+  registros em 30 dias e período que domina; gatilho com 2+).
+- **Intensidade** vale: espera de 5/10/15 min (leve/médio/forte), texto junto.
+- **Trocas sob medida** (`tipo: 'alternativas'` na ai-proxy): o Life olha hora,
+  gatilho, intensidade, restrições, memórias de gosto/rotina, o que já
+  funcionou e o catálogo da Cozinha (1 receita no máx., com foto e "Ver
+  receita"); "Já funcionou pra você" aparece primeiro. Sem rede/cota → lista fixa.
+- Chat: contexto do hábito ganha vitórias da semana e trocas que funcionaram.
+- Exportação de dados inclui `habitos_vontades`. Textos em pt/en/es/fr/hi.
+
+**Validado:** typecheck, build, 135 testes da ai-proxy, regras novas testadas
+(semana, percepção, espera); ao vivo: trocas em 2–3 s (manhã+cansaço →
+panqueca da Cozinha, descanso, chá que já funcionou), vitórias gravam e o
+padrão aprende (gatilho + hora); chat cita "venceu a vontade 3 vezes". Smoke ok.
+**Não visto na tela:** o navegador de teste não abre neste PC (falta lib do
+sistema) — conferir no APK: card aberto, assistente, lista de trocas com foto.
+
+**Pendências:** APK desta branch (tem Luna, comparação, check-in, receita);
+push/PR das branches `chat-luna` e `habitos-valor` (falta token GitHub).
