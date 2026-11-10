@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
-import { cozinhaService } from '@domain/services/cozinhaService'
+import { cozinhaService } from '@app/services/cozinhaService'
 import type { Receita } from '@domain/entities/receita'
 import { ReceitaDetalheScreen } from './cozinha/ReceitaDetalheScreen'
 

@@ -1,5 +1,7 @@
 import type { Macros } from '@domain/entities/food'
-import type { TipoRefeicao } from '@data/repositories/refeicoesRepository'
+
+/** As cinco refeições do dia. O banco guarda este mesmo texto em `refeicoes.tipo`. */
+export type TipoRefeicao = 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'
 
 /**
  * Modelo da refeição para a tela Dieta ("Meu Plano").

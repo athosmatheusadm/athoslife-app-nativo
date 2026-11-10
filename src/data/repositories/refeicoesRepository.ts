@@ -2,6 +2,7 @@ import { supabase } from '@data/supabase/client'
 import { lerComCache } from '@data/offline/cache'
 import { usuarioId } from '@data/offline/usuario'
 import { escrever, inserir, novoId } from '@data/offline/fila'
+import type { TipoRefeicao } from '@domain/entities/meal'
 import {
   somarMacros,
   type ItemRascunho,
@@ -10,7 +11,7 @@ import {
 import { itensRefeicaoRepository } from './itensRefeicaoRepository'
 import { dataLocalISO } from '@domain/rules/datas'
 
-export type TipoRefeicao = 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'
+export type { TipoRefeicao } from '@domain/entities/meal'
 
 export interface RefeicaoResumoDia {
   readonly tipo: TipoRefeicao

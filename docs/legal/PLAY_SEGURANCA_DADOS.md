@@ -11,7 +11,7 @@ Play Console → Política e programas → Conteúdo do app → Segurança dos d
 | Pergunta | Resposta | Por quê |
 |---|---|---|
 | O app coleta ou compartilha algum dos tipos de dados obrigatórios? | **Sim** | conta, saúde, fotos etc. |
-| Todos os dados coletados são criptografados em trânsito? | **Sim** | Supabase, Gemini (via ai-proxy), RevenueCat e Open Food Facts são HTTPS |
+| Todos os dados coletados são criptografados em trânsito? | **Sim** | Supabase, OpenAI/Anthropic (via ai-proxy), RevenueCat, Firebase (push), Brevo (e-mail) e Open Food Facts são HTTPS |
 | Você oferece uma forma de os usuários pedirem a exclusão dos dados? | **Sim** | Perfil → Privacidade → Excluir conta. **Falta:** a Play exige também um **link na web** pra pedir a exclusão sem instalar o app (ver item 5) |
 
 ## 2. Compartilhamento
@@ -51,15 +51,23 @@ fica como **não efêmero**.
 
 **Não coletamos:** localização (aproximada ou precisa), telefone, endereço,
 contatos, agenda, mensagens entre usuários, áudio, arquivos, histórico de
-navegação, registros de falha/diagnóstico (não há Sentry/Firebase),
-identificadores de publicidade.
+navegação, registros de falha/diagnóstico (não há Sentry nem Crashlytics/Analytics;
+o Firebase é usado só pra entregar push), identificadores de publicidade.
+
+**Atenção (10/11/2026):** com o push do Life, declarar também **IDs do
+dispositivo ou outros IDs** (token de push do Firebase): coletado, opcional
+(só quem aceita o convite), finalidade Funcionalidade do app, compartilhado
+com o Google (Firebase) como prestador de serviço.
 
 ## 4. Outros formulários do "Conteúdo do app" ligados a isto
 
 - **Política de privacidade:** URL pública obrigatória. Publicar o texto de
-  `src/ui/screens/legal/documentos.ts` numa página web (hoje só existe dentro
-  do app). Antes, preencher razão social, CNPJ, endereço e e-mail do DPO e
-  incluir o RevenueCat na lista de fornecedores.
+  `src/ui/screens/legal/documentos.ts` numa página web. **Pronto pra hospedar
+  (10/11/2026):** `node scripts/gerar-site-legal.mjs` gera `site-legal/`
+  (`privacidade.html`, `termos.html`, `excluir-conta.html`, 5 idiomas).
+  Falta preencher razão social, CNPJ, endereço, foro e e-mail do DPO em
+  `documentos.ts`, gerar de novo e hospedar. RevenueCat, Firebase e Brevo já
+  estão na lista de fornecedores (v2.5).
 - **Exclusão de conta:** URL na web onde a pessoa pede a exclusão (pode ser um
   formulário simples ou um e-mail descrito na página) + dizer quais dados são
   apagados e em quanto tempo (a Política diz 30 dias).

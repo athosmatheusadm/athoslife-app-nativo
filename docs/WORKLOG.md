@@ -4875,3 +4875,66 @@ pergunta do oi, baixar dados; (3) depois do APK com os testers, ligar
 "Confirm email"; (4) remetente do Brevo ainda é Gmail (risco de spam): trocar
 quando houver domínio; (5) merge do PR #3; (6) página web de exclusão de
 conta/política (hospedagem e e-mail de suporte); psicólogo/nutri/personal.
+
+
+## 2026-11-10 (4) — revisão de segurança, política v2.5, páginas públicas e camadas (branch `seguranca-legal`)
+
+Branch nova a partir da `push-life` (que ainda não está no GitHub).
+
+**Teste de invasão** (`node scripts/teste-invasao.mjs .env`: cria 2 contas,
+ataca, apaga as contas). O que segurou: sem login não lê nada pessoal; uma
+conta não lê, altera nem apaga dado de outra (perfil, água, memórias, avatar);
+ninguém muda o próprio `plano`, `is_admin`, `trial_expira` nem as cotas;
+funções de admin e de assinatura recusam; `ai-proxy`, `rc-sync`, `rc-webhook`
+e `life-push` recusam sem login/senha, com token forjado e com a chave
+pública. Sem segredo no histórico do git (só a chave pública do Firebase, que
+é pública por natureza).
+
+**Brechas achadas:**
+1. **Teste grátis infinito** — com "Confirm email" desligado, conta com
+   e-mail inventado + `liberar_teste_gratis('qualquer texto')` = 7 dias de
+   pago, quantas vezes quiser (gasta IA do plano pago). Só fecha ligando o
+   "Confirm email" (depende do APK novo com os testers).
+2. **Catálogo de código de barras** — qualquer conta gravava produto com
+   foto de qualquer site, que aparece pra quem ler o mesmo código.
+   Corrigido em `db/athoslife_seguranca_revisao_nov_migration.sql`
+   (**NÃO aplicada**: o modo automático barrou; precisa do ok do dono).
+3. **Senha de 6 letras** aceita pelo servidor (o app pede 8). Falta mudar
+   "Minimum password length" pra 8 no Supabase (Authentication → Sign In /
+   Providers → Email). 12 senhas erradas seguidas não bloqueiam (limite
+   padrão do Supabase é por IP; captcha fica pra depois).
+4. **Capacitor Android 8.5.0** com falha crítica conhecida
+   (GHSA-rvm3-566m-v7fv) → **8.6.0** (corrigido; entra no próximo APK).
+5. Menores, na mesma migração: funções de gatilho chamáveis pela API,
+   permissões de tabela sobrando pra quem não está logado, listagem da pasta
+   de avatares.
+
+Ficaram sem correção de propósito: `react-router` 6 e `esbuild`/`vite` (avisos
+moderados; só fecham com troca de versão maior — o do esbuild só afeta o
+`npm run dev`). "Leaked password protection" exige plano Pro do Supabase.
+
+**Política de privacidade v2.5** (pt/en/es/fr/hi): entra RevenueCat, Firebase
+(push), Brevo (e-mail), token de push e a frase do push escrita pela IA.
+`docs/legal/PLAY_SEGURANCA_DADOS.md` atualizado (declarar ID do dispositivo).
+
+**Páginas públicas pra Play:** `node scripts/gerar-site-legal.mjs` gera
+`site-legal/` (privacidade, termos, excluir conta; 5 idiomas, mesmo texto do
+app). Falta hospedar e preencher os campos entre colchetes.
+
+**Camadas (código limpo):** `src/domain` não importa mais nada de `data`.
+Os 3 serviços que juntam repositórios saíram de `src/domain/services` pra
+`src/app/services`; `TipoRefeicao` passou a morar no domínio.
+`scripts/checar-camadas.mjs` roda junto do `npm run typecheck` e reprova
+import fora da regra (domínio puro, dados sem tela, tela sem Supabase direto).
+Não mexi na `ai-proxy/index.ts` (3.574 linhas): dividir exige deploy e teste
+ao vivo, fica pra um PR só dela.
+
+Validado: typecheck (+ camadas) e build. Nenhuma Edge Function mudou.
+
+**Pendências:** (1) dono autorizar a migração de segurança e a senha mínima
+8; rodar `teste-invasao.mjs` de novo depois; (2) token do GitHub → push da
+`push-life`, `seguranca-legal` e APK de teste; (3) ligar "Confirm email"
+quando o APK novo estiver com os testers (fecha a brecha 1); (4) dados da
+empresa + e-mail de privacidade → `documentos.ts` → gerar e hospedar
+`site-legal/`; advogado revisar; (5) restringir a chave do Firebase ao pacote
+`br.com.athoslife.app` no Google Cloud; (6) dividir a `ai-proxy/index.ts`.

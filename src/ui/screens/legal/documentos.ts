@@ -9,7 +9,7 @@ import type { Idioma } from '@domain/rules/localidade'
  * perfil no aceite (profiles.consentimento_versao) e permite pedir novo
  * aceite depois.
  */
-export const VERSAO_DOCUMENTOS = 'v2.4-2026-11-08'
+export const VERSAO_DOCUMENTOS = 'v2.5-2026-11-10'
 
 export interface Secao {
   readonly titulo: string
@@ -116,7 +116,7 @@ const termosPt: Documento = {
 
 const politicaPt: Documento = {
   titulo: 'Política de privacidade',
-  atualizado: 'Última atualização: 8 de novembro de 2026',
+  atualizado: 'Última atualização: 10 de novembro de 2026',
   secoes: [
     {
       titulo: '1. Controlador e contato',
@@ -132,6 +132,7 @@ const politicaPt: Documento = {
         'Dados de saúde e bem-estar que você registra: refeições e alimentos, água, peso, treinos, passos, humor e check-ins emocionais, e hábitos que você acompanha, inclusive hábitos que deseja reduzir.',
         'Conversas com o Life, sua foto de perfil (se você enviar) e fotos de refeições enviadas para análise — estas são analisadas e descartadas, não ficam guardadas. Códigos de barras lidos pelo leitor do app.',
         'Dados técnicos mínimos para o app funcionar e ficar seguro (por exemplo, registros de uso da IA, erros e data do último acesso). Não usamos cookies de publicidade.',
+        "Se você ativar as notificações do Life, guardamos o identificador de notificação do seu aparelho (token de push) para conseguir enviá-las. Você pode desligar quando quiser, no app ou nas configurações do celular.",
       ],
     },
     {
@@ -149,12 +150,14 @@ const politicaPt: Documento = {
       paragrafos: [
         'Quando você conversa com o Life, analisa uma foto de prato ou pede uma receita, o texto ou a imagem e um resumo do seu dia (por exemplo, água e refeições registradas) são enviados à API da OpenAI (e, se ela estiver fora do ar, à da Anthropic) para gerar a resposta. Pelas condições dessas APIs, nenhuma das duas usa esses dados para treinar modelos.',
         'Mensagens com sinais de risco à vida recebem uma resposta fixa com contatos de ajuda. Nesses casos guardamos só o termo que disparou o alerta, nunca o texto completo, para fins de segurança.',
+        "No plano pago, as notificações do Life também são escritas pela IA, a partir do seu primeiro nome e do que você contou ao Life. Assuntos delicados (como saúde, família ou luto) não são citados no texto da notificação.",
       ],
     },
     {
       titulo: '5. Com quem compartilhamos',
       paragrafos: [
         'Supabase (banco de dados, autenticação e armazenamento), OpenAI e Anthropic (IA do Life), Google (Google Play, quando houver assinatura) e Open Food Facts (recebe apenas o número do código de barras lido, sem nenhum dado seu).',
+        "Também usamos: RevenueCat (controle da assinatura: recebe o identificador da sua conta e a situação da compra, nunca os dados do seu cartão), Google Firebase Cloud Messaging (entrega das notificações: recebe o identificador do aparelho e o texto da notificação) e Brevo (envio dos e-mails de confirmação de conta e de recuperação de senha: recebe o seu e-mail).",
         'Esses fornecedores tratam os dados em nosso nome e seguindo nossas instruções. Também podemos compartilhar dados quando a lei ou uma autoridade exigir.',
       ],
     },
@@ -289,7 +292,7 @@ const termsEn: Documento = {
 
 const privacyEn: Documento = {
   titulo: 'Privacy Policy',
-  atualizado: 'Last updated: November 8, 2026',
+  atualizado: 'Last updated: November 10, 2026',
   secoes: [
     {
       titulo: '1. Controller and contact',
@@ -303,6 +306,7 @@ const privacyEn: Documento = {
         'Health and well-being data you log: meals and foods, water, weight, workouts, steps, mood and emotional check-ins, and habits you track, including habits you want to cut back on.',
         'Chats with Life, your profile photo (if you upload one) and meal photos sent for analysis — these are analyzed and discarded, not stored. Barcodes scanned with the in-app reader.',
         'Minimal technical data needed for the app to work and stay secure (for example AI usage logs, errors and last access date). We do not use advertising cookies.',
+        "If you turn on Life's notifications, we store your device's notification identifier (push token) so we can deliver them. You can turn them off at any time, in the app or in your phone settings.",
       ],
     },
     {
@@ -320,12 +324,14 @@ const privacyEn: Documento = {
       paragrafos: [
         "When you chat with Life, analyze a meal photo or ask for a recipe, the text or image and a summary of your day (for example logged water and meals) are sent to the OpenAI API (or, if it is down, the Anthropic API) to generate the answer. Under the terms of these APIs, neither company uses this data to train its models.",
         'Messages showing signs of risk to life get a fixed reply with help contacts. In those cases we store only the term that triggered the alert, never the full message, for safety purposes.',
+        "On the paid plan, Life's notifications are also written by AI, based on your first name and on what you have told Life. Sensitive topics (such as health, family or grief) are not mentioned in the notification text.",
       ],
     },
     {
       titulo: '5. Who we share it with',
       paragrafos: [
         'Supabase (database, authentication and storage), OpenAI and Anthropic (Life’s AI), Google (Google Play billing, for subscriptions) and Open Food Facts (receives only the scanned barcode number, none of your data).',
+        "We also use: RevenueCat (subscription management: receives your account identifier and purchase status, never your card details), Google Firebase Cloud Messaging (notification delivery: receives the device identifier and the notification text) and Brevo (sending account confirmation and password recovery emails: receives your email address).",
         'These providers process data on our behalf and under our instructions. We may also share data when required by law or by an authority.',
       ],
     },
@@ -460,7 +466,7 @@ const terminosEs: Documento = {
 
 const politicaEs: Documento = {
   titulo: 'Política de privacidad',
-  atualizado: 'Última actualización: 8 de noviembre de 2026',
+  atualizado: 'Última actualización: 10 de noviembre de 2026',
   secoes: [
     {
       titulo: '1. Responsable y contacto',
@@ -476,6 +482,7 @@ const politicaEs: Documento = {
         'Datos de salud y bienestar que registras: comidas y alimentos, agua, peso, entrenamientos, pasos, estado de ánimo y check-ins emocionales, y hábitos que sigues, incluidos los que quieres reducir.',
         'Conversaciones con Life, tu foto de perfil (si la envías) y fotos de comidas enviadas para análisis; estas se analizan y se descartan, no se guardan. Códigos de barras leídos por el lector de la app.',
         'Datos técnicos mínimos para que la app funcione y sea segura (por ejemplo, registros de uso de la IA, errores y fecha del último acceso). No usamos cookies publicitarias.',
+        "Si activas las notificaciones de Life, guardamos el identificador de notificaciones de tu dispositivo (token de push) para poder enviártelas. Puedes desactivarlas cuando quieras, en la app o en los ajustes del teléfono.",
       ],
     },
     {
@@ -493,12 +500,14 @@ const politicaEs: Documento = {
       paragrafos: [
         'Cuando conversas con Life, analizas una foto de un plato o pides una receta, el texto o la imagen y un resumen de tu día (por ejemplo, agua y comidas registradas) se envían a la API de OpenAI (o, si no está disponible, a la de Anthropic) para generar la respuesta. Según las condiciones de esas API, ninguna de las dos usa estos datos para entrenar modelos.',
         'Los mensajes con señales de riesgo para la vida reciben una respuesta fija con contactos de ayuda. En esos casos guardamos solo el término que activó la alerta, nunca el texto completo, por motivos de seguridad.',
+        "En el plan de pago, las notificaciones de Life también las escribe la IA, a partir de tu nombre de pila y de lo que le has contado a Life. Los temas delicados (como salud, familia o duelo) no se mencionan en el texto de la notificación.",
       ],
     },
     {
       titulo: '5. Con quién los compartimos',
       paragrafos: [
         'Supabase (base de datos, autenticación y almacenamiento), OpenAI y Anthropic (IA de Life), Google (Google Play para los pagos, cuando haya suscripción) y Open Food Facts (recibe solo el número del código de barras leído, sin ningún dato tuyo).',
+        "También usamos: RevenueCat (gestión de la suscripción: recibe el identificador de tu cuenta y el estado de la compra, nunca los datos de tu tarjeta), Google Firebase Cloud Messaging (entrega de las notificaciones: recibe el identificador del dispositivo y el texto de la notificación) y Brevo (envío de los correos de confirmación de cuenta y de recuperación de contraseña: recibe tu correo electrónico).",
         'Estos proveedores tratan los datos en nuestro nombre y siguiendo nuestras instrucciones. También podemos compartir datos cuando la ley o una autoridad lo exija.',
       ],
     },
@@ -636,7 +645,7 @@ const conditionsFr: Documento = {
 
 const confidentialiteFr: Documento = {
   titulo: 'Politique de confidentialité',
-  atualizado: 'Dernière mise à jour : 8 novembre 2026',
+  atualizado: 'Dernière mise à jour : 10 novembre 2026',
   secoes: [
     {
       titulo: '1. Responsable du traitement et contact',
@@ -650,6 +659,7 @@ const confidentialiteFr: Documento = {
         'Données de santé et de bien-être que tu enregistres : repas et aliments, eau, poids, entraînements, pas, humeur et check-ins émotionnels, et habitudes suivies, y compris celles que tu veux réduire.',
         'Discussions avec Life, ta photo de profil (si tu en ajoutes une) et les photos de repas envoyées pour analyse — elles sont analysées puis supprimées, pas conservées. Codes-barres scannés avec le lecteur de l’application.',
         'Données techniques minimales nécessaires au fonctionnement et à la sécurité de l’application (par exemple journaux d’utilisation de l’IA, erreurs et date du dernier accès). Nous n’utilisons pas de cookies publicitaires.',
+        "Si tu actives les notifications de Life, nous conservons l’identifiant de notification de ton appareil (jeton push) pour pouvoir te les envoyer. Tu peux les désactiver à tout moment, dans l’application ou dans les réglages du téléphone.",
       ],
     },
     {
@@ -667,12 +677,14 @@ const confidentialiteFr: Documento = {
       paragrafos: [
         'Quand tu discutes avec Life, analyses une photo de repas ou demandes une recette, le texte ou l’image et un résumé de ta journée (par exemple l’eau et les repas enregistrés) sont envoyés à l’API d’OpenAI (ou, si elle est indisponible, à celle d’Anthropic) pour générer la réponse. Selon les conditions de ces API, aucune des deux n’utilise ces données pour entraîner ses modèles.',
         'Les messages présentant des signes de risque pour la vie reçoivent une réponse fixe avec des contacts d’aide. Dans ces cas, nous conservons uniquement le terme qui a déclenché l’alerte, jamais le message complet, pour des raisons de sécurité.',
+        "Avec la formule payante, les notifications de Life sont aussi rédigées par l’IA, à partir de ton prénom et de ce que tu as raconté à Life. Les sujets sensibles (comme la santé, la famille ou le deuil) ne sont pas mentionnés dans le texte de la notification.",
       ],
     },
     {
       titulo: '5. Avec qui nous les partageons',
       paragrafos: [
         'Supabase (base de données, authentification et stockage), OpenAI et Anthropic (IA de Life), Google (facturation Google Play, pour les abonnements) et Open Food Facts (reçoit uniquement le numéro du code-barres scanné, aucune de tes données).',
+        "Nous utilisons aussi : RevenueCat (gestion de l’abonnement : reçoit l’identifiant de ton compte et l’état de l’achat, jamais les données de ta carte), Google Firebase Cloud Messaging (envoi des notifications : reçoit l’identifiant de l’appareil et le texte de la notification) et Brevo (envoi des e-mails de confirmation de compte et de récupération de mot de passe : reçoit ton adresse e-mail).",
         'Ces prestataires traitent les données pour notre compte et selon nos instructions. Nous pouvons aussi partager des données lorsque la loi ou une autorité l’exige.',
       ],
     },
@@ -807,7 +819,7 @@ const termsHi: Documento = {
 
 const privacyHi: Documento = {
   titulo: 'प्राइवेसी पॉलिसी',
-  atualizado: 'अंतिम अपडेट: 8 नवंबर 2026',
+  atualizado: 'अंतिम अपडेट: 10 नवंबर 2026',
   secoes: [
     {
       titulo: '1. डेटा नियंत्रक और संपर्क',
@@ -821,6 +833,7 @@ const privacyHi: Documento = {
         'आपके दर्ज किए हेल्थ और वेल-बीइंग डेटा: भोजन और खाद्य पदार्थ, पानी, वज़न, वर्कआउट, कदम, मूड और इमोशनल चेक-इन, और जिन आदतों को आप ट्रैक करते हैं, उनमें वे आदतें भी जिन्हें आप कम करना चाहते हैं।',
         'Life से चैट, आपकी प्रोफ़ाइल फ़ोटो (अगर आप लगाते हैं) और विश्लेषण के लिए भेजी गई खाने की फ़ोटो — इनका विश्लेषण करके इन्हें हटा दिया जाता है, सेव नहीं किया जाता। ऐप के रीडर से स्कैन किए गए बारकोड।',
         'ऐप चलाने और सुरक्षित रखने के लिए ज़रूरी न्यूनतम तकनीकी डेटा (जैसे AI इस्तेमाल के लॉग, एरर और आख़िरी एक्सेस की तारीख़)। हम विज्ञापन वाली कुकीज़ इस्तेमाल नहीं करते।',
+        "अगर आप Life की नोटिफ़िकेशन चालू करते हैं, तो उन्हें भेजने के लिए हम आपके डिवाइस का नोटिफ़िकेशन आइडेंटिफ़ायर (पुश टोकन) सेव करते हैं। आप इन्हें कभी भी ऐप में या फ़ोन की सेटिंग में बंद कर सकते हैं।",
       ],
     },
     {
@@ -838,12 +851,14 @@ const privacyHi: Documento = {
       paragrafos: [
         'जब आप Life से चैट करते हैं, खाने की फ़ोटो का विश्लेषण करते हैं या रेसिपी माँगते हैं, तो टेक्स्ट या इमेज और आपके दिन का सारांश (जैसे दर्ज पानी और भोजन) जवाब बनाने के लिए OpenAI की API को (और अगर वह बंद हो, तो Anthropic की API को) भेजा जाता है। इन API की शर्तों के तहत दोनों में से कोई भी कंपनी इस डेटा से अपने मॉडल ट्रेन नहीं करती।',
         'जिन मैसेज में जान के जोखिम के संकेत हों, उन्हें मदद के संपर्कों वाला एक तय जवाब मिलता है। ऐसे मामलों में सुरक्षा के लिए हम सिर्फ़ वह शब्द सेव करते हैं जिससे अलर्ट आया, पूरा मैसेज कभी नहीं।',
+        "पेड प्लान में Life की नोटिफ़िकेशन भी AI लिखती है, आपके पहले नाम और आपने Life को जो बताया है उसके आधार पर। संवेदनशील विषय (जैसे सेहत, परिवार या शोक) नोटिफ़िकेशन के टेक्स्ट में नहीं लिखे जाते।",
       ],
     },
     {
       titulo: '5. हम किसके साथ साझा करते हैं',
       paragrafos: [
         'Supabase (डेटाबेस, ऑथेंटिकेशन और स्टोरेज), OpenAI और Anthropic (Life की AI), Google (सब्सक्रिप्शन के लिए Google Play बिलिंग) और Open Food Facts (सिर्फ़ स्कैन किए गए बारकोड का नंबर पाता है, आपका कोई डेटा नहीं)।',
+        "हम इनका भी इस्तेमाल करते हैं: RevenueCat (सब्सक्रिप्शन का प्रबंधन: इसे आपके अकाउंट का आइडेंटिफ़ायर और ख़रीद की स्थिति मिलती है, आपके कार्ड की जानकारी कभी नहीं), Google Firebase Cloud Messaging (नोटिफ़िकेशन पहुँचाना: इसे डिवाइस का आइडेंटिफ़ायर और नोटिफ़िकेशन का टेक्स्ट मिलता है) और Brevo (अकाउंट कन्फ़र्मेशन और पासवर्ड रिकवरी के ईमेल भेजना: इसे आपका ईमेल मिलता है)।",
         'ये प्रोवाइडर हमारी ओर से और हमारे निर्देशों पर डेटा प्रोसेस करते हैं। क़ानून या किसी प्राधिकरण की माँग पर भी हम डेटा साझा कर सकते हैं।',
       ],
     },

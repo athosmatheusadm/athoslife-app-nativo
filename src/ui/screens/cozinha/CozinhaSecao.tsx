@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useI18n } from '@/i18n/I18nProvider'
-import { cozinhaService } from '@domain/services/cozinhaService'
+import { cozinhaService } from '@app/services/cozinhaService'
 import { receitasQueFechamODia } from '@domain/rules/cozinha'
 import { temaDoMomento } from '@domain/rules/temasSazonais'
 import { localidadeAtual } from '@data/localidadeAtual'

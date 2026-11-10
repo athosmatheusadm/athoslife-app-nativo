@@ -7,7 +7,7 @@ import { CameraNegadaError, capturarFoto, type FotoCapturada, type OrigemFoto } 
 import type { RefeicaoAlvo } from '@data/repositories/itensRefeicaoRepository'
 import { produtoCodigoBarrasRepository, type ProdutoRotulo } from '@data/repositories/produtoCodigoBarrasRepository'
 import { leitorDisponivel } from '@data/native/codigoBarras'
-import { foodCaptureService } from '@domain/services/foodCaptureService'
+import { foodCaptureService } from '@app/services/foodCaptureService'
 import { reescalarItem } from '@domain/rules/foodReconciliation'
 import { atualizarItemScan } from '@domain/rules/scanCalculo'
 import { temAcessoPremium } from '@domain/rules/access'
