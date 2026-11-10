@@ -1,3 +1,4 @@
+import { entregarArquivo } from '@data/native/arquivo'
 import { dataLocalISO } from '@domain/rules/datas'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -37,13 +38,13 @@ export function Privacidade() {
     setExportando(true)
     try {
       const dados = await privacidadeRepository.exportarMeusDados()
-      const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `athoslife-meus-dados-${dataLocalISO()}.json`
-      a.click()
-      URL.revokeObjectURL(url)
+      // No APK abre o menu do sistema (Drive, e-mail, Arquivos); no navegador baixa.
+      await entregarArquivo({
+        texto: JSON.stringify(dados, null, 2),
+        nome: `athoslife-meus-dados-${dataLocalISO()}.json`,
+        tipo: 'application/json',
+        titulo: t.exportarTitulo,
+      })
     } catch {
       setErroExport(true)
     } finally {

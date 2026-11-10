@@ -184,6 +184,30 @@ export const habitosRepository = {
   },
 
   /**
+   * Fase 5 pela tela (10/11): depois do "Hoje eu cedi", o trigger do banco
+   * deixa o oi da semana que vem "proposto" quando a pessoa ainda não
+   * respondeu a licença. Se existir um, a tela pergunta "Pode ser?" — igual
+   * ao chat. Sem rede ou com licença já respondida, não pergunta nada.
+   */
+  async oiPropostoPendente(): Promise<boolean> {
+    const userId = await usuarioId()
+    const { count, error } = await supabase
+      .from('life_avisos')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('estado', 'proposto')
+      .gt('enviar_em', new Date().toISOString())
+    if (error) return false
+    return (count ?? 0) > 0
+  },
+
+  /** "Pode" agenda os ois propostos; "Não precisa" desliga todos (mesma RPC do chat). */
+  async responderLicencaOi(pode: boolean): Promise<void> {
+    const { error } = await supabase.rpc('life_responder_licenca_aviso', { p_pode: pode })
+    if (error) throw error
+  },
+
+  /**
    * Vontade vencida (09/11): "esperei", "já passou" ou "fui na alternativa".
    * Antes só o tropeço ficava salvo — o app só lembrava quando a pessoa falhava.
    */

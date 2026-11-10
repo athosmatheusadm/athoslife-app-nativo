@@ -320,6 +320,14 @@ export const ptBR = {
     insight: (nome: string, periodo: string, gatilho: string | null, vitorias: number) =>
       `Sua vontade de ${nome} costuma aparecer ${periodo}${gatilho ? `, quase sempre com ${gatilho}` : ''}.${vitorias ? ` Essa semana você venceu ${vitorias} ${vitorias === 1 ? 'vez' : 'vezes'} 💚` : ''}`,
     tropecoOk: 'Registrado. Recomeçar faz parte 💜',
+    perguntaOi: {
+      queVem: ['domingo que vem', 'segunda que vem', 'terça que vem', 'quarta que vem', 'quinta que vem', 'sexta que vem', 'sábado que vem'],
+      texto: (dia: string) => `Se quiser, ${dia}, um pouco antes desse horário, eu passo pra dar um oi. Pode ser?`,
+      pode: 'Pode',
+      naoPrecisa: 'Não precisa',
+      combinado: 'Combinado, eu passo pra dar um oi.',
+      tudoBem: 'Tudo bem, não vou mandar.',
+    },
     card: {
       dias: (n: number) => (n === 1 ? 'dia' : 'dias'),
       gatilhos: (lista: string) => `Gatilhos: ${lista}`,
@@ -1644,10 +1652,19 @@ export const ptBR = {
     esqueci: 'Esqueci a senha',
     entrando: 'Entrando…',
     criando: 'Criando…',
-    criada: 'Pronto! Mandamos um link pro seu e-mail — abre ele pra ativar a conta (olha também o spam). Se esse e-mail já tinha conta, é só entrar.',
+    criada: 'Conta criada! Mandamos um código pro seu e-mail.',
+    codigoCadastro: {
+      lead: (email: string) => `Digite o código que mandamos pra ${email} (olha também o spam). Se esse e-mail já tinha conta, é só voltar e entrar.`,
+      codigo: 'Código do e-mail',
+      confirmar: 'Confirmar e entrar',
+      confirmando: 'Confirmando…',
+      outro: 'Não chegou? Mandar outro código',
+      enviado: 'Código novo enviado.',
+      voltar: 'Voltar',
+    },
     erros: {
       muitos: 'Muitos e-mails enviados em pouco tempo. Espera uns minutos e tenta de novo.',
-      confirmar: 'Falta confirmar seu e-mail: abre o link que mandamos (olha também o spam).',
+      confirmar: 'Falta confirmar seu e-mail. Digite o código que mandamos.',
       credenciais: 'E-mail ou senha incorretos.',
       emailInvalido: 'Esse e-mail não parece válido. Confere se não tem erro de digitação (ex.: gmail.com).',
       jaExiste: 'Já existe uma conta com esse e-mail. Entra com ela ou use "Esqueci a senha".',

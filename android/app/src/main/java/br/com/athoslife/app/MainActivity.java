@@ -4,6 +4,7 @@ import android.os.Bundle;
 
 import com.getcapacitor.BridgeActivity;
 
+import br.com.athoslife.app.arquivo.AthosArquivoPlugin;
 import br.com.athoslife.app.liveactivity.LiveActivityPlugin;
 import br.com.athoslife.app.mascote.MascoteIconePlugin;
 import br.com.athoslife.app.story.AthosInstagramPlugin;
@@ -17,6 +18,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(WidgetAguaPlugin.class);
         registerPlugin(AthosInstagramPlugin.class);
         registerPlugin(MascoteIconePlugin.class);
+        registerPlugin(AthosArquivoPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

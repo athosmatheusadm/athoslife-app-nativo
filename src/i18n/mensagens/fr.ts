@@ -314,6 +314,14 @@ export const fr: Mensagens = {
     insight: (nome: string, periodo: string, gatilho: string | null, vitorias: number) =>
       `Ton envie de ${nome} arrive surtout ${periodo}${gatilho ? `, souvent avec ${gatilho}` : ''}.${vitorias ? ` Cette semaine, tu l’as vaincue ${vitorias} fois 💚` : ''}`,
     tropecoOk: 'C’est noté. Recommencer, ça fait partie du chemin 💜',
+    perguntaOi: {
+      queVem: ['dimanche prochain', 'lundi prochain', 'mardi prochain', 'mercredi prochain', 'jeudi prochain', 'vendredi prochain', 'samedi prochain'],
+      texto: (dia: string) => `Si tu veux, ${dia}, un peu avant cette heure, je passe te dire coucou. Ça te va ?`,
+      pode: 'Oui',
+      naoPrecisa: 'Pas besoin',
+      combinado: "D'accord, je passerai te dire coucou.",
+      tudoBem: "D'accord, je n'enverrai rien.",
+    },
     card: {
       dias: (n: number) => (n === 1 ? 'jour' : 'jours'),
       gatilhos: (lista: string) => `Déclencheurs : ${lista}`,
@@ -1636,10 +1644,19 @@ export const fr: Mensagens = {
     esqueci: 'Mot de passe oublié',
     entrando: 'Connexion…',
     criando: 'Création…',
-    criada: 'C’est fait ! On t’a envoyé un lien par e-mail — ouvre-le pour activer ton compte (regarde aussi dans les spams). Si cet e-mail avait déjà un compte, connecte-toi simplement.',
+    criada: 'Compte créé ! On t’a envoyé un code par e-mail.',
+    codigoCadastro: {
+      lead: (email: string) => `Saisis le code envoyé à ${email} (regarde aussi dans les spams). Si cet e-mail avait déjà un compte, reviens et connecte-toi.`,
+      codigo: 'Code reçu par e-mail',
+      confirmar: 'Confirmer et entrer',
+      confirmando: 'Confirmation…',
+      outro: 'Rien reçu ? Envoyer un autre code',
+      enviado: 'Nouveau code envoyé.',
+      voltar: 'Retour',
+    },
     erros: {
       muitos: 'Trop d’e-mails envoyés en peu de temps. Attends quelques minutes et réessaie.',
-      confirmar: 'Il reste à confirmer ton e-mail : ouvre le lien qu’on t’a envoyé (regarde aussi dans les spams).',
+      confirmar: 'Ton e-mail n’est pas encore confirmé. Saisis le code qu’on t’a envoyé.',
       credenciais: 'E-mail ou mot de passe incorrect.',
       emailInvalido: 'Cet e-mail ne semble pas valide. Vérifie s’il n’y a pas de faute de frappe (ex. : gmail.com).',
       jaExiste: 'Un compte existe déjà avec cet e-mail. Connecte-toi avec ou utilise « Mot de passe oublié ».',

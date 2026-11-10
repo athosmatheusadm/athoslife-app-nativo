@@ -37,6 +37,8 @@ export function Login() {
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  // Cadastro esperando o código do e-mail (confirmação ligada no Supabase).
+  const [pedirCodigo, setPedirCodigo] = useState(false)
   const { m } = useI18n()
   const t = m.entrar
 
@@ -53,7 +55,20 @@ export function Login() {
     setCarregando(true)
     try {
       if (modo === 'entrar') {
-        await authRepository.entrar(email, senha)
+        try {
+          await authRepository.entrar(email, senha)
+        } catch (err) {
+          // Criou a conta e não confirmou: manda um código novo e pede ele aqui.
+          const codigo = (err as { code?: string } | null)?.code ?? ''
+          if (codigo === 'email_not_confirmed' || (err instanceof Error && err.message.toLowerCase().includes('not confirmed'))) {
+            await authRepository.reenviarCodigoCadastro(email.trim()).catch(() => {})
+            setAviso(t.erros.confirmar)
+            setPedirCodigo(true)
+            setCarregando(false)
+            return
+          }
+          throw err
+        }
         // Sucesso: SessionProvider pega o evento e o Guards redireciona sozinho.
       } else {
         // Mínimo 8 no app (relatório do APK); o Supabase também precisa estar em 8.
@@ -67,6 +82,7 @@ export function Login() {
           // Sem sessão = o Supabase pede confirmação. Ele responde igual se o e-mail
           // já tinha conta (não revela quem está cadastrado), então o texto cobre os dois.
           setAviso(t.criada)
+          setPedirCodigo(true)
           setCarregando(false)
         }
         // Se sessaoAtiva, o SessionProvider pega o evento e redireciona sozinho.
@@ -76,6 +92,20 @@ export function Login() {
       setErro(mensagemErroAuth(err, t.erros))
       setCarregando(false)
     }
+  }
+
+  if (pedirCodigo) {
+    return (
+      <ConfirmarCadastro
+        email={email.trim()}
+        aviso={aviso}
+        onVoltar={() => {
+          setPedirCodigo(false)
+          setAviso(null)
+          setModo('entrar')
+        }}
+      />
+    )
   }
 
   return (
@@ -164,6 +194,98 @@ export function Login() {
           {carregando ? (modo === 'entrar' ? t.entrando : t.criando) : modo === 'entrar' ? t.entrar : t.criar}
         </button>
       </form>
+    </main>
+  )
+}
+
+/**
+ * Código de confirmação do cadastro (10/11). Ao confirmar, o Supabase já
+ * abre a sessão e o SessionProvider redireciona sozinho.
+ */
+function ConfirmarCadastro(props: { email: string; aviso: string | null; onVoltar: () => void }) {
+  const { m } = useI18n()
+  const t = m.entrar.codigoCadastro
+  const erros = m.entrar.recuperar.erros
+  const [codigo, setCodigo] = useState('')
+  const [carregando, setCarregando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(props.aviso)
+
+  function traduzir(err: unknown): string {
+    const msg = err instanceof Error ? err.message.toLowerCase() : ''
+    if (msg.includes('rate limit') || msg.includes('security purposes')) return erros.muitas
+    if (msg.includes('expired') || msg.includes('invalid') || msg.includes('otp')) return erros.codigo
+    if (msg.includes('failed to fetch') || msg.includes('network')) return m.entrar.erros.rede
+    return erros.geral
+  }
+
+  async function confirmar(e: FormEvent) {
+    e.preventDefault()
+    setErro(null)
+    setCarregando(true)
+    try {
+      await authRepository.confirmarCadastro(props.email, codigo.trim())
+    } catch (err) {
+      setErro(traduzir(err))
+      setCarregando(false)
+    }
+  }
+
+  async function outroCodigo() {
+    setErro(null)
+    setAviso(null)
+    setCarregando(true)
+    try {
+      await authRepository.reenviarCodigoCadastro(props.email)
+      setAviso(t.enviado)
+    } catch (err) {
+      setErro(traduzir(err))
+    } finally {
+      setCarregando(false)
+    }
+  }
+
+  return (
+    <main className="flex min-h-full flex-col justify-center animate-rise px-6 pt-safe-t">
+      <h1 className="text-3xl font-bold text-content-hi">
+        ATHOS<span className="text-brand">life</span>
+      </h1>
+      {aviso && <p role="status" className="mt-3 text-sm font-medium text-brand">{aviso}</p>}
+      <p className="mt-1 text-sm text-content-low">{t.lead(props.email)}</p>
+      <form onSubmit={(e) => void confirmar(e)} className="mt-6 space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-micro font-semibold text-content-low">{t.codigo}</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+            pattern="[0-9]{6,10}"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+            className="min-h-12 w-full rounded-card border border-surface-4 bg-surface-2 px-4 text-base tracking-[0.3em] text-content-hi focus:border-brand focus:outline-none"
+          />
+        </label>
+        {erro && <p role="alert" className="text-sm font-medium text-accent-danger">{erro}</p>}
+        <button
+          type="submit"
+          disabled={carregando}
+          className="min-h-12 w-full rounded-pill bg-brand text-base font-bold text-surface-1 transition-transform active:scale-[0.98] disabled:opacity-60"
+        >
+          {carregando ? t.confirmando : t.confirmar}
+        </button>
+        <button
+          type="button"
+          disabled={carregando}
+          onClick={() => void outroCodigo()}
+          className="min-h-12 w-full text-sm font-medium text-content-mid disabled:opacity-60"
+        >
+          {t.outro}
+        </button>
+      </form>
+      <button type="button" onClick={props.onVoltar} className="mx-auto mt-6 flex min-h-11 items-center px-3 text-sm font-medium text-content-mid">
+        {t.voltar}
+      </button>
     </main>
   )
 }

@@ -308,6 +308,14 @@ export const en: Mensagens = {
     insight: (nome: string, periodo: string, gatilho: string | null, vitorias: number) =>
       `Your ${nome} craving usually shows up ${periodo}${gatilho ? `, mostly with ${gatilho}` : ''}.${vitorias ? ` This week you beat it ${vitorias} ${vitorias === 1 ? 'time' : 'times'} 💚` : ''}`,
     tropecoOk: 'Logged. Starting over is part of it 💜',
+    perguntaOi: {
+      queVem: ['next Sunday', 'next Monday', 'next Tuesday', 'next Wednesday', 'next Thursday', 'next Friday', 'next Saturday'],
+      texto: (dia: string) => `If you want, ${dia}, a little before this time, I'll drop by to say hi. Is that okay?`,
+      pode: 'Sure',
+      naoPrecisa: 'No need',
+      combinado: "Deal, I'll drop by to say hi.",
+      tudoBem: "Okay, I won't send it.",
+    },
     card: {
       dias: (n: number) => (n === 1 ? 'day' : 'days'),
       gatilhos: (lista: string) => `Triggers: ${lista}`,
@@ -1630,10 +1638,19 @@ export const en: Mensagens = {
     esqueci: 'Forgot password',
     entrando: 'Signing in…',
     criando: 'Creating…',
-    criada: "Done! We sent a link to your email — open it to activate the account (check spam too). If this email already had an account, just sign in.",
+    criada: "Account created! We sent a code to your email.",
+    codigoCadastro: {
+      lead: (email: string) => `Enter the code we sent to ${email} (check spam too). If this email already had an account, just go back and sign in.`,
+      codigo: 'Code from the email',
+      confirmar: 'Confirm and sign in',
+      confirmando: 'Confirming…',
+      outro: "Didn't get it? Send another code",
+      enviado: 'New code sent.',
+      voltar: 'Back',
+    },
     erros: {
       muitos: 'Too many emails sent in a short time. Wait a few minutes and try again.',
-      confirmar: 'You still need to confirm your email: open the link we sent (check spam too).',
+      confirmar: "Your email isn't confirmed yet. Enter the code we sent.",
       credenciais: 'Wrong email or password.',
       emailInvalido: "That email doesn't look valid. Check for typos (e.g. gmail.com).",
       jaExiste: 'An account with this email already exists. Sign in or use "Forgot password".',

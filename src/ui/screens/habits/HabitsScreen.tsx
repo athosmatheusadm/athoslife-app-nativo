@@ -1,5 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ProfileAvatar } from '@ui/components/ProfileAvatar'
 import { HabitCard } from './HabitCard'
 import { CravingAssistant } from './CravingAssistant'
@@ -30,6 +30,8 @@ import { dataLocalISO } from '@domain/rules/datas'
  * está aberto.
  */
 export function HabitsScreen(props: {
+  /** Cartão do Life logo abaixo do título (ex.: licença do oi). */
+  topo?: ReactNode
   habitos: readonly Habito[]
   carregando: boolean
   eventos: readonly EventoHabito[]
@@ -80,6 +82,8 @@ export function HabitsScreen(props: {
         </div>
         <ProfileAvatar />
       </header>
+
+      {props.topo}
 
       {/* Cards */}
       <div className="space-y-3">

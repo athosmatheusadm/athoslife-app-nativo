@@ -8,6 +8,7 @@ import { LifeMascote } from '@ui/components/LifeMascote'
 import { useI18n } from '@/i18n/I18nProvider'
 import { temAcessoPremium } from '@domain/rules/access'
 import { HabitsScreen } from './habits/HabitsScreen'
+import { PerguntaOi } from './habits/PerguntaOi'
 import { avisar, vibrar } from '@ui/feedback'
 
 export function Habitos() {
@@ -16,6 +17,8 @@ export function Habitos() {
   const [habitos, setHabitos] = useState<Habito[]>([])
   const [eventos, setEventos] = useState<EventoHabito[]>([])
   const [carregando, setCarregando] = useState(true)
+  // Dia da semana do oi proposto (Fase 5), enquanto a pessoa não responde.
+  const [diaOi, setDiaOi] = useState<number | null>(null)
   const autorizado = profile?.consentimentoHabitos ?? false
 
   function recarregar() {
@@ -42,6 +45,20 @@ export function Habitos() {
 
   return (
     <HabitsScreen
+      topo={diaOi !== null && (
+        <PerguntaOi
+          dia={diaOi}
+          onResponder={async (pode) => {
+            try {
+              await habitosRepository.responderLicencaOi(pode)
+              avisar.ok(pode ? m.habitos.perguntaOi.combinado : m.habitos.perguntaOi.tudoBem)
+              setDiaOi(null)
+            } catch {
+              avisar.erro(m.habitos.erroSalvar)
+            }
+          }}
+        />
+      )}
       habitos={habitos}
       carregando={carregando}
       eventos={eventos}
@@ -58,10 +75,11 @@ export function Habitos() {
       onRegistrarTropeco={(habitoId, gatilho) => {
         void habitosRepository
           .registrarRecaida({ habitoId, gatilho, contexto: null })
-          .then(() => {
+          .then(async () => {
             vibrar.leve()
             avisar.ok(m.habitos.tropecoOk)
             recarregar()
+            if (await habitosRepository.oiPropostoPendente().catch(() => false)) setDiaOi(new Date().getDay())
           })
           .catch(() => avisar.erro(m.habitos.erroSalvar))
       }}

@@ -308,6 +308,14 @@ export const es: Mensagens = {
     insight: (nome: string, periodo: string, gatilho: string | null, vitorias: number) =>
       `Tu antojo de ${nome} suele aparecer ${periodo}${gatilho ? `, casi siempre con ${gatilho}` : ''}.${vitorias ? ` Esta semana lo venciste ${vitorias} ${vitorias === 1 ? 'vez' : 'veces'} 💚` : ''}`,
     tropecoOk: 'Registrado. Volver a empezar es parte del camino 💜',
+    perguntaOi: {
+      queVem: ['el próximo domingo', 'el próximo lunes', 'el próximo martes', 'el próximo miércoles', 'el próximo jueves', 'el próximo viernes', 'el próximo sábado'],
+      texto: (dia: string) => `Si quieres, ${dia}, un poco antes de esta hora, paso a saludarte. ¿Te parece?`,
+      pode: 'Sí, dale',
+      naoPrecisa: 'No hace falta',
+      combinado: 'Hecho, paso a saludarte.',
+      tudoBem: 'Vale, no lo mando.',
+    },
     card: {
       dias: (n: number) => (n === 1 ? 'día' : 'días'),
       gatilhos: (lista: string) => `Detonantes: ${lista}`,
@@ -1630,10 +1638,19 @@ export const es: Mensagens = {
     esqueci: 'Olvidé la contraseña',
     entrando: 'Entrando…',
     criando: 'Creando…',
-    criada: '¡Listo! Te enviamos un enlace al correo — ábrelo para activar la cuenta (revisa también el spam). Si ese correo ya tenía cuenta, solo entra.',
+    criada: '¡Cuenta creada! Te enviamos un código al correo.',
+    codigoCadastro: {
+      lead: (email: string) => `Escribe el código que enviamos a ${email} (revisa también el spam). Si ese correo ya tenía cuenta, vuelve y entra.`,
+      codigo: 'Código del correo',
+      confirmar: 'Confirmar y entrar',
+      confirmando: 'Confirmando…',
+      outro: '¿No llegó? Enviar otro código',
+      enviado: 'Código nuevo enviado.',
+      voltar: 'Volver',
+    },
     erros: {
       muitos: 'Se enviaron muchos correos en poco tiempo. Espera unos minutos e intenta de nuevo.',
-      confirmar: 'Falta confirmar tu correo: abre el enlace que te enviamos (revisa también el spam).',
+      confirmar: 'Falta confirmar tu correo. Escribe el código que te enviamos.',
       credenciais: 'Correo o contraseña incorrectos.',
       emailInvalido: 'Ese correo no parece válido. Revisa si hay un error de escritura (ej.: gmail.com).',
       jaExiste: 'Ya existe una cuenta con ese correo. Entra con ella o usa "Olvidé la contraseña".',

@@ -4842,3 +4842,36 @@ treino/água pelo servidor, alô da Fase 5 pelo FCM, iOS.
 - Visto no Supabase: SMTP Brevo configurado; **site_url ainda
   `http://localhost:3000`** (links de e-mail quebram); rc-webhook com 1
   evento recebido, 0 assinaturas reais.
+
+## 2026-11-10 (3) — pendências sem o dono (branch `push-life`)
+
+- **Firebase:** dono conferiu no Google Cloud, só existe a chave em uso.
+  Item fechado.
+- **Brevo / localhost:** o SMTP do Brevo já estava ligado. O `site_url`
+  localhost não quebrava nada: a confirmação de cadastro está **desligada**
+  (`mailer_autoconfirm = true`) e a recuperação de senha é por código.
+- **Confirmação de cadastro por código** (contra conta falsa pra ganhar
+  mensagem grátis): depois de criar a conta, ou ao entrar com conta não
+  confirmada, o login pede o código do e-mail (`verifyOtp type signup`,
+  "mandar outro código" com `resend`). Textos em pt/en/es/fr/hi. O template
+  "Confirm signup" do Supabase já foi trocado pra mostrar `{{ .Token }}`
+  (assunto "Ative sua conta ATHOSlife…"). **A confirmação continua
+  desligada:** ligar só depois que o APK novo estiver com os testers
+  (Authentication → Sign In / Providers → Email → Confirm email), senão o
+  APK antigo recebe um código sem onde digitar.
+- **Oi da Fase 5 pela tela:** o "Hoje eu cedi" em Hábitos agora pergunta a
+  licença (cartão `PerguntaOi`, mesmo texto do chat: "Se quiser, segunda
+  que vem… Pode ser? Pode / Não precisa") quando o trigger deixou um oi
+  `proposto`. Usa a RPC `life_responder_licenca_aviso`. Sem banco novo.
+- **Baixar meus dados no APK:** plugin próprio `AthosArquivo`
+  (`android/.../arquivo/AthosArquivoPlugin.java`) grava o JSON no cache e
+  abre o menu de compartilhar (Drive, e-mail, Arquivos). No navegador segue
+  baixando. **Java não compilado aqui (sem JDK):** conferir no "APK de teste".
+- Validado: typecheck e build. Nada de Edge Function mudou.
+
+**Pendências:** (1) token do GitHub → push da `push-life` e `habitos-valor`
+→ APK de teste; (2) no celular: push real, cadastro com código, "cedi" →
+pergunta do oi, baixar dados; (3) depois do APK com os testers, ligar
+"Confirm email"; (4) remetente do Brevo ainda é Gmail (risco de spam): trocar
+quando houver domínio; (5) merge do PR #3; (6) página web de exclusão de
+conta/política (hospedagem e e-mail de suporte); psicólogo/nutri/personal.

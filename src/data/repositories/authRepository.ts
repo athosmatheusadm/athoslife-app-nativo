@@ -26,6 +26,22 @@ export const authRepository = {
   },
 
   /**
+   * Confirma o cadastro com o código do e-mail (10/11). Por código e não por
+   * link, pelo mesmo motivo da recuperação: o app nativo não tem deep link
+   * de volta. Dá certo = já abre a sessão. O template "Confirm signup" do
+   * Supabase precisa exibir {{ .Token }}.
+   */
+  async confirmarCadastro(email: string, codigo: string): Promise<void> {
+    const { error } = await supabase.auth.verifyOtp({ email, token: codigo, type: 'signup' })
+    if (error) throw error
+  },
+
+  async reenviarCodigoCadastro(email: string): Promise<void> {
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
+    if (error) throw error
+  },
+
+  /**
    * Manda o e-mail de recuperação com um código numérico. Por código e não
    * por link: o app nativo não tem deep link de volta (detectSessionInUrl
    * desligado). O template "Reset Password" do Supabase precisa exibir
