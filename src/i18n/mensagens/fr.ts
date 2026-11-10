@@ -1297,7 +1297,7 @@ export const fr: Mensagens = {
     rotulo2: {
       titulo: 'Aucune base ne connaît encore ce code',
       tituloSemTabela: (nome: string) => `J’ai trouvé « ${nome} », mais sans le tableau nutritionnel`,
-      texto: 'Recopie le tableau de l’étiquette (colonne pour 100 g) — c’est gratuit et la prochaine personne qui scanne le trouvera.',
+      texto: 'Recopie le tableau de l’étiquette (colonne pour 100 g). C’est gratuit et ça reste enregistré sur ton téléphone.',
       nome: 'Nom du produit',
       marca: 'Marque (facultatif)',
       por100: 'Pour 100 g ou 100 ml',
@@ -1308,7 +1308,6 @@ export const fr: Mensagens = {
       porcao: 'Portion de l’étiquette (g ou ml)',
       salvar: 'Utiliser ces chiffres',
       invalido: 'Vérifie les chiffres : protéines + glucides + lipides ne dépassent pas 100 g.',
-      soNoCelular: 'Enregistré seulement sur ton téléphone pour l’instant.',
       ou: 'ou',
       estimarTitulo: 'Pas l’étiquette sous la main ? Life l’estime avec le nom :',
     },
@@ -1656,6 +1655,7 @@ export const fr: Mensagens = {
     },
     erros: {
       muitos: 'Trop d’e-mails envoyés en peu de temps. Attends quelques minutes et réessaie.',
+      tentativas: 'Trop de tentatives de mot de passe. Attends environ 15 minutes et réessaie.',
       confirmar: 'Ton e-mail n’est pas encore confirmé. Saisis le code qu’on t’a envoyé.',
       credenciais: 'E-mail ou mot de passe incorrect.',
       emailInvalido: 'Cet e-mail ne semble pas valide. Vérifie s’il n’y a pas de faute de frappe (ex. : gmail.com).',

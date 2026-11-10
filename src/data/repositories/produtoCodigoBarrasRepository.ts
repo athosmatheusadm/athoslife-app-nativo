@@ -8,15 +8,13 @@ import type { Macros } from '@domain/entities/food'
  * rótulo. Ordem da busca (todas gratuitas):
  *
  *   1. cópia no celular (funciona sem internet);
- *   2. base própria `produtos_codigo_barras`: o que o app já achou antes e o
- *      que as pessoas cadastraram pelo rótulo (o teste de 25/10 achou o Open
- *      Food Facts sozinho limitado pra produto brasileiro);
+ *   2. base própria `produtos_codigo_barras` (só leitura pelo app);
  *   3. Open Food Facts, tentando as variações do código (UPC-A ↔ EAN-13);
  *   4. USDA FoodData Central (produtos de marca, cobre importados).
  *
- * O que vem das bases públicas é guardado na base própria, então a próxima
- * pessoa acha direto. Se só o nome é conhecido (cadastro sem tabela
- * nutricional), devolve `semTabela` pra tela pedir os números do rótulo.
+ * O app não grava na base própria (10/11): o que a pessoa acha ou copia do
+ * rótulo fica na cópia do celular dela. Se só o nome é conhecido (cadastro
+ * sem tabela nutricional), devolve `semTabela` pra tela pedir os números.
  */
 
 export interface ProdutoRotulo {
@@ -35,8 +33,6 @@ export type ResultadoCodigo =
   /** A base conhece o produto, mas sem tabela nutricional. */
   | { readonly tipo: 'semTabela'; readonly codigo: string; readonly nome: string; readonly marca: string | null; readonly imagemUrl: string | null }
   | { readonly tipo: 'naoAchado'; readonly codigo: string }
-
-type Fonte = 'off' | 'usda' | 'usuario'
 
 const CHAVE_CACHE = 'codigos-barras'
 const MAX_CACHE = 300
@@ -245,22 +241,6 @@ async function guardarNoCelular(p: ProdutoRotulo): Promise<void> {
   }).catch(() => {})
 }
 
-async function gravarNaBase(p: ProdutoRotulo, fonte: Fonte): Promise<void> {
-  const { error } = await supabase.rpc('salvar_produto_codigo_barras', {
-    p_codigo: p.codigo,
-    p_nome: p.nome.slice(0, 120),
-    p_marca: p.marca?.slice(0, 80) ?? null,
-    p_kcal: p.por100.calorias,
-    p_proteina: p.por100.proteina,
-    p_carbo: p.por100.carboidrato,
-    p_gordura: p.por100.gordura,
-    p_porcao_g: p.porcaoG,
-    p_imagem_url: p.imagemUrl?.startsWith('https://') ? p.imagemUrl : null,
-    p_fonte: fonte,
-  })
-  if (error) throw new Error(error.message)
-}
-
 export const produtoCodigoBarrasRepository = {
   async buscar(codigo: string): Promise<ResultadoCodigo> {
     const limpo = codigo.replace(/\D/g, '')
@@ -288,7 +268,6 @@ export const produtoCodigoBarrasRepository = {
     }
     if (off?.tipo === 'achado') {
       void guardarNoCelular(off.produto)
-      void gravarNaBase(off.produto, 'off').catch(() => {})
       return off
     }
 
@@ -296,7 +275,6 @@ export const produtoCodigoBarrasRepository = {
     if (usda) {
       const produto = off?.tipo === 'semTabela' ? { ...usda, nome: off.nome, marca: off.marca ?? usda.marca, imagemUrl: off.imagemUrl } : usda
       void guardarNoCelular(produto)
-      void gravarNaBase(produto, 'usda').catch(() => {})
       return { tipo: 'achado', produto }
     }
 
@@ -304,15 +282,11 @@ export const produtoCodigoBarrasRepository = {
   },
 
   /**
-   * A pessoa copiou o rótulo de um produto que nenhuma base conhecia: entra
-   * na base própria (a próxima pessoa já acha) e no celular. false = ficou
-   * só no celular (sem rede ou a base recusou); o alimento entra do mesmo jeito.
+   * A pessoa copiou o rótulo de um produto que nenhuma base conhecia: fica
+   * no celular dela. Não vai pra base de todos (10/11: o dado vem do
+   * aparelho, então qualquer conta conseguia inventar produto pros outros).
    */
-  async cadastrarPeloRotulo(p: ProdutoRotulo): Promise<boolean> {
+  async cadastrarPeloRotulo(p: ProdutoRotulo): Promise<void> {
     await guardarNoCelular(p)
-    return gravarNaBase(p, 'usuario').then(
-      () => true,
-      () => false,
-    )
   },
 }

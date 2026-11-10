@@ -18,6 +18,7 @@ function mensagemErroAuth(err: unknown, t: Mensagens['entrar']['erros']): string
   const codigo = (err as { code?: string } | null)?.code ?? ''
   const msg = err instanceof Error ? err.message.toLowerCase() : ''
   if (codigo === 'over_email_send_rate_limit' || msg.includes('rate limit')) return t.muitos
+  if (msg.includes('too many attempts')) return t.tentativas
   if (codigo === 'email_not_confirmed' || msg.includes('not confirmed')) return t.confirmar
   if (codigo === 'invalid_credentials' || msg.includes('invalid login')) return t.credenciais
   if (codigo === 'email_address_invalid' || (msg.includes('email') && msg.includes('invalid'))) return t.emailInvalido

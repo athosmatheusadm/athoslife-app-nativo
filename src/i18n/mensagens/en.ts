@@ -1291,7 +1291,7 @@ export const en: Mensagens = {
     rotulo2: {
       titulo: "No database knows this code yet",
       tituloSemTabela: (nome: string) => `Found "${nome}", but without the nutrition table`,
-      texto: 'Copy the nutrition label (the 100 g column). It is free, and the next person who scans it will find it.',
+      texto: 'Copy the nutrition label (the 100 g column). It is free and stays saved on your phone.',
       nome: 'Product name',
       marca: 'Brand (optional)',
       por100: 'Per 100 g or 100 ml',
@@ -1302,7 +1302,6 @@ export const en: Mensagens = {
       porcao: 'Serving size (g or ml)',
       salvar: 'Use these numbers',
       invalido: 'Check the numbers: protein + carbs + fat cannot exceed 100 g.',
-      soNoCelular: 'Saved only on your phone for now.',
       ou: 'or',
       estimarTitulo: 'No label at hand? Life estimates it by name:',
     },
@@ -1650,6 +1649,7 @@ export const en: Mensagens = {
     },
     erros: {
       muitos: 'Too many emails sent in a short time. Wait a few minutes and try again.',
+      tentativas: 'Too many password attempts. Wait about 15 minutes and try again.',
       confirmar: "Your email isn't confirmed yet. Enter the code we sent.",
       credenciais: 'Wrong email or password.',
       emailInvalido: "That email doesn't look valid. Check for typos (e.g. gmail.com).",

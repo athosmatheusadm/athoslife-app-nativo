@@ -1291,7 +1291,7 @@ export const es: Mensagens = {
     rotulo2: {
       titulo: 'Ninguna base conoce este código todavía',
       tituloSemTabela: (nome: string) => `Encontré "${nome}", pero sin la tabla nutricional`,
-      texto: 'Copia la tabla de la etiqueta (columna de 100 g). Es gratis y quien lo escanee después ya lo encuentra.',
+      texto: 'Copia la tabla de la etiqueta (columna de 100 g). Es gratis y queda guardada en tu celular.',
       nome: 'Nombre del producto',
       marca: 'Marca (opcional)',
       por100: 'Por 100 g o 100 ml',
@@ -1302,7 +1302,6 @@ export const es: Mensagens = {
       porcao: 'Porción de la etiqueta (g o ml)',
       salvar: 'Usar estos números',
       invalido: 'Revisa los números: proteína + carbohidratos + grasa no pasan de 100 g.',
-      soNoCelular: 'Por ahora lo guardé solo en tu celular.',
       ou: 'o',
       estimarTitulo: '¿Sin la etiqueta a mano? Life lo estima por el nombre:',
     },
@@ -1650,6 +1649,7 @@ export const es: Mensagens = {
     },
     erros: {
       muitos: 'Se enviaron muchos correos en poco tiempo. Espera unos minutos e intenta de nuevo.',
+      tentativas: 'Demasiados intentos de contraseña. Espera unos 15 minutos e intenta de nuevo.',
       confirmar: 'Falta confirmar tu correo. Escribe el código que te enviamos.',
       credenciais: 'Correo o contraseña incorrectos.',
       emailInvalido: 'Ese correo no parece válido. Revisa si hay un error de escritura (ej.: gmail.com).',

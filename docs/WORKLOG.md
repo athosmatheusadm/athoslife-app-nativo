@@ -4964,3 +4964,29 @@ Dono autorizou ("eu autorizo tudo").
 - Push no GitHub (`push-life`, `seguranca-legal`) e APK de teste: falta o token.
 - Termos/política: dono vai lançar como pessoa física; campos da empresa
   ficam em branco até ele definir. Páginas de `site-legal/` sem hospedagem.
+
+## 2026-11-10 (6) — catálogo de código de barras sem escrita e trava de senha (branch `seguranca-legal`)
+
+Pedido do dono: tirar a função que mandava produto do celular pra base de
+todos e travar senha errada repetida.
+
+- **App:** `produtoCodigoBarrasRepository` não chama mais
+  `salvar_produto_codigo_barras` (nem pro que vem do Open Food Facts/USDA,
+  nem pro rótulo copiado). O rótulo copiado fica só no celular. A leitura da
+  base própria continua. Texto do cadastro de rótulo ajustado e aviso
+  "só no celular" removido (pt/en/es/fr/hi).
+- **App:** Login mostra "muitas tentativas de senha" (chave `entrar.erros.tentativas`, 5 idiomas).
+- **Migração escrita, NÃO aplicada:** `db/athoslife_seguranca_senha_catalogo_migration.sql`
+  (tira o `execute` da RPC de gravar produto; cria `auth_tentativas_senha` e
+  `hook_tentativa_senha`: 8 erros seguidos travam a conta por 15 min).
+  O modo automático barrou a aplicação; precisa do ok explícito do dono.
+- **Validado:** `npm run typecheck` e `npm run build`.
+
+**Pendências**
+- Aplicar a migração acima e ligar o gancho no Auth
+  (`hook_password_verification_attempt_enabled` + uri
+  `pg-functions://postgres/public/hook_tentativa_senha`). Conferir se o plano
+  do Supabase aceita esse gancho; se não aceitar, a saída é captcha.
+- Depois: `node scripts/teste-invasao.mjs .env` (produto falso deve dar 403 e
+  a força bruta deve travar).
+- As do bloco (5) continuam.

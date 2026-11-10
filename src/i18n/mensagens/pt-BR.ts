@@ -1305,7 +1305,7 @@ export const ptBR = {
     rotulo2: {
       titulo: 'Nenhuma base conhece esse código ainda',
       tituloSemTabela: (nome: string) => `Achei "${nome}", mas sem a tabela nutricional`,
-      texto: 'Copie a tabela do rótulo (coluna de 100 g) — é grátis e quem escanear depois já encontra.',
+      texto: 'Copie a tabela do rótulo (coluna de 100 g). É grátis e fica salvo no seu celular.',
       nome: 'Nome do produto',
       marca: 'Marca (opcional)',
       por100: 'Por 100 g ou 100 ml',
@@ -1316,7 +1316,6 @@ export const ptBR = {
       porcao: 'Porção do rótulo (g ou ml)',
       salvar: 'Usar esses números',
       invalido: 'Confere os números: proteína + carbo + gordura não passam de 100 g.',
-      soNoCelular: 'Salvei só no seu celular por enquanto.',
       ou: 'ou',
       estimarTitulo: 'Sem o rótulo à mão? O Life estima pelo nome:',
     },
@@ -1664,6 +1663,7 @@ export const ptBR = {
     },
     erros: {
       muitos: 'Muitos e-mails enviados em pouco tempo. Espera uns minutos e tenta de novo.',
+      tentativas: 'Muitas tentativas de senha. Espera uns 15 minutos e tenta de novo.',
       confirmar: 'Falta confirmar seu e-mail. Digite o código que mandamos.',
       credenciais: 'E-mail ou senha incorretos.',
       emailInvalido: 'Esse e-mail não parece válido. Confere se não tem erro de digitação (ex.: gmail.com).',

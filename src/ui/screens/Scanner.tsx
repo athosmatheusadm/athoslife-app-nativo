@@ -209,8 +209,7 @@ export function Scanner() {
   async function cadastrarRotulo(produto: ProdutoRotulo) {
     setOrigem('codigo')
     abrirRevisaoDoProduto(produto)
-    const naBase = await produtoCodigoBarrasRepository.cadastrarPeloRotulo(produto)
-    if (!naBase) avisar.ok(t.rotulo2.soNoCelular)
+    await produtoCodigoBarrasRepository.cadastrarPeloRotulo(produto)
   }
 
   async function estimarProduto() {
