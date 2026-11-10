@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1024491310815",
+    "project_id": "athoslife-89511",
+    "storage_bucket": "athoslife-89511.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1024491310815:android:18e5879b2a75d567a0a36a",
+        "android_client_info": {
+          "package_name": "br.com.athoslife.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJVSGaABDpZ1qfAigaC9RB-54IDebknb4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

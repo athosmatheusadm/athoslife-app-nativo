@@ -4800,3 +4800,27 @@ em `android/app/` (vai pro git, CI precisa) e chave da conta de serviço como
 (autorização) + teste `simular` numa conta de teste; (4) migração do relógio;
 (5) APK novo e push de verdade no aparelho; (6) depois: treino/água pelo
 servidor, alô da Fase 5 migrar pro FCM, iOS (APNs, precisa do Mac).
+
+## 2026-11-10 — Push do Life no ar no servidor (branch `push-life`)
+
+Com autorização do dono:
+- **Firebase:** projeto `athoslife-89511`. `android/app/google-services.json`
+  (estava salvo como `.json.json`, renomeado) agora no git. Chave da conta
+  de serviço (`…95e0152151`) gravada no Secret `FIREBASE_SERVICE_ACCOUNT`
+  pela Management API e conferida por hash; testada no OAuth do Google (200).
+  As 3 cópias locais da chave foram apagadas.
+- **Banco:** `athoslife_push_life_migration.sql` e
+  `athoslife_push_relogio_migration.sql` aplicadas (pg_cron + pg_net ligados,
+  job `life-push` a cada 15 min).
+- **Função:** `life-push` publicada com `--no-verify-jwt`. Testado: sem senha
+  e senha errada → 403; com a senha do Vault, simulação e rodada real → 200
+  (`pessoas: 0`, ainda não há aparelho registrado). Lê a chave do Firebase
+  em produção.
+- `npx cap sync android` liga o plugin de push no projeto Android.
+
+**Pendências:** (1) dono revogar no Google Cloud as chaves antigas da conta
+`firebase-adminsdk` (manter só a `95e0152151`); (2) push da branch pro GitHub
+(sem token nesta sessão) e rodar "APK de teste"; (3) no celular: aceitar o
+convite da Home → conferir linha em `push_dispositivos` → receber o primeiro
+push (pode chamar a função com `{"user_id": "..."}` + header `x-relogio` pra testar); (4) depois:
+treino/água pelo servidor, alô da Fase 5 pelo FCM, iOS.
