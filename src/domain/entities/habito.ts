@@ -232,12 +232,27 @@ export function faltamParaConquista(streak: number, meta: number): number {
  * "tranquilo total". Hábito sem recaída nenhuma conta como tranquilo: o
  * começo de um hábito não é motivo de preocupação.
  */
-export function nivelBemEstar(habitos: readonly Pick<Habito, 'streakAtual' | 'ultimaRecaida'>[]): number {
+/**
+ * Quanto de roxo cada tropeço recente põe no Life (dono, 09/11: "fica roxo
+ * muito rápido quando falo que cedi"). Um tropeço sozinho dá só um toque;
+ * o roxo cheio fica pra quem tropeçou 4+ vezes em 14 dias.
+ */
+const ROXO_POR_TROPECOS = [0, 30, 55, 75, 100] as const
+
+export function nivelBemEstar(
+  habitos: readonly Pick<Habito, 'id' | 'streakAtual' | 'ultimaRecaida'>[],
+  eventos: readonly EventoHabito[] = [],
+  hoje: string = new Date().toISOString().slice(0, 10),
+): number {
   if (habitos.length === 0) return 100
-  const soma = habitos.reduce(
-    (acc, h) => acc + (h.ultimaRecaida === null ? 100 : Math.min(100, (h.streakAtual / 14) * 100)),
-    0,
-  )
+  const desde = somarDias(hoje, -13)
+  const soma = habitos.reduce((acc, h) => {
+    if (h.ultimaRecaida === null || h.streakAtual >= 14) return acc + 100
+    const tropecos = eventos.filter((e) => e.vicioId === h.id && e.tipo === 'tropeco' && e.data >= desde).length
+    const roxo = ROXO_POR_TROPECOS[Math.min(Math.max(tropecos, 1), 4)]!
+    // Volta ao verde aos poucos: 14 dias firme apagam o roxo todo.
+    return acc + 100 - roxo * (1 - h.streakAtual / 14)
+  }, 0)
   return Math.round(soma / habitos.length)
 }
 

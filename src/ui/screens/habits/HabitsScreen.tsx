@@ -61,7 +61,7 @@ export function HabitsScreen(props: {
     ? t.insight(percebido.nome.toLowerCase(), t.periodos[percebido.periodo], percebido.gatilho ? nomeGatilho(percebido.gatilho) : null, percebido.vitorias)
     : null
 
-  const nivel = nivelBemEstar(habitos)
+  const nivel = nivelBemEstar(habitos, props.eventos, dataLocalISO())
   const corLife = corTermometro(nivel)
 
   return (
