@@ -13,7 +13,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { dadosAbertura, memoriasParaContexto, type Idioma } from '../ai-proxy/life.ts'
 import { chamarIA } from '../ai-proxy/ia.ts'
 import { decidirPush, minutosDe, type DadosPush, type Decisao, type Momento } from './regras.ts'
-import { fraseValida, lerJsonTexto, pedidoIA, textoFixo, TITULO } from './textos.ts'
+import { fraseValida, lerJsonTexto, pedidoIA, termosEscondidos, textoFixo, TITULO } from './textos.ts'
 import { enviarPush, lerConta } from './fcm.ts'
 
 type Sb = SupabaseClient
@@ -129,7 +129,7 @@ async function escreverFrase(sb: Sb, p: Perfil, dec: Decisao, dados: DadosPush, 
   }).then(({ error }) => { if (error) console.warn('[push] audit falhou', error.message) })
   const texto = g.ok ? lerJsonTexto(g.texto) : null
   // Nome dos hábitos nunca na tela bloqueada; número só no marco.
-  const proibidos = [...dados.habitos.map((h) => h.nome), ...dados.riscos.map((r) => r.nome)]
+  const proibidos = [...dados.habitos.map((h) => h.nome), ...dados.riscos.map((r) => r.nome), ...termosEscondidos(dec)]
   if (texto && fraseValida(texto, proibidos, dec.motivo === 'marco' || dec.motivo === 'sumiu')) return { texto, ia: true }
   if (texto) console.warn('[push] frase da IA reprovada', dec.motivo)
   return { texto: fixo, ia: false }
@@ -174,6 +174,8 @@ const CASOS: { dec: Decisao; idioma: Idioma; nome: string | null; memorias: stri
   { dec: { motivo: 'evento_amanha', chave: 'a', detalhe: { texto: 'Entrevista de emprego na agência' } }, idioma: 'pt-BR', nome: 'Ana', memorias: ['Trabalha com design', 'Tem um cachorro chamado Thor'], periodo: 'à noite' },
   { dec: { motivo: 'evento_hoje', chave: 'b', detalhe: { texto: 'Prova de cálculo' } }, idioma: 'pt-BR', nome: 'Lucas', memorias: ['Faz engenharia', 'Gosta de jogar futebol no sábado'], periodo: 'de manhã' },
   { dec: { motivo: 'evento_ontem', chave: 'c', detalhe: { texto: 'Aniversário da mãe' } }, idioma: 'pt-BR', nome: 'Carla', memorias: ['Mora em Curitiba'], periodo: 'à tarde' },
+  { dec: { motivo: 'evento_ontem', chave: 'c2', detalhe: { texto: 'Apresentação do TCC' } }, idioma: 'pt-BR', nome: 'Marina', memorias: ['Estuda biologia', 'Tem uma gata chamada Mel'], periodo: 'à tarde' },
+  { dec: { motivo: 'evento_amanha', chave: 'c3', detalhe: { texto: 'Consulta com o cardiologista' } }, idioma: 'pt-BR', nome: 'Paulo', memorias: ['Gosta de pescar'], periodo: 'à noite' },
   { dec: { motivo: 'risco', chave: 'd', detalhe: { nome: 'Doce à noite' } }, idioma: 'pt-BR', nome: 'Pedro', memorias: ['Ama séries de suspense', 'Trabalha até tarde'], periodo: 'à noite' },
   { dec: { motivo: 'marco', chave: 'e', detalhe: { nome: 'Cigarro', dias: 30 } }, idioma: 'pt-BR', nome: 'Rafa', memorias: ['Começou a correr de manhã'], periodo: 'à tarde' },
   { dec: { motivo: 'pesado', chave: 'f' }, idioma: 'pt-BR', nome: 'Júlia', memorias: ['Semana cheia no trabalho', 'Gosta de chá'], periodo: 'à noite' },
@@ -187,7 +189,7 @@ async function amostras() {
     const { sistema, mensagem } = pedidoIA(c.dec, { idioma: c.idioma, nome: c.nome, memorias: c.memorias, periodo: c.periodo })
     const g = await chamarIA({ sistema, mensagens: [{ papel: 'usuario', texto: mensagem }], maxSaida: 120, json: true }, { timeoutMs: 12_000 })
     const texto = g.ok ? lerJsonTexto(g.texto) : null
-    const proibidos = c.dec.detalhe?.nome ? [c.dec.detalhe.nome] : []
+    const proibidos = [...(c.dec.detalhe?.nome ? [c.dec.detalhe.nome] : []), ...termosEscondidos(c.dec)]
     return {
       motivo: c.dec.motivo, idioma: c.idioma, nome: c.nome, modelo: g.modelo ?? null,
       ia: texto, aprovada: !!texto && fraseValida(texto, proibidos, c.dec.motivo === 'marco' || c.dec.motivo === 'sumiu'),

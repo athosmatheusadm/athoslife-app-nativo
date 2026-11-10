@@ -113,3 +113,19 @@ Deno.test('filtro da frase da IA', () => {
   equal(lerJsonTexto('{"texto": "Oi!"}'), 'Oi!')
   equal(lerJsonTexto('lixo'), null)
 })
+
+Deno.test('evento delicado e dia seguinte: não diz o que era nem supõe como foi', async () => {
+  const { eventoDelicado, termosEscondidos } = await import('./textos.ts')
+  ok(eventoDelicado('Aniversário da mãe'))
+  ok(eventoDelicado('Consulta com o cardiologista'))
+  ok(!eventoDelicado('Entrevista de emprego'))
+  const ontem = { motivo: 'evento_ontem' as const, chave: 'x', detalhe: { texto: 'Aniversário da mãe' } }
+  const t = textoFixo(ontem, 'pt-BR', 'Carla', '2026-11-10', 15)
+  ok(!/anivers|mae|mãe/i.test(t), t)
+  ok(!fraseValida('Carla, como foi o aniversário da sua mãe?', termosEscondidos(ontem), false))
+  ok(fraseValida('Carla, e ontem, como foi?', termosEscondidos(ontem), false))
+  const amanha = { motivo: 'evento_amanha' as const, chave: 'y', detalhe: { texto: 'Consulta com o cardiologista' } }
+  ok(!/consulta|cardio/i.test(textoFixo(amanha, 'pt-BR', null, '2026-11-10', 20)))
+  equal(termosEscondidos({ motivo: 'evento_amanha', chave: 'z', detalhe: { texto: 'Entrevista de emprego' } }).length, 0)
+  ok(/apresenta/i.test(textoFixo({ motivo: 'evento_ontem', chave: 'w', detalhe: { texto: 'Apresentação do TCC' } }, 'pt-BR', null, '2026-11-10', 15)))
+})

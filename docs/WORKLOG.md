@@ -4824,3 +4824,21 @@ Com autorização do dono:
 convite da Home → conferir linha em `push_dispositivos` → receber o primeiro
 push (pode chamar a função com `{"user_id": "..."}` + header `x-relogio` pra testar); (4) depois:
 treino/água pelo servidor, alô da Fase 5 pelo FCM, iOS.
+
+### 2026-11-10 (2) — frases do push melhores (life-push v5 publicada)
+
+- Dono não curtiu "como foi o aniversário da sua mãe? … como vocês
+  comemoraram". Agora evento **delicado** (família, saúde, luto, justiça,
+  relação — `eventoDelicado` em `textos.ts`) nunca é nomeado na tela
+  bloqueada e o Life não supõe como foi; o filtro reprova a frase da IA que
+  repetir as palavras do evento (`termosEscondidos`). Evento comum (TCC,
+  entrevista, viagem) é citado curto, sem supor resultado.
+- Prompt: emoji sorteado (às vezes nenhum, nunca 😊/🙂), proibido clichê
+  ("torcendo por você", "fiquei curioso"…), memória usada quando der pra
+  ligar ao momento.
+- Amostra real (`{"amostra": true}`): 11/11 aprovadas, ex. "Marina, como foi
+  a apresentação do TCC?", "Carla, como foi seu dia ontem? 💚".
+- 153 testes Deno.
+- Visto no Supabase: SMTP Brevo configurado; **site_url ainda
+  `http://localhost:3000`** (links de e-mail quebram); rc-webhook com 1
+  evento recebido, 0 assinaturas reais.
