@@ -200,6 +200,12 @@ export const fr: Mensagens = {
       responder: 'Répondre',
       fechar: 'Fermer',
     },
+    /** Home: o Life pede pra poder chamar (push). Uma vez só. */
+    convitePush: {
+      texto: 'Je peux t’écrire de temps en temps ? 2 fois par jour au maximum, et seulement quand ça a du sens pour toi 💚',
+      sim: 'D’accord',
+      depois: 'Pas maintenant',
+    },
     refeicoes: {
       titulo: 'Repas',
       verTodas: 'Tout voir',
@@ -752,6 +758,8 @@ export const fr: Mensagens = {
     cronometroTitulo: 'Temps ! ✅',
     cronometroTexto: 'Série terminée.',
     /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    /** Nome do canal do push do Life nas configurações do Android. */
+    canalLife: 'Messages de Life',
     avisoOi: ['Je passe te dire coucou 🙂', 'Coucou ! Tout va bien ?', 'Alors, ta journée se passe bien ?'],
     textos: {
       agua: [
@@ -832,7 +840,7 @@ export const fr: Mensagens = {
   },
   contato: {
     secao: 'Life lance la discussion',
-    intro: 'Tu choisis si Life peut t’écrire — une notification qui ouvre la discussion, aux moments que tu coches. Il se tait si vous venez de parler ou si tu as mis la journée en pause. Désactivé au départ.',
+    intro: 'Tu choisis si Life peut t’écrire — une notification qui ouvre la discussion, aux moments que tu coches. Seulement quand il y a une raison qui te concerne (un grand jour, une étape, tu lui as manqué), 2 fois par jour au maximum. Il se tait si vous venez de parler ou si tu as mis la journée en pause. Désactivé au départ.',
     lifeTitulo: 'Life lance la discussion dans le chat',
     lifeSub: 'Un petit message de temps en temps, aux moments que tu choisis.',
     momentos: { manha: 'Matin', meio_dia: 'Midi', noite: 'Soir' },

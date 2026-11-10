@@ -8,12 +8,13 @@ import {
 } from '@data/repositories/contatoRepository'
 import { Cartao, Chave, Linha } from './LembretesDoDia'
 import { avisarEstadoDoLife } from '@data/lifePausa'
+import { registrarPush } from '@data/notifications/pushLife'
 
 /**
  * "Life puxa conversa" em Perfil > Notificações: a pessoa escolhe se o Life
  * pode puxar conversa no chat e em que momentos. Começa desligado; cada
- * mudança vai pro servidor, que guarda o aceite com data. Ainda não envia
- * nada — a tela diz isso.
+ * mudança vai pro servidor, que guarda o aceite com data. Com o Firebase
+ * no build, o servidor manda o push (supabase/functions/life-push).
  */
 export function ContatoDoLife() {
   const { m } = useI18n()
@@ -42,6 +43,8 @@ export function ContatoDoLife() {
     setErro(null)
     try {
       await contatoRepository.salvar(nova)
+      // Ligou: o aparelho passa a receber o push do servidor (pede a permissão se faltar).
+      if (nova.lifeLigado && !anterior?.lifeLigado) void registrarPush({ pedir: true }).catch(() => {})
       // Os check-ins do Life são avisos no aparelho: refaz a lista já.
       avisarEstadoDoLife()
     } catch {
@@ -94,7 +97,6 @@ export function ContatoDoLife() {
       </Cartao>
 
       {erro && <p className="mt-1.5 text-micro text-accent-danger">{erro}</p>}
-      <p className="mt-2 text-micro text-accent-gold">{t.emBreve}</p>
     </section>
   )
 }

@@ -201,6 +201,12 @@ export const hi: Mensagens = {
       responder: 'जवाब दें',
       fechar: 'बंद करें',
     },
+    /** Home: o Life pede pra poder chamar (push). Uma vez só. */
+    convitePush: {
+      texto: 'क्या मैं कभी-कभी आपको संदेश भेज सकता हूँ? दिन में ज़्यादा से ज़्यादा 2 बार, और सिर्फ़ तब जब आपके लिए ठीक हो 💚',
+      sim: 'हाँ',
+      depois: 'अभी नहीं',
+    },
     refeicoes: {
       titulo: 'खाना',
       verTodas: 'सब देखें',
@@ -753,6 +759,8 @@ export const hi: Mensagens = {
     cronometroTitulo: 'समय पूरा! ✅',
     cronometroTexto: 'सेट पूरा हुआ।',
     /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    /** Nome do canal do push do Life nas configurações do Android. */
+    canalLife: 'Life के संदेश',
     avisoOi: ['बस हाल पूछने आया 🙂', 'हाय! सब ठीक है?', 'कैसा चल रहा है आज का दिन?'],
     textos: {
       agua: [
@@ -833,7 +841,7 @@ export const hi: Mensagens = {
   },
   contato: {
     secao: 'Life बात शुरू करे',
-    intro: 'आप तय करें कि Life आपको मैसेज कर सकता है या नहीं — फ़ोन पर एक नोटिफ़िकेशन जो बातचीत खोलता है, आपके चुने समय पर। अगर अभी बात हुई हो या आपने दिन रोका हो, तो वह चुप रहता है। शुरुआत में बंद रहता है।',
+    intro: 'आप तय करें कि Life आपको मैसेज कर सकता है या नहीं — फ़ोन पर एक नोटिफ़िकेशन जो बातचीत खोलता है, आपके चुने समय पर। सिर्फ़ तब जब आपसे जुड़ी कोई वजह हो (कोई ख़ास दिन, कोई उपलब्धि, आपकी याद), दिन में ज़्यादा से ज़्यादा 2 बार। अगर अभी बात हुई हो या आपने दिन रोका हो, तो वह चुप रहता है। शुरुआत में बंद रहता है।',
     lifeTitulo: 'Life चैट में बात शुरू करे',
     lifeSub: 'कभी-कभी एक छोटा मैसेज, आपके चुने समय पर।',
     momentos: { manha: 'सुबह', meio_dia: 'दोपहर', noite: 'रात' },

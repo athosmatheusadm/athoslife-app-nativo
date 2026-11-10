@@ -194,6 +194,12 @@ export const es: Mensagens = {
       responder: 'Responder',
       fechar: 'Cerrar',
     },
+    /** Home: o Life pede pra poder chamar (push). Uma vez só. */
+    convitePush: {
+      texto: '¿Puedo escribirte de vez en cuando? Como mucho 2 veces al día, y solo cuando tenga sentido para ti 💚',
+      sim: 'Claro',
+      depois: 'Ahora no',
+    },
     refeicoes: {
       titulo: 'Comidas',
       verTodas: 'Ver todas',
@@ -746,6 +752,8 @@ export const es: Mensagens = {
     cronometroTitulo: '¡Tiempo! ✅',
     cronometroTexto: 'Serie completada.',
     /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    /** Nome do canal do push do Life nas configurações do Android. */
+    canalLife: 'Mensajes de Life',
     avisoOi: ['Pasaba a saludarte 🙂', '¡Hola! ¿Todo bien por ahí?', '¿Qué tal va el día?'],
     textos: {
       agua: [
@@ -826,7 +834,7 @@ export const es: Mensagens = {
   },
   contato: {
     secao: 'Life te escribe',
-    intro: 'Tú eliges si Life puede llamarte — un aviso en el celular que abre la conversación, en los momentos que marques. Se queda callado si acaban de hablar o si pausaste el día. Empieza apagado.',
+    intro: 'Tú eliges si Life puede llamarte — un aviso en el celular que abre la conversación, en los momentos que marques. Solo cuando haya un motivo tuyo (un día importante, un logro, que te extrañó), como mucho 2 veces al día. Se queda callado si acaban de hablar o si pausaste el día. Empieza apagado.',
     lifeTitulo: 'Life inicia la conversación',
     lifeSub: 'Un mensaje corto de vez en cuando, en los momentos que elijas.',
     momentos: { manha: 'Mañana', meio_dia: 'Mediodía', noite: 'Noche' },

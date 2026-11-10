@@ -6,6 +6,7 @@ import { lifePausadoHoje, ultimaConversaComLife } from '@data/lifePausa'
 import { diaLeveHoje } from '@data/diaLeve'
 import { contatoRepository } from '@data/repositories/contatoRepository'
 import { sincronizarLembretesHabito } from './habitReminders'
+import { pushAtivo } from './pushLife'
 import { aguaRepository } from '@data/repositories/aguaRepository'
 import { itensRefeicaoRepository } from '@data/repositories/itensRefeicaoRepository'
 import { pesoRepository } from '@data/repositories/pesoRepository'
@@ -149,6 +150,8 @@ function textoCheckin(m: Mensagens, p: LembretePlanejado, feito: FeitoHoje, n: n
 
 /** "Life puxa conversa" ligado? Sem rede/sem resposta: não chama (é opt-in). */
 async function configCheckins(): Promise<ConfigCheckins | null> {
+  // Com o push do servidor ativo, quem puxa conversa é ele (com motivo), não o horário fixo.
+  if (await pushAtivo()) return null
   const contato = await contatoRepository.buscar().catch(() => null)
   if (!contato?.lifeLigado || contato.lifeMomentos.length === 0) return null
   return { momentos: contato.lifeMomentos, ultimaConversa: await ultimaConversaComLife() }

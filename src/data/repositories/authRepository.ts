@@ -1,3 +1,4 @@
+import { esquecerPush } from '@data/notifications/pushLife'
 import { supabase } from '@data/supabase/client'
 import { apagarPorPrefixo } from '@data/offline/armazem'
 import { ehFalhaDeRede, valeTentarRede } from '@data/offline/conexao'
@@ -55,6 +56,8 @@ export const authRepository = {
    */
   async sair(): Promise<void> {
     const uid = usuarioAtualSincrono()
+    // Celular compartilhado: o push desta conta para de chegar aqui.
+    await esquecerPush().catch(() => {})
     if (valeTentarRede()) {
       const { error } = await supabase.auth.signOut()
       if (error && !ehFalhaDeRede(error)) throw error

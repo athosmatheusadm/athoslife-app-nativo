@@ -17,3 +17,6 @@ declare module '*.png' {
   const src: string
   export default src
 }
+
+/** android/app/google-services.json existe neste build (vite.config.ts). */
+declare const __PUSH_PRONTO__: boolean

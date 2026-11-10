@@ -4758,3 +4758,45 @@ push/PR das branches `chat-luna` e `habitos-valor` (falta token GitHub).
 - Dieta e treino seguem como estão; dono vai buscar nutricionista e personal
   quando der.
 - **Psicólogo continua pendente:** régua do oi, frases, escada de cuidado.
+
+## 2026-11-09 — Life roxo mais devagar + push do Life com IA (branch `push-life`)
+
+**Roxo (commit 70b5587, `habitos-valor`):** um "cedi" zerava o termômetro e o
+Life ficava 100% roxo. Agora conta os tropeços de 14 dias: 1 = 30% roxo,
+2 = 55%, 3 = 75%, 4+ = cheio; some aos poucos com os dias firmes (14 = verde).
+
+**Push do Life (decisões do dono):** até 2 por dia; pago = frase da IA só da
+pessoa, grátis = frase pronta; pedido de licença na Home (o onboarding é o
+HTML do dono, não mexi).
+
+- **Servidor** `supabase/functions/life-push/` (nova, `--no-verify-jwt`):
+  pg_cron a cada 15 min → confere a senha do Vault → para cada pessoa com
+  "Life pode te chamar" + aparelho: `regras.ts` decide o motivo (evento
+  hoje/amanhã/ontem, horário de risco 15–45 min antes, marco, dias pesados,
+  sumiu 2+ dias). Travas fixas: 2/dia, 4 h entre push, 3 h depois de
+  conversa, horário acordado e momentos liberados, nada no dia pausado nem
+  24 h depois de sinal sensível, motivo ignorado 3x descansa 14 dias.
+  `textos.ts`: frases prontas em 5 idiomas; pago → Luna (JSON, 110 car.)
+  com nome e memórias, filtro da tela bloqueada (nunca hábito/vício/peso/
+  dieta/meta, nem o nome do hábito). `fcm.ts`: FCM HTTP v1, JWT assinado na
+  função. A frase também entra no chat e vira a iniciativa do dia (o cartão
+  da Home não repete). Log de IA `tipo_chamada = 'push'`.
+- **Banco:** `db/athoslife_push_life_migration.sql` (push_dispositivos,
+  life_push_envios, RPCs, senha no Vault, constraint) e
+  `db/athoslife_push_relogio_migration.sql` (pg_cron + pg_net). **Nenhuma
+  aplicada.**
+- **App:** `@capacitor/push-notifications`; `pushLife.ts` (registro, aberto,
+  sair da conta apaga o aparelho); cartão `ConvitePush` na Home ("Posso te
+  chamar…? Pode / Agora não", uma vez); Perfil liga o push ao ativar e perdeu
+  o "Em breve"; com push ativo os check-ins fixos do aparelho saem. Push só
+  liga no build com `android/app/google-services.json` (`__PUSH_PRONTO__`;
+  sem ele o Android fecha ao registrar). Textos em pt/en/es/fr/hi.
+- **Validado:** 152 testes Deno (10 novos), deno check, typecheck, build.
+
+**Pendências, nesta ordem:** (1) dono cria o Firebase: `google-services.json`
+em `android/app/` (vai pro git, CI precisa) e chave da conta de serviço como
+`firebase-chave.json` (no .gitignore) → Secret `FIREBASE_SERVICE_ACCOUNT`;
+(2) aplicar a migração do push (autorização); (3) deploy da `life-push`
+(autorização) + teste `simular` numa conta de teste; (4) migração do relógio;
+(5) APK novo e push de verdade no aparelho; (6) depois: treino/água pelo
+servidor, alô da Fase 5 migrar pro FCM, iOS (APNs, precisa do Mac).

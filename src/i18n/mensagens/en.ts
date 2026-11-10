@@ -194,6 +194,12 @@ export const en: Mensagens = {
       responder: 'Reply',
       fechar: 'Close',
     },
+    /** Home: o Life pede pra poder chamar (push). Uma vez só. */
+    convitePush: {
+      texto: 'Can I message you now and then? At most twice a day, and only when it makes sense for you 💚',
+      sim: 'Sure',
+      depois: 'Not now',
+    },
     refeicoes: {
       titulo: 'Meals',
       verTodas: 'See all',
@@ -746,6 +752,8 @@ export const en: Mensagens = {
     cronometroTitulo: 'Time! ✅',
     cronometroTexto: 'Set done.',
     /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    /** Nome do canal do push do Life nas configurações do Android. */
+    canalLife: 'Messages from Life',
     avisoOi: ['Just dropping by to say hi 🙂', 'Hi! All good over there?', 'Hey, how\'s your day going?'],
     textos: {
       agua: [
@@ -826,7 +834,7 @@ export const en: Mensagens = {
   },
   contato: {
     secao: 'Life reaches out',
-    intro: 'You choose whether Life can reach out — a phone notification that opens the chat, at the moments you pick. It stays quiet if you just talked or paused the day. It starts off.',
+    intro: 'You choose whether Life can reach out — a phone notification that opens the chat, at the moments you pick. Only when there’s a reason that’s yours (a big day, a milestone, missing you), at most twice a day. It stays quiet if you just talked or paused the day. It starts off.',
     lifeTitulo: 'Life starts a chat',
     lifeSub: 'A short message now and then, at the moments you pick.',
     momentos: { manha: 'Morning', meio_dia: 'Midday', noite: 'Evening' },

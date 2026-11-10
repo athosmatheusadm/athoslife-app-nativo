@@ -206,6 +206,12 @@ export const ptBR = {
       responder: 'Responder',
       fechar: 'Fechar',
     },
+    /** Home: o Life pede pra poder chamar (push). Uma vez só. */
+    convitePush: {
+      texto: 'Posso te chamar de vez em quando? No máximo 2 vezes por dia, e só quando fizer sentido pra você 💚',
+      sim: 'Pode',
+      depois: 'Agora não',
+    },
     refeicoes: {
       titulo: 'Refeições',
       verTodas: 'Ver todas',
@@ -760,6 +766,8 @@ export const ptBR = {
     cronometroTitulo: 'Tempo! ✅',
     cronometroTexto: 'Série concluída.',
     /** O "oi" da semana seguinte a um tropeço (Fase 5): neutro, nunca cita o hábito (aparece na tela bloqueada). */
+    /** Nome do canal do push do Life nas configurações do Android. */
+    canalLife: 'Mensagens do Life',
     avisoOi: ['Passando pra dar um oi 🙂', 'Oi! Tudo certo por aí?', 'E aí, como tá o dia?'],
     textos: {
       agua: [
@@ -840,7 +848,7 @@ export const ptBR = {
   },
   contato: {
     secao: 'Life puxa conversa',
-    intro: 'Você escolhe se o Life pode te chamar — um aviso no celular que abre a conversa, nos momentos que você marcar. Ele fica quieto se vocês acabaram de conversar ou se você pausou o dia. Começa desligado.',
+    intro: 'Você escolhe se o Life pode te chamar — um aviso no celular que abre a conversa, nos momentos que você marcar. Só quando tiver um motivo seu (um dia importante, uma conquista, a falta que você fez), no máximo 2 vezes por dia. Ele fica quieto se vocês acabaram de conversar ou se você pausou o dia. Começa desligado.',
     lifeTitulo: 'Life puxa conversa no chat',
     lifeSub: 'Uma mensagem curta de vez em quando, nos momentos que você escolher.',
     momentos: { manha: 'Manhã', meio_dia: 'Meio-dia', noite: 'Noite' },

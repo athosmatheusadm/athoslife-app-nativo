@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
+import { existsSync } from 'node:fs'
 
 export default defineConfig({
   plugins: [react()],
+  // Push só liga com o Firebase configurado: sem google-services.json o
+  // Android fecha o app ao registrar o aparelho.
+  define: { __PUSH_PRONTO__: JSON.stringify(existsSync('android/app/google-services.json')) },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

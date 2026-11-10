@@ -29,3 +29,7 @@ scripts/scanner-benchmark/dados/
 *credenciais*.docx
 ATHOSlife_Firebase_configuracao.docx
 estresse-life-*.json
+
+# Chave da conta de serviço do Firebase (vai só pro Secret do Supabase)
+firebase-chave.json
+*firebase-adminsdk*.json

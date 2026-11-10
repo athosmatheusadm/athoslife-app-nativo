@@ -9,6 +9,7 @@ import { aoRegistrarNoDia } from '@data/registroDoDia'
 import { nativo, replanejarLembretes } from '@data/notifications/lembretesDiarios'
 import { EVENTO_AVISOS, sincronizarAvisos } from '@data/notifications/avisosLife'
 import { buscarAberturaLife } from '@data/ai/aiProxy'
+import { aoTocarNoPush, registrarPush } from '@data/notifications/pushLife'
 
 const ROTAS = new Set(['/home', '/dieta', '/treinos', '/habitos'])
 
@@ -27,6 +28,8 @@ export function LembretesDoLife() {
   useEffect(() => {
     if (!nativo || !logado) return
     void replanejarLembretes(metaMl)
+    // Push do servidor: renova o endereço do aparelho (só se a permissão já foi dada).
+    void registrarPush({ pedir: false }).catch(() => {})
     // Alôs do Life (Fase 5): agenda os que o servidor marcou.
     const sincronizar = () => void sincronizarAvisos().catch(() => {})
     sincronizar()
@@ -72,7 +75,15 @@ export function LembretesDoLife() {
         void buscarAberturaLife(avisoId).catch(() => null).finally(() => setTimeout(pedirAbrirLife, 400))
       }
     })
-    return () => void h.then((x) => x.remove())
+    // Push do servidor: abre a tela e o chat do Life (a frase já está no chat).
+    const tirarPush = aoTocarNoPush(({ rota, abrirLife }) => {
+      if (rota && ROTAS.has(rota)) navigate(rota)
+      if (abrirLife) setTimeout(pedirAbrirLife, 400)
+    })
+    return () => {
+      void h.then((x) => x.remove())
+      tirarPush()
+    }
   }, [navigate])
 
   return null
