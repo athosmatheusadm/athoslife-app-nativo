@@ -88,11 +88,18 @@ log('rc-webhook sem senha (dar premium)', fmt(await req('/functions/v1/rc-webhoo
 log('rc-webhook senha errada', fmt(await req('/functions/v1/rc-webhook', { method: 'POST', token: 'chute', apikey: false, body: { event: { id: 'x', type: 'INITIAL_PURCHASE', app_user_id: B.id } } })))
 log('rc-sync sem login', fmt(await req('/functions/v1/rc-sync', { method: 'POST', body: {} })))
 log('rc-sync logado sem compra', fmt(await req('/functions/v1/rc-sync', { method: 'POST', token: B.token, body: {} })))
+log('produto-codigo sem login', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', body: { codigo: '3017620422003' } })))
+log('produto-codigo código inválido', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', token: B.token, body: { codigo: 'abc' } })))
+log('produto-codigo tentando mandar o produto pronto', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', token: B.token, body: { codigo: '00000000', nome: 'Teste QA', kcal_100: 1, imagem_url: 'https://evil.example.com/p.png', fonte: 'off' } })))
+log('produto inventado entrou na base?', fmt(await req(`/rest/v1/produtos_codigo_barras?codigo=eq.00000000&select=codigo,nome`, { token: A.token })))
+log('produto-codigo código real (servidor busca sozinho)', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', token: B.token, body: { codigo: '3017620422003', nome: 'NOME FALSO' } })))
+log('produto real na base', fmt(await req(`/rest/v1/produtos_codigo_barras?codigo=eq.3017620422003&select=nome,marca,kcal_100,imagem_url,fonte`, { token: A.token })))
 
 console.log('\n== 5. LOGIN ==')
 let bloqueou = null
 for (let i = 1; i <= 12; i++) { const r = await req('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: A.email, password: 'errada' + i } }); if (r.s === 429) { bloqueou = i; break } }
 log('força bruta de senha (12 tentativas)', bloqueou ? `bloqueado na tentativa ${bloqueou}` : 'NÃO bloqueou em 12 tentativas')
+if (bloqueou) log('senha certa durante a trava', `${(await req('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: A.email, password: A.password } })).s} (esperado 429)`)
 const fraca = await req('/auth/v1/signup', { method: 'POST', body: { email: `qa.seg.c.${Date.now()}@example.com`, password: 'abc123' } })
 log('senha de 6 letras no cadastro', fraca.j?.access_token ? 'ACEITA (servidor deveria exigir 8)' : `recusada (${fraca.s})`)
 const C = fraca.j?.access_token ? { token: fraca.j.access_token, password: 'abc123' } : null

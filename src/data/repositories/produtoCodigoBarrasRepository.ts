@@ -8,12 +8,14 @@ import type { Macros } from '@domain/entities/food'
  * rótulo. Ordem da busca (todas gratuitas):
  *
  *   1. cópia no celular (funciona sem internet);
- *   2. base própria `produtos_codigo_barras` (só leitura pelo app);
+ *   2. base própria `produtos_codigo_barras` (só leitura pelo app; quem
+ *      escreve é a função `produto-codigo`);
  *   3. Open Food Facts, tentando as variações do código (UPC-A ↔ EAN-13);
  *   4. USDA FoodData Central (produtos de marca, cobre importados).
  *
- * O app não grava na base própria (10/11): o que a pessoa acha ou copia do
- * rótulo fica na cópia do celular dela. Se só o nome é conhecido (cadastro
+ * O app não grava na base própria (10/11). Quando acha um produto nas bases
+ * públicas, manda só o código e o servidor busca e guarda por conta própria;
+ * o rótulo que a pessoa copia fica só na cópia do celular dela. Se só o nome é conhecido (cadastro
  * sem tabela nutricional), devolve `semTabela` pra tela pedir os números.
  */
 
@@ -241,6 +243,16 @@ async function guardarNoCelular(p: ProdutoRotulo): Promise<void> {
   }).catch(() => {})
 }
 
+/**
+ * Pede pro servidor guardar o produto na base de todos. Vai só o código: o
+ * servidor busca nome, números e foto sozinho nas bases públicas (função
+ * `produto-codigo`), então ninguém consegue inventar produto pros outros.
+ * Sem resposta ou com erro, nada muda pra quem escaneou.
+ */
+function pedirPraGuardarNaBase(codigo: string): void {
+  void supabase.functions.invoke('produto-codigo', { body: { codigo } }).catch(() => {})
+}
+
 export const produtoCodigoBarrasRepository = {
   async buscar(codigo: string): Promise<ResultadoCodigo> {
     const limpo = codigo.replace(/\D/g, '')
@@ -268,6 +280,7 @@ export const produtoCodigoBarrasRepository = {
     }
     if (off?.tipo === 'achado') {
       void guardarNoCelular(off.produto)
+      pedirPraGuardarNaBase(limpo)
       return off
     }
 
@@ -275,6 +288,7 @@ export const produtoCodigoBarrasRepository = {
     if (usda) {
       const produto = off?.tipo === 'semTabela' ? { ...usda, nome: off.nome, marca: off.marca ?? usda.marca, imagemUrl: off.imagemUrl } : usda
       void guardarNoCelular(produto)
+      pedirPraGuardarNaBase(limpo)
       return { tipo: 'achado', produto }
     }
 

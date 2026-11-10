@@ -4990,3 +4990,32 @@ todos e travar senha errada repetida.
 - Depois: `node scripts/teste-invasao.mjs .env` (produto falso deve dar 403 e
   a força bruta deve travar).
 - As do bloco (5) continuam.
+
+## 2026-11-10 (7) — base de código de barras volta, com o servidor buscando sozinho (branch `seguranca-legal`)
+
+Dono pediu a base compartilhada de volta, desde que segura.
+
+- **Edge Function nova `produto-codigo` (JÁ PUBLICADA, v1, JWT ligado):** recebe
+  só `{ codigo }`, busca no Open Food Facts (e USDA) por conta própria e grava
+  em `produtos_codigo_barras`. Ignora qualquer outro campo do corpo. Limite de
+  60 produtos novos por conta por dia. Segredo opcional `USDA_API_KEY` (sem
+  ele usa `DEMO_KEY`).
+- **App:** quando o scanner acha o produto numa base pública, manda só o
+  código pra função (sem esperar resposta). Se a função falhar ou não
+  existir, nada muda pra pessoa. Rótulo copiado continua só no celular.
+- **Teste de invasão** ganhou os ataques à função nova e a checagem da trava
+  de senha.
+- **Validado ao vivo:** sem login 401; código inválido 400; corpo com produto
+  pronto e nome falso ignorado; código real `3017620422003` gravado como
+  "Nutella / Ferrero" com foto do Open Food Facts. `npm run typecheck` e
+  `npm run build` ok.
+
+**Pendências**
+- `db/athoslife_seguranca_senha_catalogo_migration.sql` continua NÃO aplicada
+  (modo automático barrou duas vezes). Enquanto isso a RPC antiga
+  `salvar_produto_codigo_barras` ainda aceita produto inventado de quem
+  chamar o servidor direto, e a trava de senha não existe.
+- Depois de aplicar: ligar o gancho de senha no Auth e rodar
+  `node scripts/teste-invasao.mjs .env`.
+- Fase seguinte (pós-lançamento): fila de rótulos copiados com aprovação no
+  painel de admin.
