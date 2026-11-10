@@ -4938,3 +4938,29 @@ quando o APK novo estiver com os testers (fecha a brecha 1); (4) dados da
 empresa + e-mail de privacidade → `documentos.ts` → gerar e hospedar
 `site-legal/`; advogado revisar; (5) restringir a chave do Firebase ao pacote
 `br.com.athoslife.app` no Google Cloud; (6) dividir a `ai-proxy/index.ts`.
+
+## 2026-11-10 (5) — migração de segurança aplicada e senha mínima 8 (branch `seguranca-legal`)
+
+Dono autorizou ("eu autorizo tudo").
+
+- **Aplicada no banco:** `db/athoslife_seguranca_revisao_nov_migration.sql`
+  (foto do catálogo de código de barras só do Open Food Facts, funções de
+  gatilho fora da API, permissões do `anon` retiradas, listagem da pasta de
+  avatares só pelo dono).
+- **Auth:** `password_min_length` 6 → 8 (igual ao app).
+- **Validado:** `node scripts/teste-invasao.mjs .env` de novo. Imagem externa
+  no produto falso virou nulo; `anon` recebe 401 em tabelas e em
+  `life_config_ligada`; senha de 6 letras recusada (422); o resto continua
+  barrado. Contas de teste e produto `00000000` apagados.
+- Nenhuma mudança de código nesta etapa (typecheck/build do bloco anterior valem).
+
+**Continua aberto**
+- Teste grátis infinito (`liberar_teste_gratis` com e-mail inventado): só
+  fecha ligando "Confirm email", depois do APK novo estar com os testers.
+- Login não bloqueia após 12 senhas erradas (pede captcha).
+- Qualquer conta ainda grava produto de código de barras com nome inventado
+  (sem foto). Decidir se o catálogo vira só-servidor.
+- `site_url` do Auth ainda `http://localhost:3000`.
+- Push no GitHub (`push-life`, `seguranca-legal`) e APK de teste: falta o token.
+- Termos/política: dono vai lançar como pessoa física; campos da empresa
+  ficam em branco até ele definir. Páginas de `site-legal/` sem hospedagem.
