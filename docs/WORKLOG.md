@@ -5039,3 +5039,34 @@ Dono autorizou.
 
 **Pendências:** as do bloco (5) (Confirm email, GitHub/APK, dados nos termos,
 `site_url`), mais a fila de rótulos copiados (pós-lançamento).
+
+## 2026-11-10 (9) — tudo no GitHub, APK de teste e prioridade nº 1
+
+- **GitHub:** `habitos-valor`, `push-life` e `seguranca-legal` enviados.
+  PR #5 (`push-life` → `habitos-valor`) e PR #6 (`seguranca-legal` → `push-life`) abertos.
+- **APK de teste:** compilado da `seguranca-legal` (execução 42904893550,
+  artefato `athoslife-teste-apk`, 48,3 MB). Ainda não testado no celular.
+
+**PRIORIDADE Nº 1 (decisão do dono em 10/11): levar tudo pra `main`.**
+A `main` está mais de 120 commits atrás do app real, com 6 PRs empilhados.
+Antes de qualquer função nova, juntar em ordem:
+1. PR #1 `story-studio` → `main`
+2. PR #2 `onboarding-novo` → `main`
+3. PR #3 `verde-menta` → `main`
+4. PR #4 `habitos-valor` → `verde-menta`
+5. PR #5 `push-life` → `habitos-valor`
+6. PR #6 `seguranca-legal` → `push-life`
+
+Conferir antes como as branches se empilham (qual contém qual), resolver
+conflito na branch e não na `main`, rodar `npm run typecheck` e
+`npm run build` a cada passo, e nunca `push --force` na `main`. O banco e as
+Edge Functions já estão na versão da `seguranca-legal`; o merge é só de código.
+Pedir o ok do dono antes de cada merge na `main`.
+
+**Depois disso, na ordem**
+- Testar o APK no celular (cadastro por código, login, scanner, push real).
+- Ligar "Confirm email" (fecha o teste grátis infinito).
+- Termos/política: dados do dono como pessoa física + hospedar `site-legal/`.
+- Trocar o token do GitHub (o de 10/11 foi colado na conversa).
+- Pós-lançamento: fila de rótulos copiados com aprovação no admin; captcha
+  no login; dividir a `ai-proxy`.
