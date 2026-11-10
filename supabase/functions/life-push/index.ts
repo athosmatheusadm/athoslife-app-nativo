@@ -166,6 +166,36 @@ async function processar(sb: Sb, p: Perfil, tokens: string[], agora: Date, conta
   return { user: p.id, enviado: true, motivo: dec.motivo, ia }
 }
 
+/**
+ * Amostra pro dono ver as frases: pessoas fictícias, cada motivo, IA de
+ * verdade. Não lê nem grava ninguém e não envia push. Body {"amostra": true}.
+ */
+const CASOS: { dec: Decisao; idioma: Idioma; nome: string | null; memorias: string[]; periodo: string }[] = [
+  { dec: { motivo: 'evento_amanha', chave: 'a', detalhe: { texto: 'Entrevista de emprego na agência' } }, idioma: 'pt-BR', nome: 'Ana', memorias: ['Trabalha com design', 'Tem um cachorro chamado Thor'], periodo: 'à noite' },
+  { dec: { motivo: 'evento_hoje', chave: 'b', detalhe: { texto: 'Prova de cálculo' } }, idioma: 'pt-BR', nome: 'Lucas', memorias: ['Faz engenharia', 'Gosta de jogar futebol no sábado'], periodo: 'de manhã' },
+  { dec: { motivo: 'evento_ontem', chave: 'c', detalhe: { texto: 'Aniversário da mãe' } }, idioma: 'pt-BR', nome: 'Carla', memorias: ['Mora em Curitiba'], periodo: 'à tarde' },
+  { dec: { motivo: 'risco', chave: 'd', detalhe: { nome: 'Doce à noite' } }, idioma: 'pt-BR', nome: 'Pedro', memorias: ['Ama séries de suspense', 'Trabalha até tarde'], periodo: 'à noite' },
+  { dec: { motivo: 'marco', chave: 'e', detalhe: { nome: 'Cigarro', dias: 30 } }, idioma: 'pt-BR', nome: 'Rafa', memorias: ['Começou a correr de manhã'], periodo: 'à tarde' },
+  { dec: { motivo: 'pesado', chave: 'f' }, idioma: 'pt-BR', nome: 'Júlia', memorias: ['Semana cheia no trabalho', 'Gosta de chá'], periodo: 'à noite' },
+  { dec: { motivo: 'sumiu', chave: 'g' }, idioma: 'pt-BR', nome: 'Bruno', memorias: ['Torce pro Grêmio'], periodo: 'à tarde' },
+  { dec: { motivo: 'sumiu', chave: 'h' }, idioma: 'en', nome: 'Emma', memorias: ['Loves hiking'], periodo: 'à tarde' },
+  { dec: { motivo: 'evento_amanha', chave: 'i', detalhe: { texto: 'Viaje a Lisboa' } }, idioma: 'es', nome: 'Sofía', memorias: [], periodo: 'à noite' },
+]
+
+async function amostras() {
+  return await Promise.all(CASOS.map(async (c) => {
+    const { sistema, mensagem } = pedidoIA(c.dec, { idioma: c.idioma, nome: c.nome, memorias: c.memorias, periodo: c.periodo })
+    const g = await chamarIA({ sistema, mensagens: [{ papel: 'usuario', texto: mensagem }], maxSaida: 120, json: true }, { timeoutMs: 12_000 })
+    const texto = g.ok ? lerJsonTexto(g.texto) : null
+    const proibidos = c.dec.detalhe?.nome ? [c.dec.detalhe.nome] : []
+    return {
+      motivo: c.dec.motivo, idioma: c.idioma, nome: c.nome, modelo: g.modelo ?? null,
+      ia: texto, aprovada: !!texto && fraseValida(texto, proibidos, c.dec.motivo === 'marco' || c.dec.motivo === 'sumiu'),
+      gratis: textoFixo(c.dec, c.idioma, c.nome, '2026-11-10', 15),
+    }
+  }))
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
   const sb = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } })
@@ -173,7 +203,8 @@ Deno.serve(async (req) => {
   const { data: ok } = await sb.rpc('conferir_relogio_push', { p_senha: senha })
   if (ok !== true) return json({ error: 'forbidden' }, 403)
 
-  const corpo = (await req.json().catch(() => ({}))) as { user_id?: string; simular?: boolean }
+  const corpo = (await req.json().catch(() => ({}))) as { user_id?: string; simular?: boolean; amostra?: boolean }
+  if (corpo.amostra === true) return json({ ok: true, amostras: await amostras() })
   const simular = corpo.simular === true
   const conta = lerConta(env('FIREBASE_SERVICE_ACCOUNT'))
   if (!conta && !simular) return json({ ok: false, motivo: 'sem_chave_firebase' })
