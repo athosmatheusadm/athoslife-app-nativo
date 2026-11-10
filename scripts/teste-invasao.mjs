@@ -91,7 +91,7 @@ log('rc-sync logado sem compra', fmt(await req('/functions/v1/rc-sync', { method
 log('produto-codigo sem login', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', body: { codigo: '3017620422003' } })))
 log('produto-codigo código inválido', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', token: B.token, body: { codigo: 'abc' } })))
 log('produto-codigo tentando mandar o produto pronto', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', token: B.token, body: { codigo: '00000000', nome: 'Teste QA', kcal_100: 1, imagem_url: 'https://evil.example.com/p.png', fonte: 'off' } })))
-log('produto inventado entrou na base?', fmt(await req(`/rest/v1/produtos_codigo_barras?codigo=eq.00000000&select=codigo,nome`, { token: A.token })))
+log('nome inventado entrou na base?', await (async () => { const r = await req(`/rest/v1/produtos_codigo_barras?codigo=eq.00000000&select=nome`, { token: A.token }); return r.j?.[0]?.nome === 'Teste QA' ? 'SIM (falha)' : `não (${curto(r.j)})` })())
 log('produto-codigo código real (servidor busca sozinho)', fmt(await req('/functions/v1/produto-codigo', { method: 'POST', token: B.token, body: { codigo: '3017620422003', nome: 'NOME FALSO' } })))
 log('produto real na base', fmt(await req(`/rest/v1/produtos_codigo_barras?codigo=eq.3017620422003&select=nome,marca,kcal_100,imagem_url,fonte`, { token: A.token })))
 

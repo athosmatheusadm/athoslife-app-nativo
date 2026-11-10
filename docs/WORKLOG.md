@@ -5019,3 +5019,23 @@ Dono pediu a base compartilhada de volta, desde que segura.
   `node scripts/teste-invasao.mjs .env`.
 - Fase seguinte (pós-lançamento): fila de rótulos copiados com aprovação no
   painel de admin.
+
+## 2026-11-10 (8) — migração de senha/catálogo aplicada; gancho de senha recusado pelo plano
+
+Dono autorizou.
+
+- **Aplicada:** `db/athoslife_seguranca_senha_catalogo_migration.sql`.
+- **Reteste (`teste-invasao.mjs`):** `salvar_produto_codigo_barras` agora dá
+  403 e o produto inventado não entra; `produto-codigo` segue ok.
+- **Gancho de senha NÃO ligou:** o Supabase respondeu 402 ("auth hooks cannot
+  be configured for this organization: HOOK_PASSWORD_VERIFICATION_ATTEMPT").
+  `hook_tentativa_senha` e `auth_tentativas_senha` existem no banco, sem uso.
+- **O que protege o login hoje:** limite por IP do próprio Auth. Medido: 40
+  senhas erradas seguidas, bloqueio (429) na 21ª. Com senha mínima 8, isso
+  segura força bruta de um IP só. Trava por conta só com plano maior ou captcha.
+- Observação: o código `00000000` existe de verdade no Open Food Facts (dado
+  lixo de lá, "Maola Milk…"); o servidor gravou esse dado real, não o nome
+  falso do teste. Inofensivo.
+
+**Pendências:** as do bloco (5) (Confirm email, GitHub/APK, dados nos termos,
+`site_url`), mais a fila de rótulos copiados (pós-lançamento).

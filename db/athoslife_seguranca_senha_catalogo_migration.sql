@@ -10,6 +10,9 @@
 --    por 15 minutos (gancho "password verification" do Supabase Auth).
 --    Depois da migração, ligar o gancho na configuração do Auth:
 --    pg-functions://postgres/public/hook_tentativa_senha
+--    ATENÇÃO (10/11): o plano atual do Supabase recusou ligar esse gancho
+--    (HTTP 402). A função e a tabela ficam prontas, mas sem efeito. O que
+--    protege hoje é o limite por IP do próprio Auth (~20 tentativas/5 min).
 
 -- 1 ---------------------------------------------------------------
 revoke all on function public.salvar_produto_codigo_barras(text, text, text, numeric, numeric, numeric, numeric, numeric, text, text)
