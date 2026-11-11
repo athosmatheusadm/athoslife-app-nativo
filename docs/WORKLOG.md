@@ -5110,3 +5110,27 @@ tem commit que a `main` não tenha. Não foram apagadas.
   um commit atrás, só este bloco).
 
 **Pendências:** as do bloco anterior, começando por testar este APK no celular.
+
+## 2026-11-11 (3) — pendências que o dono lembrou
+
+Só registro, nenhum código mudou. O dono apontou quatro itens que estavam
+fora da lista das últimas sessões:
+
+- **Imagens da área de Treino:** há exercícios com imagem errada. Falta o
+  dono dizer quais (nome do exercício ou print) ou reentregar as corrigidas.
+  Histórico: 100 pranchas geradas em 24/09, o dono não gostou e ficou de
+  auditar; 25 vieram com fundo claro por engano.
+- **Brevo:** o SMTP já está ligado no Supabase. Falta: remetente ainda é um
+  Gmail (risco de spam; trocar quando houver domínio), `site_url` do Auth
+  ainda `http://localhost:3000` e ligar "Confirm email" depois do APK.
+- **Paywall:** o app usa a chave `test_` (Test Store do RevenueCat). Falta
+  o secret `VITE_RC_GOOGLE_KEY` no GitHub (sem ele o APK compilado não
+  vende) e testar o paywall no celular.
+- **Billing da Play Store:** criar os produtos de assinatura no Play
+  Console, ligar ao RevenueCat (entitlement `premium`), trocar a chave
+  `test_` pela `goog_`, colar URL + senha do webhook no RevenueCat e gerar
+  o primeiro `.aab` assinado. `rc-webhook` recebeu 1 evento, 0 assinaturas
+  reais.
+
+**Pendências:** estas quatro mais as do bloco "2026-11-11 — `main`
+atualizada com o app real", começando pelo teste do APK no celular.
