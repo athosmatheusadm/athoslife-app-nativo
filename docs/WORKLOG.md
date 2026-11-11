@@ -5070,3 +5070,31 @@ Pedir o ok do dono antes de cada merge na `main`.
 - Trocar o token do GitHub (o de 10/11 foi colado na conversa).
 - Pós-lançamento: fila de rótulos copiados com aprovação no admin; captcha
   no login; dividir a `ai-proxy`.
+
+## 2026-11-11 — `main` atualizada com o app real
+
+Dono autorizou ("pode fazer eu autorizo").
+
+- Conferido antes: a `seguranca-legal` já continha `main`, `story-studio`,
+  `onboarding-novo`, `verde-menta`, `habitos-valor`, `push-life` e
+  `idiomas-orbital`, em linha reta (129 commits à frente da `main`).
+- Por isso não houve 6 merges: a `main` só avançou até a `seguranca-legal`
+  (fast-forward, sem conflito, sem `--force`). O código da `main` é o mesmo
+  do APK de teste (execução 42904893550) mais este bloco do worklog.
+- **Validado:** `npm run typecheck` (+ camadas) e `npm run build` antes do
+  envio. Nenhuma Edge Function nem migração mudou.
+
+**Daqui pra frente:** começar sempre da `main`. Todas as outras branches
+(`chat-luna`, `correcoes-teste-apk`, `revisao-completa-ajustes`,
+`scanner-life-vivo`, `scanner-v1-1`) também já estão dentro dela; nenhuma
+tem commit que a `main` não tenha. Não foram apagadas.
+
+**Pendências (na ordem)**
+- Testar o APK no celular (cadastro por código, login, scanner, push real).
+- Ligar "Confirm email" (fecha o teste grátis infinito).
+- Termos/política: dados do dono como pessoa física + hospedar `site-legal/`.
+- Trocar o token do GitHub (o de 11/11 também foi colado na conversa).
+- `site_url` do Auth ainda `http://localhost:3000`; restringir a chave do
+  Firebase ao pacote `br.com.athoslife.app`.
+- Pós-lançamento: fila de rótulos copiados com aprovação no admin; captcha
+  no login; dividir a `ai-proxy`.
