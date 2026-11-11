@@ -5134,3 +5134,26 @@ fora da lista das últimas sessões:
 
 **Pendências:** estas quatro mais as do bloco "2026-11-11 — `main`
 atualizada com o app real", começando pelo teste do APK no celular.
+
+## 2026-11-11 (4) — teste do APK: recuperação de senha falha (Brevo recusa o envio)
+
+Dono instalou o APK de 11/11 (execução 42972524959) e o "Esqueci a senha"
+deu erro. Nenhum código mudou.
+
+- **Causa (log do Auth, 20:48–20:50 UTC):** `POST /auth/v1/recover` → 500,
+  erro do SMTP `525 5.7.1 Unauthorized IP address`. O Brevo está recusando
+  o servidor do Supabase por causa da trava de "IPs autorizados" da conta
+  Brevo. Não é defeito do app.
+- **Efeito:** nenhum e-mail sai hoje (recuperação de senha e código de
+  cadastro). **Não ligar "Confirm email" antes de corrigir**, senão ninguém
+  consegue criar conta.
+- **Correção (dono, no site do Brevo):** Segurança → IPs autorizados →
+  desativar o bloqueio para SMTP (os IPs do Supabase mudam, não dá pra
+  listar). Depois repetir o "Esqueci a senha".
+- Contas admin: `matheusbarretonunes.mb@gmail.com` e
+  `matheusecomerc@gmail.com` (dono e noiva, ficam as duas). Funções
+  `admin_*` do banco conferidas: só admin executa; 0 links VIP.
+
+**Pendências:** corrigir o Brevo e retestar; seguir o teste do APK; zip das
+imagens do Treino (dono vai mandar); conta do Play Console (dono criando);
+as demais dos blocos anteriores.
