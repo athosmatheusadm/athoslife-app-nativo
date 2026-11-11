@@ -5098,3 +5098,15 @@ tem commit que a `main` não tenha. Não foram apagadas.
   Firebase ao pacote `br.com.athoslife.app`.
 - Pós-lançamento: fila de rótulos copiados com aprovação no admin; captcha
   no login; dividir a `ai-proxy`.
+
+## 2026-11-11 (2) — PRs fechados e APK de teste da `main`
+
+- PRs #4, #5 e #6 fechados sem merge (conteúdo já na `main`); #1, #2 e #3
+  constam como merged. Não há PR aberto.
+- **APK de teste novo:** compilado da `main` (commit 6ffb7c8), independente
+  (sem servidor de dev). Execução 42972524959, artefato
+  `athoslife-teste-apk`, 46,0 MB. Ainda não testado no celular.
+- Trabalho passa a ser feito a partir da `main` (a `seguranca-legal` ficou
+  um commit atrás, só este bloco).
+
+**Pendências:** as do bloco anterior, começando por testar este APK no celular.
