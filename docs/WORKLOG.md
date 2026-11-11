@@ -5157,3 +5157,71 @@ deu erro. Nenhum código mudou.
 **Pendências:** corrigir o Brevo e retestar; seguir o teste do APK; zip das
 imagens do Treino (dono vai mandar); conta do Play Console (dono criando);
 as demais dos blocos anteriores.
+
+## 2026-11-11 (5) — ajustes do teste do APK (branch `ajustes-teste-11-11`)
+
+Pedido do dono depois de testar o APK de 11/11: internet ruim, Story
+Studio, limpeza e o chat (respostas genéricas + arroz virando macarrão).
+
+**Conta admin:** `matheusbarretonunes.mb@gmail.com` recebeu senha provisória
+direto no banco (dono autorizou; o e-mail do Brevo não sai). A senha está
+num `.txt` na pasta Downloads do dono, fora do repositório. Trocar por uma
+senha própria quando o Brevo voltar.
+
+**Arroz × macarrão (causa achada, correção NÃO aplicada):**
+- No chat, "arroz cozido" virava "Macarrão de arroz cozido": a
+  `buscar_alimentos` só aceitava o termo grudado no nome e esse era o único
+  alimento com "arroz cozido" junto. Pelo mesmo motivo "macarrão cozido" e
+  "ovos fritos" não achavam nada e "frango grelhado" caía num prato pronto.
+- `db/athoslife_busca_por_palavras_migration.sql`: casa por palavras (todas
+  as palavras do termo no nome, plural simples tolerado) e, só em termo com
+  2+ palavras, põe na frente o nome que começa pela 1ª palavra e o básico
+  dela. Testada no banco como função temporária (`pg_temp`, nada gravado)
+  com 51 termos: os de uma palavra ("arroz", "coca", "guaraná",
+  "refrigerante"…) ficaram idênticos; "arroz cozido" → Arroz branco cozido,
+  "ovos fritos" → Ovo frito, "frango grelhado" → Frango peito grelhado,
+  "feijão cozido" → Feijão carioca cozido.
+- **O modo automático barrou o `apply_migration` ("Production Deploy").**
+  Precisa do ok explícito do dono. Nenhum JS depende dela: vale pro chat e
+  pra busca da Dieta assim que for aplicada, sem APK novo.
+- Continuam sem achar (nome diferente na base, não é a busca): "bife
+  grelhado", "filé de frango grelhado", "salada de alface".
+
+**Internet ruim** (o app já tinha corte de 9 s, cópia local, fila e selo; o
+que faltava era falha de rede aparecendo como lista vazia):
+- **Metas > alergias e restrições:** se a leitura falhava, a lista aparecia
+  vazia e adicionar um item gravava por cima, apagando as alergias salvas.
+  Agora mostra erro + "Tentar de novo" e não deixa editar sem ter carregado.
+- **Adicionar exercício** e **Notificações > lembretes de hábito:** falha
+  mostrava "nenhum exercício" / "sem hábitos"; agora erro + tentar de novo.
+- Textos reaproveitados (já existiam em pt/en/es/fr/hi); nada novo no i18n.
+
+**Story Studio:** 8 textos de 9–11 px passaram pro mínimo do app
+(`text-micro`, 12 px em rem); a coluna dos controles deslizantes passou pra
+rem e o mini-botão ganhou altura de toque (44 px). Cores e layout do V2 do
+dono não foram mexidos.
+
+**Limpeza:** saíram os protótipos antigos de onboarding
+(`prototipo/OnboardingConversa`, `OnboardingEssencial`) e a
+`FoodSearchScreen` (sem uso; o `useFoodSearch` fica, a Dieta usa). Eles já
+não entravam no APK (rota só no `npm run dev`). A prévia `/previa/onboarding`
+ficou.
+
+**Não mexi (correção ao que eu tinha dito ao dono):** as "21 telas em
+branco" eram guardas de sessão, não tela em branco; as cores fora dos tokens
+(Story, Cozinha) vêm dos HTMLs do dono.
+
+**Chat genérico (análise, sem mudança):** o prompt já foi apertado em
+02–08/11 e as conversas de 11/11 estão melhores que as de 31/10. O que
+ainda soa igual: a frase fixa do cartão de refeição ("Achei isso para o
+jantar de hoje. Confere…") e o molde "acolhe + pergunta" no desabafo. Em
+10/11 "salva no café de amanhã" saiu como "de hoje" (APK antigo, sem
+`programar_refeicao`); conferir no APK novo. Mudar o prompt pede deploy da
+`ai-proxy` + smoke: esperando o dono apontar as respostas que achou fracas.
+
+**Validado:** `npm run typecheck` (+ camadas) e `npm run build`. Nenhuma
+Edge Function mudou. Falta ver no celular: Story com os textos maiores.
+
+**Pendências:** ok do dono pra aplicar a migração da busca; PR desta branch
+→ `main` (com ok) e APK novo; Brevo (IPs autorizados); zip das imagens do
+Treino; Play Console; as demais dos blocos anteriores.
