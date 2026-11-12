@@ -5371,3 +5371,23 @@ migração da busca") ou de uma regra de permissão.
 excluir criação); itens do chat depois do teste do dono; processo (monitor
 de erros, compra real, fr/hi sem revisão, Confirm email depois do Brevo);
 bloco D do dia 11 (Brevo, zip do Treino, Play Console, token do GitHub).
+
+### 2026-11-12 (2) — revisão do francês e do hindi
+
+Dono pediu a revisão. Feita por IA (não por falante nativo): varredura
+automática nos 1.620 textos de cada idioma (texto não traduzido, tratamento
+misturado, variáveis faltando) + leitura completa do `fr.ts` e do `hi.ts`.
+Resultado: os dois estão consistentes (francês todo em "tu", hindi todo em
+"आप", Life sempre no masculino, nenhuma variável faltando, nada em português).
+
+Acertos feitos:
+- **fr:** `Touche-moi pour discuter` → `Appuie sur moi pour discuter`;
+  erro de gramática no Scanner (`ce que l’IA s’est trompée` → `a mal reconnu`);
+  `Total de séries` → `Nombre de séries`; 6 apóstrofos retos viraram tipográficos.
+- **hi:** plural de `offline.sairComPendentes`; rótulo de sexo `सेक्स` → `लिंग`;
+  `मंथली` → `मासिक`; `बारे में` → `ऐप के बारे में`; "personagem original"
+  (`असली` → `अपना`); textos que prendiam a pessoa no masculino (`उठता हूँ`,
+  `सोता हूँ`, `यही करूँगा`, `नहीं खाता`).
+
+Validado: typecheck e build. Ainda vale um falante nativo de hindi olhar
+antes de divulgar na Índia; o francês está em nível de publicar.
