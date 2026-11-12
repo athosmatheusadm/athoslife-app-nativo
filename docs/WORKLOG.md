@@ -5550,3 +5550,11 @@ cremoso" e depois "se recusou" a montar outra com os mesmos ingredientes.
 `ai-proxy` **precisa de deploy** (não foi feito; espera o ok do dono) e depois
 `node scripts/smoke-life.mjs`. Sem o deploy o app novo funciona igual ao de
 hoje (o servidor antigo ignora os campos novos). Nada visto no celular.
+
+**Deploy (12/11, autorizado pelo dono — "eu autorizo"):** `ai-proxy`
+publicada com a mudança da receita. Antes, baixei a versão que estava no ar e
+comparei: a única diferença eram as linhas do `handleRecipe`. A função subiu
+(responde 401 sem login, como esperado). **`smoke-life.mjs` NÃO rodou:** não
+há `SMOKE_EMAIL`/`SMOKE_SENHA` nesta máquina (a senha da conta de QA se
+perdeu em 02/11). Falta: o dono mandar um "oi" no chat e montar uma receita
+no app; ou redefinir a senha da conta de QA pra rodar o smoke.
