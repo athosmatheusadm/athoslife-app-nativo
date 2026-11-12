@@ -5631,3 +5631,36 @@ redefinir a senha da conta de QA e fazer a receita abrir no chat.
 receita/semana — bateu `limit_reached`); o smoke depois do deploy 2 (a conta
 ficou sem mensagens hoje; só 1 conversa de verdade passou); nada do app novo
 visto na tela — o treino, a dieta e a receita dentro do chat dependem do APK.
+
+## 2026-11-12 (11) — 12 receitas novas na Cozinha, com capa (migração NÃO aplicada)
+
+**Pedido do dono:** a Cozinha tem poucas receitas (25); quer mais, com cara de
+"dá água na boca" (ex.: bombom de morango fit), e capas geradas.
+
+**Feito:**
+- `db/athoslife_receitas_novas_migration.sql`: 12 receitas, texto em
+  pt/en/es/fr/hi no mesmo formato das atuais, macros aproximados (TACO) por
+  porção, alérgenos marcados, `ordem` 26–37. Usa só as categorias que já
+  existem (categoria nova quebraria APK antigo e a trava da tabela). Pode
+  rodar de novo: só insere título que ainda não existe. Gerada por
+  `scripts/receitas/receitas_novas_2026_11_12.py` (os textos moram lá).
+  - Doces: Bombom de Morango no Pote (grátis, destaque), Brigadeiro de Colher
+    Fit (destaque), Cookies de Banana, Aveia e Chocolate, Mousse Cremoso de
+    Maracujá, Pudim de Chia com Manga e Coco (vegano), Banana Caramelizada com
+    Canela (grátis), Brownie de Caneca de Chocolate, Açaí na Tigela sem Açúcar.
+  - Salgados: Hambúrguer Caseiro Suculento (destaque), Estrogonofe Leve de
+    Frango (destaque), Pizza de Frigideira Marguerita (grátis), Crepioca de
+    Frango Cremoso.
+  - 3 grátis e 9 do pago (mesma proporção de hoje) — decisão minha, o dono
+    pode trocar.
+- 12 capas em `public/receitas/<slug>.webp` (800×800, 57–112 KB), geradas na
+  conta de imagens do dono (Higgsfield, 3 créditos de ~100) no estilo das
+  atuais (mármore, luz natural). Conferidas uma a uma numa folha; cópia da
+  folha na pasta Downloads do dono (`ATHOSlife-capas-receitas-novas.jpg`).
+
+**NÃO feito:** a migração — o modo automático barrou ("Production Deploy").
+Precisa da frase do dono ("autorizo aplicar a migração das receitas"). Sem
+ela nada aparece no app. As capas vão dentro do APK: no APK atual as
+receitas novas aparecem (depois da migração) com o desenho da categoria no
+lugar da foto. Receitas não foram testadas na cozinha de verdade; macros são
+conta de tabela.
