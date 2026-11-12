@@ -5,6 +5,7 @@ import { avisarEstadoDoLife } from '@data/lifePausa'
 import { pushAtivo, pushDisponivel, registrarPush } from '@data/notifications/pushLife'
 import { useI18n } from '@/i18n/I18nProvider'
 import { LifeMascote } from '@ui/components/LifeMascote'
+import { avisar } from '@ui/feedback'
 
 const CHAVE = 'athoslife:convite-push-respondido'
 
@@ -38,14 +39,23 @@ export function ConvitePush() {
 
   async function responder(aceitou: boolean) {
     setSalvando(true)
-    await Preferences.set({ key: CHAVE, value: aceitou ? 'sim' : 'nao' }).catch(() => {})
     if (aceitou) {
       const atual = await contatoRepository.buscar().catch(() => null)
       const momentos = atual?.lifeMomentos.length ? atual.lifeMomentos : [...MOMENTOS_LIFE]
-      await contatoRepository.salvar({ lifeLigado: true, lifeMomentos: momentos }).catch(() => {})
+      try {
+        await contatoRepository.salvar({ lifeLigado: true, lifeMomentos: momentos })
+      } catch (err) {
+        // Não gravou: o convite fica na Home pra tentar de novo (antes sumia
+        // e a pessoa achava que tinha ligado).
+        console.warn('convite do push: não salvou', err)
+        avisar.erro(m.comum.erroGenerico)
+        setSalvando(false)
+        return
+      }
       await registrarPush({ pedir: true }).catch(() => false)
       avisarEstadoDoLife()
     }
+    await Preferences.set({ key: CHAVE, value: aceitou ? 'sim' : 'nao' }).catch(() => {})
     setMostrar(false)
   }
 

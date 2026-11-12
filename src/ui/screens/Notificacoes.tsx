@@ -23,19 +23,24 @@ const LIFE_PUXA_CONVERSA_PRONTO = false
  * tela avisa "em breve". WhatsApp ficou pra uma versão futura.
  */
 export function Notificacoes() {
-  const t = useI18n().m.perfil.notificacoes
+  const { m } = useI18n()
+  const t = m.perfil.notificacoes
   const [habitosConstruir, setHabitosConstruir] = useState<Habito[] | null>(null)
+  // Falha de rede não pode aparecer como "você ainda não tem hábitos".
+  const [erroCarga, setErroCarga] = useState(false)
+  const [recarga, setRecarga] = useState(0)
 
   useEffect(() => {
     let ativo = true
+    setErroCarga(false)
     habitosRepository
       .listar()
       .then((lista) => ativo && setHabitosConstruir(lista.filter((h) => h.tipo === 'construir')))
-      .catch(() => ativo && setHabitosConstruir([]))
+      .catch(() => ativo && setErroCarga(true))
     return () => {
       ativo = false
     }
-  }, [])
+  }, [recarga])
 
   return (
     <main className="pb-24 pt-safe-t">
@@ -47,7 +52,25 @@ export function Notificacoes() {
         <h2 className="mb-1 text-sm font-bold text-content-hi">{t.habitosTitulo}</h2>
         <p className="mb-3 text-micro text-content-low">{t.habitosTexto}</p>
 
-        {habitosConstruir === null && <p className="text-micro text-content-low">{t.carregando}</p>}
+        {habitosConstruir === null && !erroCarga && (
+          <div role="status" aria-label={t.carregando} className="space-y-2">
+            <div className="h-16 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+            <div className="h-16 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+          </div>
+        )}
+
+        {habitosConstruir === null && erroCarga && (
+          <div className="rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-center" role="alert">
+            <p className="text-sm text-content-mid">{m.perfil.memoriaLife.erroCarregar}</p>
+            <button
+              type="button"
+              onClick={() => setRecarga((n) => n + 1)}
+              className="mt-2 min-h-12 rounded-xl bg-surface-3 px-5 text-sm font-bold text-content-hi active:bg-surface-4"
+            >
+              {m.perfil.memoriaLife.tentar}
+            </button>
+          </div>
+        )}
 
         {habitosConstruir?.length === 0 && (
           <p className="rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-micro text-content-low">{t.semHabitos}</p>
@@ -120,7 +143,7 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
       </div>
 
       {carregando ? (
-        <p className="mt-2 text-micro text-content-low">{t.carregando}</p>
+        <div role="status" aria-label={t.carregando} className="mt-2 h-5 w-32 animate-pulse rounded-pill bg-surface-4" />
       ) : lembrete ? (
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="text-sm text-content-mid">{tc.todoDia(lembrete)}</span>

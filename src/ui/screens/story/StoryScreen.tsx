@@ -333,7 +333,7 @@ export function StoryScreen() {
         </nav>
       )}
 
-      <div className="mx-auto mb-2 flex w-full max-w-[360px] items-center justify-between text-[10px] text-content-low">
+      <div className="mx-auto mb-2 flex w-full max-w-[360px] items-center justify-between text-micro text-content-low">
         <b className="font-medium text-content-hi">{t.tituloModo[modo]}</b>
         <span>{t.formato}</span>
       </div>
@@ -387,7 +387,7 @@ export function StoryScreen() {
         )}
       </div>
 
-      <p className="my-2 text-center text-[9px] text-content-low">{t.dica}</p>
+      <p className="my-2 text-center text-micro text-content-low">{t.dica}</p>
 
       <div className="flex justify-center gap-2">
         <Ferramenta rotulo={t.foto} onClick={() => void escolherFoto()}>
@@ -431,7 +431,7 @@ export function StoryScreen() {
                 <div key={o.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2.5 border-b border-content-hi/5 py-3">
                   <div className="min-w-0 text-sm">
                     {o.rotulo}
-                    <small className="mt-0.5 block truncate text-[10px] text-content-low">
+                    <small className="mt-0.5 block truncate text-micro text-content-low">
                       {o.tipo === 'metric' ? `${o.valor}${o.unidade ? ` ${o.unidade}` : ''}` : o.tipo === 'life' ? t.descLife : t.descVisual}
                     </small>
                   </div>
@@ -479,7 +479,7 @@ export function StoryScreen() {
                     className="rounded-xl border border-surface-4 px-2.5 py-4 text-left text-sm active:bg-content-hi/5"
                   >
                     {t.modelo[md][0]}
-                    <small className="mt-1 block text-[10px] text-content-low">{t.modelo[md][1]}</small>
+                    <small className="mt-1 block text-micro text-content-low">{t.modelo[md][1]}</small>
                   </button>
                 ))}
               </div>
@@ -495,7 +495,7 @@ export function StoryScreen() {
                 ['panX', t.posH, -1, 1, 0.01],
                 ['panY', t.posV, -1, 1, 0.01],
               ] as const).map(([k, rotulo, min, max, passo]) => (
-                <label key={k} className="my-3.5 flex flex-col gap-1.5 text-[11px]">
+                <label key={k} className="my-3.5 flex flex-col gap-1.5 text-micro">
                   {rotulo}
                   <input
                     type="range" min={min} max={max} step={passo} value={estado[k]}
@@ -583,7 +583,7 @@ function Contexto(p: {
 
 function Faixa(p: { rotulo: string; min: number; max: number; passo: number; valor: number; saida: string; onInicio: () => void; onChange: (v: number) => void }) {
   return (
-    <label className="my-2 grid grid-cols-[66px_1fr_37px] items-center gap-2 text-[11px] text-[#c5cfbf]">
+    <label className="my-2 grid grid-cols-[4.75rem_1fr_2.75rem] items-center gap-2 text-micro text-[#c5cfbf]">
       {p.rotulo}
       <input type="range" min={p.min} max={p.max} step={p.passo} value={p.valor} onPointerDown={p.onInicio}
         onChange={(ev) => p.onChange(limitar(Number(ev.target.value), p.min, p.max))} className="w-full min-w-0 accent-brand" />
@@ -594,7 +594,7 @@ function Faixa(p: { rotulo: string; min: number; max: number; passo: number; val
 
 function MiniBotao({ children, onClick, perigo }: { children: ReactNode; onClick: () => void; perigo?: boolean }) {
   return (
-    <button onClick={onClick} className={`rounded-lg bg-[#293323] px-2 py-2 text-[10px] ${perigo ? 'text-[#e2b0a5]' : ''}`}>
+    <button onClick={onClick} className={`min-h-11 rounded-lg bg-[#293323] px-2 py-2 text-micro ${perigo ? 'text-[#e2b0a5]' : ''}`}>
       {children}
     </button>
   )
@@ -605,7 +605,7 @@ function Ferramenta({ rotulo, children, onClick, ativo }: { rotulo: string; chil
     <button
       onClick={onClick}
       aria-expanded={ativo}
-      className={`flex min-w-[62px] flex-col items-center gap-1 rounded-[11px] border px-3 py-2 text-[10px] ${ativo ? 'border-brand/60 bg-brand/15' : 'border-surface-4 bg-surface-2'} active:bg-content-hi/5`}
+      className={`flex min-w-[62px] flex-col items-center gap-1 rounded-[11px] border px-3 py-2 text-micro ${ativo ? 'border-brand/60 bg-brand/15' : 'border-surface-4 bg-surface-2'} active:bg-content-hi/5`}
     >
       <Svg tamanho={18}>{children}</Svg>
       {rotulo}

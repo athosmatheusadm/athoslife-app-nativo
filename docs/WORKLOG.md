@@ -5157,3 +5157,237 @@ deu erro. Nenhum código mudou.
 **Pendências:** corrigir o Brevo e retestar; seguir o teste do APK; zip das
 imagens do Treino (dono vai mandar); conta do Play Console (dono criando);
 as demais dos blocos anteriores.
+
+## 2026-11-11 (5) — ajustes do teste do APK (branch `ajustes-teste-11-11`)
+
+Pedido do dono depois de testar o APK de 11/11: internet ruim, Story
+Studio, limpeza e o chat (respostas genéricas + arroz virando macarrão).
+
+**Conta admin:** `matheusbarretonunes.mb@gmail.com` recebeu senha provisória
+direto no banco (dono autorizou; o e-mail do Brevo não sai). A senha está
+num `.txt` na pasta Downloads do dono, fora do repositório. Trocar por uma
+senha própria quando o Brevo voltar.
+
+**Arroz × macarrão (causa achada, correção NÃO aplicada):**
+- No chat, "arroz cozido" virava "Macarrão de arroz cozido": a
+  `buscar_alimentos` só aceitava o termo grudado no nome e esse era o único
+  alimento com "arroz cozido" junto. Pelo mesmo motivo "macarrão cozido" e
+  "ovos fritos" não achavam nada e "frango grelhado" caía num prato pronto.
+- `db/athoslife_busca_por_palavras_migration.sql`: casa por palavras (todas
+  as palavras do termo no nome, plural simples tolerado) e, só em termo com
+  2+ palavras, põe na frente o nome que começa pela 1ª palavra e o básico
+  dela. Testada no banco como função temporária (`pg_temp`, nada gravado)
+  com 51 termos: os de uma palavra ("arroz", "coca", "guaraná",
+  "refrigerante"…) ficaram idênticos; "arroz cozido" → Arroz branco cozido,
+  "ovos fritos" → Ovo frito, "frango grelhado" → Frango peito grelhado,
+  "feijão cozido" → Feijão carioca cozido.
+- **O modo automático barrou o `apply_migration` ("Production Deploy").**
+  Precisa do ok explícito do dono. Nenhum JS depende dela: vale pro chat e
+  pra busca da Dieta assim que for aplicada, sem APK novo.
+- Continuam sem achar (nome diferente na base, não é a busca): "bife
+  grelhado", "filé de frango grelhado", "salada de alface".
+
+**Internet ruim** (o app já tinha corte de 9 s, cópia local, fila e selo; o
+que faltava era falha de rede aparecendo como lista vazia):
+- **Metas > alergias e restrições:** se a leitura falhava, a lista aparecia
+  vazia e adicionar um item gravava por cima, apagando as alergias salvas.
+  Agora mostra erro + "Tentar de novo" e não deixa editar sem ter carregado.
+- **Adicionar exercício** e **Notificações > lembretes de hábito:** falha
+  mostrava "nenhum exercício" / "sem hábitos"; agora erro + tentar de novo.
+- Textos reaproveitados (já existiam em pt/en/es/fr/hi); nada novo no i18n.
+
+**Story Studio:** 8 textos de 9–11 px passaram pro mínimo do app
+(`text-micro`, 12 px em rem); a coluna dos controles deslizantes passou pra
+rem e o mini-botão ganhou altura de toque (44 px). Cores e layout do V2 do
+dono não foram mexidos.
+
+**Limpeza:** saíram os protótipos antigos de onboarding
+(`prototipo/OnboardingConversa`, `OnboardingEssencial`) e a
+`FoodSearchScreen` (sem uso; o `useFoodSearch` fica, a Dieta usa). Eles já
+não entravam no APK (rota só no `npm run dev`). A prévia `/previa/onboarding`
+ficou.
+
+**Não mexi (correção ao que eu tinha dito ao dono):** as "21 telas em
+branco" eram guardas de sessão, não tela em branco; as cores fora dos tokens
+(Story, Cozinha) vêm dos HTMLs do dono.
+
+**Chat genérico (análise, sem mudança):** o prompt já foi apertado em
+02–08/11 e as conversas de 11/11 estão melhores que as de 31/10. O que
+ainda soa igual: a frase fixa do cartão de refeição ("Achei isso para o
+jantar de hoje. Confere…") e o molde "acolhe + pergunta" no desabafo. Em
+10/11 "salva no café de amanhã" saiu como "de hoje" (APK antigo, sem
+`programar_refeicao`); conferir no APK novo. Mudar o prompt pede deploy da
+`ai-proxy` + smoke: esperando o dono apontar as respostas que achou fracas.
+
+**Validado:** `npm run typecheck` (+ camadas) e `npm run build`. Nenhuma
+Edge Function mudou. Falta ver no celular: Story com os textos maiores.
+
+**Pendências:** ok do dono pra aplicar a migração da busca; PR desta branch
+→ `main` (com ok) e APK novo; Brevo (IPs autorizados); zip das imagens do
+Treino; Play Console; as demais dos blocos anteriores.
+
+## 2026-11-11 (6) — LISTA PRA CORRIGIR (dono pediu pra salvar; retomar daqui)
+
+Dono vai corrigir tudo isto na volta. Branch `ajustes-teste-11-11`, PR #7.
+
+### A. Esperando o ok do dono
+1. Aplicar `db/athoslife_busca_por_palavras_migration.sql` (arroz × macarrão).
+   Frase: "pode aplicar a migração da busca".
+2. Levar o PR #7 pra `main` e gerar APK novo.
+3. Apontar 2–3 respostas do Life que achou genéricas (ou confirmar que é a
+   frase do cartão de refeição).
+
+### B. O que está fraco no app (análise de 11/11)
+Processo:
+1. Muita função nunca testada no celular (push, cadastro por código, baixar
+   dados, pergunta do "Hoje eu cedi").
+2. App cego pra erro: sem Sentry/Crashlytics.
+3. Ninguém nunca pagou: assinatura sem compra real de ponta a ponta.
+4. Telas sem teste automático (os 20 arquivos de teste são do servidor).
+5. `ai-proxy/index.ts` com 3.574 linhas; troca de IA de 05/11 sem ok/chaves.
+6. Idiomas demais pra lançar: fr e hi nunca revisados por quem fala.
+7. Teste grátis infinito enquanto "Confirm email" estiver desligado.
+
+Telas:
+8. Tela de assinatura (`Plano.tsx`) vende pouco: falta economia do anual,
+   frase de renovação automática/como cancelar, links de termos e
+   privacidade perto do botão (Play costuma cobrar).
+9. Chat não leva pra assinatura quando as mensagens acabam
+   (`LifeChatSheet.tsx`, só o texto `semMensagens`).
+10. Aviso `perfil.plano.avisos.email_nao_confirmado` diz "pelo link"; a
+    confirmação agora é por código (corrigir nos 5 idiomas).
+11. `CriacaoScreen.tsx:59` usa `window.confirm` (caixa do sistema com
+    "localhost"); trocar pelo padrão do app (2º toque ou Desfazer).
+12. Carregamento com texto "Carregando…" em vez de esqueleto: Cozinha
+    (lista e seção), Conquistas, Energia/Peso, WeightCard, Adicionar
+    exercício, Notificações, água na Home. Polimento.
+13. Texto abaixo de 12 px fora do Story: `RevisaoScanner.tsx:185`,
+    `HabitCard.tsx:361`, `Scanner.tsx:335`.
+14. Cores fora dos tokens (Story, Cozinha, Acessibilidade, OnboardingNovo):
+    vêm dos HTMLs do dono; só mexer se ele pedir.
+
+Chat do Life:
+15. Frase fixa do cartão de refeição (`TXT_REGISTRO.confira`), igual toda vez.
+16. Desabafo em molde: repete, valida, fecha com pergunta.
+17. "Café da manhã de amanhã" saiu como "de hoje" em 10/11 (APK antigo sem
+    `programar_refeicao`); repetir no APK novo. Sem a ferramenta, o Life
+    deveria avisar que registrou em hoje.
+18. Alimentos que a base não acha pelo nome falado: "bife grelhado", "filé
+    de frango grelhado", "salada de alface", "pães franceses" (faltam
+    apelidos/itens na base).
+Mudança no prompt = deploy da `ai-proxy` + `node scripts/smoke-life.mjs` +
+conversa de verdade.
+
+### C. Os 34 erros engolidos (`.catch(() => {})`)
+**Corrigir (4) — escondem algo que a pessoa deveria saber:**
+- `ui/screens/Login.tsx:65` — reenvio do código de cadastro falha e a tela
+  diz que mandou.
+- `ui/screens/home/ConvitePush.tsx:45` — aceitar o convite do push pode não
+  salvar (`contatoRepository.salvar`); a pessoa acha que ligou.
+- `ui/screens/MemoriaLife.tsx:56` — apagar lembrança falha em silêncio (a
+  linha 92 já trata; igualar).
+- `ui/screens/OnboardingNovo.tsx:77` — primeiro peso pode não gravar.
+
+**Avaliar (10) — leitura secundária; o bloco fica sem o dado:**
+- `app/SessionProvider.tsx:86` e `:109`
+- `ui/components/life/LifeChatSheet.tsx:274` (contar lembrança pendente)
+- `ui/components/life/PlanosNoLife.tsx:112` e `:336`
+- `ui/screens/Habitos.tsx:30` (eventos)
+- `ui/screens/diet/InlineFoodSearch.tsx:302` (favorito)
+- `ui/screens/habits/CravingAssistant.tsx:117` (receitas)
+- `ui/screens/home/MealCards.tsx:33` e `:39`
+- `ui/screens/home/TodayActivity.tsx:57` e `:70`
+- `ui/screens/notificacoes/LembretesDoDia.tsx:46`
+- `ui/screens/workout/CardDiaLeve.tsx:39`
+- `ui/screens/story/StoryScreen.tsx:117` (imagem do Life)
+
+**Deixar (de propósito) — vibração, plugin nativo, sincronização de fundo:**
+- `app/IntegracoesNativas.tsx:51`, `:64`
+- `app/LembretesDoLife.tsx:32`, `:34`
+- `app/SessaoTreinoProvider.tsx:92`, `:98`, `:112`, `:139`, `:206`
+- `ui/feedback.tsx:17`, `:20`
+- `ui/screens/Habitos.tsx:100` (cancelar lembrete local)
+- `ui/screens/Perfil.tsx:22` (sincronizar antes de sair)
+- `ui/screens/home/ConvitePush.tsx:41` (Preferences)
+- `ui/screens/notificacoes/ContatoDoLife.tsx:47` (registrar push)
+
+Também fora da lista acima, mesmo defeito ("falha vira vazio"):
+`CozinhaListaScreen.tsx:30` e `CozinhaSecao.tsx:57` (criações → `[]`).
+
+### D. Pendências do dono (fora do código)
+- Brevo: Segurança → IPs autorizados → desativar o bloqueio pra SMTP; depois
+  retestar "Esqueci a senha" e trocar a senha provisória da conta admin.
+- Mandar o zip das imagens do Treino.
+- Criar a conta do Play Console (pessoa física) → app → perfil de pagamento;
+  depois `.aab`, produtos, RevenueCat, chave `goog_`, secret
+  `VITE_RC_GOOGLE_KEY`.
+- Trocar o token do GitHub (o de 11/11 à tarde também foi colado na conversa).
+- Seguir o teste do APK de 11/11 e anotar os erros.
+
+## 2026-11-12 — lista de 11/11: erros escondidos, assinatura e polimento (branch `ajustes-teste-11-11`)
+
+Dono mandou resolver A e B da lista do bloco (6) e os erros escondidos.
+**Ficou de fora a pedido dele:** chat do Life e limite de mensagens (ele
+testa hoje) — itens 9, 15–18 e os dois `.catch` de `components/life/`.
+
+**Erros escondidos corrigidos (os 4 de "corrigir" + Cozinha):**
+- `Login.tsx`: se o reenvio do código de cadastro falha, a tela do código
+  abre com o erro (rede / muitas tentativas) em vez de dizer que mandou.
+- `ConvitePush.tsx`: aceitar o convite só some da Home se gravou; falhou,
+  avisa e o convite fica pra tentar de novo.
+- `MemoriaLife.tsx`: apagar lembrança ao sair da tela avisa se falhar.
+- `OnboardingNovo.tsx`: primeiro peso tenta duas vezes e avisa se não
+  gravou (sem rede ele já ia pra fila).
+- `CozinhaListaScreen` / `CozinhaSecao`: falha ao ler "Minhas criações"
+  mostra erro + "Tentar de novo" em vez de sumir com a fileira.
+- Os 10 de "avaliar": conferidos, ficam como estão (leitura secundária com
+  cópia local). Restam pra depois do teste do dono os dois do Life:
+  `LifeChatSheet.tsx:274` (lembrança pendente) e `PlanosNoLife.tsx:112` (sexo).
+
+**Telas:**
+- `Plano.tsx`: selo "Economize X%" no anual (calculado do preço da loja),
+  frase de renovação automática/como cancelar e links de Termos e
+  Privacidade embaixo dos botões. Só aparece com a loja configurada —
+  **não deu pra ver na tela** (sem Play Console ainda).
+- Aviso `email_nao_confirmado`: "pelo link" → "com o código".
+- `CriacaoScreen.tsx`: saiu o `window.confirm`; excluir agora é toque +
+  "Toque de novo pra excluir" (desarma em 4 s) e avisa se falhar.
+- Texto abaixo de 12 px: `RevisaoScanner`, `HabitCard`, `Scanner` → `text-micro`.
+- Esqueleto no lugar de "Carregando…": Cozinha (lista e seção), Conquistas,
+  Energia/Peso, WeightCard, Adicionar exercício, Notificações, água na Home.
+- Textos novos em pt/en/es/fr/hi: `cozinha.erroExcluir`,
+  `onboarding.confirmar.erroPesoInicial`, `perfil.plano.loja.economia` e
+  `.renovacao`; `cozinha.confirmarExcluir` mudou de pergunta pra "toque de novo".
+
+**Validado:** `npm run typecheck` (+ camadas) e `npm run build`. Nenhuma Edge
+Function mudou (sem deploy). Não testado no celular.
+
+**Migração da busca (arroz × macarrão): AINDA NÃO APLICADA.** O dono disse
+"pode resolver o A", mas o modo automático barrou o `apply_migration` de
+novo ("Production Deploy"). Precisa da frase explícita ("te autorizo a
+migração da busca") ou de uma regra de permissão.
+
+**Pendências:** migração da busca; ver no celular (Story, esqueletos,
+excluir criação); itens do chat depois do teste do dono; processo (monitor
+de erros, compra real, fr/hi sem revisão, Confirm email depois do Brevo);
+bloco D do dia 11 (Brevo, zip do Treino, Play Console, token do GitHub).
+
+### 2026-11-12 (2) — revisão do francês e do hindi
+
+Dono pediu a revisão. Feita por IA (não por falante nativo): varredura
+automática nos 1.620 textos de cada idioma (texto não traduzido, tratamento
+misturado, variáveis faltando) + leitura completa do `fr.ts` e do `hi.ts`.
+Resultado: os dois estão consistentes (francês todo em "tu", hindi todo em
+"आप", Life sempre no masculino, nenhuma variável faltando, nada em português).
+
+Acertos feitos:
+- **fr:** `Touche-moi pour discuter` → `Appuie sur moi pour discuter`;
+  erro de gramática no Scanner (`ce que l’IA s’est trompée` → `a mal reconnu`);
+  `Total de séries` → `Nombre de séries`; 6 apóstrofos retos viraram tipográficos.
+- **hi:** plural de `offline.sairComPendentes`; rótulo de sexo `सेक्स` → `लिंग`;
+  `मंथली` → `मासिक`; `बारे में` → `ऐप के बारे में`; "personagem original"
+  (`असली` → `अपना`); textos que prendiam a pessoa no masculino (`उठता हूँ`,
+  `सोता हूँ`, `यही करूँगा`, `नहीं खाता`).
+
+Validado: typecheck e build. Ainda vale um falante nativo de hindi olhar
+antes de divulgar na Índia; o francês está em nível de publicar.

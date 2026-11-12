@@ -262,7 +262,12 @@ export function TodayActivity({ metas }: { metas: Metas }) {
                 <p className="mb-1.5 mt-3 border-t border-surface-4 pt-3 text-micro font-bold uppercase tracking-wide text-content-low">
                   {t.agua.historico}
                 </p>
-                {agua.carregando && <p className="py-2 text-micro text-content-low">{t.agua.carregando}</p>}
+                {agua.carregando && (
+                  <div role="status" aria-label={t.agua.carregando} className="space-y-2 py-2">
+                    <div className="h-4 w-2/3 animate-pulse rounded-pill bg-surface-4" />
+                    <div className="h-4 w-1/2 animate-pulse rounded-pill bg-surface-4" />
+                  </div>
+                )}
                 {rotuloErroAgua && <p role="alert" className="py-2 text-micro text-accent-danger">{rotuloErroAgua}</p>}
                 {!agua.carregando && !agua.erro && agua.estado?.registros.length === 0 && (
                   <p className="py-2 text-micro text-content-low">{t.agua.vazio}</p>

@@ -60,16 +60,11 @@ export const router = createBrowserRouter([
       // Públicas: abrem do Consentimento (antes do aceite) e do Perfil > Sobre.
       { path: '/termos', element: <DocumentoLegal tipo="termos" /> },
       { path: '/politica-de-privacidade', element: <DocumentoLegal tipo="politica" /> },
-      // PROTÓTIPO (2026-10-01): onboarding em conversa, público e sem salvar
-      // nada. Só no `npm run dev` — fora do APK (relatório do teste, 24/10).
-      ...(import.meta.env.DEV
-        ? [
-            { path: '/prototipo/onboarding', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingConversa')).OnboardingConversa }) },
-            // Onboarding de verdade, sem conta e sem gravar (avaliação do dono, 27/10).
-            { path: '/previa/onboarding', element: <OnboardingNovo previa /> },
-            { path: '/prototipo/onboarding-essencial', lazy: async () => ({ Component: (await import('@ui/screens/prototipo/OnboardingEssencial')).OnboardingEssencial }) },
-          ]
-        : []),
+      // Só no `npm run dev` — fora do APK: o onboarding de verdade, sem conta
+      // e sem gravar, pra o dono avaliar (27/10). Os dois protótipos antigos
+      // (conversa e "essencial") saíram em 11/11: o onboarding definitivo
+      // foi aprovado em 29/10.
+      ...(import.meta.env.DEV ? [{ path: '/previa/onboarding', element: <OnboardingNovo previa /> }] : []),
       {
         element: <RequireAuth><Outlet /></RequireAuth>,
         children: [

@@ -40,6 +40,7 @@ export function Login() {
   const [aviso, setAviso] = useState<string | null>(null)
   // Cadastro esperando o código do e-mail (confirmação ligada no Supabase).
   const [pedirCodigo, setPedirCodigo] = useState(false)
+  const [erroReenvio, setErroReenvio] = useState<string | null>(null)
   const { m } = useI18n()
   const t = m.entrar
 
@@ -62,8 +63,16 @@ export function Login() {
           // Criou a conta e não confirmou: manda um código novo e pede ele aqui.
           const codigo = (err as { code?: string } | null)?.code ?? ''
           if (codigo === 'email_not_confirmed' || (err instanceof Error && err.message.toLowerCase().includes('not confirmed'))) {
-            await authRepository.reenviarCodigoCadastro(email.trim()).catch(() => {})
-            setAviso(t.erros.confirmar)
+            // Se o reenvio falhar, a tela do código abre dizendo isso (antes dizia que mandou).
+            try {
+              await authRepository.reenviarCodigoCadastro(email.trim())
+              setAviso(t.erros.confirmar)
+              setErroReenvio(null)
+            } catch (falha) {
+              console.warn('auth: reenvio do código falhou', falha)
+              setAviso(null)
+              setErroReenvio(mensagemErroAuth(falha, t.erros))
+            }
             setPedirCodigo(true)
             setCarregando(false)
             return
@@ -100,9 +109,11 @@ export function Login() {
       <ConfirmarCadastro
         email={email.trim()}
         aviso={aviso}
+        erroInicial={erroReenvio}
         onVoltar={() => {
           setPedirCodigo(false)
           setAviso(null)
+          setErroReenvio(null)
           setModo('entrar')
         }}
       />
@@ -203,13 +214,13 @@ export function Login() {
  * Código de confirmação do cadastro (10/11). Ao confirmar, o Supabase já
  * abre a sessão e o SessionProvider redireciona sozinho.
  */
-function ConfirmarCadastro(props: { email: string; aviso: string | null; onVoltar: () => void }) {
+function ConfirmarCadastro(props: { email: string; aviso: string | null; erroInicial?: string | null; onVoltar: () => void }) {
   const { m } = useI18n()
   const t = m.entrar.codigoCadastro
   const erros = m.entrar.recuperar.erros
   const [codigo, setCodigo] = useState('')
   const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [erro, setErro] = useState<string | null>(props.erroInicial ?? null)
   const [aviso, setAviso] = useState<string | null>(props.aviso)
 
   function traduzir(err: unknown): string {

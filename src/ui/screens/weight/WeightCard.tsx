@@ -62,7 +62,11 @@ export function WeightCard() {
   if (carregando) {
     return (
       <section className="rounded-card border border-surface-4 bg-surface-2 p-5">
-        <p className="text-micro text-content-low">{t.carregando}</p>
+        <div role="status" aria-label={t.carregando} className="space-y-3">
+          <div className="h-4 w-24 animate-pulse rounded-pill bg-surface-4" />
+          <div className="h-8 w-32 animate-pulse rounded-pill bg-surface-4" />
+          <div className="h-24 animate-pulse rounded-xl bg-surface-4/60" />
+        </div>
       </section>
     )
   }
