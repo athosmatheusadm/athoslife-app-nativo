@@ -83,7 +83,13 @@ Termos de uso (seção nova) repetem isso.
 
 ## 4. Plano de treino — regras do gerador (`domain/rules/geradorTreino.ts`)
 
-Faixas do ACSM Position Stand (2009) para treino de força, arredondadas:
+> **12/11/2026 — o plano NÃO prescreve mais séries nem repetições (decisão
+> do dono).** O Life só indica os exercícios; a ficha recebe o padrão do
+> catálogo (o mesmo de adicionar à mão) e a pessoa define o resto. A tabela
+> abaixo fica só como histórico da v1/v2; as travas do servidor continuam
+> valendo. A pergunta de objetivo saiu (só mudava séries/reps).
+
+Faixas do ACSM Position Stand (2009) para treino de força, arredondadas (histórico):
 
 | Objetivo | Nível | Séries | Reps | Descanso |
 |----------|-------|--------|------|----------|
@@ -132,9 +138,15 @@ Divisão por dias: 2 = corpo inteiro A/B; 3 = corpo inteiro A/B/C;
 
 Cardápio v2: mais opções por papel, salada crua além do legume cozido,
 jantar sem leguminosa e com mais proteína (vegetariano mantém a leguminosa),
-o dia não repete alimento, a quantidade é calibrada pra fechar a meta e
-**"Outro cardápio"** troca os alimentos mantendo as metas. O servidor ainda
-guarda UM dia-modelo; cardápio por dia da semana pede migração.
+o dia não repete alimento e a quantidade é calibrada pra fechar a meta.
+
+**Cardápio da semana:** 7 dias (segunda a domingo) com as mesmas metas e
+alimentos diferentes; **"Outra semana"** troca tudo. Proteína de reserva
+(ovo, tofu, grão-de-bico como prato) só entra pra quem tem restrição. RPC
+`aplicar_plano_dieta_semana` (`db/athoslife_plano_dieta_semana_migration.sql`):
+o dia 1 passa pela RPC de sempre, os outros pela mesma conferência de
+cardápio, e a semana fica em `planos_gerados.parametros->'semana'`. Sem a
+migração o app grava só o dia 1 (cai na RPC antiga sozinho).
 
 ## 5. Plano de dieta — etapa 2 (construído 2026-09-29)
 

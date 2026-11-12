@@ -4,6 +4,7 @@ import { usuarioId } from '@data/offline/usuario'
 import { paraEnvio, type PlanoTreinoGerado } from '@domain/rules/geradorTreino'
 import {
   paraEnvioDieta,
+  paraEnvioDietaSemana,
   type ParametrosDieta,
   type PlanoDietaGerado,
   type TipoRefeicaoPlano,
@@ -54,7 +55,21 @@ export interface PlanoDietaSalvo {
   readonly criadoEm: Date
   readonly parametros: ParametrosDieta
   readonly metas: { kcal: number; proteina: number; carboidrato: number; gordura: number }
-  readonly refeicoes: readonly { tipo: TipoRefeicaoPlano; itens: readonly ItemPlanoDietaSalvo[] }[]
+  /** Dia 1 (o que APK antigo conhece). */
+  readonly refeicoes: readonly RefeicaoPlanoSalva[]
+  /** Um cardápio por dia, índice 0 = segunda. Plano antigo: só o dia 1 repetido. */
+  readonly semana: readonly (readonly RefeicaoPlanoSalva[])[]
+}
+
+export interface RefeicaoPlanoSalva {
+  readonly tipo: TipoRefeicaoPlano
+  readonly itens: readonly ItemPlanoDietaSalvo[]
+}
+
+/** Cardápio do plano pra uma data (segunda = dia 1 da semana gravada). */
+export function refeicoesDoPlanoEm(plano: PlanoDietaSalvo, data: Date): readonly RefeicaoPlanoSalva[] {
+  if (plano.semana.length === 0) return plano.refeicoes
+  return plano.semana[((data.getDay() + 6) % 7) % plano.semana.length] ?? plano.refeicoes
 }
 
 interface ItemSalvoRow {
@@ -72,8 +87,28 @@ interface ItemSalvoRow {
 interface PlanoGeradoRow {
   id: string
   criado_em: string
-  parametros: ParametrosDieta & { metas: PlanoDietaSalvo['metas'] }
-  plano: { tipo: TipoRefeicaoPlano; itens: ItemSalvoRow[] }[]
+  parametros: ParametrosDieta & { metas: PlanoDietaSalvo['metas']; semana?: RefeicaoRow[][] | null }
+  plano: RefeicaoRow[]
+}
+
+interface RefeicaoRow {
+  tipo: TipoRefeicaoPlano
+  itens: ItemSalvoRow[]
+}
+
+function refeicoesDoBanco(dia: RefeicaoRow[]): RefeicaoPlanoSalva[] {
+  return dia.map((r) => ({
+    tipo: r.tipo,
+    itens: r.itens.map((i) => ({
+      nome: nomeNoIdioma(i),
+      gramas: Number(i.gramas),
+      porcaoG: i.porcao_g ?? 100,
+      calorias: Number(i.calorias),
+      proteina: Number(i.proteina),
+      carboidrato: Number(i.carboidrato),
+      gordura: Number(i.gordura),
+    })),
+  }))
 }
 
 function nomeNoIdioma(i: ItemSalvoRow): string {
@@ -240,6 +275,20 @@ export const planosRepository = {
     return String(data)
   },
 
+  /**
+   * Metas + cardápio da semana (um por dia). Se o servidor ainda não tem a
+   * função da semana (migração `plano_dieta_semana` não aplicada), grava só o
+   * dia 1 pela função de sempre — nada quebra, só não varia por dia.
+   */
+  async aplicarPlanoDietaSemana(semana: readonly PlanoDietaGerado[]): Promise<string> {
+    exigirRede()
+    const { data, error } = await supabase.rpc('aplicar_plano_dieta_semana', paraEnvioDietaSemana(semana))
+    if (!error) return String(data)
+    const semFuncao = error.code === 'PGRST202' || error.code === '42883' || /could not find the function/i.test(error.message)
+    if (semFuncao && semana[0]) return this.aplicarPlanoDieta(semana[0])
+    throw new Error(codigoErroPlano(error.message))
+  },
+
   /** Último plano de dieta aplicado (ou null). */
   async ultimoPlanoDieta(): Promise<PlanoDietaSalvo | null> {
     const data = await lerComCache(
@@ -263,18 +312,10 @@ export const planosRepository = {
       criadoEm: new Date(data.criado_em),
       parametros: data.parametros,
       metas: data.parametros.metas,
-      refeicoes: data.plano.map((r) => ({
-        tipo: r.tipo,
-        itens: r.itens.map((i) => ({
-          nome: nomeNoIdioma(i),
-          gramas: Number(i.gramas),
-          porcaoG: i.porcao_g ?? 100,
-          calorias: Number(i.calorias),
-          proteina: Number(i.proteina),
-          carboidrato: Number(i.carboidrato),
-          gordura: Number(i.gordura),
-        })),
-      })),
+      refeicoes: refeicoesDoBanco(data.plano),
+      semana: Array.isArray(data.parametros.semana) && data.parametros.semana.length
+        ? data.parametros.semana.map(refeicoesDoBanco)
+        : [refeicoesDoBanco(data.plano)],
     }
   },
 }

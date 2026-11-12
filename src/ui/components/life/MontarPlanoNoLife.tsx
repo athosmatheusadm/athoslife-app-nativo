@@ -9,10 +9,11 @@ import { profileRepository } from '@data/repositories/profileRepository'
 import { DIAS_SEMANA, type DiaSemana, type ExercicioCatalogo, type LocalTreino, type NivelTreino } from '@domain/entities/treino'
 import {
   alimentoDoItem,
-  cardapioDentroDaMeta,
   gerarPlanoDieta,
+  gerarSemanaDieta,
   macrosDoItem,
   NOMES_BASE_PLANO,
+  proximoInicioDaSemana,
   totaisDoPlano,
   trocarItem,
   validarParametrosDieta,
@@ -341,7 +342,10 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
   const [atividade, setAtividade] = useState<AtividadeDieta>('leve')
   const [refeicoes, setRefeicoes] = useState<3 | 4>(4)
   const [restricoes, setRestricoes] = useState<RestricaoDieta[]>([])
-  const [plano, setPlano] = useState<PlanoDietaGerado | null>(null)
+  // Um cardápio por dia (0 = segunda); a prévia abre no dia de hoje.
+  const [semana, setSemana] = useState<PlanoDietaGerado[] | null>(null)
+  const [diaVisto, setDiaVisto] = useState(() => (new Date().getDay() + 6) % 7)
+  const plano = semana?.[diaVisto] ?? semana?.[0] ?? null
   const [aplicando, setAplicando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
@@ -396,40 +400,37 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
       setErro(t.parametros.erros[problema])
       return recomecar()
     }
-    const novo = gerarPlanoDieta(corpo, parametros, base)
-    if (!novo || !cardapioDentroDaMeta(novo)) {
-      setErro(novo ? t.parametros.erros.fora_da_meta : t.parametros.erros.sem_alimentos)
+    const nova = gerarSemanaDieta(corpo, parametros, base)
+    if (!nova) {
+      setErro(gerarPlanoDieta(corpo, parametros, base) ? t.parametros.erros.fora_da_meta : t.parametros.erros.sem_alimentos)
       return recomecar()
     }
     setErro(null)
-    setPlano(novo)
+    setSemana(nova)
     setPasso('previa')
   }
 
-  /** "Outro cardápio": mesmas metas e escolhas, outros alimentos. Pula a variante que sair da meta. */
-  function outroCardapio() {
-    if (!plano || !profile?.pesoAtual || !profile.alturaCm || !profile.idade) return
+  /** "Outra semana": mesmas metas e escolhas, outros alimentos nos 7 dias. */
+  function outraSemana() {
+    if (!semana?.[0] || !profile?.pesoAtual || !profile.alturaCm || !profile.idade) return
     const corpo: CorpoDieta = { pesoKg: profile.pesoAtual, alturaCm: profile.alturaCm, idade: profile.idade, sexo }
-    const atual = plano.parametros.variante ?? 0
-    for (let passo = 1; passo <= 8; passo++) {
-      const novo = gerarPlanoDieta(corpo, { ...plano.parametros, variante: atual + passo }, base)
-      if (novo && cardapioDentroDaMeta(novo)) return setPlano(novo)
-    }
+    const nova = gerarSemanaDieta(corpo, semana[0].parametros, base, proximoInicioDaSemana(semana))
+    if (nova) setSemana(nova)
   }
 
   function recomecar() {
     setHist([])
     setRestricoes([])
-    setPlano(null)
+    setSemana(null)
     setPasso(primeiroPasso())
   }
 
   async function aplicar() {
-    if (!plano) return
+    if (!semana) return
     setAplicando(true)
     setErro(null)
     try {
-      await planosRepository.aplicarPlanoDieta(plano)
+      await planosRepository.aplicarPlanoDietaSemana(semana)
       await refresh()
       avisarPlanoAplicado({ tipo: 'dieta' })
       props.onAplicado('/dieta')
@@ -583,8 +584,10 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
         <PreviaDieta
           plano={plano}
           aplicando={aplicando}
-          onTrocar={(r, i) => setPlano(trocarItem(plano, r, i))}
-          onOutro={outroCardapio}
+          dia={diaVisto}
+          onDia={setDiaVisto}
+          onTrocar={(r, i) => setSemana((semana ?? []).map((d, di) => (di === diaVisto ? trocarItem(d, r, i) : d)))}
+          onOutro={outraSemana}
           onAplicar={() => void aplicar()}
           onAjustar={recomecar}
         />
@@ -668,6 +671,9 @@ function PassoEvitar(props: { iniciais: string[]; onPronto: (lista: string[]) =>
 
 function PreviaDieta(props: {
   plano: PlanoDietaGerado
+  /** Dia mostrado (0 = segunda). */
+  dia: number
+  onDia: (d: number) => void
   aplicando: boolean
   onTrocar: (refeicao: number, item: number) => void
   onOutro: () => void
@@ -690,6 +696,23 @@ function PreviaDieta(props: {
           {t.previa.proteina} {metas.proteina} g · {t.previa.carboidrato} {metas.carboidrato} g · {t.previa.gordura} {metas.gordura} g
         </p>
         <p className="mt-1 text-micro text-content-low">{t.previa.conta(metas.basal, metas.gasto)}</p>
+      </div>
+      <p className="px-1 text-micro text-content-low">{t.previa.semanaDica}</p>
+      <div role="tablist" aria-label={t.previa.semana} className="flex gap-1.5 overflow-x-auto sem-barra">
+        {DIAS_SEMANA.map((d, i) => (
+          <button
+            key={d.id}
+            type="button"
+            role="tab"
+            aria-selected={props.dia === i}
+            onClick={() => props.onDia(i)}
+            className={`min-h-11 min-w-11 flex-1 rounded-xl px-2 text-sm font-bold transition-colors active:scale-95 ${
+              props.dia === i ? 'bg-brand text-brand-ink' : 'border border-surface-4 bg-surface-2 text-content-mid'
+            }`}
+          >
+            {m.plano.dias[d.id]}
+          </button>
+        ))}
       </div>
       <p className="px-1 text-micro text-content-low">{t.previa.cardapioDica}</p>
       <div className="space-y-2">

@@ -5459,3 +5459,33 @@ dia 1 e guarda a semana em `parametros.semana`, compatível com APK antigo),
 JS com volta pra RPC antiga se a nova não existir, abas Seg–Dom na prévia e
 a Dieta lendo o dia da semana. Precisa de migração (ok explícito do dono).
 Falta também atualizar a seção 4 da diretriz (tabela do ACSM não vale mais).
+
+### 2026-11-12 (5) — cardápio da semana (branch `planos-v2`)
+
+Dono pediu o cardápio por dia da semana e mais diversificado.
+- `geradorDieta.ts`: `gerarSemanaDieta` monta 7 dias (0 = segunda), cada um
+  uma variante dentro da tolerância do servidor; passo 2 entre os dias (com
+  passo 1 o jantar virava o almoço do dia seguinte). Proteína de reserva
+  (ovo, tofu, grão-de-bico como prato principal) só pra quem tem restrição —
+  antes aparecia no fim da semana e derrubava a proteína do dia.
+- Prévia no Life: abas Seg–Dom (abre em hoje), ⇄ troca item do dia,
+  "Outra semana" troca os 7 dias. Tela de Dieta mostra o cardápio do dia da
+  semana que a pessoa está olhando (`refeicoesDoPlanoEm`).
+- Servidor: `db/athoslife_plano_dieta_semana_migration.sql` (funções
+  `_plano_dieta_dia` e `aplicar_plano_dieta_semana`; a antiga não muda; a
+  semana fica em `parametros->'semana'`, APK antigo continua lendo o dia 1).
+  **MIGRAÇÃO NÃO APLICADA:** o modo automático barrou o `apply_migration`
+  ("Production Deploy") mesmo com o "pode fazer a alteração" do dono.
+  **O JS não depende dela pra funcionar:** sem a função, o app grava só o
+  dia 1 pela RPC antiga (a pessoa vê a semana na prévia, mas a Dieta repete
+  o dia 1 até a migração entrar).
+- Testado com os alimentos reais: 2.304 perfis × 2 semanas, nenhuma semana
+  com dia fora da meta; 2 perfis (vegetariano, 3 refeições) não fecham e
+  recebem o aviso de sempre. Média de 6,6 almoços diferentes em 7 dias; com
+  restrição pesada pode repetir. Typecheck e build ok. Não visto na tela; a
+  função SQL não foi executada nem uma vez (só escrita).
+
+**Pendências:** aplicar as duas migrações (busca por palavras e plano da
+semana) — precisa da frase explícita do dono ou regra de permissão; testar
+a função da semana com uma conta de teste depois de aplicada; ver tudo no
+APK; token do GitHub; proteína do vegetariano.

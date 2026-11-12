@@ -175,18 +175,31 @@ export type PapelItem =
  */
 export const OPCOES_POR_PAPEL: Record<PapelItem, readonly string[]> = {
   carbo_cafe: ['Pão integral', 'Tapioca (goma seca)', 'Aveia em flocos', 'Pão francês', 'Cuscuz nordestino', 'Pão de aveia', 'Pão de forma integral'],
-  proteina_cafe: ['Ovo cozido', 'Iogurte natural integral', 'Queijo minas frescal', 'Ovo mexido sem óleo', 'Iogurte grego natural', 'Queijo ricota', 'Peito de peru fatiado', 'Ovo pochê', 'Tofu firme'],
+  proteina_cafe: ['Ovo cozido', 'Iogurte natural integral', 'Queijo minas frescal', 'Ovo mexido sem óleo', 'Iogurte grego natural', 'Queijo ricota', 'Peito de peru fatiado', 'Ovo pochê'],
   fruta: ['Banana prata', 'Mamão papaia', 'Maçã fuji', 'Morango', 'Laranja pera', 'Melão', 'Abacaxi', 'Manga palmer', 'Pera', 'Kiwi', 'Uva itália'],
   carbo: ['Arroz branco cozido', 'Batata doce cozida', 'Arroz integral cozido', 'Macarrão integral cozido', 'Batata inglesa cozida', 'Mandioca cozida', 'Cuscuz de milho cozido', 'Quinoa cozida', 'Batata baroa cozida', 'Cará cozido'],
   leguminosa: ['Feijão carioca cozido', 'Feijão preto cozido', 'Lentilha cozida', 'Grão-de-bico cozido', 'Feijão fradinho cozido'],
-  proteina: ['Frango peito grelhado', 'Tilápia grelhada', 'Patinho grelhado sem óleo', 'Ovo cozido', 'Carne bovina maminha grelhada', 'Sardinha assada', 'Frango sobrecoxa assada sem pele', 'Merluza assada', 'Carne moída patinho cozida', 'Salmão grelhado', 'Atum em lata em água', 'Peru assado', 'Tofu firme', 'Ovo mexido sem óleo', 'Grão-de-bico cozido'],
+  proteina: ['Frango peito grelhado', 'Tilápia grelhada', 'Patinho grelhado sem óleo', 'Carne bovina maminha grelhada', 'Sardinha assada', 'Frango sobrecoxa assada sem pele', 'Merluza assada', 'Carne moída patinho cozida', 'Salmão grelhado', 'Atum em lata em água', 'Peru assado'],
   vegetal: ['Brócolis cozido', 'Abobrinha cozida', 'Cenoura cozida', 'Couve-flor cozida', 'Beterraba cozida', 'Chuchu cozido', 'Berinjela cozida', 'Couve manteiga'],
   salada: ['Alface', 'Tomate', 'Rúcula', 'Pepino cru', 'Cenoura crua', 'Repolho cru', 'Agrião cru'],
   azeite: ['Azeite de oliva'],
   lanche: ['Iogurte natural integral', 'Castanha de caju', 'Iogurte grego natural', 'Pasta de amendoim', 'Queijo minas frescal', 'Amendoim torrado', 'Queijo ricota', 'Castanha do Pará', 'Iogurte natural desnatado'],
 }
 
-export const NOMES_BASE_PLANO: readonly string[] = [...new Set(Object.values(OPCOES_POR_PAPEL).flat())]
+/**
+ * Reserva: só entra quando as restrições deixam o papel com menos de 3
+ * opções (vegetariano, sem ovo, sem lactose). Quem come de tudo não recebe
+ * tofu no café nem ovo como prato principal — a proteína do dia despencava.
+ */
+export const OPCOES_RESERVA: Partial<Record<PapelItem, readonly string[]>> = {
+  proteina: ['Ovo mexido sem óleo', 'Tofu firme', 'Ovo cozido', 'Grão-de-bico cozido'],
+  proteina_cafe: ['Tofu firme'],
+}
+const MINIMO_SEM_RESERVA = 3
+
+export const NOMES_BASE_PLANO: readonly string[] = [
+  ...new Set([...Object.values(OPCOES_POR_PAPEL).flat(), ...Object.values(OPCOES_RESERVA).flat()]),
+]
 
 /** Parte da refeição que cada papel ocupa (o que sobra depois dos itens fixos). */
 const MOLDE: Record<TipoRefeicaoPlano, readonly { papel: PapelItem; fatia: number }[]> = {
@@ -448,8 +461,12 @@ export function gerarPlanoDieta(c: CorpoDieta, p: ParametrosDieta, base: readonl
   const porNome = new Map<string, AlimentoPlano>()
   for (const a of base) if (!porNome.has(a.nomeBase)) porNome.set(a.nomeBase, a)
 
-  const opcoesDo = (papel: PapelItem): AlimentoPlano[] =>
-    OPCOES_POR_PAPEL[papel].map((n) => porNome.get(n)).filter((a): a is AlimentoPlano => !!a && permitido(a, termos))
+  const permitidos = (nomes: readonly string[]): AlimentoPlano[] =>
+    nomes.map((n) => porNome.get(n)).filter((a): a is AlimentoPlano => !!a && permitido(a, termos))
+  const opcoesDo = (papel: PapelItem): AlimentoPlano[] => {
+    const principais = permitidos(OPCOES_POR_PAPEL[papel])
+    return principais.length >= MINIMO_SEM_RESERVA ? principais : [...principais, ...permitidos(OPCOES_RESERVA[papel] ?? [])]
+  }
 
   // Restrição demais (ex.: vegetariano + sem ovo + sem soja) -> sem plano; a tela explica.
   // Fruta e verdura não são essenciais: quem não come, fica sem (a parte da
@@ -578,5 +595,56 @@ export function paraEnvioDieta(plano: PlanoDietaGerado) {
       itens: r.itens.map((i) => ({ alimento_id: alimentoDoItem(i).id, gramas: i.gramas })),
     })),
     p_gerador_versao: VERSAO_GERADOR_DIETA,
+  }
+}
+
+// ---------------------------------------------------------------
+// Semana (12/11/2026): 7 dias com as mesmas metas e alimentos diferentes
+// ---------------------------------------------------------------
+
+export const DIAS_DA_SEMANA_PLANO = 7
+
+/**
+ * Um cardápio por dia (índice 0 = segunda). Cada dia é uma variante do
+ * gerador; a que sair da tolerância do servidor é pulada. `inicio` muda a
+ * semana inteira ("outra semana"). null = nem o primeiro dia fecha.
+ */
+export function gerarSemanaDieta(
+  c: CorpoDieta,
+  p: ParametrosDieta,
+  base: readonly AlimentoPlano[],
+  inicio = 0,
+): PlanoDietaGerado[] | null {
+  const dias: PlanoDietaGerado[] = []
+  let variante = Math.max(0, Math.floor(inicio))
+  const limite = variante + DIAS_DA_SEMANA_PLANO * 6
+  while (dias.length < DIAS_DA_SEMANA_PLANO && variante < limite) {
+    const dia = gerarPlanoDieta(c, { ...p, variante }, base)
+    if (!dia) return null
+    if (cardapioDentroDaMeta(dia)) dias.push(dia)
+    // De 2 em 2: o jantar de um dia usa a opção seguinte à do almoço, e com
+    // passo 1 ele virava o almoço do dia seguinte.
+    variante += 2
+  }
+  if (dias.length === 0) return null
+  // Restrição demais pra 7 dias diferentes: repete os que fecharam.
+  const achados = dias.length
+  while (dias.length < DIAS_DA_SEMANA_PLANO) dias.push(dias[dias.length % achados]!)
+  return dias
+}
+
+/** Próximo `inicio` pra "outra semana" (depois da última variante usada). */
+export function proximoInicioDaSemana(semana: readonly PlanoDietaGerado[]): number {
+  return Math.max(...semana.map((d) => d.parametros.variante ?? 0)) + 1
+}
+
+/** Formato da RPC aplicar_plano_dieta_semana (o dia 1 é o que a RPC antiga recebe). */
+export function paraEnvioDietaSemana(semana: readonly PlanoDietaGerado[]) {
+  const primeiro = paraEnvioDieta(semana[0]!)
+  return {
+    p_parametros: primeiro.p_parametros,
+    p_metas: primeiro.p_metas,
+    p_semana: semana.map((d) => paraEnvioDieta(d).p_cardapio),
+    p_gerador_versao: primeiro.p_gerador_versao,
   }
 }
