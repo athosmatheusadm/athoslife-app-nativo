@@ -34,6 +34,8 @@ export function MemoriaLife() {
   const [confirmarTudo, setConfirmarTudo] = useState(false)
   // Apagar espera o "Desfazer"; se a pessoa sair da tela antes, apaga na hora.
   const pendentes = useRef(new Map<string, ReturnType<typeof setTimeout>>())
+  const erroAoApagar = useRef(t.erroMudar)
+  erroAoApagar.current = t.erroMudar
 
   const carregar = useCallback(async () => {
     setEstado('carregando')
@@ -53,7 +55,8 @@ export function MemoriaLife() {
     return () => {
       for (const [id, timer] of mapa) {
         clearTimeout(timer)
-        void lifeMemoriaRepository.apagar(id).catch(() => {})
+        // Saiu da tela antes dos 5 s do "Desfazer": apaga agora e avisa se falhar.
+        void lifeMemoriaRepository.apagar(id).catch(() => avisar.erro(erroAoApagar.current))
       }
       mapa.clear()
     }

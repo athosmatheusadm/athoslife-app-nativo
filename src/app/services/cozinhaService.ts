@@ -77,6 +77,8 @@ export const cozinhaService = {
     objetivo: string | null
     macrosRestantes: Macros
     categoriaDesejada?: string | null
+    pratoDesejado?: string | null
+    jaSugeridas?: readonly string[]
   }): Promise<ReceitaGerada> {
     const premium = temAcessoPremium(params.profile)
     const contexto: ContextoReceita = {
@@ -85,6 +87,8 @@ export const cozinhaService = {
       objetivo: params.objetivo,
       macrosRestantes: premium ? params.macrosRestantes : { calorias: 0, proteina: 0, carboidrato: 0, gordura: 0 },
       categoriaDesejada: params.categoriaDesejada ?? null,
+      pratoDesejado: params.pratoDesejado?.trim() || null,
+      jaSugeridas: params.jaSugeridas ?? [],
     }
     return gerarReceitaComIA(contexto)
   },

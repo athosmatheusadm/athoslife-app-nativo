@@ -144,4 +144,8 @@ export interface ContextoReceita {
   readonly macrosRestantes: Macros
   /** Momento/tipo pedido ("Lanche", "Algo doce"…), já no idioma da pessoa. */
   readonly categoriaDesejada: string | null
+  /** Prato que a pessoa está com vontade ("estrogonofe"), se ela disse. */
+  readonly pratoDesejado?: string | null
+  /** Títulos já sugeridos nesta visita — "Outra ideia" não pode repetir. */
+  readonly jaSugeridas?: readonly string[]
 }

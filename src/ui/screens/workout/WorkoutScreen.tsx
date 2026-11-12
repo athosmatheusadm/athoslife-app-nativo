@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { FAIXA_REFERENCIA_REPS } from '@domain/rules/geradorTreino'
 import { useSessaoTreino } from '@app/SessaoTreinoProvider'
 import {
   DIAS_SEMANA,
@@ -257,6 +258,13 @@ export function WorkoutScreen() {
             <span className="block text-micro font-normal text-content-low">{t.comecarSub}</span>
           </button>
         )
+      )}
+
+      {/* Ficha veio do modelo do Life: os números são ponto de partida, não prescrição. */}
+      {!carregando && itens.length > 0 && localDoUltimoPlano() === local && (
+        <p className="mx-4 mb-3 rounded-xl border border-surface-4 bg-surface-2 px-3 py-2 text-micro leading-relaxed text-content-low">
+          {t.modeloNota(FAIXA_REFERENCIA_REPS)}
+        </p>
       )}
 
       <div className="mx-4 mb-2 flex items-center justify-between">

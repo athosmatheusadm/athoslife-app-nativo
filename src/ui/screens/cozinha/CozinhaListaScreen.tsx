@@ -20,6 +20,8 @@ export function CozinhaListaScreen() {
   const [receitas, setReceitas] = useState<Receita[] | null>(null)
   const [criacoes, setCriacoes] = useState<ReceitaCriada[]>([])
   const [erro, setErro] = useState(false)
+  // Falha ao ler as criações não pode parecer "você não tem criações".
+  const [erroCriacoes, setErroCriacoes] = useState(false)
   const [filtro, setFiltro] = useState<Filtro>('todos')
 
   function carregar() {
@@ -27,7 +29,15 @@ export function CozinhaListaScreen() {
     setErro(false)
     setReceitas(null)
     void cozinhaService.listar(profile).then(setReceitas).catch(() => setErro(true))
-    void cozinhaService.listarCriacoes().then(setCriacoes).catch(() => setCriacoes([]))
+    carregarCriacoes()
+  }
+
+  function carregarCriacoes() {
+    setErroCriacoes(false)
+    void cozinhaService.listarCriacoes().then(setCriacoes).catch((e) => {
+      console.error('cozinha criações falhou:', e)
+      setErroCriacoes(true)
+    })
   }
 
   useEffect(() => {
@@ -54,7 +64,7 @@ export function CozinhaListaScreen() {
       <div className="flex gap-2 overflow-x-auto sem-barra px-4 pb-3">
         <Chip ativo={filtro === 'todos'} onClick={() => setFiltro('todos')}>{t.todas}</Chip>
         <Chip ativo={filtro === 'favoritas'} cor="#de6674" onClick={() => setFiltro('favoritas')}>♥ {t.favoritas}</Chip>
-        {criacoes.length > 0 && (
+        {(criacoes.length > 0 || erroCriacoes) && (
           <Chip ativo={filtro === 'criacoes'} onClick={() => setFiltro('criacoes')}>👨‍🍳 {t.minhasCriacoes}</Chip>
         )}
         {CATEGORIAS_RECEITA.map((cat) => (
@@ -65,7 +75,13 @@ export function CozinhaListaScreen() {
       </div>
 
       <div className="px-4">
-        {receitas === null && !erro && <p className="py-10 text-center text-micro text-content-low">{t.carregando}</p>}
+        {receitas === null && !erro && (
+          <div role="status" aria-label={t.carregando} className="grid grid-cols-2 gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-48 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+            ))}
+          </div>
+        )}
         {erro && (
           <div className="py-10 text-center">
             <p className="mb-2 text-micro text-content-low">{t.erroCarregar}</p>
@@ -74,7 +90,12 @@ export function CozinhaListaScreen() {
         )}
 
         {filtro === 'criacoes' ? (
-          criacoes.length === 0 ? (
+          erroCriacoes ? (
+            <div className="py-10 text-center">
+              <p className="mb-2 text-micro text-content-low">{t.erroCarregar}</p>
+              <button type="button" onClick={carregarCriacoes} className="min-h-11 px-3 text-sm font-bold text-brand active:opacity-70">{t.tentarDeNovo}</button>
+            </div>
+          ) : criacoes.length === 0 ? (
             <p className="py-10 text-center text-micro text-content-low">{t.semCriacoes}</p>
           ) : (
             <div className="grid grid-cols-2 gap-3">

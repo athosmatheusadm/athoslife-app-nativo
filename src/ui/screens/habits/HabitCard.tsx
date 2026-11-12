@@ -358,7 +358,7 @@ function SemanaDoHabito(props: { habito: Habito; eventos: readonly EventoHabito[
         {dias.map((d) => (
           <li key={d.data} className="flex flex-1 flex-col items-center gap-1" title={props.legenda[d.estado === 'antes' ? 'vazio' : d.estado]}>
             <span className={`h-3.5 w-3.5 rounded-full ${COR_DIA[d.estado]}`} />
-            <span className="text-[10px] uppercase text-content-low" aria-hidden="true">{letra.format(new Date(`${d.data}T12:00:00`))}</span>
+            <span className="text-micro uppercase text-content-low" aria-hidden="true">{letra.format(new Date(`${d.data}T12:00:00`))}</span>
             <span className="sr-only">{`${d.data}: ${props.legenda[d.estado === 'antes' ? 'vazio' : d.estado]}`}</span>
           </li>
         ))}

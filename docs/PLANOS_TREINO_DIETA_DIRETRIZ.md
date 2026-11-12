@@ -83,6 +83,16 @@ Termos de uso (seção nova) repetem isso.
 
 ## 4. Plano de treino — regras do gerador (`domain/rules/geradorTreino.ts`)
 
+> **12/11/2026 — referência geral, não prescrição (decisão do dono).**
+> O Life só indica os exercícios no chat. A ficha chega com séries e
+> repetições dentro da faixa pública do ACSM (linhas de hipertrofia da tabela
+> abaixo, sem pergunta de objetivo: 2–3 séries iniciante, 3 intermediário,
+> 3–4 avançado; 12 reps iniciante, 10 os demais), como ponto de partida
+> editável, com o aviso "referência geral (ACSM), não prescrição" na tela de
+> Treino. **Nada de carga nem de regra de progressão** em texto nenhum. O
+> nome na tela é "modelo de treino". O dono não tem profissional de Educação
+> Física responsável ainda; quando tiver, rever.
+
 Faixas do ACSM Position Stand (2009) para treino de força, arredondadas:
 
 | Objetivo | Nível | Séries | Reps | Descanso |
@@ -110,8 +120,37 @@ Travas (no app **e** no RPC `aplicar_plano_treino`):
   é informativa: "fechou o topo da faixa em todas as séries por 2 treinos?
   Suba a carga um pouco (2 a 5%)".
 
-Divisão por dias: 2–3 = corpo inteiro A/B; 4 = superior/inferior A/B;
-5 = superior, inferior, empurrar, puxar, pernas; 6 = empurrar/puxar/pernas ×2.
+Divisão por dias: 2 = corpo inteiro A/B; 3 = corpo inteiro A/B/C;
+4 = superior/inferior A/B; 5 = empurrar, puxar, pernas, superior, inferior;
+6 = empurrar/puxar/pernas ×2.
+
+**v2 (12/11/2026) — o que mudou sem mexer nas travas:**
+
+- **Foco:** a pessoa marca até 2 partes do corpo no boneco. Nos dias em que
+  o foco cabe ele ganha um exercício a mais (2 no iniciante, até 3 nos
+  outros) no lugar do último acessório; grupo grande em foco vai pro começo
+  da sessão. A base do dia nunca some (corpo inteiro sempre tem perna, peito
+  e costas; superior sempre tem peito e costas).
+- **Reps dentro da faixa:** os dois primeiros exercícios ficam na parte de
+  baixo da faixa (mais pesados), os acessórios e os finais (abdômen,
+  panturrilha, lombar) na parte de cima. Nº de séries continua o da tabela.
+- **Posterior de coxa** tem lugar próprio nos dias de perna.
+- **Teto semanal por grupo** é repartido antes de escolher os exercícios: o
+  lugar que estouraria vira outro grupo com espaço, a sessão não encolhe.
+- **"Ver outra opção"** (`variante`): mesmas escolhas, outros exercícios.
+- O foco vai em `p_parametros.foco` (jsonb livre; o servidor não precisa dele).
+
+Cardápio v2: mais opções por papel, salada crua além do legume cozido,
+jantar sem leguminosa e com mais proteína (vegetariano mantém a leguminosa),
+o dia não repete alimento e a quantidade é calibrada pra fechar a meta.
+
+**Cardápio da semana:** 7 dias (segunda a domingo) com as mesmas metas e
+alimentos diferentes; **"Outra semana"** troca tudo. Proteína de reserva
+(ovo, tofu, grão-de-bico como prato) só entra pra quem tem restrição. RPC
+`aplicar_plano_dieta_semana` (`db/athoslife_plano_dieta_semana_migration.sql`):
+o dia 1 passa pela RPC de sempre, os outros pela mesma conferência de
+cardápio, e a semana fica em `planos_gerados.parametros->'semana'`. Sem a
+migração o app grava só o dia 1 (cai na RPC antiga sozinho).
 
 ## 5. Plano de dieta — etapa 2 (construído 2026-09-29)
 

@@ -29,7 +29,7 @@ import { CozinhaSecao } from '@ui/screens/cozinha/CozinhaSecao'
 import { macrosRestantes } from '@domain/rules/cozinha'
 import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { aoAplicarPlano } from '@app/eventosLife'
-import { planosRepository, type PlanoDietaSalvo } from '@data/repositories/planosRepository'
+import { planosRepository, refeicoesDoPlanoEm, type PlanoDietaSalvo } from '@data/repositories/planosRepository'
 import { planejadasRepository, type ItemPlanejado } from '@data/repositories/planejadasRepository'
 import { aoRegistrarNoDia } from '@data/registroDoDia'
 import { dataLocalISO } from '@domain/rules/datas'
@@ -220,7 +220,8 @@ export function DietScreen(props: {
   function itensDoPlano(r: Refeicao): ItemRefeicao[] {
     const doLife = planejadasDa(r)
     if (doLife.length) return doLife
-    const doPlano = r.tipo === 'extra' ? undefined : planoDieta?.refeicoes.find((x) => x.tipo === r.tipo)
+    // Cada dia da semana tem o cardápio dele (plano antigo: o mesmo todo dia).
+    const doPlano = r.tipo === 'extra' || !planoDieta ? undefined : refeicoesDoPlanoEm(planoDieta, diaSel).find((x) => x.tipo === r.tipo)
     if (!doPlano) return []
     const jaTem = new Set(r.itens.map((i) => i.nome))
     return doPlano.itens

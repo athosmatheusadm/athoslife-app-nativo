@@ -22,6 +22,8 @@ export function CriacaoScreen() {
   const [carregando, setCarregando] = useState(true)
   const [escolhendo, setEscolhendo] = useState(false)
   const [estadoFoto, setEstadoFoto] = useState<'parado' | 'enviando' | 'ok' | 'erro'>('parado')
+  const [armado, setArmado] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -55,13 +57,29 @@ export function CriacaoScreen() {
     }
   }
 
+  // Excluir no padrão do app: o 1º toque arma ("Toque de novo pra excluir"),
+  // o 2º exclui; desarma sozinho em 4 s. Sem caixa do sistema.
+  useEffect(() => {
+    if (!armado) return
+    const timer = setTimeout(() => setArmado(false), 4000)
+    return () => clearTimeout(timer)
+  }, [armado])
+
   async function excluir() {
-    if (!criacao || !window.confirm(t.confirmarExcluir)) return
+    if (!criacao || excluindo) return
+    if (!armado) {
+      setArmado(true)
+      return
+    }
+    setExcluindo(true)
     try {
       await cozinhaService.excluirCriacao(criacao.id)
       navigate(-1)
     } catch (e) {
       console.error('excluir criação falhou:', e)
+      avisar.erro(t.erroExcluir)
+      setArmado(false)
+      setExcluindo(false)
     }
   }
 
@@ -74,8 +92,14 @@ export function CriacaoScreen() {
         onVoltar={() => navigate(-1)}
         direita={
           criacao && (
-            <button type="button" onClick={() => void excluir()} className="text-micro font-bold text-accent-danger">
-              {t.excluir}
+            <button
+              type="button"
+              disabled={excluindo}
+              onClick={() => void excluir()}
+              aria-live="polite"
+              className="min-h-11 px-1 text-micro font-bold text-accent-danger disabled:opacity-60"
+            >
+              {armado ? t.confirmarExcluir : t.excluir}
             </button>
           )
         }

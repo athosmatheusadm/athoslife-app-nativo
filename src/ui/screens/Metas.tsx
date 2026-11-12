@@ -127,17 +127,22 @@ function Restricoes() {
   const [itens, setItens] = useState<string[] | null>(null)
   const [texto, setTexto] = useState('')
   const [salvando, setSalvando] = useState(false)
+  // Falha ao carregar NÃO vira lista vazia: adicionar um item gravaria a lista
+  // nova por cima e apagaria as alergias que a pessoa já tinha salvo.
+  const [erroCarga, setErroCarga] = useState(false)
+  const [recarga, setRecarga] = useState(0)
 
   useEffect(() => {
     let vivo = true
+    setErroCarga(false)
     void profileRepository
       .restricoes()
       .then((r) => vivo && setItens(r))
-      .catch(() => vivo && setItens([]))
+      .catch(() => vivo && setErroCarga(true))
     return () => {
       vivo = false
     }
-  }, [])
+  }, [recarga])
 
   async function mudar(novos: string[]) {
     if (!itens || salvando) return
@@ -164,7 +169,26 @@ function Restricoes() {
     void mudar([...itens, v].slice(0, 20))
   }
 
-  if (!itens) return null
+  if (!itens) {
+    if (!erroCarga) return null
+    return (
+      <section className="mt-8 px-5" aria-labelledby="restricoes-titulo">
+        <h2 id="restricoes-titulo" className="mb-1 text-micro font-bold uppercase tracking-wide text-content-low">
+          {t.restricoesTitulo}
+        </h2>
+        <div className="rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-center" role="alert">
+          <p className="text-sm text-content-mid">{m.perfil.memoriaLife.erroCarregar}</p>
+          <button
+            type="button"
+            onClick={() => setRecarga((n) => n + 1)}
+            className="mt-2 min-h-12 rounded-xl bg-surface-3 px-5 text-sm font-bold text-content-hi active:bg-surface-4"
+          >
+            {m.perfil.memoriaLife.tentar}
+          </button>
+        </div>
+      </section>
+    )
+  }
   const sugestoes = t.restricoesSugestoes.filter((s) => !itens.some((x) => x.toLowerCase() === s.toLowerCase()))
 
   return (

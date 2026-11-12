@@ -307,9 +307,6 @@ export function CheckinLife() {
         {resposta && (
           <div role="status" className="pb-1.5 text-sm leading-relaxed text-content-mid">
             <p>{resposta.texto}</p>
-            {palavra && sugereDiaLeve(palavra, tags) && (
-              <OfertaDiaLeve etiquetas={tags} metaPassos={profile?.metas.passos ?? 0} />
-            )}
             {resposta.convite && (
               <button
                 type="button"
@@ -319,6 +316,7 @@ export function CheckinLife() {
                 {t.conversar} ›
               </button>
             )}
+            {palavra && sugereDiaLeve(palavra, tags) && <OfertaDiaLeve metaPassos={profile?.metas.passos ?? 0} />}
           </div>
         )}
         {chatAberto && <LifeChatSheet foco="home" onFechar={() => setChatAberto(false)} />}

@@ -28,6 +28,22 @@ const MAX_INGREDIENTES = 25
  */
 export function LifeChefScreen() {
   const { m } = useI18n()
+  const navigate = useNavigate()
+  return (
+    <main className="min-h-full pb-24 pt-safe-t">
+      <CabecalhoCozinha titulo={m.cozinha.lifeChefTitulo} onVoltar={() => navigate(-1)} />
+      <LifeChefFluxo />
+    </main>
+  )
+}
+
+/**
+ * O fluxo do Life-chef (pergunta → montando → receita). Na tela da Cozinha e,
+ * desde 12/11, dentro do chat do Life (`embutido`): o dono não quer sair da
+ * conversa pra pedir uma receita. `onIr` fecha o chat antes de navegar.
+ */
+export function LifeChefFluxo(props: { embutido?: boolean; onIr?: (rota: string) => void; onMudou?: () => void }) {
+  const { m } = useI18n()
   const t = m.cozinha
   const navigate = useNavigate()
   const { profile } = useSession()
@@ -35,6 +51,9 @@ export function LifeChefScreen() {
   const [ingredientes, setIngredientes] = useState<string[]>([])
   const [texto, setTexto] = useState('')
   const [momento, setMomento] = useState<Momento>('qualquer')
+  const [prato, setPrato] = useState('')
+  // Títulos que o Life já sugeriu nesta visita: "Outra ideia" não repete.
+  const [jaSugeridas, setJaSugeridas] = useState<string[]>([])
   const [evitar, setEvitar] = useState<string[]>([])
   const [restante, setRestante] = useState<Macros | null>(null)
   const [fase, setFase] = useState<'pergunta' | 'montando' | 'resultado'>('pergunta')
@@ -58,6 +77,12 @@ export function LifeChefScreen() {
       )
       .catch(() => setRestante(null))
   }, [profile])
+
+  // No chat: cada fase nova desce a conversa até ela.
+  useEffect(() => {
+    props.onMudou?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fase, receita, erro])
 
   if (!profile) return null
   const premium = temAcessoPremium(profile)
@@ -101,8 +126,11 @@ export function LifeChefScreen() {
         objetivo: profile.objetivo,
         macrosRestantes: restante ?? { calorias: 0, proteina: 0, carboidrato: 0, gordura: 0 },
         categoriaDesejada: momento === 'qualquer' ? null : t.momentos[momento],
+        pratoDesejado: prato,
+        jaSugeridas,
       })
       setReceita(r)
+      setJaSugeridas((a) => [...a, r.titulo].slice(-5))
       setFase('resultado')
     } catch (e) {
       console.error('life-chef falhou:', e)
@@ -136,7 +164,8 @@ export function LifeChefScreen() {
     setSalvando(true)
     try {
       const id = await cozinhaService.salvarCriacao(receita)
-      navigate(`/dieta/cozinha/criacao/${id}`, { replace: true })
+      if (props.onIr) props.onIr(`/dieta/cozinha/criacao/${id}`)
+      else navigate(`/dieta/cozinha/criacao/${id}`, { replace: true })
     } catch (e) {
       console.error('salvar criação falhou:', e)
       const limite = !!e && typeof e === 'object' && 'message' in e && String(e.message).includes('limite_criacoes')
@@ -146,11 +175,9 @@ export function LifeChefScreen() {
   }
 
   return (
-    <main className="min-h-full pb-24 pt-safe-t">
-      <CabecalhoCozinha titulo={t.lifeChefTitulo} onVoltar={() => navigate(-1)} />
-
+    <div className={props.embutido ? '-mx-4' : undefined}>
       {fase === 'montando' && (
-        <div className="px-4 pt-16 text-center">
+        <div className={`px-4 text-center ${props.embutido ? 'py-6' : 'pt-16'}`}>
           <img src="/life/chef.webp" alt="" className="mx-auto mb-4 h-36 w-auto motion-safe:animate-bounce" draggable={false} />
           <p className="text-sm font-semibold text-content-mid">{t.montando}</p>
         </div>
@@ -237,6 +264,18 @@ export function LifeChefScreen() {
             </div>
           </div>
 
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-content-mid">{t.pratoDesejado}</span>
+            <input
+              value={prato}
+              onChange={(e) => setPrato(e.target.value)}
+              placeholder={t.pratoPlaceholder}
+              maxLength={60}
+              enterKeyHint="done"
+              className="min-h-12 w-full rounded-xl border border-surface-4 bg-surface-2 px-3 text-base text-content-hi placeholder:text-content-low focus:border-brand focus:outline-none"
+            />
+          </label>
+
           <div className="space-y-1 rounded-2xl bg-surface-2 p-3 text-micro text-content-mid">
             {evitar.length > 0 && <p>🚫 {t.deixarDeFora(evitar.join(', '))}</p>}
             {premium && restante && restante.calorias > 0 && <p>🎯 {t.cabeNoDia(Math.round(restante.calorias))}</p>}
@@ -244,7 +283,7 @@ export function LifeChefScreen() {
           </div>
 
           {erro && <p className="text-center text-micro text-accent-danger">{erro}</p>}
-          {acabouGratis && <LinkPlanos />}
+          {acabouGratis && <LinkPlanos onIr={props.onIr} />}
 
           <button
             type="button"
@@ -258,7 +297,7 @@ export function LifeChefScreen() {
 
       {fase === 'resultado' && receita && (
         <ReceitaView
-          key={receita.titulo}
+          key={`${jaSugeridas.length}-${receita.titulo}`}
           titulo={receita.titulo}
           subtitulo={receita.subtitulo || null}
           corTema="#64c27b"
@@ -282,7 +321,7 @@ export function LifeChefScreen() {
           acoes={
             <>
               {erro && <p className="text-center text-micro text-accent-danger">{erro}</p>}
-              {(acabouGratis || (!premium && erro === t.limiteCriacoes)) && <LinkPlanos />}
+              {(acabouGratis || (!premium && erro === t.limiteCriacoes)) && <LinkPlanos onIr={props.onIr} />}
               <button
                 type="button"
                 disabled={salvando}
@@ -300,22 +339,32 @@ export function LifeChefScreen() {
                   🔄 {t.outraIdeia}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  setErro(null)
+                  setFase('pergunta')
+                }}
+                className="min-h-11 w-full text-sm font-semibold text-content-mid"
+              >
+                {t.mudarIngredientes}
+              </button>
             </>
           }
         />
       )}
-    </main>
+    </div>
   )
 }
 
 /** Convite discreto pro pago — só aparece quando a cota grátis acabou. */
-function LinkPlanos() {
+function LinkPlanos(props: { onIr: ((rota: string) => void) | undefined }) {
   const { m } = useI18n()
   const navigate = useNavigate()
   return (
     <p className="text-center text-micro text-content-mid">
       {m.cozinha.querMais}{' '}
-      <button type="button" onClick={() => navigate('/perfil/plano')} className="font-bold text-brand">
+      <button type="button" onClick={() => (props.onIr ? props.onIr('/perfil/plano') : navigate('/perfil/plano'))} className="font-bold text-brand">
         {m.cozinha.verPlanos} ›
       </button>
     </p>

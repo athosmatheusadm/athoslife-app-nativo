@@ -160,7 +160,9 @@ export function EnergiaPesoGrafico({ periodo, onPeriodo }: {
         </div>
       </div>
 
-      {estado.fase === 'carregando' && <p className="mt-3 text-micro text-content-low">{t.carregando}</p>}
+      {estado.fase === 'carregando' && (
+        <div role="status" aria-label={t.carregando} className="mt-3 h-32 animate-pulse rounded-xl bg-surface-4/60" />
+      )}
       {estado.fase === 'erro' && (
         <p className="mt-3 text-sm text-content-mid">
           {t.erro}{' '}

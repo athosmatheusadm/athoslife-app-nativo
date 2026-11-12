@@ -306,7 +306,7 @@ export interface MensagemChat {
  * receita da Cozinha que serve pra pessoa; `[[chef]]` é o botão do "Monte
  * sua receita com o Life". Ficam salvos no texto, então voltam no histórico.
  */
-const MARCA_CARTAO = /\[\[(receita:[0-9a-f-]{36}|chef)\]\]/g
+const MARCA_CARTAO = /\[\[(receita:[0-9a-f-]{36}|chef|montar:(?:treino|dieta))\]\]/g
 /** `[[comparar:<json>]]` (09/11): dois exercícios lado a lado, com 3 benefícios de cada. */
 const MARCA_COMPARAR = /\[\[comparar:([^\]\s]+)\]\]/g
 
@@ -323,10 +323,18 @@ function lerComparacao(dados: string): ComparacaoExercicios | null {
   }
 }
 
-export function separarCartoes(texto: string): { texto: string; receitas: string[]; chef: boolean; comparacoes: ComparacaoExercicios[] } {
+export function separarCartoes(texto: string): {
+  texto: string
+  receitas: string[]
+  chef: boolean
+  comparacoes: ComparacaoExercicios[]
+  /** O Life vai montar o plano aqui na conversa (12/11): o chat abre as perguntas. */
+  montar: 'treino' | 'dieta' | null
+} {
   const receitas: string[] = []
   const comparacoes: ComparacaoExercicios[] = []
   let chef = false
+  let montar: 'treino' | 'dieta' | null = null
   const limpo = texto
     .replace(MARCA_COMPARAR, (_, dados: string) => {
       const c = lerComparacao(dados)
@@ -335,10 +343,12 @@ export function separarCartoes(texto: string): { texto: string; receitas: string
     })
     .replace(MARCA_CARTAO, (_, m: string) => {
       if (m === 'chef') chef = true
+      else if (m === 'montar:treino') montar = 'treino'
+      else if (m === 'montar:dieta') montar = 'dieta'
       else receitas.push(m.slice('receita:'.length))
       return ''
     })
-  return { texto: limpo.trim(), receitas, chef, comparacoes }
+  return { texto: limpo.trim(), receitas, chef, comparacoes, montar }
 }
 
 export type EscolhaAcao = 'adicionar' | 'substituir' | 'forcar' | 'salvar' | 'cancelar'
@@ -467,7 +477,7 @@ export async function enviarMensagemChat(
     id_envio: idEnvio,
     ...(diaLeve ? { dia_leve: diaLeve } : {}),
     // O que este app sabe mostrar (02/11): o servidor só oferece a ação se o app tiver o cartão.
-    recursos: ['programar', 'comparar'],
+    recursos: ['programar', 'comparar', 'montar'],
   }
   const cru = aoRascunho && temStreaming()
     ? await chamarChatStream<Cru>(payload, aoRascunho)

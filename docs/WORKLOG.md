@@ -5157,3 +5157,548 @@ deu erro. Nenhum código mudou.
 **Pendências:** corrigir o Brevo e retestar; seguir o teste do APK; zip das
 imagens do Treino (dono vai mandar); conta do Play Console (dono criando);
 as demais dos blocos anteriores.
+
+## 2026-11-11 (5) — ajustes do teste do APK (branch `ajustes-teste-11-11`)
+
+Pedido do dono depois de testar o APK de 11/11: internet ruim, Story
+Studio, limpeza e o chat (respostas genéricas + arroz virando macarrão).
+
+**Conta admin:** `matheusbarretonunes.mb@gmail.com` recebeu senha provisória
+direto no banco (dono autorizou; o e-mail do Brevo não sai). A senha está
+num `.txt` na pasta Downloads do dono, fora do repositório. Trocar por uma
+senha própria quando o Brevo voltar.
+
+**Arroz × macarrão (causa achada, correção NÃO aplicada):**
+- No chat, "arroz cozido" virava "Macarrão de arroz cozido": a
+  `buscar_alimentos` só aceitava o termo grudado no nome e esse era o único
+  alimento com "arroz cozido" junto. Pelo mesmo motivo "macarrão cozido" e
+  "ovos fritos" não achavam nada e "frango grelhado" caía num prato pronto.
+- `db/athoslife_busca_por_palavras_migration.sql`: casa por palavras (todas
+  as palavras do termo no nome, plural simples tolerado) e, só em termo com
+  2+ palavras, põe na frente o nome que começa pela 1ª palavra e o básico
+  dela. Testada no banco como função temporária (`pg_temp`, nada gravado)
+  com 51 termos: os de uma palavra ("arroz", "coca", "guaraná",
+  "refrigerante"…) ficaram idênticos; "arroz cozido" → Arroz branco cozido,
+  "ovos fritos" → Ovo frito, "frango grelhado" → Frango peito grelhado,
+  "feijão cozido" → Feijão carioca cozido.
+- **O modo automático barrou o `apply_migration` ("Production Deploy").**
+  Precisa do ok explícito do dono. Nenhum JS depende dela: vale pro chat e
+  pra busca da Dieta assim que for aplicada, sem APK novo.
+- Continuam sem achar (nome diferente na base, não é a busca): "bife
+  grelhado", "filé de frango grelhado", "salada de alface".
+
+**Internet ruim** (o app já tinha corte de 9 s, cópia local, fila e selo; o
+que faltava era falha de rede aparecendo como lista vazia):
+- **Metas > alergias e restrições:** se a leitura falhava, a lista aparecia
+  vazia e adicionar um item gravava por cima, apagando as alergias salvas.
+  Agora mostra erro + "Tentar de novo" e não deixa editar sem ter carregado.
+- **Adicionar exercício** e **Notificações > lembretes de hábito:** falha
+  mostrava "nenhum exercício" / "sem hábitos"; agora erro + tentar de novo.
+- Textos reaproveitados (já existiam em pt/en/es/fr/hi); nada novo no i18n.
+
+**Story Studio:** 8 textos de 9–11 px passaram pro mínimo do app
+(`text-micro`, 12 px em rem); a coluna dos controles deslizantes passou pra
+rem e o mini-botão ganhou altura de toque (44 px). Cores e layout do V2 do
+dono não foram mexidos.
+
+**Limpeza:** saíram os protótipos antigos de onboarding
+(`prototipo/OnboardingConversa`, `OnboardingEssencial`) e a
+`FoodSearchScreen` (sem uso; o `useFoodSearch` fica, a Dieta usa). Eles já
+não entravam no APK (rota só no `npm run dev`). A prévia `/previa/onboarding`
+ficou.
+
+**Não mexi (correção ao que eu tinha dito ao dono):** as "21 telas em
+branco" eram guardas de sessão, não tela em branco; as cores fora dos tokens
+(Story, Cozinha) vêm dos HTMLs do dono.
+
+**Chat genérico (análise, sem mudança):** o prompt já foi apertado em
+02–08/11 e as conversas de 11/11 estão melhores que as de 31/10. O que
+ainda soa igual: a frase fixa do cartão de refeição ("Achei isso para o
+jantar de hoje. Confere…") e o molde "acolhe + pergunta" no desabafo. Em
+10/11 "salva no café de amanhã" saiu como "de hoje" (APK antigo, sem
+`programar_refeicao`); conferir no APK novo. Mudar o prompt pede deploy da
+`ai-proxy` + smoke: esperando o dono apontar as respostas que achou fracas.
+
+**Validado:** `npm run typecheck` (+ camadas) e `npm run build`. Nenhuma
+Edge Function mudou. Falta ver no celular: Story com os textos maiores.
+
+**Pendências:** ok do dono pra aplicar a migração da busca; PR desta branch
+→ `main` (com ok) e APK novo; Brevo (IPs autorizados); zip das imagens do
+Treino; Play Console; as demais dos blocos anteriores.
+
+## 2026-11-11 (6) — LISTA PRA CORRIGIR (dono pediu pra salvar; retomar daqui)
+
+Dono vai corrigir tudo isto na volta. Branch `ajustes-teste-11-11`, PR #7.
+
+### A. Esperando o ok do dono
+1. Aplicar `db/athoslife_busca_por_palavras_migration.sql` (arroz × macarrão).
+   Frase: "pode aplicar a migração da busca".
+2. Levar o PR #7 pra `main` e gerar APK novo.
+3. Apontar 2–3 respostas do Life que achou genéricas (ou confirmar que é a
+   frase do cartão de refeição).
+
+### B. O que está fraco no app (análise de 11/11)
+Processo:
+1. Muita função nunca testada no celular (push, cadastro por código, baixar
+   dados, pergunta do "Hoje eu cedi").
+2. App cego pra erro: sem Sentry/Crashlytics.
+3. Ninguém nunca pagou: assinatura sem compra real de ponta a ponta.
+4. Telas sem teste automático (os 20 arquivos de teste são do servidor).
+5. `ai-proxy/index.ts` com 3.574 linhas; troca de IA de 05/11 sem ok/chaves.
+6. Idiomas demais pra lançar: fr e hi nunca revisados por quem fala.
+7. Teste grátis infinito enquanto "Confirm email" estiver desligado.
+
+Telas:
+8. Tela de assinatura (`Plano.tsx`) vende pouco: falta economia do anual,
+   frase de renovação automática/como cancelar, links de termos e
+   privacidade perto do botão (Play costuma cobrar).
+9. Chat não leva pra assinatura quando as mensagens acabam
+   (`LifeChatSheet.tsx`, só o texto `semMensagens`).
+10. Aviso `perfil.plano.avisos.email_nao_confirmado` diz "pelo link"; a
+    confirmação agora é por código (corrigir nos 5 idiomas).
+11. `CriacaoScreen.tsx:59` usa `window.confirm` (caixa do sistema com
+    "localhost"); trocar pelo padrão do app (2º toque ou Desfazer).
+12. Carregamento com texto "Carregando…" em vez de esqueleto: Cozinha
+    (lista e seção), Conquistas, Energia/Peso, WeightCard, Adicionar
+    exercício, Notificações, água na Home. Polimento.
+13. Texto abaixo de 12 px fora do Story: `RevisaoScanner.tsx:185`,
+    `HabitCard.tsx:361`, `Scanner.tsx:335`.
+14. Cores fora dos tokens (Story, Cozinha, Acessibilidade, OnboardingNovo):
+    vêm dos HTMLs do dono; só mexer se ele pedir.
+
+Chat do Life:
+15. Frase fixa do cartão de refeição (`TXT_REGISTRO.confira`), igual toda vez.
+16. Desabafo em molde: repete, valida, fecha com pergunta.
+17. "Café da manhã de amanhã" saiu como "de hoje" em 10/11 (APK antigo sem
+    `programar_refeicao`); repetir no APK novo. Sem a ferramenta, o Life
+    deveria avisar que registrou em hoje.
+18. Alimentos que a base não acha pelo nome falado: "bife grelhado", "filé
+    de frango grelhado", "salada de alface", "pães franceses" (faltam
+    apelidos/itens na base).
+Mudança no prompt = deploy da `ai-proxy` + `node scripts/smoke-life.mjs` +
+conversa de verdade.
+
+### C. Os 34 erros engolidos (`.catch(() => {})`)
+**Corrigir (4) — escondem algo que a pessoa deveria saber:**
+- `ui/screens/Login.tsx:65` — reenvio do código de cadastro falha e a tela
+  diz que mandou.
+- `ui/screens/home/ConvitePush.tsx:45` — aceitar o convite do push pode não
+  salvar (`contatoRepository.salvar`); a pessoa acha que ligou.
+- `ui/screens/MemoriaLife.tsx:56` — apagar lembrança falha em silêncio (a
+  linha 92 já trata; igualar).
+- `ui/screens/OnboardingNovo.tsx:77` — primeiro peso pode não gravar.
+
+**Avaliar (10) — leitura secundária; o bloco fica sem o dado:**
+- `app/SessionProvider.tsx:86` e `:109`
+- `ui/components/life/LifeChatSheet.tsx:274` (contar lembrança pendente)
+- `ui/components/life/PlanosNoLife.tsx:112` e `:336`
+- `ui/screens/Habitos.tsx:30` (eventos)
+- `ui/screens/diet/InlineFoodSearch.tsx:302` (favorito)
+- `ui/screens/habits/CravingAssistant.tsx:117` (receitas)
+- `ui/screens/home/MealCards.tsx:33` e `:39`
+- `ui/screens/home/TodayActivity.tsx:57` e `:70`
+- `ui/screens/notificacoes/LembretesDoDia.tsx:46`
+- `ui/screens/workout/CardDiaLeve.tsx:39`
+- `ui/screens/story/StoryScreen.tsx:117` (imagem do Life)
+
+**Deixar (de propósito) — vibração, plugin nativo, sincronização de fundo:**
+- `app/IntegracoesNativas.tsx:51`, `:64`
+- `app/LembretesDoLife.tsx:32`, `:34`
+- `app/SessaoTreinoProvider.tsx:92`, `:98`, `:112`, `:139`, `:206`
+- `ui/feedback.tsx:17`, `:20`
+- `ui/screens/Habitos.tsx:100` (cancelar lembrete local)
+- `ui/screens/Perfil.tsx:22` (sincronizar antes de sair)
+- `ui/screens/home/ConvitePush.tsx:41` (Preferences)
+- `ui/screens/notificacoes/ContatoDoLife.tsx:47` (registrar push)
+
+Também fora da lista acima, mesmo defeito ("falha vira vazio"):
+`CozinhaListaScreen.tsx:30` e `CozinhaSecao.tsx:57` (criações → `[]`).
+
+### D. Pendências do dono (fora do código)
+- Brevo: Segurança → IPs autorizados → desativar o bloqueio pra SMTP; depois
+  retestar "Esqueci a senha" e trocar a senha provisória da conta admin.
+- Mandar o zip das imagens do Treino.
+- Criar a conta do Play Console (pessoa física) → app → perfil de pagamento;
+  depois `.aab`, produtos, RevenueCat, chave `goog_`, secret
+  `VITE_RC_GOOGLE_KEY`.
+- Trocar o token do GitHub (o de 11/11 à tarde também foi colado na conversa).
+- Seguir o teste do APK de 11/11 e anotar os erros.
+
+## 2026-11-12 — lista de 11/11: erros escondidos, assinatura e polimento (branch `ajustes-teste-11-11`)
+
+Dono mandou resolver A e B da lista do bloco (6) e os erros escondidos.
+**Ficou de fora a pedido dele:** chat do Life e limite de mensagens (ele
+testa hoje) — itens 9, 15–18 e os dois `.catch` de `components/life/`.
+
+**Erros escondidos corrigidos (os 4 de "corrigir" + Cozinha):**
+- `Login.tsx`: se o reenvio do código de cadastro falha, a tela do código
+  abre com o erro (rede / muitas tentativas) em vez de dizer que mandou.
+- `ConvitePush.tsx`: aceitar o convite só some da Home se gravou; falhou,
+  avisa e o convite fica pra tentar de novo.
+- `MemoriaLife.tsx`: apagar lembrança ao sair da tela avisa se falhar.
+- `OnboardingNovo.tsx`: primeiro peso tenta duas vezes e avisa se não
+  gravou (sem rede ele já ia pra fila).
+- `CozinhaListaScreen` / `CozinhaSecao`: falha ao ler "Minhas criações"
+  mostra erro + "Tentar de novo" em vez de sumir com a fileira.
+- Os 10 de "avaliar": conferidos, ficam como estão (leitura secundária com
+  cópia local). Restam pra depois do teste do dono os dois do Life:
+  `LifeChatSheet.tsx:274` (lembrança pendente) e `PlanosNoLife.tsx:112` (sexo).
+
+**Telas:**
+- `Plano.tsx`: selo "Economize X%" no anual (calculado do preço da loja),
+  frase de renovação automática/como cancelar e links de Termos e
+  Privacidade embaixo dos botões. Só aparece com a loja configurada —
+  **não deu pra ver na tela** (sem Play Console ainda).
+- Aviso `email_nao_confirmado`: "pelo link" → "com o código".
+- `CriacaoScreen.tsx`: saiu o `window.confirm`; excluir agora é toque +
+  "Toque de novo pra excluir" (desarma em 4 s) e avisa se falhar.
+- Texto abaixo de 12 px: `RevisaoScanner`, `HabitCard`, `Scanner` → `text-micro`.
+- Esqueleto no lugar de "Carregando…": Cozinha (lista e seção), Conquistas,
+  Energia/Peso, WeightCard, Adicionar exercício, Notificações, água na Home.
+- Textos novos em pt/en/es/fr/hi: `cozinha.erroExcluir`,
+  `onboarding.confirmar.erroPesoInicial`, `perfil.plano.loja.economia` e
+  `.renovacao`; `cozinha.confirmarExcluir` mudou de pergunta pra "toque de novo".
+
+**Validado:** `npm run typecheck` (+ camadas) e `npm run build`. Nenhuma Edge
+Function mudou (sem deploy). Não testado no celular.
+
+**Migração da busca (arroz × macarrão): AINDA NÃO APLICADA.** O dono disse
+"pode resolver o A", mas o modo automático barrou o `apply_migration` de
+novo ("Production Deploy"). Precisa da frase explícita ("te autorizo a
+migração da busca") ou de uma regra de permissão.
+
+**Pendências:** migração da busca; ver no celular (Story, esqueletos,
+excluir criação); itens do chat depois do teste do dono; processo (monitor
+de erros, compra real, fr/hi sem revisão, Confirm email depois do Brevo);
+bloco D do dia 11 (Brevo, zip do Treino, Play Console, token do GitHub).
+
+### 2026-11-12 (2) — revisão do francês e do hindi
+
+Dono pediu a revisão. Feita por IA (não por falante nativo): varredura
+automática nos 1.620 textos de cada idioma (texto não traduzido, tratamento
+misturado, variáveis faltando) + leitura completa do `fr.ts` e do `hi.ts`.
+Resultado: os dois estão consistentes (francês todo em "tu", hindi todo em
+"आप", Life sempre no masculino, nenhuma variável faltando, nada em português).
+
+Acertos feitos:
+- **fr:** `Touche-moi pour discuter` → `Appuie sur moi pour discuter`;
+  erro de gramática no Scanner (`ce que l’IA s’est trompée` → `a mal reconnu`);
+  `Total de séries` → `Nombre de séries`; 6 apóstrofos retos viraram tipográficos.
+- **hi:** plural de `offline.sairComPendentes`; rótulo de sexo `सेक्स` → `लिंग`;
+  `मंथली` → `मासिक`; `बारे में` → `ऐप के बारे में`; "personagem original"
+  (`असली` → `अपना`); textos que prendiam a pessoa no masculino (`उठता हूँ`,
+  `सोता हूँ`, `यही करूँगा`, `नहीं खाता`).
+
+Validado: typecheck e build. Ainda vale um falante nativo de hindi olhar
+antes de divulgar na Índia; o francês está em nível de publicar.
+
+## 2026-11-12 (3) — treino e dieta do Life v2: foco no boneco, variação e cardápio melhor (branch `planos-v2`)
+
+Dono não curtiu o treino que o Life montou ("genérico, não pergunta foco") e
+achou o cardápio fraco. Pediu foco pelo boneco do corpo e mais variedade,
+**sem sair das regras de segurança**. Branch `planos-v2`, saída da
+`ajustes-teste-11-11` (que ainda não está na `main` por falta de token).
+
+Como era: nem treino nem dieta passam pela IA. O Life só pergunta; quem monta
+é `domain/rules/geradorTreino.ts` e `geradorDieta.ts` (fórmula fixa) e o
+servidor confere (`aplicar_plano_treino` / `aplicar_plano_dieta`). Continua
+assim — **nenhuma trava mudou, nada no banco, nenhuma Edge Function**.
+
+**Treino (`treino-v2-2026-11-12`):**
+- Pergunta nova na conversa: "Quer dar mais atenção a alguma parte do corpo?"
+  com o boneco frente/costas (`components/life/BonecoFoco.tsx`, recuperado do
+  protótipo de onboarding apagado em 11/11) + botões; até 2 focos.
+- Foco ganha exercício a mais nos dias em que cabe e vai pro começo da sessão;
+  a base do dia nunca some. Reps variam dentro da faixa do ACSM. Posterior de
+  coxa com lugar próprio. 3 dias = A/B/C. 5 dias = empurrar/puxar/pernas +
+  superior/inferior. Teto semanal repartido antes (sessão não encolhe mais).
+- Botão **"Ver outra opção"**: mesmas escolhas, outros exercícios.
+- Testado com o catálogo real (110 exercícios): 12.168 combinações de
+  objetivo × nível × dias × local × tempo × foco × variante, **0 planos
+  recusados** por `validarPlanoTreino` (espelho do servidor) e nenhuma sessão
+  com menos de 3 exercícios.
+
+**Dieta (`dieta-v2-2026-11-12`):**
+- Mais alimentos por papel (todos conferidos na base), salada crua além do
+  legume cozido, jantar com molde próprio (sem leguminosa, mais proteína;
+  vegetariano mantém), o dia não repete alimento, escolha só de alimento cuja
+  quantidade cabe no papel e calibragem final das gramas.
+- Botão **"Outro cardápio"**: mesmas metas, outros alimentos (pula variante
+  que sair da meta).
+- Testado com os alimentos reais: 9.216 combinações × 8 variantes; fora da
+  tolerância do servidor (15%) caiu de ~5% (v1) pra 15 casos, todos
+  vegetariano com 3 refeições. As contas das metas não mudaram.
+- **Limite conhecido (já existia):** vegetariano fica abaixo de 80% da
+  proteína em ~metade dos casos (só ovo, tofu, leguminosa e laticínio na lista).
+
+Textos novos em pt/en/es/fr/hi. `docs/PLANOS_TREINO_DIETA_DIRETRIZ.md`
+atualizado. Validado: typecheck (+ camadas) e build. **Não visto na tela nem
+no celular** (precisa de conta paga com check de saúde feito).
+
+**Pendências:** dono ver o boneco e os planos no APK; cardápio por dia da
+semana (pede migração: o servidor guarda um dia só); proteína do
+vegetariano; usar histórico de cargas e alimentos mais registrados; push
+desta branch e da anterior (token do GitHub); migração da busca.
+
+### 2026-11-12 (4) — treino do Life sem prescrição de séries/reps (branch `planos-v2`)
+
+Dono: "quando monta treino passa série e repetição em vez de só indicar o
+exercício; assim posso ter problemas". Mudou (`treino-v3-2026-11-12`):
+- A prévia do Life mostra só os exercícios; saiu o "3×8", a faixa e a dica
+  de progressão de carga. Texto novo `plano.previa.soIndico` (5 idiomas).
+- A ficha recebe o padrão do catálogo (3×12 / 30 s, o mesmo de adicionar à
+  mão); o gerador só baixa pra 2 séries quando o teto semanal de segurança
+  do servidor exige. Saiu a pergunta de objetivo (só mudava séries/reps);
+  vai `saude` fixo pro servidor.
+- Testado: 12.168 combinações, 0 recusadas. Typecheck ok; build NÃO rodado
+  depois desta mudança. Não visto na tela.
+
+**Parou aqui (limite de uso):** cardápio da SEMANA não foi começado. Plano:
+RPC nova `aplicar_plano_dieta_semana` (valida os 7 dias, chama a atual pro
+dia 1 e guarda a semana em `parametros.semana`, compatível com APK antigo),
+JS com volta pra RPC antiga se a nova não existir, abas Seg–Dom na prévia e
+a Dieta lendo o dia da semana. Precisa de migração (ok explícito do dono).
+Falta também atualizar a seção 4 da diretriz (tabela do ACSM não vale mais).
+
+### 2026-11-12 (5) — cardápio da semana (branch `planos-v2`)
+
+Dono pediu o cardápio por dia da semana e mais diversificado.
+- `geradorDieta.ts`: `gerarSemanaDieta` monta 7 dias (0 = segunda), cada um
+  uma variante dentro da tolerância do servidor; passo 2 entre os dias (com
+  passo 1 o jantar virava o almoço do dia seguinte). Proteína de reserva
+  (ovo, tofu, grão-de-bico como prato principal) só pra quem tem restrição —
+  antes aparecia no fim da semana e derrubava a proteína do dia.
+- Prévia no Life: abas Seg–Dom (abre em hoje), ⇄ troca item do dia,
+  "Outra semana" troca os 7 dias. Tela de Dieta mostra o cardápio do dia da
+  semana que a pessoa está olhando (`refeicoesDoPlanoEm`).
+- Servidor: `db/athoslife_plano_dieta_semana_migration.sql` (funções
+  `_plano_dieta_dia` e `aplicar_plano_dieta_semana`; a antiga não muda; a
+  semana fica em `parametros->'semana'`, APK antigo continua lendo o dia 1).
+  **MIGRAÇÃO NÃO APLICADA:** o modo automático barrou o `apply_migration`
+  ("Production Deploy") mesmo com o "pode fazer a alteração" do dono.
+  **O JS não depende dela pra funcionar:** sem a função, o app grava só o
+  dia 1 pela RPC antiga (a pessoa vê a semana na prévia, mas a Dieta repete
+  o dia 1 até a migração entrar).
+- Testado com os alimentos reais: 2.304 perfis × 2 semanas, nenhuma semana
+  com dia fora da meta; 2 perfis (vegetariano, 3 refeições) não fecham e
+  recebem o aviso de sempre. Média de 6,6 almoços diferentes em 7 dias; com
+  restrição pesada pode repetir. Typecheck e build ok. Não visto na tela; a
+  função SQL não foi executada nem uma vez (só escrita).
+
+**Pendências:** aplicar as duas migrações (busca por palavras e plano da
+semana) — precisa da frase explícita do dono ou regra de permissão; testar
+a função da semana com uma conta de teste depois de aplicada; ver tudo no
+APK; token do GitHub; proteína do vegetariano.
+
+### 2026-11-12 (6) — migrações aplicadas (dono autorizou: "autorizo")
+
+- **`athoslife_busca_por_palavras` APLICADA.** Conferido no banco: "arroz
+  cozido" → Arroz branco cozido; "ovos fritos" → Ovo frito; "frango
+  grelhado" → Frango peito grelhado; "feijão cozido" → Feijão carioca
+  cozido; "arroz" e "coca" iguais a antes. Vale pro chat e pra Dieta sem APK.
+- **`athoslife_plano_dieta_semana` APLICADA.** `_plano_dieta_dia` testada
+  direto (devolve o dia com nomes e macros; anon e authenticated sem acesso)
+  e `aplicar_plano_dieta_semana` com execute só pra authenticated.
+  **Falta o teste de ponta a ponta** (conta paga com check de saúde
+  aplicando uma semana pelo app) — só dá no APK novo.
+
+**Pendências:** token do GitHub → push das branches `ajustes-teste-11-11` e
+`planos-v2`, PR #7 → `main`, APK; no APK: aplicar uma semana e conferir a
+Dieta dia a dia; boneco de foco; treino sem séries/reps.
+
+### 2026-11-12 (7) — treino: séries/reps voltam como REFERÊNCIA GERAL (branch `planos-v2`)
+
+Dono: tirar séries/reps deu segurança, mas enfraquece o Premium, e ele não
+tem como pagar um profissional de Educação Física agora. Aprovou o meio-termo
+(`treino-v4-2026-11-12`):
+- O Life segue **sem falar números** no chat (prévia só com os exercícios).
+- A ficha chega com séries e reps dentro da faixa pública do ACSM (por
+  nível; sem pergunta de objetivo), editáveis.
+- Tela de Treino mostra, quando a ficha veio do modelo: "Modelo de treino:
+  séries e repetições são referência geral (faixa de 8–12, ACSM), não
+  prescrição. Ajuste como quiser; a carga é você quem define."
+- **Continua fora:** dica de progressão de carga e qualquer orientação de peso.
+- Nome na tela: "modelo de treino" (entrada, título e botão do chat), 5 idiomas.
+- Testado: 12.168 combinações, 0 recusadas; typecheck e build ok. Não visto
+  na tela. Avisei o dono que o risco jurídico não é zero (prescrição é do
+  profissional de Educação Física) e que não sou advogado.
+
+## 2026-11-12 (8) — Receita do Life: prato desejado, "Outra ideia" sem repetir
+
+**Relato do dono:** pôs ingredientes de estrogonofe, o Life montou "arroz
+cremoso" e depois "se recusou" a montar outra com os mesmos ingredientes.
+
+**O que os registros mostram:** as duas chamadas `recipe` dele (12/11, 11:12 e
+11:13) voltaram `ok`, cota em 2 de 10. Não houve erro nem bloqueio. Causa:
+1. não existia onde dizer o prato que a pessoa quer — a IA só via a lista de
+   ingredientes e escolhia qualquer coisa;
+2. "Outra ideia" mandava exatamente o mesmo pedido, sem contar o que já tinha
+   sido sugerido, então voltava o mesmo prato;
+3. na tela da receita não havia como voltar pra mexer nos ingredientes.
+
+**Mudou:**
+- `LifeChefScreen`: campo opcional "Tá com vontade de algum prato?"; "Outra
+  ideia" manda os títulos já sugeridos (até 5); botão "Mudar os ingredientes"
+  volta pra pergunta com a lista intacta. Textos nos 5 idiomas.
+- `recipeAi` / `cozinhaService` / `ContextoReceita`: campos `prato_desejado` e
+  `ja_sugeridas`.
+- `ai-proxy` (`handleRecipe`): lê os dois campos; a instrução manda reconhecer
+  prato clássico pelos ingredientes, seguir o prato desejado, não exigir usar
+  tudo e nunca repetir prato já sugerido.
+
+**Validado:** typecheck e build. **NÃO validado:** a resposta da IA — a
+`ai-proxy` **precisa de deploy** (não foi feito; espera o ok do dono) e depois
+`node scripts/smoke-life.mjs`. Sem o deploy o app novo funciona igual ao de
+hoje (o servidor antigo ignora os campos novos). Nada visto no celular.
+
+**Deploy (12/11, autorizado pelo dono — "eu autorizo"):** `ai-proxy`
+publicada com a mudança da receita. Antes, baixei a versão que estava no ar e
+comparei: a única diferença eram as linhas do `handleRecipe`. A função subiu
+(responde 401 sem login, como esperado). **`smoke-life.mjs` NÃO rodou:** não
+há `SMOKE_EMAIL`/`SMOKE_SENHA` nesta máquina (a senha da conta de QA se
+perdeu em 02/11). Falta: o dono mandar um "oi" no chat e montar uma receita
+no app; ou redefinir a senha da conta de QA pra rodar o smoke.
+
+## 2026-11-12 (9) — Um Life só: monta treino/dieta em qualquer chat; cansaço pergunta antes de sugerir
+
+**Relato do dono (teste do chat em 12/11, 16:07–16:10):**
+1. "Monta um treino de musculação para mim" no chat da Home → o Life mandou ir
+   ao Life do Treino e apertar "Montar treino". Ele não quer isso: "é um Life
+   e o Life faz tudo". **Isto revoga a decisão de 08/10 ("cada Life no seu
+   assunto, botões de plano só no Treino/Dieta").**
+2. Check-in "cansado" → "Poxa, esse cansaço com o dia pesando… sinto muito"
+   + cartão "Dia puxado? Quer deixar o dia mais leve?" logo abaixo. Soou
+   estranho e apressado: o Life não perguntou o motivo.
+
+**Causa:** as duas coisas eram regra escrita. `PROMPT`/`MOD_TREINO`/
+`FOCOS_LIFE` mandavam apontar o botão da outra tela; `REGRAS_CHECKIN` dizia
+"não faça pergunta" e o app mostrava a oferta do dia leve junto da resposta.
+
+**Mudou no servidor (`ai-proxy`, PRECISA DE DEPLOY — não feito):**
+- Recurso novo `montar` (o app novo manda em `recursos`). Com ele, a regra do
+  plano vira `REGRA_PLANO_AQUI`: o Life responde numa frase e põe
+  `[[MONTAR_TREINO]]`/`[[MONTAR_DIETA]]`, salvo como `[[montar:treino|dieta]]`;
+  `focoLife()` tira o "isso é com o Life do Treino/Dieta". APK antigo (sem o
+  recurso) continua com a regra antiga e nunca recebe a marca.
+- `REGRA_CANSACO` (vale pra todos): cansaço dito no chat → uma pergunta de
+  amigo antes de sugerir descanso, pausa ou treino leve.
+- `REGRAS_CHECKIN` (vale pra todos): sentimento pesado ou de pouca energia →
+  reconhece sem drama e termina com UMA pergunta sobre o motivo.
+
+**Mudou no app:**
+- `separarCartoes` devolve `montar`; `LifeChatSheet` mostra o `PlanosNoLife`
+  da área pedida em qualquer chat quando a última resposta do Life traz a
+  marca; `PlanosNoLife` ganhou `direto` (pula o convite: sem check de saúde
+  começa por ele, com check liberado já abre as perguntas). Check de saúde,
+  plano pago e travas dos geradores: iguais.
+- `OfertaDiaLeve`: virou um atalho discreto ("Se precisar, dá pra deixar o dia
+  de hoje mais leve") DEPOIS do "Conversar com o Life"; o cartão só abre se a
+  pessoa tocar. Texto novo `home.checkin.diaLeve.atalho` nos 5 idiomas.
+
+**Validado:** typecheck, build, sintaxe da função (esbuild) e ordem das
+constantes. **NÃO validado:** nenhuma resposta real do Life (sem deploy e sem
+conta de teste com senha); nada visto no celular. Ficou como estava: receita
+completa continua saindo no "Monte sua receita com o Life" (o chat dá a ideia
+e o botão).
+
+## 2026-11-12 (10) — ai-proxy publicada (2x), conta de QA de volta, receita dentro do chat
+
+**Autorizado pelo dono ("eu autorizo tudo"):** publicar a `ai-proxy`,
+redefinir a senha da conta de QA e fazer a receita abrir no chat.
+
+- **Deploy 1:** bloco (9) (plano na conversa, cansaço, check-in).
+- **Conta de QA** (`qa.life.2c3b7f@athoslife-teste.dev`): senha redefinida
+  pelo dono (ele sabe qual é; não fica escrita em arquivo). Está no plano
+  grátis (trial venceu 04/11): 5 mensagens/dia e 1 receita/semana.
+- **`smoke-life.mjs`: passou** (2/2, ~4,5 s).
+- **Conversa de verdade na conta de QA (app novo simulado, recurso `montar`):**
+  - "Monta um treino de musculação para mim" (foco home) → "Vou montar agora;
+    são só umas perguntas rápidas…" + `[[montar:treino]]`.
+  - "cara, tô cansado hoje" → "O que te deixou tão cansado hoje: foi o dia
+    puxado, dormiu mal ou outra coisa?"
+  - Check-in "cansado" (tarde) → "Poxa, essa tarde tá puxada. Foi mais o
+    cansaço do dia ou você dormiu mal?"
+  - Receita com frango, creme de leite, molho de tomate, champignon, arroz e
+    cebola → "Estrogonofe de frango com champignon".
+- **Receita dentro do chat:** `LifeChefScreen` virou casca de `LifeChefFluxo`,
+  que o `LifeChatSheet` embute na ÚLTIMA resposta com `[[chef]]` (nas antigas
+  fica o atalho). Servidor: `REGRA_CHEF_AQUI` e `RESPOSTA_RECEITA_AQUI` só pro
+  app novo. **Deploy 2** feito; teste: "Monta uma receita pra mim com o que
+  eu tenho em casa" → "Me conta aí embaixo o que você tem em casa, que eu
+  monto a receita aqui com você." + `[[chef]]`.
+
+**NÃO validado:** "Outra ideia" sem repetir (a conta de QA é grátis, 1
+receita/semana — bateu `limit_reached`); o smoke depois do deploy 2 (a conta
+ficou sem mensagens hoje; só 1 conversa de verdade passou); nada do app novo
+visto na tela — o treino, a dieta e a receita dentro do chat dependem do APK.
+
+## 2026-11-12 (11) — 12 receitas novas na Cozinha, com capa (migração NÃO aplicada)
+
+**Pedido do dono:** a Cozinha tem poucas receitas (25); quer mais, com cara de
+"dá água na boca" (ex.: bombom de morango fit), e capas geradas.
+
+**Feito:**
+- `db/athoslife_receitas_novas_migration.sql`: 12 receitas, texto em
+  pt/en/es/fr/hi no mesmo formato das atuais, macros aproximados (TACO) por
+  porção, alérgenos marcados, `ordem` 26–37. Usa só as categorias que já
+  existem (categoria nova quebraria APK antigo e a trava da tabela). Pode
+  rodar de novo: só insere título que ainda não existe. Gerada por
+  `scripts/receitas/receitas_novas_2026_11_12.py` (os textos moram lá).
+  - Doces: Bombom de Morango no Pote (grátis, destaque), Brigadeiro de Colher
+    Fit (destaque), Cookies de Banana, Aveia e Chocolate, Mousse Cremoso de
+    Maracujá, Pudim de Chia com Manga e Coco (vegano), Banana Caramelizada com
+    Canela (grátis), Brownie de Caneca de Chocolate, Açaí na Tigela sem Açúcar.
+  - Salgados: Hambúrguer Caseiro Suculento (destaque), Estrogonofe Leve de
+    Frango (destaque), Pizza de Frigideira Marguerita (grátis), Crepioca de
+    Frango Cremoso.
+  - 3 grátis e 9 do pago (mesma proporção de hoje) — decisão minha, o dono
+    pode trocar.
+- 12 capas em `public/receitas/<slug>.webp` (800×800, 57–112 KB), geradas na
+  conta de imagens do dono (Higgsfield, 3 créditos de ~100) no estilo das
+  atuais (mármore, luz natural). Conferidas uma a uma numa folha; cópia da
+  folha na pasta Downloads do dono (`ATHOSlife-capas-receitas-novas.jpg`).
+
+**NÃO feito:** a migração — o modo automático barrou ("Production Deploy").
+Precisa da frase do dono ("autorizo aplicar a migração das receitas"). Sem
+ela nada aparece no app. As capas vão dentro do APK: no APK atual as
+receitas novas aparecem (depois da migração) com o desenho da categoria no
+lugar da foto. Receitas não foram testadas na cozinha de verdade; macros são
+conta de tabela.
+
+## 2026-11-12 (12) — Mais 13 receitas salgadas com capa; branches no GitHub
+
+**Pedido do dono:** gostou do primeiro lote, pediu mais 13 com foco em
+salgados, com capa, e passou um token novo do GitHub.
+
+**Feito:**
+- `db/athoslife_receitas_salgadas_migration.sql` (gerada por
+  `scripts/receitas/receitas_salgadas_2026_11_12.py`): Nuggets de Frango
+  Crocantes, Escondidinho de Batata Doce com Carne, Macarrão Cremoso com
+  Frango e Brócolis, Arroz de Forno Cremoso, Tacos de Carne com Guacamole,
+  Coxinha de Batata Doce Assada, Batata Recheada com Frango, Omelete Cremoso
+  de Queijo e Tomate (grátis), Hambúrguer de Grão-de-Bico (vegano), Arroz
+  Frito Colorido com Tofu (vegano), Sanduíche Natural de Frango Cremoso
+  (grátis), Pastel de Frigideira de Carne, Sopa Cremosa de Abóbora com Frango
+  (grátis). 5 idiomas, `ordem` 38–50, mesmas categorias. Destaques: nuggets,
+  macarrão, tacos, coxinha.
+- 13 capas em `public/receitas/` (800×800 webp, 61–119 KB), ~3,25 créditos
+  do Higgsfield. Folha de conferência na Downloads do dono
+  (`ATHOSlife-capas-receitas-salgadas.jpg`). Total na pasta: 50 capas.
+- **GitHub:** `ajustes-teste-11-11` e `planos-v2` enviadas. O token ficou só
+  na memória da sessão (GIT_ASKPASS), nunca na URL do remoto nem em arquivo.
+
+**Barrado pelo modo automático (precisa da frase do dono):**
+- as duas migrações de receitas ("Production Deploy") — sem elas as 25
+  receitas novas não aparecem no app;
+- o merge do PR #7 na `main` ("Merge Without Review"), mesmo com o ok antigo.
+
+**Atenção:** o alarme "Life respondendo (teste de fumaça)" do GitHub está
+falhando na `main` — os secrets `SMOKE_EMAIL`/`SMOKE_SENHA` do repositório
+precisam da conta de QA com a senha nova (Settings → Secrets → Actions).
+
+**12/11, fim do dia:** com o "eu autorizo" do dono, as duas migrações de
+receitas foram aplicadas (conferido: 50 receitas, 25 novas, 6 grátis entre
+as novas, todas com en/es/fr/hi). APK de teste da `planos-v2` construído
+(run 43310284243) e copiado pra Downloads do dono. PR #8 aberto. **O merge
+do PR #7/#8 na `main` continua barrado pelo modo automático** ("Merge Without
+Review"): o dono faz pelo site do GitHub ou libera a regra de permissão.

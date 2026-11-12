@@ -182,7 +182,7 @@ export function RevisaoScanner(p: Props) {
                         +
                       </button>
                       {!semNumeros && (
-                        <span className="ml-auto flex gap-2 font-mono text-[11px]">
+                        <span className="ml-auto flex gap-2 font-mono text-micro">
                           <span className="text-macro-proteina">P {item.proteina}</span>
                           <span className="text-macro-carbo">C {item.carboidrato}</span>
                           <span className="text-macro-gordura">G {item.gordura}</span>

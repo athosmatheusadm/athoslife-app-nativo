@@ -30,6 +30,8 @@ export async function gerarReceitaComIA(
       objetivo: contexto.objetivo,
       macros_restantes: contexto.macrosRestantes,
       categoria_desejada: contexto.categoriaDesejada,
+      prato_desejado: contexto.pratoDesejado ?? null,
+      ja_sugeridas: contexto.jaSugeridas ?? [],
     },
   })
   return {

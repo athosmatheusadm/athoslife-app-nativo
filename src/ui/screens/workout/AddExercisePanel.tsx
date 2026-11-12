@@ -8,7 +8,7 @@ import {
 } from '@domain/entities/treino'
 
 /**
- * Tela cheia de adicionar exercício — mesma pegada do FoodSearchScreen da
+ * Tela cheia de adicionar exercício — mesma pegada da busca de alimentos da
  * Dieta: busca + lista, sem página nova de verdade (troca o conteúdo da
  * tela). Chips de grupo muscular calculados a partir do catálogo carregado,
  * não fixos, pra nunca mostrar filtro vazio.
@@ -23,6 +23,9 @@ export function AddExercisePanel(props: {
 }) {
   const [catalogo, setCatalogo] = useState<ExercicioCatalogo[]>([])
   const [carregando, setCarregando] = useState(true)
+  // Falha de rede não pode aparecer como "nenhum exercício encontrado".
+  const [erroCarga, setErroCarga] = useState(false)
+  const [recarga, setRecarga] = useState(0)
   const [termo, setTermo] = useState('')
   const [grupo, setGrupo] = useState<GrupoMuscular | 'todos'>('todos')
   const { m } = useI18n()
@@ -32,15 +35,16 @@ export function AddExercisePanel(props: {
   useEffect(() => {
     let ativo = true
     setCarregando(true)
+    setErroCarga(false)
     void exercicioCatalogoRepository
       .listar()
       .then((lista) => ativo && setCatalogo(lista))
-      .catch(() => ativo && setCatalogo([]))
+      .catch(() => ativo && setErroCarga(true))
       .finally(() => ativo && setCarregando(false))
     return () => {
       ativo = false
     }
-  }, [])
+  }, [recarga])
 
   const gruposDisponiveis = useMemo(() => {
     const vistos = new Set(catalogo.map((e) => e.grupoMuscular))
@@ -93,7 +97,22 @@ export function AddExercisePanel(props: {
 
       <div className="flex-1 overflow-y-auto px-4 pb-3">
         {carregando ? (
-          <p className="py-10 text-center text-micro text-content-low">{m.treino.carregando}</p>
+          <div role="status" aria-label={m.treino.carregando} className="space-y-2 pt-1">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+            ))}
+          </div>
+        ) : erroCarga ? (
+          <div className="py-10 text-center" role="alert">
+            <p className="text-sm text-content-mid">{m.treino.erroCarregar}</p>
+            <button
+              type="button"
+              onClick={() => setRecarga((n) => n + 1)}
+              className="mt-3 min-h-12 rounded-xl bg-surface-3 px-5 text-sm font-bold text-content-hi active:bg-surface-4"
+            >
+              {m.treino.tentarDeNovo}
+            </button>
+          </div>
         ) : filtrados.length === 0 ? (
           <p className="py-10 text-center text-micro text-content-low">{t.nada}</p>
         ) : (
