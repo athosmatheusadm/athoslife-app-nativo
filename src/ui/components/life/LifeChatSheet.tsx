@@ -43,6 +43,7 @@ import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { vibrar } from '@ui/feedback'
 import { LifeMascote, type HumorLife } from '@ui/components/LifeMascote'
 import { PlanosNoLife } from './PlanosNoLife'
+import { LifeChefFluxo } from '@ui/screens/cozinha/LifeChefScreen'
 import { executarPesoNoApp, lerComandoPeso, resolverNoApp } from './pesoNoChat'
 
 /** Texto de erro por tipo — nunca finge que a conversa funcionou. */
@@ -426,7 +427,16 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                   const eb = exercicios?.get(cmp.b)
                   return ea && eb ? <CartaoComparar key={j} rotulo={tc.comparacao} lados={[[ea, cmp.ba], [eb, cmp.bb]]} /> : null
                 })}
-                {c.chef && (
+                {/* Receita na própria conversa (dono, 12/11): na última resposta o
+                    Life-chef abre aqui; nas antigas fica só o atalho. */}
+                {c.chef && i === historico.length - 1 && (
+                  <LifeChefFluxo
+                    embutido
+                    onIr={ir}
+                    onMudou={() => fimRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })}
+                  />
+                )}
+                {c.chef && i !== historico.length - 1 && (
                   <div className="max-w-[85%]">
                     <Atalho texto={m.cozinha.lifeChefTitulo} onClick={() => ir('/dieta/cozinha/life')} />
                   </div>

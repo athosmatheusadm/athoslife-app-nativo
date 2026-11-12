@@ -896,7 +896,7 @@ function focoLife(chave: string, montarAqui: boolean): string {
   if (!montarAqui) return f
   return f
     .replace('Este chat é só conversa, sem botões: montar treino é no Life da tela de Treino; montar dieta, montar receita e analisar alimento são no Life da tela de Dieta.',
-      'Você é um Life só e resolve daqui: treino e dieta você monta nesta conversa (regra do PLANO). Só a receita completa e a análise de alimento por foto ficam na tela de Dieta.')
+      'Você é um Life só e resolve daqui: treino e dieta você monta nesta conversa (regra do PLANO). A receita completa também sai aqui, pela marca [[CHEF]]. Só a análise de alimento por foto fica no 📷 da refeição, na tela de Dieta.')
     .replace('Este chat é só conversa, sem botões de plano: montar treino é no Life da tela de Treino e montar dieta no Life da tela de Dieta.',
       'Você é um Life só: se ela pedir treino ou dieta, você monta nesta conversa (regra do PLANO).')
     .replace('Se perguntarem de treino, responda curto e diga que o Life do Treino ajuda melhor nisso.',
@@ -1069,6 +1069,16 @@ const RESPOSTA_RECEITA_NO_CHEF: Record<Idioma, string> = {
   fr: 'Celle-là, je te la prépare bien dans « Crée ta recette avec Life » 👨‍🍳 — avec ingrédients, préparation et macros.\n[[CHEF]]',
   hi: 'यह मैं "Life के साथ अपनी रेसिपी बनाएँ" में ठीक से बना देता हूँ 👨‍🍳 — सामग्री, तरीक़ा और मैक्रो के साथ।\n[[CHEF]]',
 }
+
+// APK novo (recurso 'montar', 12/11): o Life-chef abre na própria conversa.
+const RESPOSTA_RECEITA_AQUI: Record<Idioma, string> = {
+  'pt-BR': 'Essa eu monto certinha aqui mesmo 👨‍🍳 — me conta aí embaixo o que você tem em casa e sai com ingredientes, preparo e macros.\n[[CHEF]]',
+  en: 'I\'ll put that one together right here 👨‍🍳 — tell me below what you have at home and you get ingredients, steps and macros.\n[[CHEF]]',
+  es: 'Esa te la armo aquí mismo 👨‍🍳 — cuéntame abajo qué tienes en casa y sale con ingredientes, preparación y macros.\n[[CHEF]]',
+  fr: 'Celle-là, je te la prépare ici même 👨‍🍳 — dis-moi ci-dessous ce que tu as chez toi et tu auras ingrédients, préparation et macros.\n[[CHEF]]',
+  hi: 'यह मैं यहीं बना देता हूँ 👨‍🍳 — नीचे बताओ घर में क्या है, और सामग्री, तरीक़ा और मैक्रो मिल जाएँगे।\n[[CHEF]]',
+}
+const REGRA_CHEF_AQUI = '\n\nRECEITA NA CONVERSA: quando você usar [[CHEF]], o "Monte sua receita com o Life" abre AQUI, logo abaixo da sua resposta — a pessoa põe os ingredientes e a receita sai nesta conversa. Diga isso com naturalidade ("me conta aí embaixo o que você tem, que eu monto aqui") e NUNCA mande a pessoa ir pra outra tela. Se ela pedir pra você montar uma refeição ou receita, use [[CHEF]].'
 
 // ---------- guardar no perfil a restrição dita no chat (v3.10) ----------
 // Sem IA: a fala da pessoa ("sou intolerante a lactose") vira uma pergunta
@@ -1421,6 +1431,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     (catalogo ? blocoCatalogo(catalogo) : '') +
     linhaCota(extraDesabafo ? null : Math.max(cota.limite - cota.usados, 0), sensivelAgora || assuntos.has('emocional')) +
     REGRA_HUMOR +
+    (montarAqui ? REGRA_CHEF_AQUI : '') +
     (sensivel
       ? '\n\nATENÇÃO: a última mensagem tem sinal de sofrimento. Siga QUANDO É GRAVE: acolha com calor e calma, pergunte como a pessoa está e se está segura, e lembre da linha de apoio e de um profissional, sem alarmar e sem se afastar.'
       : '') +
@@ -1508,7 +1519,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     resposta = RESPOSTA_SEM_PRESCRICAO[loc.idioma]
     status = 'filtrado'
   } else if (pareceReceitaCompleta(resposta)) {
-    resposta = RESPOSTA_RECEITA_NO_CHEF[loc.idioma]
+    resposta = (montarAqui ? RESPOSTA_RECEITA_AQUI : RESPOSTA_RECEITA_NO_CHEF)[loc.idioma]
     status = 'receita_no_chat'
   }
   if (!feito && status !== 'fora_tema') {

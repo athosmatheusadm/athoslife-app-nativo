@@ -5600,3 +5600,34 @@ constantes. **NÃO validado:** nenhuma resposta real do Life (sem deploy e sem
 conta de teste com senha); nada visto no celular. Ficou como estava: receita
 completa continua saindo no "Monte sua receita com o Life" (o chat dá a ideia
 e o botão).
+
+## 2026-11-12 (10) — ai-proxy publicada (2x), conta de QA de volta, receita dentro do chat
+
+**Autorizado pelo dono ("eu autorizo tudo"):** publicar a `ai-proxy`,
+redefinir a senha da conta de QA e fazer a receita abrir no chat.
+
+- **Deploy 1:** bloco (9) (plano na conversa, cansaço, check-in).
+- **Conta de QA** (`qa.life.2c3b7f@athoslife-teste.dev`): senha redefinida
+  pelo dono (ele sabe qual é; não fica escrita em arquivo). Está no plano
+  grátis (trial venceu 04/11): 5 mensagens/dia e 1 receita/semana.
+- **`smoke-life.mjs`: passou** (2/2, ~4,5 s).
+- **Conversa de verdade na conta de QA (app novo simulado, recurso `montar`):**
+  - "Monta um treino de musculação para mim" (foco home) → "Vou montar agora;
+    são só umas perguntas rápidas…" + `[[montar:treino]]`.
+  - "cara, tô cansado hoje" → "O que te deixou tão cansado hoje: foi o dia
+    puxado, dormiu mal ou outra coisa?"
+  - Check-in "cansado" (tarde) → "Poxa, essa tarde tá puxada. Foi mais o
+    cansaço do dia ou você dormiu mal?"
+  - Receita com frango, creme de leite, molho de tomate, champignon, arroz e
+    cebola → "Estrogonofe de frango com champignon".
+- **Receita dentro do chat:** `LifeChefScreen` virou casca de `LifeChefFluxo`,
+  que o `LifeChatSheet` embute na ÚLTIMA resposta com `[[chef]]` (nas antigas
+  fica o atalho). Servidor: `REGRA_CHEF_AQUI` e `RESPOSTA_RECEITA_AQUI` só pro
+  app novo. **Deploy 2** feito; teste: "Monta uma receita pra mim com o que
+  eu tenho em casa" → "Me conta aí embaixo o que você tem em casa, que eu
+  monto a receita aqui com você." + `[[chef]]`.
+
+**NÃO validado:** "Outra ideia" sem repetir (a conta de QA é grátis, 1
+receita/semana — bateu `limit_reached`); o smoke depois do deploy 2 (a conta
+ficou sem mensagens hoje; só 1 conversa de verdade passou); nada do app novo
+visto na tela — o treino, a dieta e a receita dentro do chat dependem do APK.
