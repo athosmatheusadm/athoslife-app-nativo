@@ -30,7 +30,6 @@ import {
   validarParametros,
   validarPlanoTreino,
   type FocoTreino,
-  type ObjetivoTreino,
   type PlanoTreinoGerado,
 } from '@domain/rules/geradorTreino'
 import { dietaSoManter, treinoSoIniciante, type TriagemVigente } from '@domain/rules/triagemSaude'
@@ -60,7 +59,7 @@ function mensagemErroPlano(m: Mensagens, codigo: string): string {
 // Treino
 // ---------------------------------------------------------------
 
-type PassoTreino = 'objetivo' | 'nivel' | 'dias' | 'local' | 'foco' | 'minutos' | 'previa'
+type PassoTreino = 'nivel' | 'dias' | 'local' | 'foco' | 'minutos' | 'previa'
 
 export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado: (rota: string) => void; onMudou: () => void }) {
   const { m } = useI18n()
@@ -68,9 +67,10 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
   const soIniciante = treinoSoIniciante(props.triagem)
 
   const [catalogo, setCatalogo] = useState<ExercicioCatalogo[] | null>(null)
-  const [passo, setPasso] = useState<PassoTreino>('objetivo')
+  // Sem pergunta de objetivo: ele só mudava séries/reps, e o Life não prescreve mais isso (dono, 12/11).
+  const primeiro: PassoTreino = soIniciante ? 'dias' : 'nivel'
+  const [passo, setPasso] = useState<PassoTreino>(primeiro)
   const [hist, setHist] = useState<Resposta[]>([])
-  const [objetivo, setObjetivo] = useState<ObjetivoTreino>('saude')
   const [nivel, setNivel] = useState<NivelTreino>('iniciante')
   const [dias, setDias] = useState<DiaSemana[]>([])
   const [local, setLocal] = useState<LocalTreino>('academia')
@@ -110,7 +110,7 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
   }
 
   function montar(min: number, v: number) {
-    const parametros = { objetivo, nivel, dias, local, minutos: min, foco, variante: v }
+    const parametros = { nivel, dias, local, minutos: min, foco, variante: v }
     const problema = validarParametros(parametros)
     if (problema || !catalogo) {
       setErro(t.parametros.erros[problema as keyof typeof t.parametros.erros] ?? t.parametros.erros.outro)
@@ -133,7 +133,7 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
     setFoco([])
     setVariante(0)
     setPlano(null)
-    setPasso('objetivo')
+    setPasso(primeiro)
   }
 
   async function aplicar() {
@@ -159,29 +159,6 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
   return (
     <div className="space-y-3">
       <Historico itens={hist} />
-
-      {passo === 'objetivo' && (
-        <>
-          <BalaoLife>{t.parametros.objetivo}</BalaoLife>
-          <Opcoes>
-            {(['hipertrofia', 'condicionamento', 'saude'] as const).map((o) => (
-              <Opcao
-                key={o}
-                onClick={() => {
-                  setObjetivo(o)
-                  if (soIniciante) {
-                    setNivel('iniciante')
-                    setHist((h) => [...h, { pergunta: t.parametros.objetivo, resposta: t.parametros.objetivos[o] }])
-                    setPasso('dias')
-                  } else responder(t.parametros.objetivo, t.parametros.objetivos[o], 'nivel')
-                }}
-              >
-                {t.parametros.objetivos[o]}
-              </Opcao>
-            ))}
-          </Opcoes>
-        </>
-      )}
 
       {passo === 'nivel' && (
         <>
@@ -306,7 +283,6 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
                   {s.itens.map((it) => (
                     <li key={it.exercicio.id} className="flex justify-between gap-3 text-sm">
                       <span className="min-w-0 flex-1 text-content-hi">{it.exercicio.nome}</span>
-                      <span className="flex-none text-micro text-content-low">{t.previa.series(it.series.length, it.faixa)}</span>
                     </li>
                   ))}
                 </ul>
@@ -314,7 +290,7 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
             ))}
           </div>
           <BalaoLife>
-            {t.previa.progressao}
+            {t.previa.soIndico}
             <span className="mt-2 block text-micro text-content-low">{t.avisoNaoPrescricao}</span>
             <span className="mt-2 block text-micro text-content-low">{t.previa.substituir(rotuloLocal(local).toLowerCase())}</span>
           </BalaoLife>

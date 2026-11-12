@@ -532,6 +532,7 @@ export const ptBR = {
       aplicar: 'Aplicar na minha ficha',
       ajustar: 'Mudar escolhas',
       outraOpcao: 'Ver outra opção',
+      soIndico: 'Eu só indico os exercícios. Séries, repetições e carga é você quem define na ficha — do seu jeito ou com um profissional de Educação Física.',
       aplicando: 'Aplicando…',
       sucesso: 'Plano aplicado! Ele já está na sua tela de Treino.',
       irTreino: 'Ir pro Treino',

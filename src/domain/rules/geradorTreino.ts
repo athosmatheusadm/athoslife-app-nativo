@@ -5,9 +5,9 @@ import type { DiaSemana, ExercicioCatalogo, GrupoMuscular, LocalTreino, NivelTre
  * docs/PLANOS_TREINO_DIETA_DIRETRIZ.md (seção 4). TypeScript puro e
  * determinístico: mesmas escolhas -> mesmo plano.
  *
- * Não inventa nada fora dos modelos abaixo: divisão por nº de dias, faixas
- * de séries/reps do ACSM e travas de volume. Carga NUNCA sai daqui — é a
- * pessoa quem anota. O servidor (RPC aplicar_plano_treino) confere tudo de
+ * Não inventa nada fora dos modelos abaixo: divisão por nº de dias e travas
+ * de volume. Carga, séries e repetições NÃO são prescritas aqui — a pessoa
+ * define na ficha. O servidor (RPC aplicar_plano_treino) confere tudo de
  * novo antes de gravar; validarPlanoTreino() é o mesmo conjunto de travas,
  * só pra avisar antes.
  *
@@ -16,14 +16,13 @@ import type { DiaSemana, ExercicioCatalogo, GrupoMuscular, LocalTreino, NivelTre
  *    mais nos dias em que cabem e vêm primeiro na sessão (grupos grandes).
  *  - VARIANTE: "ver outra opção" troca os exercícios escolhidos, mesmas regras.
  *  - Posterior de coxa tem lugar próprio nos dias de perna.
- *  - Reps variam dentro da faixa do ACSM (composto no começo mais pesado,
- *    acessório e abdômen/panturrilha mais leves e com mais repetições).
+ *  - SEM PRESCRIÇÃO: só indica exercícios; séries/reps são o padrão do catálogo.
  *  - O teto semanal por grupo é repartido entre os dias antes de montar
  *    (antes o último dia perdia exercício).
  * As travas (séries, reps, volume, nível, local) são as mesmas da v1.
  */
 
-export const VERSAO_GERADOR = 'treino-v2-2026-11-12'
+export const VERSAO_GERADOR = 'treino-v3-2026-11-12'
 
 export type ObjetivoTreino = 'hipertrofia' | 'condicionamento' | 'saude'
 
@@ -33,7 +32,8 @@ export const FOCOS_TREINO: readonly FocoTreino[] = ['peito', 'costas', 'ombro', 
 export const MAX_FOCO = 2
 
 export interface ParametrosTreino {
-  readonly objetivo: ObjetivoTreino
+  /** Não muda mais o plano (era só pra séries/reps); o servidor ainda pede um valor. */
+  readonly objetivo?: ObjetivoTreino
   readonly nivel: NivelTreino
   /** Dias escolhidos (2 a 6; iniciante até 4). */
   readonly dias: readonly DiaSemana[]
@@ -65,10 +65,8 @@ export interface SeriePlanejada {
 
 export interface ItemPlano {
   readonly exercicio: ExercicioCatalogo
+  /** Padrão do catálogo (igual a adicionar à mão); não é prescrição. */
   readonly series: readonly SeriePlanejada[]
-  /** Texto da faixa, ex. "8–12" ou "30 s". */
-  readonly faixa: string
-  readonly descansoSeg: number
 }
 
 export interface SessaoPlano {
@@ -313,38 +311,20 @@ function planejarSemana(
 type Papel = 'principal' | 'acessorio' | 'final'
 
 /**
- * Faixas do ACSM (diretriz seção 4). Séries e reps ficam DENTRO da tabela da
- * diretriz; o que muda por papel é onde na faixa: composto do começo mais
- * pesado (menos reps), acessório e final mais leves (mais reps).
+ * SEM PRESCRIÇÃO (decisão do dono, 12/11/2026): o plano só INDICA os
+ * exercícios. Séries e repetições que vão pra ficha são o padrão do catálogo
+ * — o mesmo que aparece quando a pessoa adiciona o exercício à mão — e ela
+ * muda como quiser. O gerador só baixa o nº de séries quando o teto semanal
+ * de segurança por grupo exige.
  */
-function prescricao(
-  objetivo: ObjetivoTreino,
-  nivel: NivelTreino,
-  papel: Papel,
-  porTempo: boolean,
-): { series: number; reps: number; faixa: string; segundos: number; descanso: number } {
-  const segundos = nivel === 'iniciante' ? 20 : nivel === 'intermediario' ? 30 : 45
-  const comTempo = (faixa: string) => (porTempo ? `${segundos} s` : faixa)
-  const principal = papel === 'principal'
-  if (objetivo === 'hipertrofia') {
-    const series = nivel === 'iniciante' ? (principal ? 3 : 2) : nivel === 'intermediario' ? 3 : principal ? 4 : 3
-    if (nivel === 'avancado') {
-      const reps = principal ? 6 : papel === 'acessorio' ? 10 : 12
-      return { series, reps, faixa: comTempo(principal ? '6–8' : papel === 'acessorio' ? '8–10' : '10–12'), segundos, descanso: principal ? 120 : 90 }
-    }
-    const reps = principal ? (nivel === 'iniciante' ? 10 : 8) : 12
-    return { series, reps, faixa: comTempo(principal ? '8–10' : '10–12'), segundos, descanso: papel === 'final' ? 60 : 90 }
+function padraoDoCatalogo(ex: ExercicioCatalogo): { series: number; reps: number; segundos: number } {
+  const entre = (v: number | null | undefined, min: number, max: number, padrao: number) =>
+    Math.min(Math.max(Math.round(v || padrao), min), max)
+  return {
+    series: entre(ex.seriesPadrao, 1, 5, 3),
+    reps: entre(ex.repeticoesPadrao, 1, 20, 12),
+    segundos: entre(ex.segundosPadrao, 10, 120, 30),
   }
-  if (objetivo === 'condicionamento') {
-    return {
-      series: nivel === 'iniciante' ? 2 : 3,
-      reps: principal ? 12 : 15,
-      faixa: comTempo(principal ? '12–15' : '15'),
-      segundos,
-      descanso: 45,
-    }
-  }
-  return { series: 2, reps: principal ? 10 : papel === 'final' ? 15 : 12, faixa: comTempo(principal ? '10–12' : '12–15'), segundos, descanso: 60 }
 }
 
 // ---------------------------------------------------------------
@@ -414,7 +394,7 @@ export function gerarPlanoTreino(p: ParametrosTreino, catalogo: readonly Exercic
       usadosHoje.add(ex.id)
       usoSemana.set(ex.id, (usoSemana.get(ex.id) ?? 0) + 1)
       const papel: Papel = SLOTS_FINAIS.has(slot) ? 'final' : posicao < 2 ? 'principal' : 'acessorio'
-      escolhas.push({ sessao, exercicio: ex, slot, papel, series: prescricao(p.objetivo, p.nivel, papel, false).series })
+      escolhas.push({ sessao, exercicio: ex, slot, papel, series: padraoDoCatalogo(ex).series })
     })
   })
 
@@ -445,15 +425,13 @@ export function gerarPlanoTreino(p: ParametrosTreino, catalogo: readonly Exercic
       .filter((e) => e.sessao === sessao && !fora.has(e))
       .map((e) => {
         const porTempo = e.exercicio.medida === 'tempo'
-        const pr = prescricao(p.objetivo, p.nivel, e.papel, porTempo)
+        const pr = padraoDoCatalogo(e.exercicio)
         return {
           exercicio: e.exercicio,
           series: Array.from({ length: e.series }, () => ({
             reps: porTempo ? null : pr.reps,
             segundos: porTempo ? pr.segundos : null,
           })),
-          faixa: pr.faixa,
-          descansoSeg: pr.descanso,
         }
       }),
   }))
@@ -516,7 +494,7 @@ export function paraEnvio(plano: PlanoTreinoGerado) {
   return {
     p_local: plano.parametros.local,
     p_parametros: {
-      objetivo: plano.parametros.objetivo,
+      objetivo: plano.parametros.objetivo ?? 'saude',
       nivel: plano.parametros.nivel,
       dias: plano.sessoes.map((s) => s.dia),
       minutos: plano.parametros.minutos,

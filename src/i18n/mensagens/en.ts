@@ -519,6 +519,7 @@ export const en: Mensagens = {
       aplicar: 'Apply to my routine',
       ajustar: 'Change choices',
       outraOpcao: 'See another option',
+      soIndico: 'I only suggest the exercises. Sets, reps and weight are up to you in your workout sheet — on your own or with a fitness professional.',
       aplicando: 'Applying…',
       sucesso: "Plan applied! It's on your Workout screen now.",
       irTreino: 'Go to Workout',

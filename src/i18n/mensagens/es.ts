@@ -519,6 +519,7 @@ export const es: Mensagens = {
       aplicar: 'Aplicar a mi rutina',
       ajustar: 'Cambiar elecciones',
       outraOpcao: 'Ver otra opción',
+      soIndico: 'Yo solo indico los ejercicios. Las series, repeticiones y la carga las defines tú en tu rutina — a tu manera o con un profesional de Educación Física.',
       aplicando: 'Aplicando…',
       sucesso: '¡Plan aplicado! Ya está en tu pantalla de Entrenamiento.',
       irTreino: 'Ir a Entrenamiento',

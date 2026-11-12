@@ -5439,3 +5439,23 @@ no celular** (precisa de conta paga com check de saúde feito).
 semana (pede migração: o servidor guarda um dia só); proteína do
 vegetariano; usar histórico de cargas e alimentos mais registrados; push
 desta branch e da anterior (token do GitHub); migração da busca.
+
+### 2026-11-12 (4) — treino do Life sem prescrição de séries/reps (branch `planos-v2`)
+
+Dono: "quando monta treino passa série e repetição em vez de só indicar o
+exercício; assim posso ter problemas". Mudou (`treino-v3-2026-11-12`):
+- A prévia do Life mostra só os exercícios; saiu o "3×8", a faixa e a dica
+  de progressão de carga. Texto novo `plano.previa.soIndico` (5 idiomas).
+- A ficha recebe o padrão do catálogo (3×12 / 30 s, o mesmo de adicionar à
+  mão); o gerador só baixa pra 2 séries quando o teto semanal de segurança
+  do servidor exige. Saiu a pergunta de objetivo (só mudava séries/reps);
+  vai `saude` fixo pro servidor.
+- Testado: 12.168 combinações, 0 recusadas. Typecheck ok; build NÃO rodado
+  depois desta mudança. Não visto na tela.
+
+**Parou aqui (limite de uso):** cardápio da SEMANA não foi começado. Plano:
+RPC nova `aplicar_plano_dieta_semana` (valida os 7 dias, chama a atual pro
+dia 1 e guarda a semana em `parametros.semana`, compatível com APK antigo),
+JS com volta pra RPC antiga se a nova não existir, abas Seg–Dom na prévia e
+a Dieta lendo o dia da semana. Precisa de migração (ok explícito do dono).
+Falta também atualizar a seção 4 da diretriz (tabela do ACSM não vale mais).

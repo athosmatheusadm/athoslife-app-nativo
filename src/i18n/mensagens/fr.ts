@@ -525,6 +525,7 @@ export const fr: Mensagens = {
       aplicar: 'Appliquer à mon programme',
       ajustar: 'Changer mes choix',
       outraOpcao: 'Voir une autre option',
+      soIndico: 'Je propose seulement les exercices. Les séries, les répétitions et la charge, c’est toi qui les fixes dans ton programme — à ta façon ou avec un coach diplômé.',
       aplicando: 'Application…',
       sucesso: 'Programme appliqué ! Il est déjà dans ton écran Entraînement.',
       irTreino: 'Aller à l’entraînement',
