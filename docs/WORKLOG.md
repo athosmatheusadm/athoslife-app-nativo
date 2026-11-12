@@ -5695,3 +5695,10 @@ salgados, com capa, e passou um token novo do GitHub.
 **Atenção:** o alarme "Life respondendo (teste de fumaça)" do GitHub está
 falhando na `main` — os secrets `SMOKE_EMAIL`/`SMOKE_SENHA` do repositório
 precisam da conta de QA com a senha nova (Settings → Secrets → Actions).
+
+**12/11, fim do dia:** com o "eu autorizo" do dono, as duas migrações de
+receitas foram aplicadas (conferido: 50 receitas, 25 novas, 6 grátis entre
+as novas, todas com en/es/fr/hi). APK de teste da `planos-v2` construído
+(run 43310284243) e copiado pra Downloads do dono. PR #8 aberto. **O merge
+do PR #7/#8 na `main` continua barrado pelo modo automático** ("Merge Without
+Review"): o dono faz pelo site do GitHub ou libera a regra de permissão.
