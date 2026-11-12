@@ -97,7 +97,11 @@ export function AddExercisePanel(props: {
 
       <div className="flex-1 overflow-y-auto px-4 pb-3">
         {carregando ? (
-          <p className="py-10 text-center text-micro text-content-low">{m.treino.carregando}</p>
+          <div role="status" aria-label={m.treino.carregando} className="space-y-2 pt-1">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+            ))}
+          </div>
         ) : erroCarga ? (
           <div className="py-10 text-center" role="alert">
             <p className="text-sm text-content-mid">{m.treino.erroCarregar}</p>

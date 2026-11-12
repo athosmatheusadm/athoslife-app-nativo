@@ -6,6 +6,7 @@ import { pesoRepository } from '@data/repositories/pesoRepository'
 import { normalizarIdioma } from '@domain/rules/localidade'
 import { localidadeAtualDoAparelho, useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { avisar } from '@ui/feedback'
 import { paraDadosOnboarding, type RespostasNovo } from './onboarding/respostasNovo'
 
 /**
@@ -74,7 +75,15 @@ export function OnboardingNovo({ previa = false }: { previa?: boolean } = {}) {
       try {
         await profileRepository.concluirOnboarding(dados)
         // Primeiro ponto do gráfico de peso da Home.
-        await pesoRepository.registrar(dados.pesoKg).catch(() => {})
+        // Sem rede ele vai pra fila; se o servidor recusar, tenta mais uma vez
+        // e avisa (o peso do perfil já foi salvo acima; falta só o ponto do gráfico).
+        await pesoRepository
+          .registrar(dados.pesoKg)
+          .catch(() => pesoRepository.registrar(dados.pesoKg))
+          .catch((err) => {
+            console.error('onboarding: primeiro peso não gravou', err)
+            avisar.erro(textos.onboarding.confirmar.erroPesoInicial)
+          })
         await atual.current.refresh()
         navigate('/home', { replace: true })
       } catch (err) {

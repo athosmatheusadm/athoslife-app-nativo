@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { diasRestantesTrial, temAcessoPremium } from '@domain/rules/access'
 import {
@@ -26,7 +27,8 @@ import { useI18n } from '@/i18n/I18nProvider'
  */
 export function Plano() {
   const { profile, statusTeste, refresh } = useSession()
-  const t = useI18n().m.perfil.plano
+  const { m } = useI18n()
+  const t = m.perfil.plano
   const [planos, setPlanos] = useState<PlanoLoja[]>([])
   const [vagas, setVagas] = useState<number | null>(null)
   const [fundador, setFundador] = useState<number | null>(null)
@@ -54,6 +56,10 @@ export function Plano() {
   const aviso = statusTeste && statusTeste in t.avisos ? t.avisos[statusTeste as keyof typeof t.avisos] : null
   const pago = profile.plano === 'premium' || profile.plano === 'fundador'
   const vende = planos.length > 0 && !pago && profile.plano !== 'vip' && profile.plano !== 'vitalicio'
+
+  // Quanto o anual sai mais barato que 12 mensais (preço da loja, na moeda da pessoa).
+  const precoDe = (id: PlanoLoja['plano']) => planos.find((p) => p.plano === id)?.pacote.product.price ?? 0
+  const economia = precoDe('mensal') > 0 && precoDe('anual') > 0 ? Math.round((1 - precoDe('anual') / (precoDe('mensal') * 12)) * 100) : 0
 
   async function executar(acao: () => Promise<ResultadoSync>, ok: string) {
     if (ocupado) return
@@ -114,7 +120,12 @@ export function Plano() {
               className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl border border-surface-4 bg-surface-2 px-4 py-3 text-left active:scale-[0.98] disabled:opacity-60"
             >
               <span>
-                <span className="block text-sm font-bold text-content-hi">{p.plano === 'anual' ? t.loja.anual : t.loja.mensal}</span>
+                <span className="flex flex-wrap items-center gap-2 text-sm font-bold text-content-hi">
+                  {p.plano === 'anual' ? t.loja.anual : t.loja.mensal}
+                  {p.plano === 'anual' && economia > 0 && (
+                    <span className="rounded-pill bg-brand/15 px-2 py-0.5 text-micro font-bold text-brand">{t.loja.economia(economia)}</span>
+                  )}
+                </span>
                 <span className="mt-0.5 block text-micro text-content-low">
                   {p.plano === 'anual' ? t.loja.porAno(p.preco) : t.loja.porMes(p.preco)}
                 </span>
@@ -125,6 +136,12 @@ export function Plano() {
               <span className="flex-none rounded-pill bg-brand px-4 py-2 text-sm font-bold text-brand-ink">{t.loja.assinar}</span>
             </button>
           ))}
+          {/* A Play pede: renovação automática, como cancelar e os termos perto do botão. */}
+          <p className="px-1 text-micro leading-relaxed text-content-low">{t.loja.renovacao}</p>
+          <p className="flex flex-wrap gap-x-4 px-1 text-micro">
+            <Link to="/termos" className="flex min-h-11 items-center text-brand underline underline-offset-2">{m.perfil.sobre.termos}</Link>
+            <Link to="/politica-de-privacidade" className="flex min-h-11 items-center text-brand underline underline-offset-2">{m.perfil.sobre.politica}</Link>
+          </p>
         </section>
       )}
 

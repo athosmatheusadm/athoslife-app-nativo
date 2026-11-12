@@ -43,7 +43,13 @@ export function AchievementsGallery({
         direita={<LifeMascote humor="conquista" alt="" className="h-20 flex-none" />}
       />
 
-      {estado === 'carregando' && <p className="py-10 text-center text-micro text-content-low">{t.carregando}</p>}
+      {estado === 'carregando' && (
+        <div role="status" aria-label={t.carregando} className="mx-4 mt-2 grid grid-cols-3 gap-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-28 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+          ))}
+        </div>
+      )}
       {estado === 'erro' && <p className="mx-4 rounded-xl bg-surface-2 p-4 text-center text-sm text-content-mid">{t.erro}</p>}
 
       {/* Barra de progresso geral */}

@@ -5323,3 +5323,51 @@ Também fora da lista acima, mesmo defeito ("falha vira vazio"):
   `VITE_RC_GOOGLE_KEY`.
 - Trocar o token do GitHub (o de 11/11 à tarde também foi colado na conversa).
 - Seguir o teste do APK de 11/11 e anotar os erros.
+
+## 2026-11-12 — lista de 11/11: erros escondidos, assinatura e polimento (branch `ajustes-teste-11-11`)
+
+Dono mandou resolver A e B da lista do bloco (6) e os erros escondidos.
+**Ficou de fora a pedido dele:** chat do Life e limite de mensagens (ele
+testa hoje) — itens 9, 15–18 e os dois `.catch` de `components/life/`.
+
+**Erros escondidos corrigidos (os 4 de "corrigir" + Cozinha):**
+- `Login.tsx`: se o reenvio do código de cadastro falha, a tela do código
+  abre com o erro (rede / muitas tentativas) em vez de dizer que mandou.
+- `ConvitePush.tsx`: aceitar o convite só some da Home se gravou; falhou,
+  avisa e o convite fica pra tentar de novo.
+- `MemoriaLife.tsx`: apagar lembrança ao sair da tela avisa se falhar.
+- `OnboardingNovo.tsx`: primeiro peso tenta duas vezes e avisa se não
+  gravou (sem rede ele já ia pra fila).
+- `CozinhaListaScreen` / `CozinhaSecao`: falha ao ler "Minhas criações"
+  mostra erro + "Tentar de novo" em vez de sumir com a fileira.
+- Os 10 de "avaliar": conferidos, ficam como estão (leitura secundária com
+  cópia local). Restam pra depois do teste do dono os dois do Life:
+  `LifeChatSheet.tsx:274` (lembrança pendente) e `PlanosNoLife.tsx:112` (sexo).
+
+**Telas:**
+- `Plano.tsx`: selo "Economize X%" no anual (calculado do preço da loja),
+  frase de renovação automática/como cancelar e links de Termos e
+  Privacidade embaixo dos botões. Só aparece com a loja configurada —
+  **não deu pra ver na tela** (sem Play Console ainda).
+- Aviso `email_nao_confirmado`: "pelo link" → "com o código".
+- `CriacaoScreen.tsx`: saiu o `window.confirm`; excluir agora é toque +
+  "Toque de novo pra excluir" (desarma em 4 s) e avisa se falhar.
+- Texto abaixo de 12 px: `RevisaoScanner`, `HabitCard`, `Scanner` → `text-micro`.
+- Esqueleto no lugar de "Carregando…": Cozinha (lista e seção), Conquistas,
+  Energia/Peso, WeightCard, Adicionar exercício, Notificações, água na Home.
+- Textos novos em pt/en/es/fr/hi: `cozinha.erroExcluir`,
+  `onboarding.confirmar.erroPesoInicial`, `perfil.plano.loja.economia` e
+  `.renovacao`; `cozinha.confirmarExcluir` mudou de pergunta pra "toque de novo".
+
+**Validado:** `npm run typecheck` (+ camadas) e `npm run build`. Nenhuma Edge
+Function mudou (sem deploy). Não testado no celular.
+
+**Migração da busca (arroz × macarrão): AINDA NÃO APLICADA.** O dono disse
+"pode resolver o A", mas o modo automático barrou o `apply_migration` de
+novo ("Production Deploy"). Precisa da frase explícita ("te autorizo a
+migração da busca") ou de uma regra de permissão.
+
+**Pendências:** migração da busca; ver no celular (Story, esqueletos,
+excluir criação); itens do chat depois do teste do dono; processo (monitor
+de erros, compra real, fr/hi sem revisão, Confirm email depois do Brevo);
+bloco D do dia 11 (Brevo, zip do Treino, Play Console, token do GitHub).

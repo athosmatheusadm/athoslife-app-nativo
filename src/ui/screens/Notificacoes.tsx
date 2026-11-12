@@ -52,7 +52,12 @@ export function Notificacoes() {
         <h2 className="mb-1 text-sm font-bold text-content-hi">{t.habitosTitulo}</h2>
         <p className="mb-3 text-micro text-content-low">{t.habitosTexto}</p>
 
-        {habitosConstruir === null && !erroCarga && <p className="text-micro text-content-low">{t.carregando}</p>}
+        {habitosConstruir === null && !erroCarga && (
+          <div role="status" aria-label={t.carregando} className="space-y-2">
+            <div className="h-16 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+            <div className="h-16 animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+          </div>
+        )}
 
         {habitosConstruir === null && erroCarga && (
           <div className="rounded-xl border border-surface-4 bg-surface-2 p-3.5 text-center" role="alert">
@@ -138,7 +143,7 @@ function LinhaLembrete({ habito }: { habito: Habito }) {
       </div>
 
       {carregando ? (
-        <p className="mt-2 text-micro text-content-low">{t.carregando}</p>
+        <div role="status" aria-label={t.carregando} className="mt-2 h-5 w-32 animate-pulse rounded-pill bg-surface-4" />
       ) : lembrete ? (
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="text-sm text-content-mid">{tc.todoDia(lembrete)}</span>

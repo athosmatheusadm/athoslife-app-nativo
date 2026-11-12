@@ -332,7 +332,7 @@ export function Scanner() {
           <span className="text-[15px] font-bold text-content-hi">{t.lerCodigo}</span>
           <span className="text-micro text-content-low">{t.vidro.lerSub}</span>
         </span>
-        <span className="rounded-pill bg-brand px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-ink">{t.vidro.gratis}</span>
+        <span className="rounded-pill bg-brand px-2 py-1 text-micro font-bold uppercase tracking-wide text-brand-ink">{t.vidro.gratis}</span>
       </button>
       {leitorDisponivel && !digitando && (
         <button onClick={() => setDigitando(true)} className="min-h-10 w-full text-[13px] font-semibold text-content-low underline underline-offset-4">

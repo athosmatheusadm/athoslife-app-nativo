@@ -41,6 +41,7 @@ export function CozinhaSecao(props: {
   const [receitas, setReceitas] = useState<Receita[] | null>(null)
   const [erro, setErro] = useState(false)
   const [criacoes, setCriacoes] = useState<ReceitaCriada[]>([])
+  const [erroCriacoes, setErroCriacoes] = useState(false)
   const [filtro, setFiltro] = useState<CategoriaReceita | 'todos'>('todos')
 
   function carregar() {
@@ -53,8 +54,16 @@ export function CozinhaSecao(props: {
         console.error('cozinha listar falhou:', e)
         setErro(true)
       })
-    // Antes da migração v2 a tabela não existe — a fileira só não aparece.
-    void cozinhaService.listarCriacoes().then(setCriacoes).catch(() => setCriacoes([]))
+    carregarCriacoes()
+  }
+
+  // Falha ao ler não pode parecer "você não tem criações": mostra e deixa tentar de novo.
+  function carregarCriacoes() {
+    setErroCriacoes(false)
+    void cozinhaService.listarCriacoes().then(setCriacoes).catch((e) => {
+      console.error('cozinha criações falhou:', e)
+      setErroCriacoes(true)
+    })
   }
 
   useEffect(() => {
@@ -87,7 +96,13 @@ export function CozinhaSecao(props: {
       </div>
 
 
-      {receitas === null && !erro && <p className="py-6 text-center text-micro text-content-low">{t.carregando}</p>}
+      {receitas === null && !erro && (
+        <div role="status" aria-label={t.carregando} className="flex gap-3 overflow-hidden">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-44 w-40 flex-none animate-pulse rounded-2xl border border-surface-4 bg-surface-2" />
+          ))}
+        </div>
+      )}
       {erro && (
         <div className="py-6 text-center">
           <p className="mb-2 text-micro text-content-low">{t.erroCarregar}</p>
@@ -136,6 +151,14 @@ export function CozinhaSecao(props: {
               <CardReceita key={r.id} receita={r} onAbrir={() => abrir(r.id)} onFavoritar={() => favoritar(r)} />
             ))}
           </div>
+        </div>
+      )}
+
+      {erroCriacoes && !erro && (
+        <div>
+          <h3 className="mb-1 px-1 text-sm font-bold text-content-hi">{t.minhasCriacoes}</h3>
+          <p className="px-1 text-micro text-content-low">{t.erroCarregar}</p>
+          <button type="button" onClick={carregarCriacoes} className="min-h-11 px-1 text-sm font-bold text-brand active:opacity-70">{t.tentarDeNovo}</button>
         </div>
       )}
 
