@@ -414,9 +414,9 @@ export const en: Mensagens = {
     abrirLife: 'Talk to Life',
     soIniciante: 'Based on your health check, the plan is set to beginner level — lighter and more careful.',
     bloqueado: "I can't build an automatic plan for you right now:",
-    entrada: 'Build a reference plan',
+    entrada: 'Build a workout template',
     entradaSub: 'Life builds your week from your choices',
-    titulo: 'Reference workout plan',
+    titulo: 'Reference workout template',
     intro: "I'll build a week of training from your choices and general strength-training guidelines. It's a reference: adjust anything you like.",
     avisoNaoPrescricao: "It isn't a prescription and doesn't replace a fitness professional. You always choose the load (weight).",
     semRevisao: 'Template based on public guidelines (ACSM), without individual assessment.',
@@ -519,7 +519,7 @@ export const en: Mensagens = {
       aplicar: 'Apply to my routine',
       ajustar: 'Change choices',
       outraOpcao: 'See another option',
-      soIndico: 'I only suggest the exercises. Sets, reps and weight are up to you in your workout sheet — on your own or with a fitness professional.',
+      soIndico: 'I suggest the exercises. In your sheet, each one comes with general reference sets and reps (ACSM) for you to adjust on your own or with a fitness professional. The weight is always your call.',
       aplicando: 'Applying…',
       sucesso: "Plan applied! It's on your Workout screen now.",
       irTreino: 'Go to Workout',
@@ -697,7 +697,7 @@ export const en: Mensagens = {
     },
   },
   lifePlanos: {
-    cartao: { treino: 'Build my training', dieta: 'Build my diet' },
+    cartao: { treino: 'Build a workout template', dieta: 'Build my diet' },
     cartaoSub: 'First, a quick health check: 5 questions, just once.',
     comecar: 'Start the check',
     intro: {
@@ -1094,6 +1094,7 @@ export const en: Mensagens = {
     marca: 'Athos',
     titulo: 'Workout',
     subtitulo: 'Your body, your rules.',
+    modeloNota: (faixa: string) => `Workout template: sets and reps are a general reference (${faixa} range, ACSM), not a prescription. Adjust as you like; the weight is your call.`,
     locais: { casa: 'At home', academia: 'Gym' },
     hoje: 'Today',
     grupos: {

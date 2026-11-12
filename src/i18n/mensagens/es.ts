@@ -414,9 +414,9 @@ export const es: Mensagens = {
     abrirLife: 'Hablar con Life',
     soIniciante: 'Según tu chequeo de salud, el plan sale en nivel principiante — más suave y cuidadoso.',
     bloqueado: 'Ahora no puedo armar un plan automático para ti:',
-    entrada: 'Armar plan de referencia',
+    entrada: 'Crear modelo de entrenamiento',
     entradaSub: 'Life arma tu semana a partir de tus elecciones',
-    titulo: 'Plan de entrenamiento de referencia',
+    titulo: 'Modelo de entrenamiento de referencia',
     intro: 'Voy a armar una semana de entrenamiento a partir de tus elecciones y de pautas generales de entrenamiento de fuerza. Es una referencia: ajústalo como quieras.',
     avisoNaoPrescricao: 'No es una prescripción y no reemplaza a un profesional de la actividad física. La carga (el peso) siempre la decides tú.',
     semRevisao: 'Modelo basado en pautas públicas (ACSM), sin evaluación individual.',
@@ -519,7 +519,7 @@ export const es: Mensagens = {
       aplicar: 'Aplicar a mi rutina',
       ajustar: 'Cambiar elecciones',
       outraOpcao: 'Ver otra opción',
-      soIndico: 'Yo solo indico los ejercicios. Las series, repeticiones y la carga las defines tú en tu rutina — a tu manera o con un profesional de Educación Física.',
+      soIndico: 'Yo indico los ejercicios. En tu rutina, cada uno llega con series y repeticiones de referencia general (ACSM) para que las ajustes a tu manera o con un profesional de Educación Física. La carga siempre la defines tú.',
       aplicando: 'Aplicando…',
       sucesso: '¡Plan aplicado! Ya está en tu pantalla de Entrenamiento.',
       irTreino: 'Ir a Entrenamiento',
@@ -697,7 +697,7 @@ export const es: Mensagens = {
     },
   },
   lifePlanos: {
-    cartao: { treino: 'Armar mi entreno', dieta: 'Armar mi dieta' },
+    cartao: { treino: 'Crear modelo de entrenamiento', dieta: 'Armar mi dieta' },
     cartaoSub: 'Antes, un chequeo de salud rápido: 5 preguntas, una sola vez.',
     comecar: 'Empezar el chequeo',
     intro: {
@@ -1094,6 +1094,7 @@ export const es: Mensagens = {
     marca: 'Athos',
     titulo: 'Entreno',
     subtitulo: 'Tu cuerpo, tus reglas.',
+    modeloNota: (faixa: string) => `Modelo de entrenamiento: las series y repeticiones son una referencia general (rango de ${faixa}, ACSM), no una prescripción. Ajústalas como quieras; la carga la defines tú.`,
     locais: { casa: 'En casa', academia: 'Gimnasio' },
     hoje: 'Hoy',
     grupos: {

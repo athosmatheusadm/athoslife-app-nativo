@@ -420,9 +420,9 @@ export const fr: Mensagens = {
     abrirLife: 'Parler à Life',
     soIniciante: 'D’après ton bilan santé, le programme sera au niveau débutant — plus doux et prudent.',
     bloqueado: 'Je ne peux pas te préparer un programme automatique pour l’instant :',
-    entrada: 'Créer un programme de référence',
+    entrada: 'Créer un modèle d’entraînement',
     entradaSub: 'Life prépare ta semaine à partir de tes choix',
-    titulo: 'Programme d’entraînement de référence',
+    titulo: 'Modèle d’entraînement de référence',
     intro: 'Je vais préparer une semaine d’entraînement à partir de tes choix et de recommandations générales de renforcement musculaire. C’est une référence : tu ajustes tout comme tu veux.',
     avisoNaoPrescricao: 'Ce n’est pas une prescription et ça ne remplace pas un coach diplômé. La charge (le poids), c’est toujours toi qui la choisis.',
     semRevisao: 'Modèle basé sur des recommandations publiques (ACSM), sans évaluation individuelle.',
@@ -525,7 +525,7 @@ export const fr: Mensagens = {
       aplicar: 'Appliquer à mon programme',
       ajustar: 'Changer mes choix',
       outraOpcao: 'Voir une autre option',
-      soIndico: 'Je propose seulement les exercices. Les séries, les répétitions et la charge, c’est toi qui les fixes dans ton programme — à ta façon ou avec un coach diplômé.',
+      soIndico: 'Je propose les exercices. Dans ton programme, chacun arrive avec des séries et répétitions de référence générale (ACSM), à ajuster à ta façon ou avec un coach diplômé. La charge, c’est toujours toi qui la choisis.',
       aplicando: 'Application…',
       sucesso: 'Programme appliqué ! Il est déjà dans ton écran Entraînement.',
       irTreino: 'Aller à l’entraînement',
@@ -703,7 +703,7 @@ export const fr: Mensagens = {
     },
   },
   lifePlanos: {
-    cartao: { treino: 'Créer mon entraînement', dieta: 'Créer mon plan alimentaire' },
+    cartao: { treino: 'Créer un modèle d’entraînement', dieta: 'Créer mon plan alimentaire' },
     cartaoSub: 'D’abord, un petit bilan santé : 5 questions, une seule fois.',
     comecar: 'Commencer le bilan',
     intro: {
@@ -1100,6 +1100,7 @@ export const fr: Mensagens = {
     marca: 'Athos',
     titulo: 'Entraînement',
     subtitulo: 'Ton corps, tes règles.',
+    modeloNota: (faixa: string) => `Modèle d’entraînement : les séries et répétitions sont une référence générale (fourchette ${faixa}, ACSM), pas une prescription. Ajuste comme tu veux ; la charge, c’est toi qui la choisis.`,
     locais: { casa: 'À la maison', academia: 'En salle' },
     hoje: 'Aujourd’hui',
     grupos: {

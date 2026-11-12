@@ -83,13 +83,17 @@ Termos de uso (seção nova) repetem isso.
 
 ## 4. Plano de treino — regras do gerador (`domain/rules/geradorTreino.ts`)
 
-> **12/11/2026 — o plano NÃO prescreve mais séries nem repetições (decisão
-> do dono).** O Life só indica os exercícios; a ficha recebe o padrão do
-> catálogo (o mesmo de adicionar à mão) e a pessoa define o resto. A tabela
-> abaixo fica só como histórico da v1/v2; as travas do servidor continuam
-> valendo. A pergunta de objetivo saiu (só mudava séries/reps).
+> **12/11/2026 — referência geral, não prescrição (decisão do dono).**
+> O Life só indica os exercícios no chat. A ficha chega com séries e
+> repetições dentro da faixa pública do ACSM (linhas de hipertrofia da tabela
+> abaixo, sem pergunta de objetivo: 2–3 séries iniciante, 3 intermediário,
+> 3–4 avançado; 12 reps iniciante, 10 os demais), como ponto de partida
+> editável, com o aviso "referência geral (ACSM), não prescrição" na tela de
+> Treino. **Nada de carga nem de regra de progressão** em texto nenhum. O
+> nome na tela é "modelo de treino". O dono não tem profissional de Educação
+> Física responsável ainda; quando tiver, rever.
 
-Faixas do ACSM Position Stand (2009) para treino de força, arredondadas (histórico):
+Faixas do ACSM Position Stand (2009) para treino de força, arredondadas:
 
 | Objetivo | Nível | Séries | Reps | Descanso |
 |----------|-------|--------|------|----------|

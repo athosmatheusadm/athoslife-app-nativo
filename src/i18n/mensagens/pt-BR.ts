@@ -427,9 +427,9 @@ export const ptBR = {
     abrirLife: 'Falar com o Life',
     soIniciante: 'Pelo seu check de saúde, o plano sai no nível iniciante — mais leve e cuidadoso.',
     bloqueado: 'Não consigo montar um plano automático pra você agora:',
-    entrada: 'Montar plano de referência',
+    entrada: 'Montar modelo de treino',
     entradaSub: 'O Life monta sua semana a partir das suas escolhas',
-    titulo: 'Plano de referência de treino',
+    titulo: 'Modelo de treino de referência',
     intro: 'Vou montar uma semana de treino a partir das suas escolhas e de diretrizes gerais de treino de força. É uma referência: você ajusta tudo como quiser.',
     avisoNaoPrescricao: 'Não é prescrição e não substitui um profissional de Educação Física. A carga (o peso) é sempre você quem define.',
     semRevisao: 'Modelo baseado em diretrizes públicas (ACSM), sem avaliação individual.',
@@ -532,7 +532,7 @@ export const ptBR = {
       aplicar: 'Aplicar na minha ficha',
       ajustar: 'Mudar escolhas',
       outraOpcao: 'Ver outra opção',
-      soIndico: 'Eu só indico os exercícios. Séries, repetições e carga é você quem define na ficha — do seu jeito ou com um profissional de Educação Física.',
+      soIndico: 'Eu indico os exercícios. Na ficha, cada um chega com séries e repetições de referência geral (ACSM) pra você ajustar do seu jeito ou com um profissional de Educação Física. A carga é sempre você quem define.',
       aplicando: 'Aplicando…',
       sucesso: 'Plano aplicado! Ele já está na sua tela de Treino.',
       irTreino: 'Ir pro Treino',
@@ -711,7 +711,7 @@ export const ptBR = {
     },
   },
   lifePlanos: {
-    cartao: { treino: 'Montar meu treino', dieta: 'Montar minha dieta' },
+    cartao: { treino: 'Montar modelo de treino', dieta: 'Montar minha dieta' },
     cartaoSub: 'Antes, um check de saúde rápido: 5 perguntas, uma vez só.',
     comecar: 'Começar o check',
     intro: {
@@ -1108,6 +1108,7 @@ export const ptBR = {
     marca: 'Athos',
     titulo: 'Treino',
     subtitulo: 'Seu corpo, suas regras.',
+    modeloNota: (faixa: string) => `Modelo de treino: séries e repetições são referência geral (faixa de ${faixa}, ACSM), não prescrição. Ajuste como quiser; a carga é você quem define.`,
     locais: { casa: 'Em casa', academia: 'Academia' },
     hoje: 'Hoje',
     grupos: {

@@ -5505,3 +5505,20 @@ APK; token do GitHub; proteína do vegetariano.
 **Pendências:** token do GitHub → push das branches `ajustes-teste-11-11` e
 `planos-v2`, PR #7 → `main`, APK; no APK: aplicar uma semana e conferir a
 Dieta dia a dia; boneco de foco; treino sem séries/reps.
+
+### 2026-11-12 (7) — treino: séries/reps voltam como REFERÊNCIA GERAL (branch `planos-v2`)
+
+Dono: tirar séries/reps deu segurança, mas enfraquece o Premium, e ele não
+tem como pagar um profissional de Educação Física agora. Aprovou o meio-termo
+(`treino-v4-2026-11-12`):
+- O Life segue **sem falar números** no chat (prévia só com os exercícios).
+- A ficha chega com séries e reps dentro da faixa pública do ACSM (por
+  nível; sem pergunta de objetivo), editáveis.
+- Tela de Treino mostra, quando a ficha veio do modelo: "Modelo de treino:
+  séries e repetições são referência geral (faixa de 8–12, ACSM), não
+  prescrição. Ajuste como quiser; a carga é você quem define."
+- **Continua fora:** dica de progressão de carga e qualquer orientação de peso.
+- Nome na tela: "modelo de treino" (entrada, título e botão do chat), 5 idiomas.
+- Testado: 12.168 combinações, 0 recusadas; typecheck e build ok. Não visto
+  na tela. Avisei o dono que o risco jurídico não é zero (prescrição é do
+  profissional de Educação Física) e que não sou advogado.
