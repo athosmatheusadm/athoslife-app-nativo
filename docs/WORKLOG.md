@@ -5391,3 +5391,51 @@ Acertos feitos:
 
 Validado: typecheck e build. Ainda vale um falante nativo de hindi olhar
 antes de divulgar na Índia; o francês está em nível de publicar.
+
+## 2026-11-12 (3) — treino e dieta do Life v2: foco no boneco, variação e cardápio melhor (branch `planos-v2`)
+
+Dono não curtiu o treino que o Life montou ("genérico, não pergunta foco") e
+achou o cardápio fraco. Pediu foco pelo boneco do corpo e mais variedade,
+**sem sair das regras de segurança**. Branch `planos-v2`, saída da
+`ajustes-teste-11-11` (que ainda não está na `main` por falta de token).
+
+Como era: nem treino nem dieta passam pela IA. O Life só pergunta; quem monta
+é `domain/rules/geradorTreino.ts` e `geradorDieta.ts` (fórmula fixa) e o
+servidor confere (`aplicar_plano_treino` / `aplicar_plano_dieta`). Continua
+assim — **nenhuma trava mudou, nada no banco, nenhuma Edge Function**.
+
+**Treino (`treino-v2-2026-11-12`):**
+- Pergunta nova na conversa: "Quer dar mais atenção a alguma parte do corpo?"
+  com o boneco frente/costas (`components/life/BonecoFoco.tsx`, recuperado do
+  protótipo de onboarding apagado em 11/11) + botões; até 2 focos.
+- Foco ganha exercício a mais nos dias em que cabe e vai pro começo da sessão;
+  a base do dia nunca some. Reps variam dentro da faixa do ACSM. Posterior de
+  coxa com lugar próprio. 3 dias = A/B/C. 5 dias = empurrar/puxar/pernas +
+  superior/inferior. Teto semanal repartido antes (sessão não encolhe mais).
+- Botão **"Ver outra opção"**: mesmas escolhas, outros exercícios.
+- Testado com o catálogo real (110 exercícios): 12.168 combinações de
+  objetivo × nível × dias × local × tempo × foco × variante, **0 planos
+  recusados** por `validarPlanoTreino` (espelho do servidor) e nenhuma sessão
+  com menos de 3 exercícios.
+
+**Dieta (`dieta-v2-2026-11-12`):**
+- Mais alimentos por papel (todos conferidos na base), salada crua além do
+  legume cozido, jantar com molde próprio (sem leguminosa, mais proteína;
+  vegetariano mantém), o dia não repete alimento, escolha só de alimento cuja
+  quantidade cabe no papel e calibragem final das gramas.
+- Botão **"Outro cardápio"**: mesmas metas, outros alimentos (pula variante
+  que sair da meta).
+- Testado com os alimentos reais: 9.216 combinações × 8 variantes; fora da
+  tolerância do servidor (15%) caiu de ~5% (v1) pra 15 casos, todos
+  vegetariano com 3 refeições. As contas das metas não mudaram.
+- **Limite conhecido (já existia):** vegetariano fica abaixo de 80% da
+  proteína em ~metade dos casos (só ovo, tofu, leguminosa e laticínio na lista).
+
+Textos novos em pt/en/es/fr/hi. `docs/PLANOS_TREINO_DIETA_DIRETRIZ.md`
+atualizado. Validado: typecheck (+ camadas) e build. **Não visto na tela nem
+no celular** (precisa de conta paga com check de saúde feito).
+
+**Pendências:** dono ver o boneco e os planos no APK; cardápio por dia da
+semana (pede migração: o servidor guarda um dia só); proteína do
+vegetariano; usar histórico de cargas e alimentos mais registrados; push
+desta branch e da anterior (token do GitHub); migração da busca.

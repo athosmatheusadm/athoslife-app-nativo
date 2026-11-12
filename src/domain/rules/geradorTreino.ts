@@ -10,11 +10,27 @@ import type { DiaSemana, ExercicioCatalogo, GrupoMuscular, LocalTreino, NivelTre
  * pessoa quem anota. O servidor (RPC aplicar_plano_treino) confere tudo de
  * novo antes de gravar; validarPlanoTreino() é o mesmo conjunto de travas,
  * só pra avisar antes.
+ *
+ * v2 (12/11/2026, pedido do dono — "o treino saiu genérico"):
+ *  - FOCO: até 2 partes do corpo escolhidas no boneco ganham um exercício a
+ *    mais nos dias em que cabem e vêm primeiro na sessão (grupos grandes).
+ *  - VARIANTE: "ver outra opção" troca os exercícios escolhidos, mesmas regras.
+ *  - Posterior de coxa tem lugar próprio nos dias de perna.
+ *  - Reps variam dentro da faixa do ACSM (composto no começo mais pesado,
+ *    acessório e abdômen/panturrilha mais leves e com mais repetições).
+ *  - O teto semanal por grupo é repartido entre os dias antes de montar
+ *    (antes o último dia perdia exercício).
+ * As travas (séries, reps, volume, nível, local) são as mesmas da v1.
  */
 
-export const VERSAO_GERADOR = 'treino-v1-2026-09-28'
+export const VERSAO_GERADOR = 'treino-v2-2026-11-12'
 
 export type ObjetivoTreino = 'hipertrofia' | 'condicionamento' | 'saude'
+
+/** Partes do corpo que dá pra priorizar (as do boneco). */
+export type FocoTreino = Exclude<GrupoMuscular, 'lombar'>
+export const FOCOS_TREINO: readonly FocoTreino[] = ['peito', 'costas', 'ombro', 'bracos', 'abdominal', 'pernas', 'gluteos', 'panturrilha']
+export const MAX_FOCO = 2
 
 export interface ParametrosTreino {
   readonly objetivo: ObjetivoTreino
@@ -24,11 +40,16 @@ export interface ParametrosTreino {
   readonly local: LocalTreino
   /** 30 a 90. */
   readonly minutos: number
+  /** Até MAX_FOCO partes do corpo pra dar mais atenção. Vazio = equilibrado. */
+  readonly foco?: readonly FocoTreino[]
+  /** 0 = primeira opção; cada "ver outra opção" soma 1 e troca os exercícios. */
+  readonly variante?: number
 }
 
 export type TipoSessao =
   | 'corpo_inteiro_a'
   | 'corpo_inteiro_b'
+  | 'corpo_inteiro_c'
   | 'superior_a'
   | 'superior_b'
   | 'inferior_a'
@@ -66,37 +87,83 @@ export interface PlanoTreinoGerado {
 // Modelos
 // ---------------------------------------------------------------
 
-/** Subgrupo pra separar bíceps (puxar) de tríceps (empurrar). */
-type Slot = GrupoMuscular | 'biceps' | 'triceps'
+/** Subgrupos: bíceps (puxar) x tríceps (empurrar), e posterior de coxa x resto da perna. */
+type Slot = GrupoMuscular | 'biceps' | 'triceps' | 'posterior'
 
 const MODELOS: Record<TipoSessao, readonly Slot[]> = {
   corpo_inteiro_a: ['pernas', 'peito', 'costas', 'ombro', 'gluteos', 'abdominal', 'biceps'],
-  corpo_inteiro_b: ['pernas', 'costas', 'peito', 'ombro', 'pernas', 'triceps', 'abdominal'],
+  corpo_inteiro_b: ['pernas', 'costas', 'peito', 'ombro', 'posterior', 'triceps', 'abdominal'],
+  corpo_inteiro_c: ['gluteos', 'peito', 'costas', 'pernas', 'ombro', 'abdominal', 'biceps'],
   superior_a: ['peito', 'costas', 'ombro', 'peito', 'costas', 'biceps', 'triceps'],
   superior_b: ['costas', 'peito', 'ombro', 'costas', 'triceps', 'biceps', 'abdominal'],
-  inferior_a: ['pernas', 'pernas', 'gluteos', 'pernas', 'panturrilha', 'abdominal', 'lombar'],
-  inferior_b: ['pernas', 'gluteos', 'pernas', 'panturrilha', 'pernas', 'abdominal', 'abdominal'],
+  inferior_a: ['pernas', 'posterior', 'gluteos', 'pernas', 'panturrilha', 'abdominal', 'lombar'],
+  inferior_b: ['pernas', 'gluteos', 'posterior', 'pernas', 'panturrilha', 'abdominal', 'abdominal'],
   empurrar: ['peito', 'peito', 'ombro', 'ombro', 'triceps', 'triceps', 'abdominal'],
   puxar: ['costas', 'costas', 'costas', 'ombro', 'biceps', 'biceps', 'abdominal'],
-  pernas: ['pernas', 'pernas', 'gluteos', 'pernas', 'panturrilha', 'lombar', 'abdominal'],
+  pernas: ['pernas', 'posterior', 'gluteos', 'pernas', 'panturrilha', 'lombar', 'abdominal'],
 }
 
 const DIVISAO: Record<number, readonly TipoSessao[]> = {
   2: ['corpo_inteiro_a', 'corpo_inteiro_b'],
-  3: ['corpo_inteiro_a', 'corpo_inteiro_b', 'corpo_inteiro_a'],
+  3: ['corpo_inteiro_a', 'corpo_inteiro_b', 'corpo_inteiro_c'],
   4: ['superior_a', 'inferior_a', 'superior_b', 'inferior_b'],
-  5: ['superior_a', 'inferior_a', 'empurrar', 'puxar', 'pernas'],
+  5: ['empurrar', 'puxar', 'pernas', 'superior_b', 'inferior_b'],
   6: ['empurrar', 'puxar', 'pernas', 'empurrar', 'puxar', 'pernas'],
 }
+
+const TODOS: readonly GrupoMuscular[] = ['peito', 'costas', 'ombro', 'bracos', 'pernas', 'gluteos', 'panturrilha', 'abdominal', 'lombar']
+const DE_CIMA: readonly GrupoMuscular[] = ['peito', 'costas', 'ombro', 'bracos', 'abdominal']
+const DE_BAIXO: readonly GrupoMuscular[] = ['pernas', 'gluteos', 'panturrilha', 'abdominal']
+
+/** Em que dias cada foco cabe (glúteo não entra no dia de peito). */
+const TEMA: Record<TipoSessao, readonly GrupoMuscular[]> = {
+  corpo_inteiro_a: TODOS,
+  corpo_inteiro_b: TODOS,
+  corpo_inteiro_c: TODOS,
+  superior_a: DE_CIMA,
+  superior_b: DE_CIMA,
+  inferior_a: DE_BAIXO,
+  inferior_b: DE_BAIXO,
+  empurrar: ['peito', 'ombro', 'bracos', 'abdominal'],
+  puxar: ['costas', 'ombro', 'bracos', 'abdominal'],
+  pernas: DE_BAIXO,
+}
+
+/** Foco em grupo grande vem primeiro na sessão; os pequenos ficam onde estão (abdômen não vai antes do agachamento). */
+const FOCO_VEM_PRIMEIRO: ReadonlySet<GrupoMuscular> = new Set(['peito', 'costas', 'ombro', 'pernas', 'gluteos'])
+/** Fecham a sessão: mais repetições, descanso curto. */
+const SLOTS_FINAIS: ReadonlySet<Slot> = new Set<Slot>(['abdominal', 'panturrilha', 'lombar'])
+/** Quantos exercícios o foco tem nos dias em que cabe (iniciante fica em 2: o teto semanal dele é baixo). */
+function exerciciosDoFoco(nivel: NivelTreino, n: number): number {
+  return nivel === 'iniciante' || n < 6 ? 2 : 3
+}
+/** O foco nunca apaga a base do dia: sempre sobra pelo menos um exercício destes grupos. */
+const BASE_DO_DIA: Record<TipoSessao, readonly GrupoMuscular[]> = {
+  corpo_inteiro_a: ['pernas', 'peito', 'costas'],
+  corpo_inteiro_b: ['pernas', 'peito', 'costas'],
+  corpo_inteiro_c: ['pernas', 'peito', 'costas'],
+  superior_a: ['peito', 'costas'],
+  superior_b: ['peito', 'costas'],
+  inferior_a: ['pernas'],
+  inferior_b: ['pernas'],
+  empurrar: ['peito'],
+  puxar: ['costas'],
+  pernas: ['pernas'],
+}
+/** Quem entra no lugar quando um grupo estoura o teto da semana. */
+const REPOSICAO: readonly Slot[] = ['abdominal', 'ombro', 'costas', 'peito', 'biceps', 'triceps', 'panturrilha', 'gluteos', 'pernas']
 
 /** Grupo sem exercício no local (ex.: glúteo em casa) cai no substituto. */
 const SUBSTITUTO: Partial<Record<Slot, Slot>> = {
   gluteos: 'pernas',
   panturrilha: 'pernas',
+  posterior: 'pernas',
   lombar: 'abdominal',
   biceps: 'costas',
   triceps: 'peito',
 }
+
+const POSTERIOR_DE_COXA: ReadonlySet<string> = new Set(['Stiff', 'Mesa Flexora', 'Cadeira Flexora', 'Levantamento Terra (Deadlift)', 'Flexão Nórdica'])
 
 /**
  * Ordem de preferência por grupo (composto antes de isolado). Nome fora da
@@ -104,7 +171,8 @@ const SUBSTITUTO: Partial<Record<Slot, Slot>> = {
  * (não são escolha natural pra "treino de costas/ombro").
  */
 const PREFERIDOS: Partial<Record<Slot, readonly string[]>> = {
-  pernas: ['Agachamento Livre com Barra', 'Leg Press 45°', 'Agachamento Goblet', 'Agachamento Hack', 'Afundo com Halteres', 'Stiff', 'Cadeira Extensora', 'Mesa Flexora', 'Passada Reversa', 'Agachamento Sumô com Halter', 'Step-up no Banco'],
+  pernas: ['Agachamento Livre com Barra', 'Leg Press 45°', 'Agachamento Goblet', 'Agachamento Hack', 'Afundo com Halteres', 'Cadeira Extensora', 'Agachamento Búlgaro', 'Passada Reversa', 'Agachamento Sumô com Halter', 'Step-up no Banco'],
+  posterior: ['Stiff', 'Mesa Flexora', 'Cadeira Flexora'],
   peito: ['Supino Reto com Barra', 'Supino Inclinado com Halteres', 'Flexão de Braço', 'Supino Máquina Convergente', 'Supino Articulado', 'Crucifixo Reto com Halteres', 'Crossover', 'Voador (Pec Deck)', 'Flexão Inclinada'],
   costas: ['Puxada Alta (Pulldown)', 'Remada Baixa no Cabo', 'Remada Unilateral com Halter (Serrote)', 'Barra Fixa', 'Remada Curvada com Barra', 'Remada Máquina Articulada', 'Pulldown Pegada Neutra', 'Puxada Articulada', 'Pullover com Halter'],
   ombro: ['Desenvolvimento com Halteres', 'Desenvolvimento na Máquina', 'Elevação Lateral com Halteres', 'Arnold Press', 'Crucifixo Invertido com Halteres', 'Face Pull', 'Elevação Lateral na Máquina'],
@@ -136,108 +204,261 @@ function exerciciosPorTempo(minutos: number, nivel: NivelTreino): number {
   return Math.min(n, MAX_EXERCICIOS_DIA[nivel])
 }
 
+function grupoDoSlot(slot: Slot): GrupoMuscular {
+  if (slot === 'biceps' || slot === 'triceps') return 'bracos'
+  if (slot === 'posterior') return 'pernas'
+  return slot
+}
+
 function encaixa(ex: ExercicioCatalogo, slot: Slot): boolean {
   const nome = ex.nomeBase.toLowerCase()
   if (slot === 'biceps') return ex.grupoMuscular === 'bracos' && nome.includes('rosca')
   if (slot === 'triceps') return ex.grupoMuscular === 'bracos' && !nome.includes('rosca')
+  if (slot === 'posterior') return ex.grupoMuscular === 'pernas' && POSTERIOR_DE_COXA.has(ex.nomeBase)
+  if (slot === 'pernas') return ex.grupoMuscular === 'pernas' && !POSTERIOR_DE_COXA.has(ex.nomeBase)
   return ex.grupoMuscular === slot
 }
 
-/** Faixas do ACSM (diretriz seção 4). Primeiro(s) exercício(s) do dia = principais. */
+/** Qual pedaço do grupo em foco entra como exercício a mais naquele dia. */
+function slotDoFoco(grupo: GrupoMuscular, tipo: TipoSessao, jaTem: readonly Slot[]): Slot {
+  if (grupo === 'bracos') {
+    if (tipo === 'empurrar') return 'triceps'
+    if (tipo === 'puxar') return 'biceps'
+    return jaTem.filter((s) => s === 'biceps').length <= jaTem.filter((s) => s === 'triceps').length ? 'biceps' : 'triceps'
+  }
+  if (grupo === 'pernas') return jaTem.includes('posterior') ? 'pernas' : 'posterior'
+  return grupo
+}
+
+/** Lugares da sessão com o foco: o exercício a mais entra no lugar do último que pode sair. */
+function slotsComFoco(tipo: TipoSessao, n: number, foco: readonly GrupoMuscular[], nivel: NivelTreino): Slot[] {
+  const slots = (MODELOS[tipo] ?? []).slice(0, n)
+  const quantos = (g: GrupoMuscular) => slots.filter((s) => grupoDoSlot(s) === g).length
+  for (const grupo of foco) {
+    if (!TEMA[tipo].includes(grupo)) continue
+    while (quantos(grupo) < exerciciosDoFoco(nivel, n)) {
+      let alvo = -1
+      for (let i = slots.length - 1; i >= 0; i--) {
+        const g = grupoDoSlot(slots[i]!)
+        if (foco.includes(g)) continue
+        if (BASE_DO_DIA[tipo].includes(g) && quantos(g) <= 1) continue
+        alvo = i
+        break
+      }
+      if (alvo < 0) break
+      slots[alvo] = slotDoFoco(grupo, tipo, slots)
+    }
+  }
+  return slots
+}
+
+/** Foco em grupo grande vai pra frente (vira o exercício principal do dia). */
+function ordenarPeloFoco(slots: readonly Slot[], foco: readonly GrupoMuscular[]): Slot[] {
+  const naFrente = (s: Slot) => foco.includes(grupoDoSlot(s)) && FOCO_VEM_PRIMEIRO.has(grupoDoSlot(s))
+  return [...slots.filter(naFrente), ...slots.filter((s) => !naFrente(s))]
+}
+
+/**
+ * Semana inteira de lugares, já cabendo no teto de séries por grupo: se um
+ * grupo tem lugares demais (mínimo de 2 séries cada), o excedente vira outro
+ * grupo que ainda tem espaço — a sessão não encolhe.
+ */
+function planejarSemana(
+  tipos: readonly TipoSessao[],
+  n: number,
+  foco: readonly GrupoMuscular[],
+  nivel: NivelTreino,
+  temExercicio: (slot: Slot) => boolean,
+): Slot[][] {
+  const efetivo = (slot: Slot): Slot | null => {
+    if (temExercicio(slot)) return slot
+    const sub = SUBSTITUTO[slot]
+    return sub && temExercicio(sub) ? sub : null
+  }
+  const semana = tipos.map((tipo) => slotsComFoco(tipo, n, foco, nivel).map(efetivo).filter((s): s is Slot => s !== null))
+  const maximo = Math.floor(TETO_SERIES_GRUPO[nivel] / 2)
+  const naSemana = (g: GrupoMuscular) => semana.reduce((t, dia) => t + dia.filter((s) => grupoDoSlot(s) === g).length, 0)
+  const noDia = (dia: readonly Slot[], g: GrupoMuscular) => dia.filter((s) => grupoDoSlot(s) === g).length
+
+  for (const grupo of TODOS) {
+    let voltas = 0
+    while (naSemana(grupo) > maximo && voltas++ < 50) {
+      // Tira do dia que mais tem o grupo (empate: o último dia), o último lugar dele.
+      let d = -1
+      semana.forEach((dia, i) => {
+        if (noDia(dia, grupo) > 0 && (d < 0 || noDia(dia, grupo) >= noDia(semana[d]!, grupo))) d = i
+      })
+      if (d < 0) break
+      const dia = semana[d]!
+      const tipo = tipos[d]!
+      let pos = -1
+      dia.forEach((s, i) => {
+        if (grupoDoSlot(s) === grupo) pos = i
+      })
+      const novo = REPOSICAO.map(efetivo).find(
+        (s): s is Slot =>
+          s !== null &&
+          grupoDoSlot(s) !== grupo &&
+          TEMA[tipo].includes(grupoDoSlot(s)) &&
+          naSemana(grupoDoSlot(s)) < maximo &&
+          noDia(dia, grupoDoSlot(s)) < 2,
+      )
+      if (novo) dia[pos] = novo
+      else dia.splice(pos, 1)
+    }
+  }
+  return semana.map((dia) => ordenarPeloFoco(dia, foco))
+}
+
+type Papel = 'principal' | 'acessorio' | 'final'
+
+/**
+ * Faixas do ACSM (diretriz seção 4). Séries e reps ficam DENTRO da tabela da
+ * diretriz; o que muda por papel é onde na faixa: composto do começo mais
+ * pesado (menos reps), acessório e final mais leves (mais reps).
+ */
 function prescricao(
   objetivo: ObjetivoTreino,
   nivel: NivelTreino,
-  principal: boolean,
+  papel: Papel,
   porTempo: boolean,
 ): { series: number; reps: number; faixa: string; segundos: number; descanso: number } {
   const segundos = nivel === 'iniciante' ? 20 : nivel === 'intermediario' ? 30 : 45
+  const comTempo = (faixa: string) => (porTempo ? `${segundos} s` : faixa)
+  const principal = papel === 'principal'
   if (objetivo === 'hipertrofia') {
-    const series =
-      nivel === 'iniciante' ? (principal ? 3 : 2) : nivel === 'intermediario' ? 3 : principal ? 4 : 3
-    const reps = nivel === 'iniciante' ? 12 : nivel === 'intermediario' ? 10 : 8
-    const faixa = nivel === 'avancado' ? '6–12' : '8–12'
-    return { series, reps, faixa: porTempo ? `${segundos} s` : faixa, segundos, descanso: nivel === 'avancado' ? 120 : 90 }
+    const series = nivel === 'iniciante' ? (principal ? 3 : 2) : nivel === 'intermediario' ? 3 : principal ? 4 : 3
+    if (nivel === 'avancado') {
+      const reps = principal ? 6 : papel === 'acessorio' ? 10 : 12
+      return { series, reps, faixa: comTempo(principal ? '6–8' : papel === 'acessorio' ? '8–10' : '10–12'), segundos, descanso: principal ? 120 : 90 }
+    }
+    const reps = principal ? (nivel === 'iniciante' ? 10 : 8) : 12
+    return { series, reps, faixa: comTempo(principal ? '8–10' : '10–12'), segundos, descanso: papel === 'final' ? 60 : 90 }
   }
   if (objetivo === 'condicionamento') {
     return {
       series: nivel === 'iniciante' ? 2 : 3,
-      reps: nivel === 'iniciante' ? 15 : 12,
-      faixa: porTempo ? `${segundos} s` : '12–15',
+      reps: principal ? 12 : 15,
+      faixa: comTempo(principal ? '12–15' : '15'),
       segundos,
       descanso: 45,
     }
   }
-  return { series: 2, reps: 12, faixa: porTempo ? `${segundos} s` : '10–15', segundos, descanso: 60 }
+  return { series: 2, reps: principal ? 10 : papel === 'final' ? 15 : 12, faixa: comTempo(principal ? '10–12' : '12–15'), segundos, descanso: 60 }
 }
 
 // ---------------------------------------------------------------
 // Gerar
 // ---------------------------------------------------------------
 
+/** Até quantas opções "boas" de cada lugar a variante percorre. */
+const OPCOES_POR_VARIANTE = 3
+
+interface Escolha {
+  readonly sessao: number
+  readonly exercicio: ExercicioCatalogo
+  readonly slot: Slot
+  readonly papel: Papel
+  series: number
+}
+
 export function gerarPlanoTreino(p: ParametrosTreino, catalogo: readonly ExercicioCatalogo[]): PlanoTreinoGerado {
   const dias = ORDEM_SEMANA.filter((d) => p.dias.includes(d))
   const tipos = DIVISAO[dias.length] ?? DIVISAO[3] ?? []
   const n = exerciciosPorTempo(p.minutos, p.nivel)
+  const foco = [...new Set(p.foco ?? [])].slice(0, MAX_FOCO)
+  const variante = Math.max(0, Math.floor(p.variante ?? 0))
 
   const indice = new Map(catalogo.map((ex, i) => [ex.id, i]))
   const disponiveis = catalogo.filter(
     (ex) => ex.ambientes.includes(p.local) && RANK[ex.nivelMinimo] <= RANK[p.nivel],
   )
 
-  // Uso na semana: a sessão B pega exercícios diferentes da A quando dá.
+  // 1) Lugares da semana (foco + teto por grupo), depois os exercícios.
+  // Uso na semana: a sessão B pega diferentes da A quando dá.
+  const semana = planejarSemana(
+    dias.map((_, i) => tipos[i] ?? 'corpo_inteiro_a'),
+    n,
+    foco,
+    p.nivel,
+    (slot) => disponiveis.some((ex) => encaixa(ex, slot)),
+  )
   const usoSemana = new Map<string, number>()
-  const seriesPorGrupo = new Map<GrupoMuscular, number>()
-
-  const sessoes: SessaoPlano[] = dias.map((dia, i) => {
-    const tipo = tipos[i] ?? 'corpo_inteiro_a'
-    const slots = (MODELOS[tipo] ?? []).slice(0, n)
+  const escolhas: Escolha[] = []
+  dias.forEach((_, sessao) => {
     const usadosHoje = new Set<string>()
-    const itens: ItemPlano[] = []
-
-    slots.forEach((slotOriginal, posicao) => {
+    ;(semana[sessao] ?? []).forEach((slotOriginal, posicao) => {
+      // Exercício "quebra-galho" (farmer's walk, burpee...) só entra depois de repetir um bom.
       const candidatos = (slot: Slot) =>
         disponiveis
           .filter((ex) => encaixa(ex, slot) && !usadosHoje.has(ex.id))
           .sort(
             (a, b) =>
+              Number(BAIXA_PRIORIDADE.has(a.nomeBase)) - Number(BAIXA_PRIORIDADE.has(b.nomeBase)) ||
               (usoSemana.get(a.id) ?? 0) - (usoSemana.get(b.id) ?? 0) ||
               prioridade(a, slot, indice.get(a.id) ?? 0) - prioridade(b, slot, indice.get(b.id) ?? 0),
           )
-      let lista = candidatos(slotOriginal)
+      let slot = slotOriginal
+      let lista = candidatos(slot)
       const sub = SUBSTITUTO[slotOriginal]
-      if (lista.length === 0 && sub) lista = candidatos(sub)
-      const ex = lista[0]
+      if (lista.length === 0 && sub) {
+        slot = sub
+        lista = candidatos(sub)
+      }
+      // Variante: anda entre as melhores opções ainda não usadas na semana.
+      const frescos = lista.filter(
+        (ex) => !BAIXA_PRIORIDADE.has(ex.nomeBase) && (usoSemana.get(ex.id) ?? 0) === (usoSemana.get(lista[0]?.id ?? '') ?? 0),
+      )
+      const ex = frescos[variante % Math.max(Math.min(frescos.length, OPCOES_POR_VARIANTE), 1)] ?? lista[0]
       if (!ex) return
-
-      const porTempo = ex.medida === 'tempo'
-      const pr = prescricao(p.objetivo, p.nivel, posicao < 2, porTempo)
-
-      // Trava de volume semanal por grupo: corta séries, mas exercício com
-      // 1 série só não vale a pena — nesse caso pula.
-      const jaTem = seriesPorGrupo.get(ex.grupoMuscular) ?? 0
-      const cabe = TETO_SERIES_GRUPO[p.nivel] - jaTem
-      const series = Math.min(pr.series, cabe)
-      if (series < Math.min(2, pr.series)) return
-
       usadosHoje.add(ex.id)
       usoSemana.set(ex.id, (usoSemana.get(ex.id) ?? 0) + 1)
-      seriesPorGrupo.set(ex.grupoMuscular, jaTem + series)
-
-      itens.push({
-        exercicio: ex,
-        series: Array.from({ length: series }, () => ({
-          reps: porTempo ? null : pr.reps,
-          segundos: porTempo ? pr.segundos : null,
-        })),
-        faixa: pr.faixa,
-        descansoSeg: pr.descanso,
-      })
+      const papel: Papel = SLOTS_FINAIS.has(slot) ? 'final' : posicao < 2 ? 'principal' : 'acessorio'
+      escolhas.push({ sessao, exercicio: ex, slot, papel, series: prescricao(p.objetivo, p.nivel, papel, false).series })
     })
-
-    return { dia, tipo, itens }
   })
 
-  return { parametros: p, sessoes, versao: VERSAO_GERADOR }
+  // 2) Reparte o teto semanal de séries por grupo (trava do servidor) ANTES
+  // de montar: primeiro tira 1 série de quem tem mais de 2, de trás pra
+  // frente; só se ainda passar, sai o último exercício do grupo.
+  const fora = new Set<Escolha>()
+  for (const grupo of new Set(escolhas.map((e) => e.exercicio.grupoMuscular))) {
+    const doGrupo = () => escolhas.filter((e) => e.exercicio.grupoMuscular === grupo && !fora.has(e))
+    const total = () => doGrupo().reduce((s, e) => s + e.series, 0)
+    while (total() > TETO_SERIES_GRUPO[p.nivel]) {
+      const lista = doGrupo()
+      const cortavel = [...lista].reverse().find((e) => e.series > 2 && e.papel !== 'principal') ?? [...lista].reverse().find((e) => e.series > 2)
+      if (cortavel) cortavel.series -= 1
+      else {
+        const ultimo = [...lista].reverse().find((e) => e.papel !== 'principal') ?? lista[lista.length - 1]
+        if (!ultimo) break
+        fora.add(ultimo)
+      }
+    }
+  }
+
+  // 3) Monta as sessões.
+  const sessoes: SessaoPlano[] = dias.map((dia, sessao) => ({
+    dia,
+    tipo: tipos[sessao] ?? 'corpo_inteiro_a',
+    itens: escolhas
+      .filter((e) => e.sessao === sessao && !fora.has(e))
+      .map((e) => {
+        const porTempo = e.exercicio.medida === 'tempo'
+        const pr = prescricao(p.objetivo, p.nivel, e.papel, porTempo)
+        return {
+          exercicio: e.exercicio,
+          series: Array.from({ length: e.series }, () => ({
+            reps: porTempo ? null : pr.reps,
+            segundos: porTempo ? pr.segundos : null,
+          })),
+          faixa: pr.faixa,
+          descansoSeg: pr.descanso,
+        }
+      }),
+  }))
+
+  return { parametros: { ...p, foco, variante }, sessoes, versao: VERSAO_GERADOR }
 }
 
 // ---------------------------------------------------------------
@@ -299,6 +520,7 @@ export function paraEnvio(plano: PlanoTreinoGerado) {
       nivel: plano.parametros.nivel,
       dias: plano.sessoes.map((s) => s.dia),
       minutos: plano.parametros.minutos,
+      foco: plano.parametros.foco ?? [],
     },
     p_itens: plano.sessoes.flatMap((s) =>
       s.itens.map((it, ordem) => ({

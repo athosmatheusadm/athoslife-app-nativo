@@ -29,12 +29,14 @@ import {
   MAX_DIAS,
   validarParametros,
   validarPlanoTreino,
+  type FocoTreino,
   type ObjetivoTreino,
   type PlanoTreinoGerado,
 } from '@domain/rules/geradorTreino'
 import { dietaSoManter, treinoSoIniciante, type TriagemVigente } from '@domain/rules/triagemSaude'
 import { useI18n } from '@/i18n/I18nProvider'
 import { BalaoLife, Historico, Opcao, Opcoes, type Resposta } from './baloes'
+import { BonecoFoco } from './BonecoFoco'
 
 /**
  * Montar o plano de referência DENTRO do chat (decisão do dono, 29/09): o
@@ -58,7 +60,7 @@ function mensagemErroPlano(m: Mensagens, codigo: string): string {
 // Treino
 // ---------------------------------------------------------------
 
-type PassoTreino = 'objetivo' | 'nivel' | 'dias' | 'local' | 'minutos' | 'previa'
+type PassoTreino = 'objetivo' | 'nivel' | 'dias' | 'local' | 'foco' | 'minutos' | 'previa'
 
 export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado: (rota: string) => void; onMudou: () => void }) {
   const { m } = useI18n()
@@ -72,6 +74,9 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
   const [nivel, setNivel] = useState<NivelTreino>('iniciante')
   const [dias, setDias] = useState<DiaSemana[]>([])
   const [local, setLocal] = useState<LocalTreino>('academia')
+  const [foco, setFoco] = useState<FocoTreino[]>([])
+  const [minutos, setMinutos] = useState(60)
+  const [variante, setVariante] = useState(0)
   const [plano, setPlano] = useState<PlanoTreinoGerado | null>(null)
   const [aplicando, setAplicando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -90,9 +95,22 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
     setPasso(proximo)
   }
 
-  function gerar(minutos: number) {
-    setHist((h) => [...h, { pergunta: t.parametros.minutos, resposta: `${minutos} min` }])
-    const parametros = { objetivo, nivel, dias, local, minutos }
+  function gerar(min: number) {
+    setHist((h) => [...h, { pergunta: t.parametros.minutos, resposta: `${min} min` }])
+    setMinutos(min)
+    setVariante(0)
+    montar(min, 0)
+  }
+
+  /** "Ver outra opção": mesmas escolhas, outros exercícios. */
+  function outraOpcao() {
+    const proxima = variante + 1
+    setVariante(proxima)
+    montar(minutos, proxima)
+  }
+
+  function montar(min: number, v: number) {
+    const parametros = { objetivo, nivel, dias, local, minutos: min, foco, variante: v }
     const problema = validarParametros(parametros)
     if (problema || !catalogo) {
       setErro(t.parametros.erros[problema as keyof typeof t.parametros.erros] ?? t.parametros.erros.outro)
@@ -112,6 +130,8 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
   function recomecar() {
     setHist([])
     setDias([])
+    setFoco([])
+    setVariante(0)
     setPlano(null)
     setPasso('objetivo')
   }
@@ -229,12 +249,32 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
                 key={l}
                 onClick={() => {
                   setLocal(l)
-                  responder(t.parametros.local, rotuloLocal(l), 'minutos')
+                  responder(t.parametros.local, rotuloLocal(l), 'foco')
                 }}
               >
                 {rotuloLocal(l)}
               </Opcao>
             ))}
+          </Opcoes>
+        </>
+      )}
+
+      {passo === 'foco' && (
+        <>
+          <BalaoLife>
+            {t.parametros.foco}
+            <span className="mt-1 block text-micro text-content-low">{t.parametros.focoDica}</span>
+          </BalaoLife>
+          <BonecoFoco valor={foco} onChange={setFoco} />
+          <Opcoes>
+            <Opcao
+              ativa
+              onClick={() =>
+                responder(t.parametros.foco, foco.length ? foco.map((g) => m.treino.grupos[g]).join(', ') : t.parametros.focoNenhum, 'minutos')
+              }
+            >
+              {foco.length ? `${m.lifeMontar.pronto} ✓` : t.parametros.focoNenhum}
+            </Opcao>
           </Opcoes>
         </>
       )}
@@ -280,6 +320,7 @@ export function MontarTreinoNoLife(props: { triagem: TriagemVigente; onAplicado:
           </BalaoLife>
           <Opcoes>
             <Opcao onClick={recomecar}>{t.previa.ajustar}</Opcao>
+            <Opcao disabled={aplicando} onClick={outraOpcao}>{t.previa.outraOpcao}</Opcao>
             <Opcao ativa disabled={aplicando} onClick={() => void aplicar()}>
               {aplicando ? t.previa.aplicando : t.previa.aplicar}
             </Opcao>
@@ -387,6 +428,17 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
     setErro(null)
     setPlano(novo)
     setPasso('previa')
+  }
+
+  /** "Outro cardápio": mesmas metas e escolhas, outros alimentos. Pula a variante que sair da meta. */
+  function outroCardapio() {
+    if (!plano || !profile?.pesoAtual || !profile.alturaCm || !profile.idade) return
+    const corpo: CorpoDieta = { pesoKg: profile.pesoAtual, alturaCm: profile.alturaCm, idade: profile.idade, sexo }
+    const atual = plano.parametros.variante ?? 0
+    for (let passo = 1; passo <= 8; passo++) {
+      const novo = gerarPlanoDieta(corpo, { ...plano.parametros, variante: atual + passo }, base)
+      if (novo && cardapioDentroDaMeta(novo)) return setPlano(novo)
+    }
   }
 
   function recomecar() {
@@ -556,6 +608,7 @@ export function MontarDietaNoLife(props: { triagem: TriagemVigente; onAplicado: 
           plano={plano}
           aplicando={aplicando}
           onTrocar={(r, i) => setPlano(trocarItem(plano, r, i))}
+          onOutro={outroCardapio}
           onAplicar={() => void aplicar()}
           onAjustar={recomecar}
         />
@@ -641,6 +694,7 @@ function PreviaDieta(props: {
   plano: PlanoDietaGerado
   aplicando: boolean
   onTrocar: (refeicao: number, item: number) => void
+  onOutro: () => void
   onAplicar: () => void
   onAjustar: () => void
 }) {
@@ -699,6 +753,7 @@ function PreviaDieta(props: {
       </BalaoLife>
       <Opcoes>
         <Opcao onClick={props.onAjustar}>{t.previa.ajustar}</Opcao>
+        <Opcao disabled={props.aplicando} onClick={props.onOutro}>{t.previa.outroCardapio}</Opcao>
         <Opcao ativa disabled={props.aplicando} onClick={props.onAplicar}>
           {props.aplicando ? t.previa.aplicando : t.previa.aplicar}
         </Opcao>
