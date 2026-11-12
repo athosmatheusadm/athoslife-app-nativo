@@ -125,6 +125,7 @@ export const fr: Mensagens = {
     },
     checkin: {
       diaLeve: {
+        atalho: 'Si besoin, tu peux alléger la journée',
         tituloSono: 'Mauvaise nuit ? 😴',
         tituloCansaco: 'Grosse journée ? 😮‍💨',
         pergunta: 'Tu veux alléger la journée ? Juste aujourd’hui — ta série continue normalement.',

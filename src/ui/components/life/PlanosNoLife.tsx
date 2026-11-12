@@ -48,7 +48,14 @@ type Passo =
  * Roteiro do app, sem IA: não gasta mensagem da cota. Quem decide o que vale
  * é o servidor (avaliar_triagem + RPCs dos planos).
  */
-export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPreencher: (texto: string) => void; onIr: (rota: string) => void }) {
+export function PlanosNoLife(props: {
+  area: AreaPlano
+  /** A pessoa pediu o plano na conversa: pula o convite e já abre as perguntas. */
+  direto?: boolean
+  onMudou: () => void
+  onPreencher: (texto: string) => void
+  onIr: (rota: string) => void
+}) {
   const { m } = useI18n()
   const t = m.lifePlanos
   const navigate = useNavigate()
@@ -88,6 +95,18 @@ export function PlanosNoLife(props: { area: AreaPlano; onMudou: () => void; onPr
       vivo = false
     }
   }, [])
+
+  // Pedido feito na conversa ("monta um treino pra mim"): sem botão no meio —
+  // sem check de saúde ainda, começa por ele; com check liberado, já monta.
+  useEffect(() => {
+    if (!props.direto) return
+    if (passo.tipo === 'convite') comecarCheck()
+    else if (passo.tipo === 'pronto' && triagem && !combinado) {
+      const situacao = props.area === 'treino' ? situacaoTreino(triagem) : situacaoDieta(triagem)
+      if (situacao === 'liberado') setMontando((atual) => atual ?? props.area)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.direto, passo.tipo, triagem, combinado])
 
   // Cada passo novo desce a conversa até ele.
   useEffect(() => {

@@ -5558,3 +5558,45 @@ comparei: a única diferença eram as linhas do `handleRecipe`. A função subiu
 há `SMOKE_EMAIL`/`SMOKE_SENHA` nesta máquina (a senha da conta de QA se
 perdeu em 02/11). Falta: o dono mandar um "oi" no chat e montar uma receita
 no app; ou redefinir a senha da conta de QA pra rodar o smoke.
+
+## 2026-11-12 (9) — Um Life só: monta treino/dieta em qualquer chat; cansaço pergunta antes de sugerir
+
+**Relato do dono (teste do chat em 12/11, 16:07–16:10):**
+1. "Monta um treino de musculação para mim" no chat da Home → o Life mandou ir
+   ao Life do Treino e apertar "Montar treino". Ele não quer isso: "é um Life
+   e o Life faz tudo". **Isto revoga a decisão de 08/10 ("cada Life no seu
+   assunto, botões de plano só no Treino/Dieta").**
+2. Check-in "cansado" → "Poxa, esse cansaço com o dia pesando… sinto muito"
+   + cartão "Dia puxado? Quer deixar o dia mais leve?" logo abaixo. Soou
+   estranho e apressado: o Life não perguntou o motivo.
+
+**Causa:** as duas coisas eram regra escrita. `PROMPT`/`MOD_TREINO`/
+`FOCOS_LIFE` mandavam apontar o botão da outra tela; `REGRAS_CHECKIN` dizia
+"não faça pergunta" e o app mostrava a oferta do dia leve junto da resposta.
+
+**Mudou no servidor (`ai-proxy`, PRECISA DE DEPLOY — não feito):**
+- Recurso novo `montar` (o app novo manda em `recursos`). Com ele, a regra do
+  plano vira `REGRA_PLANO_AQUI`: o Life responde numa frase e põe
+  `[[MONTAR_TREINO]]`/`[[MONTAR_DIETA]]`, salvo como `[[montar:treino|dieta]]`;
+  `focoLife()` tira o "isso é com o Life do Treino/Dieta". APK antigo (sem o
+  recurso) continua com a regra antiga e nunca recebe a marca.
+- `REGRA_CANSACO` (vale pra todos): cansaço dito no chat → uma pergunta de
+  amigo antes de sugerir descanso, pausa ou treino leve.
+- `REGRAS_CHECKIN` (vale pra todos): sentimento pesado ou de pouca energia →
+  reconhece sem drama e termina com UMA pergunta sobre o motivo.
+
+**Mudou no app:**
+- `separarCartoes` devolve `montar`; `LifeChatSheet` mostra o `PlanosNoLife`
+  da área pedida em qualquer chat quando a última resposta do Life traz a
+  marca; `PlanosNoLife` ganhou `direto` (pula o convite: sem check de saúde
+  começa por ele, com check liberado já abre as perguntas). Check de saúde,
+  plano pago e travas dos geradores: iguais.
+- `OfertaDiaLeve`: virou um atalho discreto ("Se precisar, dá pra deixar o dia
+  de hoje mais leve") DEPOIS do "Conversar com o Life"; o cartão só abre se a
+  pessoa tocar. Texto novo `home.checkin.diaLeve.atalho` nos 5 idiomas.
+
+**Validado:** typecheck, build, sintaxe da função (esbuild) e ordem das
+constantes. **NÃO validado:** nenhuma resposta real do Life (sem deploy e sem
+conta de teste com senha); nada visto no celular. Ficou como estava: receita
+completa continua saindo no "Monte sua receita com o Life" (o chat dá a ideia
+e o botão).

@@ -126,6 +126,7 @@ export const hi: Mensagens = {
     },
     checkin: {
       diaLeve: {
+        atalho: 'ज़रूरत हो तो आज का दिन हल्का किया जा सकता है',
         tituloSono: 'नींद अच्छी नहीं हुई? 😴',
         tituloCansaco: 'भारी दिन? 😮‍💨',
         pergunta: 'आज का दिन हल्का करें? सिर्फ़ आज — आपकी स्ट्रीक सामान्य चलती रहेगी।',

@@ -119,6 +119,7 @@ export const es: Mensagens = {
     },
     checkin: {
       diaLeve: {
+        atalho: 'Si lo necesitas, puedes aligerar el día de hoy',
         tituloSono: '¿Mala noche? 😴',
         tituloCansaco: '¿Día pesado? 😮‍💨',
         pergunta: '¿Quieres hacer el día más liviano? Solo hoy — la racha cuenta normal.',

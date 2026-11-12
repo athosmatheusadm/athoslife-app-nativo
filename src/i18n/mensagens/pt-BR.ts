@@ -129,6 +129,7 @@ export const ptBR = {
     /** Check-in v3 do Life (palavra de sentimento; vocabulário em domain/rules/checkinLife). */
     checkin: {
       diaLeve: {
+        atalho: 'Se precisar, dá pra deixar o dia de hoje mais leve',
         tituloSono: 'Noite ruim? 😴',
         tituloCansaco: 'Dia puxado? 😮‍💨',
         pergunta: 'Quer deixar o dia mais leve? Só hoje — a sequência conta normal.',

@@ -89,6 +89,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   useFecharNoVoltar(true, props.onFechar)
   const inputRef = useRef<HTMLInputElement>(null)
   const [historico, setHistorico] = useState<MensagemChat[]>([])
+  const ultima = historico[historico.length - 1]
+  const pedidoPlano = ultima?.autor === 'life' ? separarCartoes(ultima.texto).montar : null
   // 'carregando' evita o "Oi…" piscar antes do histórico chegar.
   const [estadoHist, setEstadoHist] = useState<'carregando' | 'ok' | 'erro'>('carregando')
   const [texto, setTexto] = useState(props.rascunho ?? '')
@@ -401,7 +403,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
           )}
 
           {historico.map((msg, i) => {
-            const c = msg.autor === 'life' ? separarCartoes(msg.texto) : { texto: msg.texto, receitas: [], chef: false, comparacoes: [] }
+            const c = msg.autor === 'life' ? separarCartoes(msg.texto) : { texto: msg.texto, receitas: [], chef: false, comparacoes: [], montar: null }
             return (
               <Fragment key={i}>
                 {c.texto && (
@@ -536,9 +538,26 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             <p className="text-micro text-content-low">{conviteMemoria === 'aceito' ? tc.memoria.aceito : tc.memoria.recusado}</p>
           )}
 
+          {/* Pedido de plano em qualquer chat (dono, 12/11: é um Life só e ele
+              monta aqui): a última resposta do Life trouxe a marca de montar. */}
+          {pedidoPlano && pedidoPlano !== foco && (
+            <PlanosNoLife
+              key={`pedido-${historico.length}`}
+              area={pedidoPlano}
+              direto
+              onMudou={() => fimRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })}
+              onPreencher={(t) => {
+                setTexto(t)
+                inputRef.current?.focus()
+              }}
+              onIr={ir}
+            />
+          )}
+
           {(foco === 'treino' || foco === 'dieta') && (
             <PlanosNoLife
               area={foco}
+              direto={pedidoPlano === foco}
               onMudou={() => fimRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })}
               onPreencher={(t) => {
                 setTexto(t)

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { ativarDiaLeve, diaLeveHoje } from '@data/diaLeve'
-import type { Etiqueta } from '@domain/rules/checkinLife'
 import { dataLocalISO } from '@domain/rules/datas'
 import { metaPassosLeve, type TreinoDiaLeve } from '@domain/rules/diaLeve'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -23,7 +22,7 @@ type Etapa = 'pergunta' | 'treino' | 'pronto'
  * dia leve (regras em domain/rules/diaLeve). Dois passos: aceitar e escolher
  * o treino (leve ou caminhada). "Manter como está" some até amanhã.
  */
-export function OfertaDiaLeve({ etiquetas, metaPassos }: { etiquetas: readonly Etiqueta[]; metaPassos: number }) {
+export function OfertaDiaLeve({ metaPassos }: { metaPassos: number }) {
   const { m, idioma } = useI18n()
   const t = m.home.checkin.diaLeve
   const [etapa, setEtapa] = useState<Etapa | null>(null)
@@ -62,25 +61,20 @@ export function OfertaDiaLeve({ etiquetas, metaPassos }: { etiquetas: readonly E
     }
   }
 
-  const titulo = etiquetas.includes('sono') ? t.tituloSono : t.tituloCansaco
   const opcao = 'min-h-12 w-full rounded-xl border border-surface-4 px-3 py-2 text-left active:bg-content-hi/5 disabled:opacity-50'
+
+  // Dono, 12/11: a oferta não pode chegar antes de o Life entender o cansaço.
+  // Fica um atalho discreto; o cartão só abre se a pessoa tocar.
+  if (etapa === 'pergunta') {
+    return (
+      <button type="button" onClick={() => setEtapa('treino')} className="mt-1 block min-h-11 text-left text-sm text-content-low underline">
+        {t.atalho}
+      </button>
+    )
+  }
 
   return (
     <div className="mb-1.5 mt-1 rounded-xl border border-accent-water/30 bg-accent-water/10 p-3">
-      {etapa === 'pergunta' && (
-        <>
-          <p className="text-sm font-semibold text-content-hi">{titulo}</p>
-          <p className="mt-0.5 text-sm text-content-mid">{t.pergunta}</p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
-            <button onClick={() => setEtapa('treino')} className="min-h-11 rounded-pill bg-brand px-4 text-sm font-bold text-brand-ink active:scale-[0.97]">
-              {t.sim}
-            </button>
-            <button onClick={recusar} className="min-h-11 rounded-pill border border-surface-4 px-4 text-sm font-semibold text-content-mid">
-              {t.nao}
-            </button>
-          </div>
-        </>
-      )}
       {etapa === 'treino' && (
         <>
           <p className="mb-2 text-sm font-semibold text-content-hi">{t.eOTreino}</p>
@@ -94,6 +88,9 @@ export function OfertaDiaLeve({ etiquetas, metaPassos }: { etiquetas: readonly E
               <span className="block text-micro text-content-low">{t.caminhadaSub}</span>
             </button>
           </div>
+          <button type="button" onClick={recusar} className="mt-1 min-h-11 text-sm font-semibold text-content-mid">
+            {t.nao}
+          </button>
         </>
       )}
       {etapa === 'pronto' && (

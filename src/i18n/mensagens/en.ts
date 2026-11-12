@@ -119,6 +119,7 @@ export const en: Mensagens = {
     },
     checkin: {
       diaLeve: {
+        atalho: 'If you need it, you can make today lighter',
         tituloSono: 'Rough night? 😴',
         tituloCansaco: 'Tough day? 😮‍💨',
         pergunta: 'Want to make today lighter? Just today — your streak counts as usual.',
