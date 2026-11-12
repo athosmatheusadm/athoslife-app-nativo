@@ -5489,3 +5489,19 @@ Dono pediu o cardápio por dia da semana e mais diversificado.
 semana) — precisa da frase explícita do dono ou regra de permissão; testar
 a função da semana com uma conta de teste depois de aplicada; ver tudo no
 APK; token do GitHub; proteína do vegetariano.
+
+### 2026-11-12 (6) — migrações aplicadas (dono autorizou: "autorizo")
+
+- **`athoslife_busca_por_palavras` APLICADA.** Conferido no banco: "arroz
+  cozido" → Arroz branco cozido; "ovos fritos" → Ovo frito; "frango
+  grelhado" → Frango peito grelhado; "feijão cozido" → Feijão carioca
+  cozido; "arroz" e "coca" iguais a antes. Vale pro chat e pra Dieta sem APK.
+- **`athoslife_plano_dieta_semana` APLICADA.** `_plano_dieta_dia` testada
+  direto (devolve o dia com nomes e macros; anon e authenticated sem acesso)
+  e `aplicar_plano_dieta_semana` com execute só pra authenticated.
+  **Falta o teste de ponta a ponta** (conta paga com check de saúde
+  aplicando uma semana pelo app) — só dá no APK novo.
+
+**Pendências:** token do GitHub → push das branches `ajustes-teste-11-11` e
+`planos-v2`, PR #7 → `main`, APK; no APK: aplicar uma semana e conferir a
+Dieta dia a dia; boneco de foco; treino sem séries/reps.
