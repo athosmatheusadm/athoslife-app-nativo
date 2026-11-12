@@ -5522,3 +5522,31 @@ tem como pagar um profissional de Educação Física agora. Aprovou o meio-termo
 - Testado: 12.168 combinações, 0 recusadas; typecheck e build ok. Não visto
   na tela. Avisei o dono que o risco jurídico não é zero (prescrição é do
   profissional de Educação Física) e que não sou advogado.
+
+## 2026-11-12 (8) — Receita do Life: prato desejado, "Outra ideia" sem repetir
+
+**Relato do dono:** pôs ingredientes de estrogonofe, o Life montou "arroz
+cremoso" e depois "se recusou" a montar outra com os mesmos ingredientes.
+
+**O que os registros mostram:** as duas chamadas `recipe` dele (12/11, 11:12 e
+11:13) voltaram `ok`, cota em 2 de 10. Não houve erro nem bloqueio. Causa:
+1. não existia onde dizer o prato que a pessoa quer — a IA só via a lista de
+   ingredientes e escolhia qualquer coisa;
+2. "Outra ideia" mandava exatamente o mesmo pedido, sem contar o que já tinha
+   sido sugerido, então voltava o mesmo prato;
+3. na tela da receita não havia como voltar pra mexer nos ingredientes.
+
+**Mudou:**
+- `LifeChefScreen`: campo opcional "Tá com vontade de algum prato?"; "Outra
+  ideia" manda os títulos já sugeridos (até 5); botão "Mudar os ingredientes"
+  volta pra pergunta com a lista intacta. Textos nos 5 idiomas.
+- `recipeAi` / `cozinhaService` / `ContextoReceita`: campos `prato_desejado` e
+  `ja_sugeridas`.
+- `ai-proxy` (`handleRecipe`): lê os dois campos; a instrução manda reconhecer
+  prato clássico pelos ingredientes, seguir o prato desejado, não exigir usar
+  tudo e nunca repetir prato já sugerido.
+
+**Validado:** typecheck e build. **NÃO validado:** a resposta da IA — a
+`ai-proxy` **precisa de deploy** (não foi feito; espera o ok do dono) e depois
+`node scripts/smoke-life.mjs`. Sem o deploy o app novo funciona igual ao de
+hoje (o servidor antigo ignora os campos novos). Nada visto no celular.
