@@ -5664,3 +5664,34 @@ ela nada aparece no app. As capas vão dentro do APK: no APK atual as
 receitas novas aparecem (depois da migração) com o desenho da categoria no
 lugar da foto. Receitas não foram testadas na cozinha de verdade; macros são
 conta de tabela.
+
+## 2026-11-12 (12) — Mais 13 receitas salgadas com capa; branches no GitHub
+
+**Pedido do dono:** gostou do primeiro lote, pediu mais 13 com foco em
+salgados, com capa, e passou um token novo do GitHub.
+
+**Feito:**
+- `db/athoslife_receitas_salgadas_migration.sql` (gerada por
+  `scripts/receitas/receitas_salgadas_2026_11_12.py`): Nuggets de Frango
+  Crocantes, Escondidinho de Batata Doce com Carne, Macarrão Cremoso com
+  Frango e Brócolis, Arroz de Forno Cremoso, Tacos de Carne com Guacamole,
+  Coxinha de Batata Doce Assada, Batata Recheada com Frango, Omelete Cremoso
+  de Queijo e Tomate (grátis), Hambúrguer de Grão-de-Bico (vegano), Arroz
+  Frito Colorido com Tofu (vegano), Sanduíche Natural de Frango Cremoso
+  (grátis), Pastel de Frigideira de Carne, Sopa Cremosa de Abóbora com Frango
+  (grátis). 5 idiomas, `ordem` 38–50, mesmas categorias. Destaques: nuggets,
+  macarrão, tacos, coxinha.
+- 13 capas em `public/receitas/` (800×800 webp, 61–119 KB), ~3,25 créditos
+  do Higgsfield. Folha de conferência na Downloads do dono
+  (`ATHOSlife-capas-receitas-salgadas.jpg`). Total na pasta: 50 capas.
+- **GitHub:** `ajustes-teste-11-11` e `planos-v2` enviadas. O token ficou só
+  na memória da sessão (GIT_ASKPASS), nunca na URL do remoto nem em arquivo.
+
+**Barrado pelo modo automático (precisa da frase do dono):**
+- as duas migrações de receitas ("Production Deploy") — sem elas as 25
+  receitas novas não aparecem no app;
+- o merge do PR #7 na `main` ("Merge Without Review"), mesmo com o ok antigo.
+
+**Atenção:** o alarme "Life respondendo (teste de fumaça)" do GitHub está
+falhando na `main` — os secrets `SMOKE_EMAIL`/`SMOKE_SENHA` do repositório
+precisam da conta de QA com a senha nova (Settings → Secrets → Actions).
