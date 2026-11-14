@@ -5965,3 +5965,18 @@ verdade:**
 3. Cadastrar os Secrets do smoke no GitHub (o dono, em Settings → Secrets).
 4. Merge dos PRs #7 e #8 na `main` só depois do item 1.
 5. Ligar `antecipar` quando houver dado e depois da amostra.
+
+## 2026-11-14 (7) — Fim da sessão: chat publicado segue SEM teste
+
+- `life-push` v6: a rodada das 21h15 (UTC) respondeu 200, sem erro.
+- `ai-proxy` v67: **nenhuma conversa de verdade depois do deploy.** A senha
+  que o dono passou foi recusada na conta de QA e nas duas contas admin
+  (uma tentativa em cada); a troca de senha da conta admin combinada antes
+  não chegou a ser feita no banco.
+- **Primeira coisa da próxima sessão:** o dono manda um "oi" pro Life no
+  celular (conferir em `ai_audit_logs`: status, modelo, `tokens_raciocinio`)
+  ou passa uma senha que funcione pra rodar `scripts/smoke-life.mjs`. Se o
+  chat do pago falhar: Secret `PENSAR_PAGO=low`.
+- Depois: amostra do `life-push`, Secrets do smoke no GitHub, merge dos PRs
+  #7 e #8 na `main`, ligar `antecipar`. O dono precisa revogar o token do
+  GitHub e trocar a senha que colou na conversa.
