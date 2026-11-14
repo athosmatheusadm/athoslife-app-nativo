@@ -49,6 +49,11 @@ type Fixos = {
   marco: (n: number) => string[]
   pesado: string[]
   sumiu: (nome: string | null) => string[]
+  // Antecipar (14/11). Tela bloqueada: "treino" pode; ânimo e hábito, nunca.
+  treinoVespera: string[]
+  treinoHoje: string[]
+  diaDificil: string[]
+  diaRisco: string[]
 }
 
 const FIXOS: Record<Idioma, Fixos> = {
@@ -61,6 +66,10 @@ const FIXOS: Record<Idioma, Fixos> = {
     marco: (n) => [`${n} dias firme! Isso é muita coisa 💚`, `${n} dias seguidos. Passando só pra te dizer: que orgulho!`],
     pesado: ['Os últimos dias pareceram pesados. Sem pressa: se quiser conversar, tô aqui.', 'Passando pra saber de você. Se precisar desabafar, tô por aqui 💚'],
     sumiu: (n) => [`${n ? `${n}, s` : 'S'}enti sua falta por aqui! Bora recomeçar leve?`, `${n ? `Oi, ${n}! ` : 'Oi! '}Faz uns dias, hein. Como você tá?`],
+    treinoVespera: ['Amanhã é dia de treino. Já deixa a roupa separada? 👟', 'Amanhã cedo tem treino. Dorme bem que eu te espero lá 💚'],
+    treinoHoje: ['Daqui a pouco é a sua hora de treinar. Bora? 💪', 'Tá chegando a hora do treino. Eu já tô me aquecendo por aqui 🦎'],
+    diaDificil: ['Hoje vai no seu ritmo, combinado? Tô por aqui 🌿', 'Passando pra te dar bom dia. Hoje é um passo de cada vez 💚'],
+    diaRisco: ['E aí, já tem plano pra hoje? Me conta 🌿', 'Passando pra saber: o que vai ter de bom hoje?'],
   },
   en: {
     eventoHoje: (t) => [`Today's the day: ${minuscula(t)}! Rooting for you 🍀`, `It's here: ${minuscula(t)}. You've got this!`],
@@ -71,6 +80,10 @@ const FIXOS: Record<Idioma, Fixos> = {
     marco: (n) => [`${n} days strong! That's a lot 💚`, `${n} days in a row. Just stopping by to say: so proud!`],
     pesado: ['The last few days seemed heavy. No rush: if you want to talk, I\'m here.', 'Checking in on you. If you need to vent, I\'m around 💚'],
     sumiu: (n) => [`${n ? `${n}, I` : 'I'} missed you around here! Shall we start light again?`, `${n ? `Hi, ${n}! ` : 'Hi! '}It's been a few days. How are you?`],
+    treinoVespera: ['Workout day tomorrow. Lay out your gear tonight? 👟', 'Early workout tomorrow. Sleep well, see you there 💚'],
+    treinoHoje: ['Almost your workout time. Ready? 💪', 'Workout time is coming up. I\'m already warming up over here 🦎'],
+    diaDificil: ['Take today at your own pace, okay? I\'m around 🌿', 'Just stopping by to say good morning. One step at a time today 💚'],
+    diaRisco: ['So, any plans for today? Tell me 🌿', 'Checking in: what\'s the good part of today going to be?'],
   },
   es: {
     eventoHoje: (t) => [`¡Hoy es el día: ${minuscula(t)}! Te mando buena vibra 🍀`, `Llegó el día: ${minuscula(t)}. ¡Te va a ir bien!`],
@@ -81,6 +94,10 @@ const FIXOS: Record<Idioma, Fixos> = {
     marco: (n) => [`¡${n} días firme! Es muchísimo 💚`, `${n} días seguidos. Solo paso a decirte: ¡qué orgullo!`],
     pesado: ['Los últimos días parecieron pesados. Sin prisa: si quieres hablar, aquí estoy.', 'Paso a saber de ti. Si necesitas desahogarte, aquí estoy 💚'],
     sumiu: (n) => [`¡${n ? `${n}, t` : 'T'}e extrañé por aquí! ¿Empezamos suave otra vez?`, `${n ? `¡Hola, ${n}! ` : '¡Hola! '}Pasaron unos días. ¿Cómo estás?`],
+    treinoVespera: ['Mañana toca entrenar. ¿Dejas la ropa lista hoy? 👟', 'Mañana temprano hay entrenamiento. Duerme bien, allá te espero 💚'],
+    treinoHoje: ['Ya casi es tu hora de entrenar. ¿Vamos? 💪', 'Se acerca la hora del entrenamiento. Yo ya estoy calentando 🦎'],
+    diaDificil: ['Hoy ve a tu ritmo, ¿vale? Aquí estoy 🌿', 'Paso a darte los buenos días. Hoy, un paso a la vez 💚'],
+    diaRisco: ['¿Y qué, ya tienes plan para hoy? Cuéntame 🌿', 'Paso a preguntar: ¿qué va a tener de bueno hoy?'],
   },
   fr: {
     eventoHoje: (t) => [`C’est le grand jour : ${minuscula(t)} ! Je croise les doigts 🍀`, `On y est : ${minuscula(t)}. Tu vas assurer !`],
@@ -91,6 +108,10 @@ const FIXOS: Record<Idioma, Fixos> = {
     marco: (n) => [`${n} jours que tu tiens bon ! C’est énorme 💚`, `${n} jours d’affilée. Je passe juste te dire : bravo !`],
     pesado: ['Les derniers jours avaient l’air lourds. Aucune pression : si tu veux parler, je suis là.', 'Je passe prendre de tes nouvelles. Besoin de vider ton sac ? Je suis là 💚'],
     sumiu: (n) => [`${n ? `${n}, tu` : 'Tu'} m’as manqué ! On reprend en douceur ?`, `${n ? `Coucou ${n} ! ` : 'Coucou ! '}Ça fait quelques jours. Comment tu vas ?`],
+    treinoVespera: ['Demain, c’est jour d’entraînement. Tu prépares tes affaires ce soir ? 👟', 'Entraînement tôt demain. Dors bien, je t’attends là-bas 💚'],
+    treinoHoje: ['C’est bientôt ton heure d’entraînement. On y va ? 💪', 'L’heure de l’entraînement approche. Moi, je m’échauffe déjà 🦎'],
+    diaDificil: ['Aujourd’hui, vas-y à ton rythme, d’accord ? Je suis là 🌿', 'Je passe te dire bonjour. Aujourd’hui, un pas à la fois 💚'],
+    diaRisco: ['Alors, un programme pour aujourd’hui ? Raconte 🌿', 'Je passe demander : qu’est-ce qu’il y aura de bien aujourd’hui ?'],
   },
   hi: {
     eventoHoje: (t) => [`आज वह दिन है: ${t}! आपके लिए दुआ कर रहा हूँ 🍀`, `आ गया दिन: ${t}। आप कर लेंगे!`],
@@ -101,6 +122,10 @@ const FIXOS: Record<Idioma, Fixos> = {
     marco: (n) => [`${n} दिन से डटे हुए हैं! यह बहुत बड़ी बात है 💚`, `लगातार ${n} दिन। बस इतना कहना था: बहुत बढ़िया!`],
     pesado: ['पिछले कुछ दिन भारी लगे। कोई जल्दी नहीं: बात करनी हो तो मैं यहीं हूँ।', 'आपका हाल पूछने आया। मन हल्का करना हो तो मैं हूँ 💚'],
     sumiu: (n) => [`${n ? `${n}, आपकी` : 'आपकी'} याद आई! फिर से हल्के से शुरू करें?`, `${n ? `हाय ${n}! ` : 'हाय! '}कुछ दिन हो गए। आप कैसे हैं?`],
+    treinoVespera: ['कल वर्कआउट का दिन है। आज ही कपड़े तैयार रख लें? 👟', 'कल सुबह वर्कआउट है। अच्छी नींद लीजिए, वहीं मिलते हैं 💚'],
+    treinoHoje: ['थोड़ी देर में आपके वर्कआउट का समय है। चलें? 💪', 'वर्कआउट का समय आ रहा है। मैं तो वार्म-अप शुरू कर चुका 🦎'],
+    diaDificil: ['आज अपनी रफ़्तार से चलिए, ठीक है? मैं यहीं हूँ 🌿', 'बस सुप्रभात कहने आया। आज एक-एक कदम 💚'],
+    diaRisco: ['तो आज का क्या प्लान है? बताइए 🌿', 'बस पूछने आया: आज क्या अच्छा होने वाला है?'],
   },
 }
 
@@ -118,6 +143,10 @@ export function textoFixo(dec: Decisao, idioma: Idioma, nome: string | null, hoj
     case 'sumiu': return escolher(f.sumiu(nome), semente)
     // Horário de risco: papo leve, sem citar nada (mesma régua do alô da Fase 5).
     case 'risco': return papoLeve(hoje, hora, idioma)
+    case 'treino_vespera': return escolher(f.treinoVespera, semente)
+    case 'treino_hoje': return escolher(f.treinoHoje, semente)
+    case 'dia_dificil': return escolher(f.diaDificil, semente)
+    case 'dia_risco': return escolher(f.diaRisco, semente)
   }
 }
 
@@ -140,6 +169,10 @@ function explicarMotivo(dec: Decisao): string {
     case 'pesado': return 'Os últimos check-ins da pessoa foram de dias pesados. Só mostre que você está ali, sem conselho, sem pergunta invasiva.'
     case 'sumiu': return `A pessoa não abre o app há ${d?.dias} dias. Diga que sentiu falta, sem culpa, sem cobrar nada, convidando a voltar leve.`
     case 'risco': return 'Está chegando um horário em que a pessoa costuma ter vontade de um hábito que quer largar. Só puxe um papo leve sobre o dia dela. NÃO cite hábito, vontade, nem nada relacionado.'
+    case 'treino_vespera': return 'Amanhã cedo é um dia em que a pessoa costuma treinar. Dê um empurrãozinho leve pra ela se preparar hoje (separar a roupa, dormir bem), como amigo que vai junto. Sem cobrar.'
+    case 'treino_hoje': return 'Daqui a pouco é o horário em que a pessoa costuma treinar, e hoje ela ainda não treinou. Chame de leve, como amigo que vai junto. Sem cobrar: se ela não for, tudo bem.'
+    case 'dia_dificil': return 'Hoje é um dia da semana em que o ânimo da pessoa costuma ser mais baixo. NÃO diga isso nem cite o dia como difícil. Só dê um bom-dia leve e mostre que você está por perto, sem conselho e sem piada.'
+    case 'dia_risco': return 'Hoje é um dia da semana em que a pessoa costuma ter mais vontade de um hábito que quer largar. NÃO cite hábito, vontade, nem nada relacionado. Puxe um papo leve sobre os planos dela pra hoje, sem piada sobre o assunto.'
   }
 }
 
@@ -159,7 +192,9 @@ export function pedidoIA(dec: Decisao, p: {
   periodo: string
 }): { sistema: string; mensagem: string } {
   const emojiRegra = EMOJI[Math.floor(Math.random() * EMOJI.length)]!
-  const sistema = `Você é o Life, o companheiro do app ATHOSlife: amigo, leve, caloroso, nunca chato. Escreva UMA notificação push curta pra uma pessoa.
+  const sistema = `Você é o Life, o camaleão companheiro do app ATHOSlife: amigo, leve, caloroso e bem-humorado, nunca chato. Escreva UMA notificação push curta pra uma pessoa.
+
+Você tem personalidade: quando o motivo é leve (treino, marco, evento bom, saudade), pode fazer UMA brincadeira curta, inclusive com ser camaleão. Quando o motivo é delicado (dias pesados, evento delicado, dia difícil, horário ou dia de risco), só carinho, sem piada.
 
 Regras (todas obrigatórias):
 - Em ${IDIOMA_NOME[p.idioma]}, até 110 caracteres, 1 ou 2 frases.

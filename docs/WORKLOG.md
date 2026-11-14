@@ -5883,3 +5883,53 @@ presta.
 GitHub). No teste depois do deploy, conferir: registro com comentário;
 "o que você não consegue fazer?"; e se aparece `estilo.jeito_de_falar` em
 `life_memorias`. Rodar `scripts/estresse-life` por causa das regras mexidas.
+
+## 2026-11-14 (5) — Pacote do dono: padrões cruzados, personalidade e antecipação
+
+**Origem:** zip `life_athoslife_entrega.zip`, feito pelo dono em outra sessão
+a partir do que estava publicado (`ai-proxy` v66 = commit 98245c8,
+`life-push` v5). Conferido contra o código atual antes de aplicar: copiar a
+pasta por cima desfaria os 4 commits de hoje, então entrou pelo patch.
+Branch `life-padroes-antecipar` (saiu da `planos-v2`).
+
+**Feito:**
+- `db/athoslife_life_padroes_cruzados_migration.sql`: tabela
+  `life_padroes_salvos`, `life_padroes_calcular` (mínimos menores, costumes,
+  cruzamentos de tropeço só com consentimento de hábitos), `life_padroes`
+  com a mesma assinatura (agora grava e esconde o que a pessoa negou),
+  `responder_padrao` e gatilho que apaga ao desligar o consentimento.
+- `db/athoslife_life_antecipar_migration.sql`: `life_antecipar` e o
+  interruptor `life_config.antecipar` (começa em '0').
+- `ai-proxy`: bloco PERSONALIDADE no `PROMPT_BASE` (encaixado à mão, antes
+  do "Formato:" novo), até 3 lembranças quando pedem sugestão/plano,
+  instrução de antecipar no `blocoPadroes`, extração guarda costumes e o
+  jeito da pessoa (apelido, brincadeira x seriedade).
+- `life-push`: motivos `treino_vespera`, `treino_hoje`, `dia_dificil`,
+  `dia_risco`, com frases prontas nos 5 idiomas.
+- **Ficou de fora, por decisão do dono:** a lista fixa de gírias
+  (`expressoesDaPessoa`). O jeito de falar vem só da memória
+  (`estilo.jeito_de_falar`, commit 8ea0a8a).
+- `regras.test.ts`: base ganhou `diaSemana`/`antecipar` (sem isso não
+  passava na checagem de tipos) e 8 testes novos dos motivos e do
+  `lerAntecipar`.
+
+**Validado:** `deno test` de `life-push` + `ai-proxy` com checagem de tipos
+(163 passam), rodado numa cópia fora do repositório (dentro dele o deno
+tropeça no `node_modules`). Tabelas e colunas dos dois SQL conferidas no
+banco (só leitura). `npm run typecheck` e `npm run build` ok (o app não
+mudou). **Nada aplicado no banco, nada publicado.**
+
+**Pendências:**
+- Ordem: 1) as duas migrações (padrões primeiro); 2) deploy de `ai-proxy`
+  **e** `life-push` (a segunda importa `ai-proxy/life.ts`), com
+  `--no-verify-jwt` na `life-push`; 3) `node scripts/smoke-life.mjs` e
+  conversa de verdade; 4) `life-push` com `{"amostra": true}` pra ler as
+  frases dos motivos novos; 5) só então ligar `antecipar`.
+- Falta dado pra antecipar: em 14/11 o app tinha 1 treino no histórico,
+  19 check-ins (6 pessoas) e 9 tropeços.
+- `dia_dificil` vira "tendência" com 8 check-ins (2 no dia da semana):
+  avaliar subir o mínimo antes de ligar o interruptor.
+- App: falta a tela de confirmar/negar padrão (`responder_padrao`,
+  lista em `life_padroes_salvos`), com textos em todos os idiomas.
+- Seguem as pendências dos blocos (2)–(4): teste dos commits de hoje com a
+  IA, `scripts/estresse-life`, merge dos PRs #7 e #8.

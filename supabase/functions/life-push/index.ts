@@ -12,7 +12,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { dadosAbertura, memoriasParaContexto, type Idioma } from '../ai-proxy/life.ts'
 import { chamarIA } from '../ai-proxy/ia.ts'
-import { decidirPush, minutosDe, type DadosPush, type Decisao, type Momento } from './regras.ts'
+import { decidirPush, lerAntecipar, minutosDe, type DadosPush, type Decisao, type Momento } from './regras.ts'
 import { fraseValida, lerJsonTexto, pedidoIA, termosEscondidos, textoFixo, TITULO } from './textos.ts'
 import { enviarPush, lerConta } from './fcm.ts'
 
@@ -64,7 +64,10 @@ async function montarDados(sb: Sb, p: Perfil, agora: Date): Promise<{ dados: Dad
   const idioma = idiomaDe(p.idioma)
   const { hoje, minuto } = relogioLocal(fuso, agora)
   const desde14 = new Date(agora.getTime() - 14 * 86_400_000).toISOString()
-  const [ab, envios, conversa, sensivel, riscos] = await Promise.all([
+  const [antecipar, ab, envios, conversa, sensivel, riscos] = await Promise.all([
+    // Antecipar (14/11): o banco devolve só padrão firme e não negado; desligado ou sem a migração = null.
+    sb.rpc('life_antecipar', { p_user_id: p.id, p_hoje: hoje })
+      .then(({ data, error }: { data: unknown; error: unknown }) => (error ? null : lerAntecipar(data)), () => null),
     dadosAbertura(sb, p.id, hoje, idioma),
     sb.from('life_push_envios').select('motivo, criado_em, aberto_em').eq('user_id', p.id).gte('criado_em', desde14)
       .order('criado_em', { ascending: false }).limit(40),
@@ -83,6 +86,7 @@ async function montarDados(sb: Sb, p: Perfil, agora: Date): Promise<{ dados: Dad
   const dados: DadosPush = {
     agora,
     hoje,
+    diaSemana: new Date(`${hoje}T12:00:00Z`).getUTCDay(),
     minutoLocal: minuto,
     acordar: minutosDe(p.horario_acordar) ?? 7 * 60,
     dormir: minutosDe(p.horario_dormir) ?? 23 * 60,
@@ -99,6 +103,7 @@ async function montarDados(sb: Sb, p: Perfil, agora: Date): Promise<{ dados: Dad
       .flatMap((r) => { const m = minutosDe(r.horario_risco); return m === null ? [] : [{ nome: r.nome, minuto: m }] }),
     agradavelUltimosDias: ab.agradavelUltimosDias,
     ultimaAtividade,
+    antecipar,
   }
   return { dados, idioma, fuso }
 }
@@ -182,6 +187,10 @@ const CASOS: { dec: Decisao; idioma: Idioma; nome: string | null; memorias: stri
   { dec: { motivo: 'sumiu', chave: 'g' }, idioma: 'pt-BR', nome: 'Bruno', memorias: ['Torce pro Grêmio'], periodo: 'à tarde' },
   { dec: { motivo: 'sumiu', chave: 'h' }, idioma: 'en', nome: 'Emma', memorias: ['Loves hiking'], periodo: 'à tarde' },
   { dec: { motivo: 'evento_amanha', chave: 'i', detalhe: { texto: 'Viaje a Lisboa' } }, idioma: 'es', nome: 'Sofía', memorias: [], periodo: 'à noite' },
+  { dec: { motivo: 'treino_vespera', chave: 'j' }, idioma: 'pt-BR', nome: 'Diego', memorias: ['Treina antes do trabalho', 'Tem um gato chamado Frajola'], periodo: 'à noite' },
+  { dec: { motivo: 'treino_hoje', chave: 'k' }, idioma: 'pt-BR', nome: 'Bia', memorias: ['Gosta de ouvir pagode no treino'], periodo: 'à tarde' },
+  { dec: { motivo: 'dia_dificil', chave: 'l' }, idioma: 'pt-BR', nome: 'Léo', memorias: ['Trabalha em turnos'], periodo: 'de manhã' },
+  { dec: { motivo: 'dia_risco', chave: 'm' }, idioma: 'pt-BR', nome: 'Nina', memorias: ['Adora cozinhar no fim de semana'], periodo: 'à noite' },
 ]
 
 async function amostras() {
