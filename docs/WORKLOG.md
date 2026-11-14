@@ -5933,3 +5933,35 @@ mudou). **Nada aplicado no banco, nada publicado.**
   lista em `life_padroes_salvos`), com textos em todos os idiomas.
 - Seguem as pendências dos blocos (2)–(4): teste dos commits de hoje com a
   IA, `scripts/estresse-life`, merge dos PRs #7 e #8.
+
+## 2026-11-14 (6) — Migrações do pacote aplicadas, ai-proxy v67 e life-push v6 no ar; smoke NÃO rodou
+
+**Autorizado pelo dono na conversa:** PR #9, publicar `ai-proxy` e `life-push`.
+
+**Feito:**
+- Migrações `athoslife_life_padroes_cruzados` e `athoslife_life_antecipar`
+  aplicadas. Conferido: tabela `life_padroes_salvos` existe, as 5 funções
+  existem, só `responder_padrao` é aberta a `authenticated`,
+  `life_config.antecipar = 0`. Com os dados de hoje: 16 padrões para 5
+  pessoas; `life_antecipar` devolve null pra todo mundo (desligado).
+- Deploy: `ai-proxy` v67 (leva os 4 commits de 14/11 + o pacote) e
+  `life-push` v6 (`--no-verify-jwt`).
+- PR #9 entrou na `planos-v2` (merge f505156).
+
+**NÃO validado — o chat publicado ainda não foi testado com conversa de
+verdade:**
+- O smoke pelo GitHub Actions (`smoke-life.yml`) falha com "faltam
+  variáveis": os Secrets `SMOKE_EMAIL`/`SMOKE_SENHA`/`VITE_SUPABASE_*` não
+  estão cadastrados no repositório (a rodada de 3 em 3 h também falha).
+- Sem a senha da conta de QA na conversa não deu pra rodar local; criar
+  conta nova de teste foi barrado pelo modo automático.
+
+**Pendências (nesta ordem):**
+1. Senha da conta de QA → `node scripts/smoke-life.mjs` + as conversas dos
+   blocos (2)–(4) (pra baixo, o que você não faz, registro com comentário,
+   treino de bíceps) + conferir `tokens_raciocinio` em `ai_audit_logs`.
+   Se o Luna recusar o raciocínio médio: Secret `PENSAR_PAGO=low`.
+2. `life-push` com `{"amostra": true}` (precisa do `x-relogio`).
+3. Cadastrar os Secrets do smoke no GitHub (o dono, em Settings → Secrets).
+4. Merge dos PRs #7 e #8 na `main` só depois do item 1.
+5. Ligar `antecipar` quando houver dado e depois da amostra.
