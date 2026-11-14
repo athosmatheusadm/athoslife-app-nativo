@@ -5851,3 +5851,35 @@ AGENTS, incidente de 02/11). Se o Luna recusar `medium`, voltar com o Secret
 dono passa a ganhar lembranças. Limpeza das regras do prompt (há regra
 repetida e regra que ficou velha, ex.: "um Life por tela" x "um Life só")
 fica para depois do deploy, com o teste de estresse (`scripts/estresse-life`).
+
+## 2026-11-14 (4) — Life com voz de gente: registro natural, regras limpas, aprende o jeito de falar
+
+**Pedido do dono:** "pode ajustar as regras para entregar o melhor"; só de
+conversar o Life já tinha que aprender o jeito dele de falar; e a resposta
+do registro ("Achei isso para o café da manhã de hoje. Confere as
+quantidades e toca em Registrar.") é "nada natural" — só o aviso de lactose
+presta.
+
+**Feito (só `supabase/functions/ai-proxy/`):**
+- **Registro de refeição:** a frase fixa saiu. A IA manda junto do registro
+  um comentário curto de amigo (`comentario`, ex.: "Café reforçado, hein!"),
+  que só passa se não tiver número, caloria nem "registrei"; depois vem uma
+  de 3 falas variadas por idioma (5 idiomas). O aviso de restrição ficou
+  igual. Sem chamada extra de IA.
+- **Regras (limpeza pontual, não reescrita):** bloco VOZ novo (reagir como
+  amigo, nada de frase de atendimento, responder "o que você faz" começando
+  pelo que faz, entregar o mais perto do pedido); a regra de treino do NUNCA
+  virou uma só, dizendo o que pode; saiu o "diga que o Life do Treino/Dieta
+  ajuda melhor" (valia até no app antigo); saiu o exemplo que mandava a
+  pessoa pra tela de Dieta; no app novo a Cozinha não fala mais "no chat da
+  Dieta".
+- **Memória:** a extração guarda/atualiza `estilo.jeito_de_falar` a partir
+  do texto da pessoa (gírias, abreviações, tom), com confiança que sobe a
+  cada conversa.
+
+**Validado:** `deno test` (144 passam, 1 novo). Não testado com a IA.
+
+**Pendências:** as mesmas (deploy, smoke, conversa de verdade, token do
+GitHub). No teste depois do deploy, conferir: registro com comentário;
+"o que você não consegue fazer?"; e se aparece `estilo.jeito_de_falar` em
+`life_memorias`. Rodar `scripts/estresse-life` por causa das regras mexidas.

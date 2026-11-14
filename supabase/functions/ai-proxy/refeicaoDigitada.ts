@@ -196,38 +196,77 @@ export function refeicaoPelaHora(h: number): 'cafe' | 'almoco' | 'lanche' | 'jan
   return 'jantar'
 }
 
+/**
+ * Comentário de amigo que a IA manda junto do registro ("Café reforçado,
+ * hein!"). Só passa se for curto e sem número, caloria ou "registrei" — quem
+ * confirma o registro é o app.
+ */
+export function limparComentario(v: unknown): string {
+  const t = typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : ''
+  if (t.length < 4 || t.length > 120) return ''
+  if (/\d|kcal|calori|registr|anot|salv|logged|saved|guard|\[\[/i.test(t)) return ''
+  return /[.!?…]$/.test(t) ? t : `${t}.`
+}
+
+/** Dono, 14/11: "Achei isso para o café da manhã" era resposta de robô. Agora varia e vem com o comentário. */
+export function falaRegistro(idioma: Idioma, onde: string, comentario: string, sorteio = Math.random()): string {
+  const opcoes = TXT_REGISTRO[idioma].confira
+  const base = opcoes[Math.min(Math.floor(sorteio * opcoes.length), opcoes.length - 1)](onde)
+  return comentario ? `${comentario} ${base}` : base
+}
+
 export const TXT_REGISTRO: Record<Idioma, {
-  confira: (onde: string) => string
+  confira: ((onde: string) => string)[]
   faltando: (nomes: string) => string
   nada: string
   restricao: (itens: string, r: string) => string
 }> = {
   'pt-BR': {
-    confira: (onde) => `Achei isso para ${onde}. Confere as quantidades e toca em Registrar.`,
+    confira: [
+      (onde) => `Montei ${onde} aqui embaixo — dá uma olhada nas quantidades e toca em Registrar.`,
+      (onde) => `Tá aqui ${onde}: confere as quantidades e é só tocar em Registrar.`,
+      (onde) => `Deixei ${onde} pronto pra você conferir. Se as quantidades baterem, toca em Registrar.`,
+    ],
     faltando: (nomes) => `Não achei ${nomes} na base; dá pra buscar na Dieta (lá eu também estimo).`,
     nada: 'Não achei esses alimentos na base. Tenta com outro nome, ou busca na Dieta (lá eu também estimo).',
     restricao: (itens, r) => `Atenção: ${itens} pode ter ${r}, que está nas suas restrições.`,
   },
   en: {
-    confira: (onde) => `Here's what I found for ${onde}. Check the amounts and tap Log.`,
+    confira: [
+      (onde) => `I put ${onde} together below — have a look at the amounts and tap Log.`,
+      (onde) => `Here's ${onde}: check the amounts and just tap Log.`,
+      (onde) => `I left ${onde} ready for you to check. If the amounts look right, tap Log.`,
+    ],
     faltando: (nomes) => `I couldn't find ${nomes}; you can search it in Diet (I can estimate it there).`,
     nada: "I couldn't find these foods. Try another name, or search in Diet (I can estimate it there).",
     restricao: (itens, r) => `Heads up: ${itens} may contain ${r}, which is in your restrictions.`,
   },
   es: {
-    confira: (onde) => `Esto encontré para ${onde}. Revisa las cantidades y toca Registrar.`,
+    confira: [
+      (onde) => `Armé ${onde} aquí abajo — échale un ojo a las cantidades y toca Registrar.`,
+      (onde) => `Aquí está ${onde}: revisa las cantidades y solo toca Registrar.`,
+      (onde) => `Dejé ${onde} listo para que lo revises. Si las cantidades cuadran, toca Registrar.`,
+    ],
     faltando: (nomes) => `No encontré ${nomes}; puedes buscarlo en Dieta (ahí también lo estimo).`,
     nada: 'No encontré esos alimentos. Prueba con otro nombre o búscalo en Dieta (ahí también lo estimo).',
     restricao: (itens, r) => `Ojo: ${itens} puede tener ${r}, que está en tus restricciones.`,
   },
   fr: {
-    confira: (onde) => `Voilà ce que j’ai trouvé pour ${onde}. Vérifie les quantités et touche Noter.`,
+    confira: [
+      (onde) => `J’ai préparé ${onde} juste en dessous — jette un œil aux quantités et touche Noter.`,
+      (onde) => `Voilà ${onde} : vérifie les quantités et il suffit de toucher Noter.`,
+      (onde) => `${onde.charAt(0).toUpperCase() + onde.slice(1)} est prêt à vérifier. Si les quantités sont bonnes, touche Noter.`,
+    ],
     faltando: (nomes) => `Je n’ai pas trouvé ${nomes} ; tu peux le chercher dans Alimentation (là, je l’estime aussi).`,
     nada: 'Je n’ai pas trouvé ces aliments. Essaie un autre nom, ou cherche dans Alimentation (là, je l’estime aussi).',
     restricao: (itens, r) => `Attention : ${itens} peut contenir ${r}, qui fait partie de tes restrictions.`,
   },
   hi: {
-    confira: (onde) => `${onde} के लिए यह मिला। मात्रा जाँचें और "दर्ज करें" दबाएँ।`,
+    confira: [
+      (onde) => `${onde} नीचे तैयार है — मात्रा देख लीजिए और "दर्ज करें" दबाइए।`,
+      (onde) => `यह रहा ${onde}: मात्रा जाँचिए और बस "दर्ज करें" दबाइए।`,
+      (onde) => `${onde} जाँचने के लिए तैयार है। मात्रा ठीक लगे तो "दर्ज करें" दबाइए।`,
+    ],
     faltando: (nomes) => `${nomes} लिस्ट में नहीं मिला; डाइट में खोज सकते हैं (वहाँ मैं अंदाज़ा भी लगाता हूँ)।`,
     nada: 'ये खाने लिस्ट में नहीं मिले। दूसरे नाम से कोशिश करें, या डाइट में खोजें (वहाँ मैं अंदाज़ा भी लगाता हूँ)।',
     restricao: (itens, r) => `ध्यान दें: ${itens} में ${r} हो सकता है, जो आपके परहेज़ में है।`,

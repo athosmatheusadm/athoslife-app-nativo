@@ -75,3 +75,19 @@ Deno.test('pedeIdeia: pedido de sugestão sem ter comido', () => {
 Deno.test('pedeIdeia: contou o que comeu ou pediu pra registrar não é ideia', () => {
   for (const m of ['almocei arroz e feijão', 'comi 2 ovos, me dá uma ideia pra janta', 'registra uma banana', 'pode colocar no meu lanche de hoje', 'I had a sandwich']) assertEquals(pedeIdeia(m), false, m)
 })
+
+Deno.test('fala do registro: comentário de amigo entra, o que parece robô ou número sai', async () => {
+  const { falaRegistro, limparComentario } = await import('./refeicaoDigitada.ts')
+  assertEquals(limparComentario('Café reforçado, hein!'), 'Café reforçado, hein!')
+  assertEquals(limparComentario('Clássico que não falha'), 'Clássico que não falha.')
+  assertEquals(limparComentario('Registrei seu café'), '')
+  assertEquals(limparComentario('Uns 450 kcal aí'), '')
+  assertEquals(limparComentario(''), '')
+  assertEquals(limparComentario(null), '')
+  for (const idioma of ['pt-BR', 'en', 'es', 'fr', 'hi'] as const) {
+    const falas = [0, 0.4, 0.99].map((s) => falaRegistro(idioma, 'X', '', s))
+    assertEquals(new Set(falas).size, 3)
+  }
+  const f = falaRegistro('pt-BR', 'o café da manhã de hoje', 'Café reforçado, hein!', 0)
+  assertEquals(true, f.startsWith('Café reforçado, hein! ') && f.includes('o café da manhã de hoje') && !f.includes('Achei isso'))
+})
