@@ -50,8 +50,8 @@ export interface PedidoIA {
   /** Teto da resposta visível; o raciocínio, quando ligado, ganha folga à parte. */
   maxSaida: number
   json?: boolean
-  /** Raciocínio baixo em vez de nenhum (pago, fora do modo economia). */
-  pensar?: boolean
+  /** Raciocínio: true = baixo; 'low' | 'medium' | 'high' escolhe o nível; vazio = nenhum. */
+  pensar?: boolean | NivelPensar
 }
 
 export interface ChamadaFerramenta {
@@ -82,6 +82,11 @@ export type Provedor = (
 ) => Promise<ResultadoIA>
 
 export const FOLGA_RACIOCINIO = 1024
+export type NivelPensar = 'low' | 'medium' | 'high'
+/** Nível pedido → o que vai pro modelo ('none' desliga). */
+export function nivelPensar(p: boolean | NivelPensar | undefined): NivelPensar | 'none' {
+  return p === true ? 'low' : p === 'low' || p === 'medium' || p === 'high' ? p : 'none'
+}
 
 export function falha(modelo: string): ResultadoIA {
   return { ok: false, texto: '', chamadas: [], tokens: 0, custo: 0, bloqueado: false, modelo }

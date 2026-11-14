@@ -5812,3 +5812,42 @@ verdade: precisa do deploy.
   não mudou: 280 grátis / 400 pago).
 - "H2OH Limoneto" e outros sabores não estão no catálogo (só Limão).
 - Se o dono quiser 2–3 opções de receita de uma vez, é mudança de tela.
+
+## 2026-11-14 (3) — Raciocínio mais alto e memória maior no Life
+
+**Pedido do dono:** o Luna é inteligente, é só ativar o raciocínio; e a
+memória tem que melhorar — "de um dia pro outro o Life tem que se moldar e
+não esquecer do usuário".
+
+**O que o banco mostrou:**
+- O raciocínio já estava ligado no pago, no nível baixo (~100 tokens por
+  mensagem na conta do dono); no grátis, desligado.
+- **A conta do dono (vip, memória aceita desde 18/10) tem ZERO lembranças.**
+  A extração roda a cada mensagem (19 chamadas em 10 dias) e devolve sempre
+  "nada a guardar": a regra só guardava o que a pessoa CONTA de si, e ele
+  só faz pedidos. No app inteiro são 20 lembranças, de 3 contas.
+- Os resumos do dia existem e entram no contexto (11, 12 e 13/11).
+
+**Feito (só `supabase/functions/ai-proxy/`):**
+- Raciocínio: pago baixo → **médio**; grátis nenhum → **baixo**. Modo
+  economia (pago acima de 40 mensagens/dia ou do teto do mês) continua
+  desligando. Ajustável por Secret sem republicar: `PENSAR_PAGO` e
+  `PENSAR_GRATIS` (`none | low | medium | high`).
+- Conversa: mensagens inteiras lidas 4→6 (grátis) e 6→10 (pago); fatos
+  lembrados 8→12 e 20→30.
+- Extração de memória: agora guarda a preferência por trás do pedido
+  ("gosta de doce depois do almoço", "prefere treino curto e focado"),
+  guarda como estilo a reclamação sobre o jeito do Life, lê 4 mensagens
+  anteriores em vez de 2 e usa raciocínio baixo. As proibições (saúde,
+  diagnóstico, dados pessoais) não mudaram.
+
+**Validado:** `deno test` (143 passam). **Mudou config de raciocínio do
+modelo: depois do deploy é obrigatório conversar de verdade** (regra do
+AGENTS, incidente de 02/11). Se o Luna recusar `medium`, voltar com o Secret
+`PENSAR_PAGO=low`.
+
+**Pendências:** deploy + smoke + conferir em `ai_audit_logs` os
+`tokens_raciocinio` e a latência; conferir em `life_memorias` se a conta do
+dono passa a ganhar lembranças. Limpeza das regras do prompt (há regra
+repetida e regra que ficou velha, ex.: "um Life por tela" x "um Life só")
+fica para depois do deploy, com o teste de estresse (`scripts/estresse-life`).

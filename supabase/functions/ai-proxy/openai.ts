@@ -4,7 +4,7 @@
 // Sem temperature: modelo de raciocínio não aceita.
 // ================================================================
 import {
-  custo, falha, FOLGA_RACIOCINIO, normalizarMensagens,
+  custo, falha, FOLGA_RACIOCINIO, nivelPensar, normalizarMensagens,
   type ChamadaFerramenta, type PedidoIA, type ResultadoIA, type UsoTokens,
 } from './ia.ts'
 import { lerSSE } from './stream.ts'
@@ -48,7 +48,7 @@ export function corpoOpenAI(p: PedidoIA, modelo: string, stream: boolean): Recor
     input,
     store: false,
     stream,
-    reasoning: { effort: p.pensar ? 'low' : 'none' },
+    reasoning: { effort: nivelPensar(p.pensar) },
     max_output_tokens: p.maxSaida + (p.pensar ? FOLGA_RACIOCINIO : 0),
     ...(ferramentas
       ? {

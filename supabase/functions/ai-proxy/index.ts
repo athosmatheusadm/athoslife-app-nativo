@@ -59,7 +59,7 @@ import { repoSupabase } from './scanner/repositorio.ts'
 import { linhaNdjson, novoRascunho } from './stream.ts'
 import {
   chamarIA, type ChamadaFerramenta, type Ferramenta, MODELO, MODELO_RESERVA, pausarPrincipal, principalPausado, type ResultadoIA,
-  somarUso, type UsoTokens,
+  somarUso, type NivelPensar, type UsoTokens,
 } from './ia.ts'
 import { blocoResumos, garantirResumos, lerResumos } from './resumos.ts'
 import { ACEITES_GRATIS, EXTRAS_DESABAFO, ehAceiteCurto, extrairHumor, humorFinal, lifeOfereceu, linhaCota, REGRA_HUMOR } from './cota.ts'
@@ -87,8 +87,16 @@ const env = (k: string, padrao = '') => Deno.env.get(k) ?? padrao
  * fundador R$ 25, anual R$ 290. Ajustável por Secret, sem republicar.
  */
 interface PerfilCusto { literais: number; antigas: number; fatos: number; saida: number; extrairAte: number }
-const PERFIL_GRATIS: PerfilCusto = { literais: 4, antigas: 10, fatos: 8, saida: 280, extrairAte: 10 }
-const PERFIL_PAGO: PerfilCusto = { literais: 6, antigas: 24, fatos: 20, saida: 400, extrairAte: 40 }
+// 14/11 (dono: "o Life não pode esquecer da pessoa"): mais mensagens inteiras
+// da conversa e mais fatos lembrados nos dois planos.
+const PERFIL_GRATIS: PerfilCusto = { literais: 6, antigas: 14, fatos: 12, saida: 280, extrairAte: 10 }
+const PERFIL_PAGO: PerfilCusto = { literais: 10, antigas: 20, fatos: 30, saida: 400, extrairAte: 40 }
+// Raciocínio do modelo (14/11): pago sobe de baixo pra médio e o grátis ganha
+// o baixo. Ajustável por Secret, sem republicar: none | low | medium | high.
+const lerNivel = (v: string, padrao: NivelPensar | false): NivelPensar | false =>
+  v === 'low' || v === 'medium' || v === 'high' ? v : v === 'none' ? false : padrao
+const PENSAR_PAGO = lerNivel(env('PENSAR_PAGO', ''), 'medium')
+const PENSAR_GRATIS = lerNivel(env('PENSAR_GRATIS', ''), 'low')
 const PENSAR_MSGS_DIA = Number(env('PENSAR_MSGS_DIA', '40'))
 const TETO_MES_USD = Number(env('TETO_MES_USD', '1.0'))
 const SUPABASE_URL = env('SUPABASE_URL')
@@ -1471,7 +1479,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const rascunho = aoRascunho
     ? novoRascunho((t) => violaPrescricao(t) || pareceReceitaCompleta(t), aoRascunho)
     : null
-  const pensar = pago && !economia
+  const pensar = economia ? false : pago ? PENSAR_PAGO : PENSAR_GRATIS
   // Disjuntor: o principal falhou há pouco → direto na reserva, sem esperar estourar o tempo.
   let g = await chamarIA(
     { fixo, sistema, mensagens: conversa, ferramentas, maxSaida: perfil.saida, pensar },
@@ -1574,7 +1582,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 
   // Memória em segundo plano: a pessoa não espera por isso.
   if (consentimento === true && status !== 'fora_tema' && valeExtrair(mensagem) && cota.usados <= perfil.extrairAte) {
-    const anteriores = historico.slice(-2).map((m) => ({ autor: m.autor === 'life' ? 'life' as const : 'usuario' as const, texto: m.texto }))
+    const anteriores = historico.slice(-4).map((m) => ({ autor: m.autor === 'life' ? 'life' as const : 'usuario' as const, texto: m.texto }))
     emSegundoPlano(extrairMemoria(sb, userId, loc.fuso, hojeLocal, [
       ...anteriores, { autor: 'usuario', texto: mensagem }, { autor: 'life', texto: resposta },
     ]))
@@ -1651,6 +1659,7 @@ async function extrairMemoria(
     mensagens: [{ papel: 'usuario', texto: promptExtracao({ agora: linhaAgora(fuso), guardadas, troca }) }],
     maxSaida: 700,
     json: true,
+    pensar: 'low',
   }, { timeoutMs: 20_000 })
   if (!g.ok) {
     await auditar(sb, userId, 'memoria', 'error', g)

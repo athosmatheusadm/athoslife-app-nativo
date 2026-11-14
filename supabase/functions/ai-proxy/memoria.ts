@@ -90,6 +90,9 @@ REGRAS:
 - Saúde só como hábito, sem diagnóstico: "evita lactose" (não "intolerante"), "dorme 6 a 7 horas" (não "insônia"). Sentimento só como evento, contexto ou fragmento, em palavras gerais.
 - NUNCA guarde: diagnóstico, remédio, saúde mental, conteúdo de crise, sexualidade, religião, política, dinheiro, documentos, endereço, telefone, e-mail, ou o que ela pediu pra não guardar.
 - Não guarde o que o LIFE disse nem coisa do momento ("tô com fome agora"), nem o que já está guardado igual.
+- O que ela PEDE também conta quem ela é: guarde a preferência por trás do pedido, como fato (importância 1 ou 2), quando valer pra próxima vez — ex.: "Gosta de um doce depois do almoço", "Prefere treino curto, focado numa parte do corpo", "Costuma almoçar arroz, feijão e carne", "Treina em casa". Não guarde o pedido em si ("pediu uma receita").
+- Reclamou do jeito do Life responder ou pediu que ele aja diferente: guarde como estilo com "confianca" 1 — ex.: "Quer que o Life faça o que foi pedido na hora, sem mandar pra outra tela", "Gosta de resposta com mais conteúdo quando pede ajuda".
+- Na dúvida entre guardar e não guardar algo permitido que ajuda a conhecer a pessoa, guarde com importância 1: é melhor o Life lembrar do que perguntar de novo.
 - IMPORTÂNCIA (vale pra todo nível, e decide o que o Life lembra daqui a meses):
   3 = marcante: família e pessoas queridas, viagem, conquista (prova passada, promoção, meta batida), data especial (aniversário, casamento, formatura, nascimento), perda ou luto, mudança grande (casa, emprego, cidade). Evento 3 vira história e volta quando o assunto aparecer ou no aniversário da data.
   2 = relevante: compromisso com data (prova, entrevista, consulta de rotina, competição), fato útil do dia a dia.
