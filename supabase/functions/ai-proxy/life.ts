@@ -188,7 +188,7 @@ export function estiloDaPessoa(mensagens: string[]): string | null {
 
 export function blocoPadroes(linhas: string[]): string {
   if (!linhas.length) return ''
-  return `\n\nPADRÕES DOS ÚLTIMOS 28 DIAS (calculados pelo app; use no máximo um, só se ajudar a conversa, como observação de amigo e nunca como diagnóstico ou cobrança):\n${linhas.map((l) => `- ${l}`).join('\n')}`
+  return `\n\nPADRÕES DOS ÚLTIMOS 28 DIAS (calculados pelo app; use no máximo um por resposta, só se ajudar a conversa, como observação de amigo e nunca como diagnóstico ou cobrança. Linha marcada como "Primeiro sinal" vira pergunta leve, nunca afirmação. Padrão de tropeço: com delicadeza, sem a palavra "recaída" e nunca como previsão ("hoje você vai..."). ANTECIPE: se um padrão mostra o que ela vai precisar agora — é o dia e a hora em que costuma treinar, está chegando o período que costuma ser difícil, falta a refeição que ela quase não registra —, ofereça antes de ela pedir, numa frase):\n${linhas.map((l) => `- ${l}`).join('\n')}`
 }
 
 // ================================================================

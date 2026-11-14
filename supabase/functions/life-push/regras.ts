@@ -9,7 +9,10 @@
 // e o motivo que a pessoa ignorou 3 vezes seguidas descansa 14 dias.
 // ================================================================
 
-export type MotivoPush = 'evento_hoje' | 'evento_amanha' | 'evento_ontem' | 'marco' | 'pesado' | 'risco' | 'sumiu'
+export type MotivoPush =
+  | 'evento_hoje' | 'evento_amanha' | 'evento_ontem' | 'marco' | 'pesado' | 'risco' | 'sumiu'
+  // Antecipar (14/11): padrões firmes que o banco calcula (life_antecipar).
+  | 'treino_vespera' | 'treino_hoje' | 'dia_dificil' | 'dia_risco'
 export type Momento = 'manha' | 'meio_dia' | 'noite'
 
 export const MAX_POR_DIA = 2
@@ -28,9 +31,43 @@ export interface EnvioPassado {
   abertoEm: string | null
 }
 
+/** O que dá pra antecipar hoje (life_antecipar). null = desligado ou sem padrão firme. */
+export interface Antecipar {
+  /** Dias da semana (0 = domingo) e minuto típico em que a pessoa treina. */
+  treino: { dias: number[]; minuto: number; treinouHoje: boolean } | null
+  /** Dia da semana em que o ânimo costuma ser mais baixo. */
+  diaDificil: number | null
+  /** Dia da semana (e período) em que os tropeços se concentram. Só com consentimento de hábitos. */
+  diaRisco: { dow: number; periodo: 'manha' | 'tarde' | 'noite' | null } | null
+}
+
+/** Confere o que o banco devolveu; qualquer coisa torta vira null (não antecipa). */
+export function lerAntecipar(bruto: unknown): Antecipar | null {
+  if (!bruto || typeof bruto !== 'object') return null
+  const r = bruto as Record<string, unknown>
+  const dow = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 6 ? v : null)
+  let treino: Antecipar['treino'] = null
+  const t = r.treino as Record<string, unknown> | undefined
+  if (t && Array.isArray(t.dias) && typeof t.minuto === 'number' && t.minuto >= 0 && t.minuto < 1440) {
+    const dias = t.dias.map(dow).filter((x): x is number => x !== null)
+    if (dias.length) treino = { dias, minuto: Math.round(t.minuto), treinouHoje: t.treinou_hoje === true }
+  }
+  let diaRisco: Antecipar['diaRisco'] = null
+  const k = r.dia_risco as Record<string, unknown> | undefined
+  const kd = k ? dow(k.dow) : null
+  if (kd !== null) {
+    const p = k!.periodo
+    diaRisco = { dow: kd, periodo: p === 'manha' || p === 'tarde' || p === 'noite' ? p : null }
+  }
+  const diaDificil = dow(r.dia_dificil)
+  return treino || diaRisco || diaDificil !== null ? { treino, diaDificil, diaRisco } : null
+}
+
 export interface DadosPush {
   agora: Date
   hoje: string
+  /** Dia da semana de `hoje` no fuso da pessoa (0 = domingo). */
+  diaSemana: number
   /** Minutos desde a meia-noite, no fuso da pessoa. */
   minutoLocal: number
   acordar: number
@@ -49,6 +86,7 @@ export interface DadosPush {
   riscos: readonly { nome: string; minuto: number }[]
   agradavelUltimosDias: readonly { data: string; agradavel: number }[]
   ultimaAtividade: string | null
+  antecipar: Antecipar | null
 }
 
 export interface Decisao {
@@ -156,7 +194,37 @@ export function decidirPush(d: DadosPush): Decisao | null {
     return { motivo: 'pesado', chave: 'pesado' }
   }
 
-  // 5. Sumiu: 2+ dias sem registrar nada. Volta a chamar a cada 3 dias, e
+  // 5. Antecipar: o Life chega ANTES, com base no que a pessoa costuma fazer.
+  // Só pra quem está por aqui (quem sumiu recebe o "sumiu", não um empurrão de
+  // treino). Cada janela tem 45+ min, pra o relógio de 15 min sempre pegar.
+  const a = d.antecipar
+  if (a && d.ultimaAtividade && diffDias(d.ultimaAtividade, d.hoje) <= 1) {
+    const t = a.treino
+    // Treina à tarde/noite e hoje é dia: chama 2 h a 45 min antes da hora típica.
+    if (t && !t.treinouHoje && t.minuto >= 12 * 60 && t.dias.includes(d.diaSemana)
+        && entre(min, t.minuto - 120, t.minuto - 45) && livre('treino_hoje', 'treino_hoje', 3)) {
+      return { motivo: 'treino_hoje', chave: 'treino_hoje' }
+    }
+    // Treina de manhã e amanhã é dia: avisa na véspera, à noite.
+    if (t && t.minuto < 12 * 60 && t.dias.includes((d.diaSemana + 1) % 7)
+        && entre(min, 19 * 60 + 30, 21 * 60) && livre('treino_vespera', 'treino_vespera', 3)) {
+      return { motivo: 'treino_vespera', chave: 'treino_vespera' }
+    }
+    // Dia da semana em que os tropeços se concentram. Se o hábito já tem horário
+    // de risco aprendido, quem cuida é o motivo "risco" (acima) — não dobra.
+    if (a.diaRisco && a.diaRisco.dow === d.diaSemana && d.riscos.length === 0) {
+      const [de, ate] = a.diaRisco.periodo === 'manha' ? [d.acordar + 30, d.acordar + 120]
+        : a.diaRisco.periodo === 'tarde' ? [11 * 60 + 30, 13 * 60]
+        : [17 * 60, 18 * 60 + 30]
+      if (entre(min, de, ate) && livre('dia_risco', 'dia_risco', 6)) return { motivo: 'dia_risco', chave: 'dia_risco' }
+    }
+    // Dia da semana em que o ânimo costuma ser mais baixo: um bom-dia leve.
+    if (a.diaDificil === d.diaSemana && entre(min, d.acordar + 60, d.acordar + 180) && livre('dia_dificil', 'dia_dificil', 6)) {
+      return { motivo: 'dia_dificil', chave: 'dia_dificil' }
+    }
+  }
+
+  // 6. Sumiu: 2+ dias sem registrar nada. Volta a chamar a cada 3 dias, e
   // depois de 3 chamadas sem resposta descansa (motivoDescansando).
   if (d.ultimaAtividade) {
     const dias = diffDias(d.ultimaAtividade, d.hoje)
