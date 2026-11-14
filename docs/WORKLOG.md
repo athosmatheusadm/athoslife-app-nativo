@@ -5702,3 +5702,66 @@ as novas, todas com en/es/fr/hi). APK de teste da `planos-v2` construído
 (run 43310284243) e copiado pra Downloads do dono. PR #8 aberto. **O merge
 do PR #7/#8 na `main` continua barrado pelo modo automático** ("Merge Without
 Review"): o dono faz pelo site do GitHub ou libera a regra de permissão.
+
+## 2026-11-14 — Life atende o pedido específico (treino de uma parte do corpo, doce)
+
+**Reclamação do dono (testou em 13 e 14/11):** na Home o Life mandou ele pro
+"Life da tela de Treino"; pediu "um treino simples de bíceps, rápido" e o Life
+disse que não conseguia (e o botão montou o plano convencional); pediu um
+docinho e teve que insistir três vezes.
+
+**O que a conversa dele no banco mostrou:**
+- O celular falou com o servidor como **app antigo**: nenhuma mensagem dele
+  chegou com o recurso `montar`. Conferido dentro dos dois APKs da pasta
+  Downloads: o de 11/11 manda `["programar","comparar"]`, o de 12/11 manda
+  também `"montar"`. Ou seja, o celular está com o APK de 11/11 — por isso
+  o "use o Life na tela de Treino" (regra do app antigo, que não sabe abrir o
+  montar dentro do chat).
+- "Vc não tem alguma receita já pronta?" → a IA chamou `repetir_refeicao`
+  (almoço → lanche) e saiu "Não achei nada registrado no almoço de hoje".
+- "Vc me recomenda algum docinho" → a IA pulou as receitas doces da Cozinha
+  e foi direto pro chocolate + botão do chef.
+
+**Feito (só `supabase/functions/ai-proxy/`, nada no app nem no banco):**
+- **Ferramenta nova `treino_rapido`** (`treinoRapido.ts` + testes): "faz um
+  treino só de bíceps / rápido de perna pra hoje" vira um treino curto da
+  parte pedida. Quem escolhe os exercícios é regra fixa em cima do catálogo
+  (não a IA): só o que dá pra fazer no local e no nível dela, 3 exercícios
+  se pediu rápido, 4 se não, total de séries até 10 (o menor teto semanal
+  por grupo do gerador), carga nunca. A fala do Life só tem os nomes — sem
+  séries nem repetições (regra do dono de 12/11; tem teste pra isso). Passa
+  pela mesma trava de dor/lesão e do check de saúde. "Outra opção" troca a
+  seleção. Bíceps = roscas; tríceps = o resto de braços; braço alterna.
+- Confirma com um toque e entra na ficha do dia pelo caminho do
+  `adicionar_exercicio` (pendência com `extras`), então **funciona em
+  qualquer APK** (os botões já existem), sem migração, e o "desfaz isso"
+  tira tudo.
+- Prompt: treino de uma parte do corpo não é "plano inteiro" (não vai pro
+  botão nem pro montar da semana), vale em qualquer tela; o "NUNCA
+  recomendar treino" ganhou a exceção.
+- **Doce:** quando ela pede doce/bebida/salgado, o catálogo da Cozinha vai
+  com a lista dos códigos daquele tipo e a ordem de indicar já na primeira
+  resposta. `repetir_refeicao` só fica disponível quando ela fala em
+  repetir/copiar (ou responde a pergunta do Life sobre isso).
+
+**Validado:** `deno test` da pasta `ai-proxy` (143 passam, 8 novos),
+`deno check index.ts` (sobra 1 aviso antigo em `a.receita`, linha que não
+mexi), `npm run typecheck` e `npm run build`.
+
+**NÃO feito / pendências:**
+- **Deploy da `ai-proxy`** — precisa da frase do dono ("autorizo publicar a
+  ai-proxy"). Depois: `node scripts/smoke-life.mjs` com a conta de QA (a
+  senha só o dono tem) e conversar de verdade: "faz um treino rápido só de
+  bíceps", "me recomenda um docinho", "não tem receita pronta?".
+- **Merge dos PRs #7 e #8:** o dono autorizou em 14/11 ("eu autorizo o merge
+  do pr 7 e 8"). A `main` avança em linha reta até a `planos-v2` (conferido:
+  `main` é ancestral, `ajustes-teste-11-11` está contida). Falta só o token
+  do GitHub, que não fica salvo.
+- O dono precisa **instalar o APK de 12/11** (`ATHOSlife-teste-12-11.apk`)
+  pra ter o "um Life só" (montar treino/dieta/receita dentro de qualquer
+  chat). O treino de uma parte do corpo e o doce funcionam mesmo no antigo,
+  depois do deploy.
+- Treino rápido entra na ficha do dia e fica lá toda semana (o app não tem
+  "treino só de hoje"); se o dono quiser avulso de verdade, é tela + banco.
+- Nível da pessoa vem do último plano de treino gerado; sem plano, vale
+  iniciante.

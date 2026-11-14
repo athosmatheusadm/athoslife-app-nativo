@@ -46,6 +46,10 @@ import {
   acharExercicio, decidirDor, diaDaData, lerDia, lerDias, montarSeries, nomeDias, nomeLocal, TXT_TREINO,
   type DiaSemana, type ExercicioCatalogo, type Local, type SerieDetalhe,
 } from './treino.ts'
+import {
+  escolherTreinoRapido, lerParte, listar, nomeParte, TXT_PARTE,
+  type ExercicioDoGrupo, type ItemRapido, type Nivel,
+} from './treinoRapido.ts'
 import { lerComandoAgua, pedeDesfazer, TXT_RAPIDO } from './rapido.ts'
 import { linhaAlo, papoLeve, pedeLigarAvisos, pedeParaAvisos, TXT_AVISO } from './aviso.ts'
 import {
@@ -689,8 +693,8 @@ async function rotear(req: Request): Promise<Response> {
 // Pedido de plano inteiro (treino/dieta). APK antigo: o Life aponta o botão do
 // chat do Treino/Dieta. APK novo (recurso 'montar', 12/11): o Life monta na
 // própria conversa, em qualquer tela — a marca abre as perguntas no app.
-const REGRA_PLANO_BOTAO = `- Só quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta uma dieta pra mim", "quero uma ficha de treino"): não monte você; diga UMA vez, numa frase, que o plano completo sai pelo botão "Montar treino" (chat do Life no Treino) ou "Montar dieta" (chat do Life na Dieta), com um check de saúde rápido na primeira vez. NUNCA indique esses botões quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor, nem repita a indicação na conversa (dono, 02/11): aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
-const REGRA_PLANO_AQUI = `- Quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta um treino pra mim", "quero uma ficha de treino", "monta uma dieta pra mim"): você monta AQUI, nesta conversa, em qualquer tela. Responda com UMA frase curta dizendo que vai montar agora e que são só umas perguntas rápidas, e coloque [[MONTAR_TREINO]] (treino) ou [[MONTAR_DIETA]] (dieta) no FIM — o app abre as perguntas aqui mesmo (na primeira vez, com um check de saúde rápido). NUNCA mande a pessoa pra outra tela, pra outro Life ou procurar um botão (dono, 12/11: é um Life só e ele faz). Não escreva você os exercícios, as séries nem o cardápio: quem monta é o app, depois das perguntas. Não use a marca quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor: aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não use a marca: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
+const REGRA_PLANO_BOTAO = `- Só quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta uma dieta pra mim", "quero uma ficha de treino") — treino de uma parte do corpo ou treino rápido NÃO é plano inteiro, é com treino_rapido: não monte você; diga UMA vez, numa frase, que o plano completo sai pelo botão "Montar treino" (chat do Life no Treino) ou "Montar dieta" (chat do Life na Dieta), com um check de saúde rápido na primeira vez. NUNCA indique esses botões quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor, nem repita a indicação na conversa (dono, 02/11): aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
+const REGRA_PLANO_AQUI = `- Quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta um treino pra mim", "quero uma ficha de treino", "monta uma dieta pra mim") — treino de uma parte do corpo ou treino rápido NÃO é plano inteiro, é com treino_rapido: você monta AQUI, nesta conversa, em qualquer tela. Responda com UMA frase curta dizendo que vai montar agora e que são só umas perguntas rápidas, e coloque [[MONTAR_TREINO]] (treino) ou [[MONTAR_DIETA]] (dieta) no FIM — o app abre as perguntas aqui mesmo (na primeira vez, com um check de saúde rápido). NUNCA mande a pessoa pra outra tela, pra outro Life ou procurar um botão (dono, 12/11: é um Life só e ele faz). Não escreva você os exercícios, as séries nem o cardápio: quem monta é o app, depois das perguntas. Não use a marca quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor: aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não use a marca: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
 // Cansaço dito no chat (dono, 12/11): entender antes de sugerir.
 const REGRA_CANSACO = `- Cansaço, desânimo ou "tô sem energia" dito na conversa: primeiro se interesse pelo motivo, com UMA pergunta simples e de amigo (dormiu mal? o dia puxou? foi o treino? a cabeça?). NÃO sugira descanso, pausa, dia leve, treino leve nem pular o treino antes de ela contar o que houve, e não dramatize ("sinto muito") cansaço comum. Depois que ela contar, aí sim ajude com o que fizer sentido.`
 
@@ -741,7 +745,7 @@ PODE:
 NUNCA:
 - Montar plano de dieta ou cardápio inteiro do nada, definir calorias/macros-alvo para a pessoa.
 - Dizer QUAL suplemento ou remédio tomar, nem QUANTO (dose, gramas, scoops, horários).
-- Recomendar treino, exercícios, séries, repetições ou carga. (Explicar como se faz um exercício que ela perguntou, em linhas gerais e com os cuidados básicos, pode e deve.) (Pôr na ficha um exercício que a pessoa pediu, com as séries que ela disse ou o padrão do app, não é recomendar: é com adicionar_exercicio. Carga, nunca: quem define é ela.)
+- Recomendar treino, exercícios, séries, repetições ou carga. (Explicar como se faz um exercício que ela perguntou, em linhas gerais e com os cuidados básicos, pode e deve.) (Pôr na ficha um exercício que a pessoa pediu, com as séries que ela disse ou o padrão do app, não é recomendar: é com adicionar_exercicio. Treino de uma parte do corpo que ela pediu também não é recomendar: é com treino_rapido, e quem escolhe os exercícios é o app. Carga, nunca: quem define é ela.)
 - Diagnosticar nada físico ou emocional, nem fazer terapia.
 - Falar de peso/corpo de forma negativa ou comparativa; sugerir jejum ou restrição agressiva.
 - Acompanhar, dar dicas ou planos pra parar/reduzir álcool, cigarro/vape, drogas ou apostas. O ATHOSlife não trata dependência: se a pessoa trouxer isso, acolha sem julgar, diga com carinho que isso merece um serviço de saúde especializado (no Brasil, o CAPS AD, gratuito pelo SUS; em outros países, o serviço de saúde local) e siga com o que você pode fazer no app.
@@ -790,6 +794,7 @@ const ACAO_COMPARAR = '- comparar_exercicios: ela pediu pra comparar dois exerc�
 
 const MOD_TREINO = `TREINO (a conversa é sobre treino):
 ${REGRA_PLANO_BOTAO}
+- Treino de UMA parte do corpo ou treino rápido pra um dia ("faz um treino só de bíceps", "um treino rápido de perna pra hoje", "quero treinar peito hoje, monta aí"): isso NÃO é o plano inteiro e você faz AQUI, com treino_rapido — passe a parte do corpo que ela disse, o dia (hoje, se ela não disse outro) e rapido=true se ela pediu rápido, curto ou simples. Nunca responda que não consegue, nunca mande pra outra tela nem pro botão de montar treino, e não troque o pedido por um treino completo. Quem escolhe os exercícios é o app (você não escreve exercício, série, repetição nem carga); o app mostra a lista e pergunta com um toque se põe na ficha. Se ela não disse a parte do corpo, pergunte qual numa frase curta.
 - Explicar e motivar sobre o PLANO DE REFERÊNCIA de treino que o app montou (se estiver no contexto): o que é cada dia, por que a ordem, como anotar a carga. Nunca mude o plano por conta própria. Se ela pedir pra pôr um exercício num dia ou copiar o treino de outro dia, use adicionar_exercicio ou copiar_treino. Pra mudar séries, repetições ou carga do que já está na ficha, ela ajusta na ficha.
 - adicionar_exercicio: ela pediu pra pôr um exercício num dia ("põe o supino no meu treino de quinta"). Use as séries e repetições que ela disse, ou deixe vazio (o app usa o padrão). Carga só se ela disse. O app confirma com um toque; não diga que colocou.
 - copiar_treino: "copia o treino de quinta pra hoje". Se não ficou claro se é só hoje ou toda semana, pergunte antes ("Só hoje ou toda semana?") e não chame. "O que eu fiz quinta passada" é origem_data (o que ela fez, com as cargas dela).
@@ -819,7 +824,7 @@ function montarPromptLife(assuntos: Set<Assunto>, programar = false, comparar = 
   const acoes = [
     comida ? ACAO_COMIDA : '', comida && programar ? ACAO_PROGRAMAR : '', assuntos.has('emocional') ? ACAO_EMOCIONAL : '',
     assuntos.has('habitos') ? '- registrar_tropeco e marcar_habito: ver HÁBITOS.' : '',
-    treino ? '- adicionar_exercicio e copiar_treino: ver TREINO.' : '',
+    treino ? '- adicionar_exercicio, copiar_treino e treino_rapido: ver TREINO.' : '',
     treino && comparar ? ACAO_COMPARAR : '',
   ]
     .filter(Boolean).join('\n')
@@ -883,11 +888,13 @@ ${linhaApoio(loc)}`
  * pro assunto da tela de onde o chat foi aberto. O da Home junta tudo.
  * Valor desconhecido cai no da Home.
  */
+// Vale em qualquer tela e em qualquer APK (os botões de confirmar já existem).
+const FOCO_PARTE_AQUI = ' Exceção: treino de UMA parte do corpo ou treino rápido você faz aqui mesmo, com treino_rapido.'
 const FOCOS_LIFE: Record<string, string> = {
-  home: 'ONDE VOCÊ ESTÁ: na Home. Você é o Life que sabe de tudo do app — comida, treino, água, peso, humor e hábitos — e liga os pontos entre as áreas quando fizer sentido (ex.: dormiu mal e tem treino pesado hoje; vontade de doce à noite num dia sem almoço). Este chat é só conversa, sem botões: montar treino é no Life da tela de Treino; montar dieta, montar receita e analisar alimento são no Life da tela de Dieta.',
+  home: 'ONDE VOCÊ ESTÁ: na Home. Você é o Life que sabe de tudo do app — comida, treino, água, peso, humor e hábitos — e liga os pontos entre as áreas quando fizer sentido (ex.: dormiu mal e tem treino pesado hoje; vontade de doce à noite num dia sem almoço). Este chat é só conversa, sem botões: montar treino é no Life da tela de Treino; montar dieta, montar receita e analisar alimento são no Life da tela de Dieta.' + FOCO_PARTE_AQUI,
   dieta: 'ONDE VOCÊ ESTÁ: na tela de Dieta — você é o Life da comida (de chef). Você sabe de tudo, mas puxe pra alimentação: refeições do dia, ideias de comida, trocas equivalentes (informando kcal/macros, sem recomendar), porções, rótulos e o plano de referência de dieta. Botões deste chat: "Montar dieta", "Trocar um alimento" e "Monte sua receita com o Life". Se a pessoa quiser saber o que tem num prato ou produto, diga que é no 📷 dentro da refeição, na tela de Dieta. Se perguntarem de treino, responda curto e diga que o Life do Treino ajuda melhor nisso.',
   treino: 'ONDE VOCÊ ESTÁ: na tela de Treino — você é o Life do treino. Você sabe de tudo, mas puxe pro treino: exercícios do plano, execução em linhas gerais, ordem, séries anotadas, descanso, constância e o plano de referência de treino. Carga é sempre a pessoa quem define. Botões deste chat: "Montar treino" e "Trocar um exercício". Se perguntarem de comida, responda curto e diga que o Life da Dieta ajuda melhor nisso.',
-  habitos: 'ONDE VOCÊ ESTÁ: na tela de Hábitos — você é o Life dos hábitos. Você sabe de tudo, mas puxe pros hábitos: acolher a vontade, celebrar os dias firmes, ajudar a atravessar o momento difícil (respirar, mudar de lugar, beber água, esperar a onda passar), entender o que dispara a vontade e recomeçar depois de um tropeço — sem julgar e sem sermão. Este chat é só conversa, sem botões de plano: montar treino é no Life da tela de Treino e montar dieta no Life da tela de Dieta.',
+  habitos: 'ONDE VOCÊ ESTÁ: na tela de Hábitos — você é o Life dos hábitos. Você sabe de tudo, mas puxe pros hábitos: acolher a vontade, celebrar os dias firmes, ajudar a atravessar o momento difícil (respirar, mudar de lugar, beber água, esperar a onda passar), entender o que dispara a vontade e recomeçar depois de um tropeço — sem julgar e sem sermão. Este chat é só conversa, sem botões de plano: montar treino é no Life da tela de Treino e montar dieta no Life da tela de Dieta.' + FOCO_PARTE_AQUI,
 }
 
 /** APK novo (recurso 'montar'): um Life só — monta plano em qualquer tela e não empurra pra outro Life. */
@@ -895,6 +902,7 @@ function focoLife(chave: string, montarAqui: boolean): string {
   const f = FOCOS_LIFE[chave] ?? FOCOS_LIFE.home
   if (!montarAqui) return f
   return f
+    .replace(FOCO_PARTE_AQUI, '')
     .replace('Este chat é só conversa, sem botões: montar treino é no Life da tela de Treino; montar dieta, montar receita e analisar alimento são no Life da tela de Dieta.',
       'Você é um Life só e resolve daqui: treino e dieta você monta nesta conversa (regra do PLANO). A receita completa também sai aqui, pela marca [[CHEF]]. Só a análise de alimento por foto fica no 📷 da refeição, na tela de Dieta.')
     .replace('Este chat é só conversa, sem botões de plano: montar treino é no Life da tela de Treino e montar dieta no Life da tela de Dieta.',
@@ -993,10 +1001,26 @@ async function catalogoCozinha(sb: Sb, userId: string, idioma: Idioma, pago: boo
     }))
 }
 
-function blocoCatalogo(cat: ReceitaCatalogo[]): string {
+// O que ela pediu, pra apontar as receitas certas (dono, 14/11: pediu um
+// docinho e teve que insistir até o Life lembrar que a Cozinha tem doce).
+const PEDE_TIPO: [string, RegExp, string][] = [
+  ['doce', /\b(doces?|docinhos?|sobremesas?|acucar|chocolate|sweets?|desserts?|postres?|dulces?|sucre\w*)\b|मीठा|मिठाई/, 'DOCE'],
+  ['bebida', /\b(bebidas?|sucos?|vitaminas?|smoothies?|shakes?|drinks?|juices?|batidos?|jugos?|boissons?)\b/, 'BEBIDA'],
+  ['salgado', /\b(salgad\w*|savou?ry|salad[oa]s?|sale)\b/, 'SALGADO'],
+]
+function dicaDoPedido(cat: { codigo: string; tipo: string }[], pedido: string): string {
+  const n = normalizar(pedido)
+  const achou = PEDE_TIPO.find(([, re]) => re.test(n) || re.test(pedido))
+  if (!achou) return ''
+  const codigos = cat.filter((r) => r.tipo === achou[0]).map((r) => r.codigo)
+  if (!codigos.length) return ''
+  return `\nELA PEDIU ${achou[2]}: as receitas desse tipo que ela pode abrir são ${codigos.join(', ')}. Indique 1 ou 2 delas pelo código JÁ NESTA RESPOSTA (passo 1), variando das que você já indicou. Só vá pro passo 2 se ela disser que não quer receita da Cozinha.`
+}
+
+function blocoCatalogo(cat: ReceitaCatalogo[], pedido = ''): string {
   if (!cat.length) return '\n\nCATÁLOGO DA COZINHA: nenhuma receita da Cozinha serve pra esta pessoa agora — vá direto pras ideias (passo 2).'
   const linhas = cat.map((r) => `${r.codigo} | ${r.nome} | ${r.tipo} | ${r.contem.map((c) => ROTULO_ALERGENO[c]).join(', ') || 'nada da lista'}`)
-  return `\n\nCATÁLOGO DA COZINHA (receitas que esta pessoa pode abrir; as que batem com as restrições dela já saíram). código | nome | tipo | contém:\n${linhas.join('\n')}`
+  return `\n\nCATÁLOGO DA COZINHA (receitas que esta pessoa pode abrir; as que batem com as restrições dela já saíram). código | nome | tipo | contém:\n${linhas.join('\n')}${dicaDoPedido(cat, pedido)}`
 }
 
 const TXT_RECEITA_COZINHA: Record<Idioma, string> = {
@@ -1428,7 +1452,7 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
     (CONTEXTO_CAMADAS ? blocoConversaAnterior(camadas.linhas) + REGRA_RESUMO : '') +
     blocoUltimasRespostas(historico) +
     alo +
-    (catalogo ? blocoCatalogo(catalogo) : '') +
+    (catalogo ? blocoCatalogo(catalogo, mensagem) : '') +
     linhaCota(extraDesabafo ? null : Math.max(cota.limite - cota.usados, 0), sensivelAgora || assuntos.has('emocional')) +
     REGRA_HUMOR +
     (montarAqui ? REGRA_CHEF_AQUI : '') +
@@ -1439,7 +1463,10 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
 
   // 4. IA. Com streaming (Fase 7), o rascunho passa pelos mesmos filtros de saída
   //    antes de aparecer; se um deles pegar, o rascunho para e a resposta final troca o texto.
-  const ferramentas = ferramentasPara(assuntos, programar, comparar)
+  // "Não tem receita pronta?" virou "repetir o almoço" (13/11): repetir só entra
+  // quando ela fala em repetir/copiar, ou responde a pergunta do Life sobre isso.
+  const ultimaDoLife = [...historico].reverse().find((m) => m.autor === 'life')?.texto ?? ''
+  const ferramentas = ferramentasPara(assuntos, programar, comparar, pedeRepetir(mensagem) || pedeRepetir(ultimaDoLife))
   const rascunho = aoRascunho
     ? novoRascunho((t) => violaPrescricao(t) || pareceReceitaCompleta(t), aoRascunho)
     : null
@@ -1930,12 +1957,18 @@ function listaRefeicoes(itens: ItemContexto[], extras: ExtraContexto[], hoje: st
 }
 
 /** Só as ferramentas do assunto: comida → registrar/repetir; desabafo → pausar. */
-function ferramentasPara(assuntos: Set<Assunto>, programar = false, comparar = false): Ferramenta[] | null {
+const PEDE_REPETIR =
+  /\b(repet\w*|repit\w*|copi\w*|mesm[oa]s?|igual|iguais|de novo|novamente|same|again|repeat\w*|copy|mism[oa]s?|otra vez|encore|pareil|meme)\b|वही|दोबारा|फिर से/
+function pedeRepetir(t: string): boolean {
+  return PEDE_REPETIR.test(normalizar(t)) || PEDE_REPETIR.test(t)
+}
+
+function ferramentasPara(assuntos: Set<Assunto>, programar = false, comparar = false, repetir = true): Ferramenta[] | null {
   const nomes = new Set<string>([
-    ...(assuntos.has('comida') ? ['registrar_alimentos', 'repetir_refeicao', ...(programar ? ['programar_refeicao'] : [])] : []),
+    ...(assuntos.has('comida') ? ['registrar_alimentos', ...(repetir ? ['repetir_refeicao'] : []), ...(programar ? ['programar_refeicao'] : [])] : []),
     ...(assuntos.has('emocional') ? ['pausar_life_hoje'] : []),
     ...(assuntos.has('habitos') ? ['registrar_tropeco', 'marcar_habito'] : []),
-    ...(assuntos.has('treino') ? ['adicionar_exercicio', 'copiar_treino', ...(comparar ? ['comparar_exercicios'] : [])] : []),
+    ...(assuntos.has('treino') ? ['adicionar_exercicio', 'copiar_treino', 'treino_rapido', ...(comparar ? ['comparar_exercicios'] : [])] : []),
   ])
   if (!nomes.size) return null
   return FERRAMENTAS_LIFE.filter((f) => nomes.has(f.name))
@@ -1945,7 +1978,7 @@ const FERRAMENTAS_LIFE: Ferramenta[] = [
   {
     name: 'repetir_refeicao',
     description:
-      'Copia os itens de uma refeição já registrada pra outra (ex.: "coloca na janta o mesmo de ontem"). Só quando a pessoa pedir claramente. Use os nomes da lista REFEIÇÕES do contexto.',
+      'Copia os itens de uma refeição já registrada pra outra (ex.: "coloca na janta o mesmo de ontem"). Só quando a pessoa pedir claramente pra repetir ou copiar. Pedido de ideia, receita ou "receita pronta" NÃO é repetir: aí siga a regra de IDEIAS de comida. Use os nomes da lista REFEIÇÕES do contexto.',
     parameters: {
       type: 'object',
       properties: {
@@ -2064,6 +2097,22 @@ const FERRAMENTAS_LIFE: Ferramenta[] = [
         carga_kg: { type: 'number', description: 'Só se ela disse. Nunca sugira.' },
       },
       required: ['exercicio', 'dias_semana'],
+    },
+  },
+  {
+    name: 'treino_rapido',
+    description:
+      'Monta um treino curto de UMA parte do corpo pra um dia, quando a pessoa pedir ("faz um treino só de bíceps", "um treino rápido de perna pra hoje"). O app escolhe os exercícios do catálogo e pergunta com um toque se põe na ficha. Não é o plano da semana. Se ela pedir outra opção do mesmo treino, chame de novo com outra_opcao=true. Se ela falou de dor, chame mesmo assim: o app decide se pode.',
+    parameters: {
+      type: 'object',
+      properties: {
+        parte: { type: 'string', description: 'Parte do corpo como ela falou: bíceps, tríceps, braços, peito, costas, ombros, pernas, glúteos, panturrilha, abdômen' },
+        dia: { type: 'string', description: "'hoje' (padrão) ou seg, ter, qua, qui, sex, sab, dom" },
+        rapido: { type: 'boolean', description: 'true se ela pediu rápido, curto ou simples' },
+        local: { type: 'string', description: "'academia' ou 'casa', se ela disse. Vazio = o da ficha dela." },
+        outra_opcao: { type: 'boolean', description: 'true se ela pediu outros exercícios pro mesmo treino' },
+      },
+      required: ['parte'],
     },
   },
   {
@@ -2511,10 +2560,11 @@ async function executarFerramenta(
   if (chamada.nome === 'registrar_tropeco') return await proporTropeco(sb, userId, loc, chamada.args, hoje)
   if (chamada.nome === 'marcar_habito') return await proporMarcarHabito(sb, userId, loc, chamada.args)
   if (chamada.nome === 'comparar_exercicios') return await compararExercicios(sb, userId, loc, chamada.args)
-  if (chamada.nome === 'adicionar_exercicio' || chamada.nome === 'copiar_treino') {
+  if (chamada.nome === 'adicionar_exercicio' || chamada.nome === 'copiar_treino' || chamada.nome === 'treino_rapido') {
     // Lesão (agora ou nas últimas falas), dor sem detalhe ou check de saúde travado: não mexe no treino.
     const trava = await travaDoTreino(sb, userId, loc.idioma, mensagem, historico)
     if (trava) return trava
+    if (chamada.nome === 'treino_rapido') return await proporTreinoRapido(sb, userId, loc, chamada.args, hoje)
     return chamada.nome === 'adicionar_exercicio'
       ? await proporExercicio(sb, userId, loc, chamada.args, hoje)
       : await proporCopiaTreino(sb, userId, loc, chamada.args, hoje)
@@ -2692,7 +2742,11 @@ async function desfazerUltima(sb: Sb, userId: string, idioma: Idioma): Promise<{
 }
 
 // ---------- treino pelo chat (Fase 3) ----------
-interface ArgsExercicio { exercicio_id: string; nome: string; local: Local; dias: DiaSemana[]; series: SerieDetalhe[] }
+interface ArgsExercicio {
+  exercicio_id: string; nome: string; local: Local; dias: DiaSemana[]; series: SerieDetalhe[]
+  /** Treino de uma parte do corpo (14/11): os outros exercícios do mesmo pedido, pro mesmo dia. */
+  extras?: ItemRapido[]
+}
 interface ArgsCopiaTreino { local: Local; destino: DiaSemana; origem_dia: DiaSemana | null; origem_data: string | null }
 
 /** Dor/lesão (mensagem atual + falas das últimas horas) ou check de saúde travado: responde e não mexe no treino. */
@@ -2832,6 +2886,56 @@ async function proporExercicio(sb: Sb, userId: string, loc: Localidade, a: Recor
   }
 }
 
+/**
+ * "Faz um treino só de bíceps, rápido" (dono, 14/11): o app escolhe os
+ * exercícios da parte pedida (regra fixa em treinoRapido.ts) e pergunta com
+ * um toque se põe na ficha do dia. Usa a pendência do adicionar_exercicio,
+ * então os botões aparecem em qualquer APK e o "desfaz isso" funciona.
+ */
+async function proporTreinoRapido(sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string): Promise<ResultadoAcao> {
+  const tp = TXT_PARTE[loc.idioma]
+  const tt = TXT_TREINO[loc.idioma]
+  const parte = lerParte(a.parte)
+  if (!parte) return { resposta: tp.qualParte, acao: null, status: 'rapido_sem_parte' }
+  const dia = lerDia(a.dia, hoje) ?? diaDaData(hoje)
+  const local = await localDaFicha(sb, userId, a.local)
+  const [{ data: cat }, { data: noDia }, { data: plano }, { count: anterior }] = await Promise.all([
+    sb.from('exercicios_catalogo')
+      .select('id, nome, ambientes, series_padrao, repeticoes_padrao, medida, segundos_padrao, traducoes, grupo_muscular, nivel_minimo, ordem').limit(300),
+    sb.from('treino_plano').select('exercicio_id').eq('user_id', userId).eq('local', local).eq('dia_semana', dia),
+    sb.from('planos_gerados').select('parametros').eq('user_id', userId).eq('tipo', 'treino').order('criado_em', { ascending: false }).limit(1).maybeSingle(),
+    // "Outra opção": quantas vezes este treino já foi proposto na última hora.
+    sb.from('life_acoes').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('tipo', 'adicionar_exercicio')
+      .eq('args->>parte', parte).gte('criado_em', new Date(Date.now() - 60 * 60_000).toISOString()),
+  ])
+  const nivelPlano = String((plano?.parametros as { nivel?: unknown } | null)?.nivel ?? '')
+  const nivel: Nivel = nivelPlano === 'intermediario' || nivelPlano === 'avancado' ? nivelPlano : 'iniciante'
+  const jaNoDia = new Set(((noDia ?? []) as { exercicio_id: string }[]).map((r) => r.exercicio_id))
+  const catalogo = (cat ?? []) as ExercicioDoGrupo[]
+  const nomeEx = (e: ExercicioCatalogo) => (loc.idioma !== 'pt-BR' && e.traducoes?.[loc.idioma.slice(0, 2)]?.nome) || e.nome
+  const rapido = a.rapido === true
+  const nomeP = nomeParte(parte, loc.idioma)
+  const nomeD = nomeDias([dia], loc.idioma)
+  const itens = escolherTreinoRapido(catalogo, parte, {
+    local, nivel, rapido, jaNoDia, nome: nomeEx, variante: a.outra_opcao === true ? Number(anterior ?? 0) : 0,
+  })
+  if (!itens.length) {
+    const temSemFiltro = escolherTreinoRapido(catalogo, parte, { local, nivel, rapido }).length > 0
+    return temSemFiltro
+      ? { resposta: tp.jaTemTudo(nomeP, nomeD), acao: null, status: 'rapido_ja_tem' }
+      : { resposta: tp.semExercicio(nomeP, nomeLocal(local, loc.idioma)), acao: null, status: 'rapido_sem_exercicio' }
+  }
+  const [primeiro, ...extras] = itens
+  const args: ArgsExercicio & { parte: string } = { ...primeiro, local, dias: [dia], extras, parte }
+  const id = await criarPendencia(sb, userId, 'adicionar_exercicio', args)
+  if (!id) return { resposta: tt.falhou, acao: null, status: 'rapido_falhou' }
+  return {
+    resposta: tp.confira(nomeP, listar(itens.map((i) => i.nome), loc.idioma), nomeD, nomeLocal(local, loc.idioma), rapido),
+    acao: { tipo: 'escolha', id, opcoes: [{ valor: 'salvar', rotulo: tt.adicionar }, { valor: 'cancelar', rotulo: tt.deixa }] },
+    status: 'rapido_proposto',
+  }
+}
+
 async function proporCopiaTreino(sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string): Promise<ResultadoAcao> {
   const tt = TXT_TREINO[loc.idioma]
   const destino = lerDia(a.destino_dia, hoje)
@@ -2882,10 +2986,28 @@ async function executarExercicio(sb: Sb, userId: string, idAcao: string, args: A
     user_id: userId, local: args.local, dia_semana: d, exercicio_id: args.exercicio_id,
     series: args.series.length, repeticoes: args.series[0]?.reps ?? 12, series_detalhe: args.series, ordem: (maxPorDia.get(d) ?? -1) + 1,
   }))
+  // Treino de uma parte do corpo: os outros exercícios entram em seguida, no mesmo dia.
+  const extras = Array.isArray(args.extras) ? args.extras.slice(0, 5) : []
+  if (extras.length) {
+    const dia = args.dias[0]
+    const { data: doDia } = await sb.from('treino_plano').select('exercicio_id').eq('user_id', userId).eq('local', args.local).eq('dia_semana', dia)
+    const noDia = new Set(((doDia ?? []) as { exercicio_id: string }[]).map((r) => r.exercicio_id))
+    let ordem = (maxPorDia.get(dia) ?? -1) + 1 + linhas.length
+    for (const x of extras) {
+      if (noDia.has(x.exercicio_id) || x.exercicio_id === args.exercicio_id) continue
+      linhas.push({
+        user_id: userId, local: args.local, dia_semana: dia, exercicio_id: x.exercicio_id,
+        series: x.series.length, repeticoes: x.series[0]?.reps ?? 12, series_detalhe: x.series, ordem: ordem++,
+      })
+    }
+  }
   const { data: novas, error } = linhas.length ? await sb.from('treino_plano').insert(linhas).select('id') : { data: [], error: null }
   const r: ResultadoAcao = error
     ? { resposta: tt.falhou, acao: null, status: 'exercicio_falhou' }
-    : { resposta: tt.adicionado(args.nome, nomeDias(args.dias, idioma)), acao: { tipo: 'treino_atualizado', local: args.local }, status: 'exercicio_ok' }
+    : {
+      resposta: extras.length ? TXT_PARTE[idioma].pronto(linhas.length, nomeDias(args.dias, idioma)) : tt.adicionado(args.nome, nomeDias(args.dias, idioma)),
+      acao: { tipo: 'treino_atualizado', local: args.local }, status: 'exercicio_ok',
+    }
   if (error) console.error('[treino] adicionar falhou', error.message)
   await fecharAcao(sb, idAcao, error ? 'falhou' : 'feita', r, undefined, { ids: ((novas ?? []) as { id: string }[]).map((x) => x.id), local: args.local })
   return r
