@@ -5,7 +5,7 @@
 // nunca manda nutrientes nem decide cota.
 
 export const SCHEMA_VERSAO = '2'
-export const PROMPT_VERSAO = 'scan-2026-10-21'
+export const PROMPT_VERSAO = 'scan-2026-11-14'
 export const MAX_ITENS = 20
 
 export type Preparo = 'raw' | 'boiled' | 'grilled' | 'fried' | 'baked' | 'unknown'

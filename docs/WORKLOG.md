@@ -5765,3 +5765,50 @@ mexi), `npm run typecheck` e `npm run build`.
   "treino só de hoje"); se o dono quiser avulso de verdade, é tela + banco.
 - Nível da pessoa vem do último plano de treino gerado; sem plano, vale
   iniciante.
+
+## 2026-11-14 (2) — Chat menos travado, scanner lê rótulo, receita mais caprichada
+
+**Reclamação do dono:** o chat com o Life está "muito travado" (ex.: "tô meio
+pra baixo, tem algo que posso fazer pra melhorar?" e ele não ajuda); apanhou
+pra identificar uma H2OH de limão; um amigo usou o "Monte sua receita" com o
+que tinha em casa e saiu só um sanduíche.
+
+**O que o banco mostrou:**
+- Não houve erro nem demora (chat ~3,7 s, tudo `ok`). O "travado" é das
+  regras: resposta limitada a 1–3 frases/40 palavras e "sem plano nem dica".
+  Caso parecido de 07/11 (outra conta): "tô meio desanimado, tem algo que
+  você poderia me ajudar?" → o Life só ofereceu a pausa.
+- Scanner 13/11 21:31: a IA devolveu "Bebida sabor limão em garrafa" (não leu
+  o rótulo) → `unresolved`, sem candidato. O "H2OH! Limão" existe no catálogo
+  e a busca por texto acha ("h2o", "h2o limao", "h2o de limão", "h2oh").
+- Receita 13/11 21:30: 1 chamada, `ok`. O servidor não guarda os
+  ingredientes, então não deu pra ver o pedido; a regra pede UMA receita.
+
+**Feito (só `supabase/functions/ai-proxy/`):**
+- Formato do chat: conversa simples continua curta; quando a pessoa PEDE
+  ajuda, ideia, dica, opinião ou explicação, o Life responde de verdade (até
+  6 frases, ~90 palavras) e não pode trocar a resposta por outra pergunta
+  nem por lista do que não faz.
+- Regra nova: está pra baixo/cansada E pergunta o que fazer → 2 ou 3 coisas
+  simples e concretas pra hoje, ligadas ao dia dela, e uma pergunta leve no
+  fim. Sem pausa no lugar da resposta. A regra de 12/11 (cansaço: perguntar
+  o motivo antes de sugerir) continua, com essa exceção. QUANDO É GRAVE
+  segue acima de tudo.
+- Scanner: produto embalado → ler o rótulo e escrever marca + sabor no nome
+  (ex.: "H2OH! Limão") e o volume se der pra ler. `PROMPT_VERSAO` =
+  `scan-2026-11-14`.
+- Receita: pedir o preparo mais gostoso que cabe nos ingredientes em vez do
+  óbvio, e uma segunda ideia na dica do Life.
+
+**Validado:** `deno test` da pasta (143 passam). **Não** testado com a IA de
+verdade: precisa do deploy.
+
+**Pendências (somam às do bloco de cima):**
+- Depois do deploy, além do smoke: mandar "tô meio pra baixo, tem algo que
+  eu possa fazer pra melhorar?", fotografar uma garrafa com rótulo e montar
+  uma receita com 4–5 ingredientes. O benchmark do scanner
+  (`scripts/scanner-benchmark`) não foi rodado com o prompt novo.
+- Resposta maior = um pouco mais de custo por mensagem pedida (teto de saída
+  não mudou: 280 grátis / 400 pago).
+- "H2OH Limoneto" e outros sabores não estão no catálogo (só Limão).
+- Se o dono quiser 2–3 opções de receita de uma vez, é mudança de tela.

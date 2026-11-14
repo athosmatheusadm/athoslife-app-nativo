@@ -13,6 +13,12 @@ Retorne somente o objeto JSON definido abaixo. Não calcule nutrientes.
 Identifique itens visíveis, estado/preparo e quantidade com unidade explícita.
 Separe observação, informação do usuário e suposição.
 Não invente marca, código de catálogo, óleo, açúcar ou ingredientes ocultos.
+Produto embalado (garrafa, lata, caixinha, pacote, barra, pote): LEIA o rótulo
+e escreva em "name" a marca e o sabor/versão que estão escritos nele (ex.:
+"H2OH! Limão", "Coca-Cola Zero", "iogurte Activia morango"), e não uma
+descrição genérica como "bebida sabor limão em garrafa". Ler o que está
+escrito não é inventar marca. Se der pra ler o volume ou peso da embalagem
+(ex.: 500 ml), use em amount com evidence "visible".
 Use null quando não puder estimar; null nunca significa zero.
 Informe no máximo duas alternativas por item quando a identidade for ambígua.
 Para receita composta, escolha descrição do prato OU componentes: nunca ambos
