@@ -6075,3 +6075,28 @@ só com o erro antigo de `a.receita`. `npm run typecheck` e build ok.
 - **Brevo:** o "Esqueci a senha" do dono falhou com
   `525 5.7.1 Unauthorized IP address` — o bloqueio de IP do Brevo segue
   ligado; só o dono desliga (Segurança → IPs autorizados).
+
+## 2026-11-15 (4) — main atualizada, Confirm email ligado, ai-proxy v69
+
+**Autorizado pelo dono na conversa:** atualizar a main, ligar o Confirm
+email, corrigir o endereço do cadastro e publicar a ai-proxy.
+
+- **GitHub:** `main` avançou em linha reta até 3768eb5 (= `planos-v2`);
+  PRs #7, #8 e #9 aparecem como merged. APK de teste disparado na `main`.
+  Push: o repo tem `credential.helper` que lê `GH_TOKEN`.
+- **Brevo:** dono desligou o bloqueio de IP; "Esqueci a senha" das 18h58
+  UTC saiu sem erro.
+- **Auth:** `mailer_autoconfirm = false` (**Confirm email ligado**),
+  `site_url = https://localhost` (origem do app no Android/Capacitor),
+  `uri_allow_list = https://localhost`. Confirmação e recuperação são por
+  código (os modelos usam `{{ .Token }}`), então o endereço não aparece
+  nesses e-mails. As 6 contas existentes já estavam confirmadas.
+- **`ai-proxy` v69 publicada** (cartão do treino rápido). Sem smoke (sem
+  senha de QA); teste = dono no APK novo: "treino rápido de bíceps" e uma
+  conversa comum.
+
+**Pendências:** testar no APK novo (cartão, Life verde, idiomas, tela de
+assinatura, cadastro novo pedindo código); Sentry (dono travou na conta);
+Play Console, keystore, produtos e chave `goog_`; 3ª pessoa e "sempre
+fecha com pergunta" no chat; gravidez do check de saúde no contexto do
+Life; revogar o token do GitHub colado hoje.
