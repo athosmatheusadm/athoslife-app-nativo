@@ -15,7 +15,12 @@ export interface DiaBom {
   readonly seq: number | null
 }
 
-export const ehDiaBom = (d: DiaBom | null) => !!d && (d.meta || d.treino || d.seq !== null)
+/**
+ * Só treino feito ou meta de calorias batida contam (dono, 15/11/2026): a
+ * sequência sozinha mandava "Seu dia rendeu!" e o convite pra postar até pra
+ * quem não treinou. Ela continua aparecendo como selo extra num dia bom.
+ */
+export const ehDiaBom = (d: DiaBom | null) => !!d && (d.meta || d.treino)
 
 /** Calorias entre 90% e 110% da meta conta como meta batida. */
 export function useDiaBom(metas: Metas, streakAtual: number, maiorStreak: number): DiaBom | null {

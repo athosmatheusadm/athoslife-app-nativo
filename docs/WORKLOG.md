@@ -6100,3 +6100,18 @@ assinatura, cadastro novo pedindo código); Sentry (dono travou na conta);
 Play Console, keystore, produtos e chave `goog_`; 3ª pessoa e "sempre
 fecha com pergunta" no chat; gravidez do check de saúde no contexto do
 Life; revogar o token do GitHub colado hoje.
+
+## 2026-11-15 (5) — "Seu dia rendeu!" sem treino + avaliação do sistema
+
+- **Cartão "Seu dia rendeu! 🔥" (Home → Story):** aparecia com sequência
+  recorde ≥ 3 dias mesmo sem treino nem meta (dono: "rendeu até pra quem
+  não treinou"). `ehDiaBom` agora exige treino feito OU meta de calorias
+  batida; a sequência só vira selo extra. `ConviteStory.tsx`. Precisa APK.
+- **Avaliação (só leitura):** chat 24 h: 18 chamadas, 0 erro; 7 dias: 275,
+  4 com `error`. Edge Functions 24 h: 0 erro 4xx/5xx. Cron `life-push` a
+  cada 15 min, 0 falha em 7 dias. **Push real nunca saiu:** 1 aparelho
+  registrado, 0 envios em `life_push_envios`. Advisors: funções admin
+  conferem `is_admin`; `entrar_na_sala`/`sala_total`/`vagas_fundador` são
+  públicas de propósito; proteção de senha vazada desligada (é do plano
+  pago do Supabase); `pg_trgm`/`pg_net` no schema public (baixo risco).
+  App: 0 testes automáticos de tela.
