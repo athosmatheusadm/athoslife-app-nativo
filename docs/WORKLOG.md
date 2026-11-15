@@ -6052,3 +6052,20 @@ só com o erro antigo de `a.receita`. `npm run typecheck` e build ok.
 - Brevo: o dono não lembra login/senha. Login SMTP no Supabase é
   `bdc28d001@smtp-brevo.com` (usuário técnico); a conta do painel deve ser
   o Gmail dele → "Esqueci a senha" no brevo.com.
+
+## 2026-11-15 (3) — Fundador no mensal e no anual
+
+- Dono decidiu: os **300 primeiros assinantes, mensal ou anual**, viram
+  Fundador. `billing_config.planos_fundador = {mensal,anual}` **aplicado**
+  no banco (registro em `db/athoslife_fundador_mensal_migration.sql`).
+- Preços (definir na Play): Fundador anual R$ 238,80 (≈ R$ 19,90/mês),
+  mensal R$ 26; depois das vagas, anual R$ 300 e mensal R$ 30, só para quem
+  assinar depois (a Play mantém o preço de quem já assina). Registrado em
+  `docs/ATHOSlife_Regras_de_Negocio.md`.
+- Tela de assinatura: "Restam X vagas de Fundador" saiu do cartão do anual
+  e foi para acima dos dois planos; tirado "no plano anual" nos 5 idiomas.
+- Atenção: na Play, quem cancela e volta depois paga o preço do momento
+  (a vaga numerada continua dele no banco).
+- Brevo: nenhuma tentativa de envio nas últimas 24 h nos logs; o teste de
+  "Esqueci a senha" pelo servidor foi barrado pelo modo automático — o dono
+  testa pelo app.

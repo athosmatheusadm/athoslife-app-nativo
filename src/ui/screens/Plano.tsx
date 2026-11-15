@@ -111,6 +111,10 @@ export function Plano() {
 
       {vende && (
         <section className="mx-5 mt-6 space-y-3">
+          {/* Fundador vale no mensal e no anual (dono, 15/11): as vagas ficam acima dos dois. */}
+          {vagas !== null && vagas > 0 && (
+            <p className="px-1 text-sm font-semibold text-brand">{t.loja.vagasFundador(vagas)}</p>
+          )}
           {planos.map((p) => (
             <button
               key={p.plano}
@@ -129,9 +133,6 @@ export function Plano() {
                 <span className="mt-0.5 block text-micro text-content-low">
                   {p.plano === 'anual' ? t.loja.porAno(p.preco) : t.loja.porMes(p.preco)}
                 </span>
-                {p.plano === 'anual' && vagas !== null && vagas > 0 && (
-                  <span className="mt-1 block text-micro font-semibold text-brand">{t.loja.vagasFundador(vagas)}</span>
-                )}
               </span>
               <span className="flex-none rounded-pill bg-brand px-4 py-2 text-sm font-bold text-brand-ink">{t.loja.assinar}</span>
             </button>

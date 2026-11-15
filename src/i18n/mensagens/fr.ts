@@ -1530,7 +1530,7 @@ export const fr: Mensagens = {
         assinar: 'S’abonner',
         economia: (pct: number) => `Économise ${pct} %`,
         renovacao: 'L’abonnement se renouvelle automatiquement jusqu’à ce que tu l’annules. Tu peux annuler quand tu veux sur le Play Store.',
-        vagasFundador: (n: number) => `Il reste ${n} ${n === 1 ? 'place' : 'places'} de Fondateur sur l’offre annuelle`,
+        vagasFundador: (n: number) => `Il reste ${n} ${n === 1 ? 'place' : 'places'} de Fondateur`,
         fundadorNumero: (n: number) => `Tu es le Fondateur n° ${n}`,
         restaurar: 'Restaurer les achats',
         gerenciar: 'Gérer l’abonnement sur le Play Store',

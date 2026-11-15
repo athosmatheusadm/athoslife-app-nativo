@@ -38,6 +38,8 @@ Tudo atrás de um `SubscriptionService` → trocar de provedor não toca no dom�
 | Rollback | `liberar_vaga_fundador()` se o pagamento falhar/expirar após a reserva |
 | Consulta pública | `vagas_fundador_disponiveis()` → exibe "X vagas restantes" |
 | Preço | **Desconto vitalício** — o fundador mantém o preço enquanto a assinatura não for interrompida |
+| Quem entra (15/11/2026) | Os 300 primeiros assinantes, **mensal ou anual** (`billing_config.planos_fundador = {mensal,anual}`) |
+| Preços (dono, 15/11/2026) | Fundador: anual R$ 238,80 (≈ R$ 19,90/mês), mensal R$ 26. Depois das 300 vagas: anual R$ 300, mensal R$ 30 — sobe só para quem assinar depois (a Play mantém o preço antigo de quem já assina) |
 
 **Implementação na Play:** oferta de preço especial na Play Console + exclusão dos assinantes antigos em aumentos futuros.
 **Ponto de atenção (Fase 5):** cancelamento pode fazer perder o preço de fundador na Play.

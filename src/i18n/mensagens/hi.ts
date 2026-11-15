@@ -1531,7 +1531,7 @@ export const hi: Mensagens = {
         assinar: 'सब्सक्राइब करें',
         economia: (pct: number) => `${pct}% की बचत`,
         renovacao: 'सब्सक्रिप्शन रद्द करने तक अपने-आप रिन्यू होता है। Play Store में कभी भी रद्द कर सकते हैं।',
-        vagasFundador: (n: number) => `सालाना प्लान में फ़ाउंडर की ${n} जगह बाकी`,
+        vagasFundador: (n: number) => `फ़ाउंडर की ${n} जगह बाकी`,
         fundadorNumero: (n: number) => `आप फ़ाउंडर नंबर ${n} हैं`,
         restaurar: 'ख़रीदारी वापस लाएँ',
         gerenciar: 'Play Store में सब्सक्रिप्शन मैनेज करें',

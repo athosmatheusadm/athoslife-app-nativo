@@ -1524,7 +1524,7 @@ export const en: Mensagens = {
         assinar: 'Subscribe',
         economia: (pct: number) => `Save ${pct}%`,
         renovacao: 'The subscription renews automatically until you cancel. You can cancel anytime on the Play Store.',
-        vagasFundador: (n: number) => `${n} Founder ${n === 1 ? 'spot' : 'spots'} left on the yearly plan`,
+        vagasFundador: (n: number) => `${n} Founder ${n === 1 ? 'spot' : 'spots'} left`,
         fundadorNumero: (n: number) => `You are Founder #${n}`,
         restaurar: 'Restore purchases',
         gerenciar: 'Manage subscription on Play Store',

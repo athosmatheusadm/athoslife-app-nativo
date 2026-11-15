@@ -1538,7 +1538,7 @@ export const ptBR = {
         assinar: 'Assinar',
         economia: (pct: number) => `Economize ${pct}%`,
         renovacao: 'A assinatura renova sozinha até você cancelar. Dá pra cancelar quando quiser na Play Store.',
-        vagasFundador: (n: number) => `Restam ${n} ${n === 1 ? 'vaga' : 'vagas'} de Fundador no plano anual`,
+        vagasFundador: (n: number) => `Restam ${n} ${n === 1 ? 'vaga' : 'vagas'} de Fundador`,
         fundadorNumero: (n: number) => `Você é o Fundador nº ${n}`,
         restaurar: 'Restaurar compras',
         gerenciar: 'Gerenciar assinatura na Play Store',
