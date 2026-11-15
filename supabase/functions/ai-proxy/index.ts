@@ -32,6 +32,7 @@
 // (cliente não forja falas do Life); palavras de risco tratadas antes da IA;
 // filtro de saída contra prescrição (dose, calorias, carga, séries).
 
+import { linhasPerfil } from './perfil.ts'
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
 import { blocoConversaAnterior, dividirHistorico, extrairResumo, JANELA_TOTAL, REGRA_RESUMO, type MensagemSalva } from './historico.ts'
 import { acharNaBase, falaRegistro, lerItens, limparComentario, pedeIdeia, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
@@ -1718,7 +1719,7 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
     .catch(() => [{ data: null }, { data: null }])
   const r = await Promise.allSettled([
     sb.from('profiles')
-      .select('nome, objetivo, restricoes, kcal_meta, prot_meta, agua_meta_ml, onboarding_respostas, consentimento_habitos')
+      .select('nome, objetivo, restricoes, kcal_meta, prot_meta, agua_meta_ml, onboarding_respostas, consentimento_habitos, sexo, idade, altura_cm, peso_meta')
       .eq('id', userId).maybeSingle(),
     sb.from('registros_agua').select('quantidade_ml').eq('user_id', userId).eq('data', hoje),
     sb.from('itens_refeicao')
@@ -1766,6 +1767,8 @@ async function montarContexto(sb: Sb, userId: string, fuso: string): Promise<Con
     if (p.objetivo) partes.push(`objetivo: ${p.objetivo}`)
     if (Array.isArray(p.restricoes) && p.restricoes.length) partes.push(`restrições: ${p.restricoes.join(', ')}`)
     add(partes.join(' · '))
+    // Quem é a pessoa (15/11): sexo, idade, corpo, rotina e treino do onboarding.
+    for (const x of linhasPerfil(p)) add(x.t, x.a)
     // Respostas do onboarding (códigos neutros + alimentos digitados).
     const o = (p.onboarding_respostas ?? {}) as Record<string, unknown>
     const l = (v: unknown) => (Array.isArray(v) ? v.map((x) => texto(x, 40)).filter(Boolean).slice(0, 10).join(', ') : '')

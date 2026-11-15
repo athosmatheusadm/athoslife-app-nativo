@@ -5980,3 +5980,35 @@ verdade:**
 - Depois: amostra do `life-push`, Secrets do smoke no GitHub, merge dos PRs
   #7 e #8 na `main`, ligar `antecipar`. O dono precisa revogar o token do
   GitHub e trocar a senha que colou na conversa.
+
+## 2026-11-15 — Life não sabia com quem falava (sexo, idade, corpo do onboarding)
+
+**Problema (achado pelo dono):** o onboarding grava sexo, idade, altura e as
+respostas certinho em `profiles` (conferido no banco: todos que terminaram
+têm `sexo`), mas o contexto do chat (`montarContexto` na `ai-proxy`) só lia
+nome, objetivo, restrições, gostos de comida, obstáculos, estresse e sono.
+O Life não sabia se falava com homem ou mulher e errava a concordância.
+
+**Feito:**
+- `ai-proxy/perfil.ts` (novo): `linhasPerfil` traduz os códigos do perfil
+  em linhas do contexto. A linha de tratamento vai em toda conversa: homem
+  → masculino, mulher → feminino, não informado/"prefiro não dizer" →
+  frases sem flexão, sem presumir. Também: idade, objetivo (inclusive o
+  texto do "Outro"), rotina, como acorda (sempre); altura e peso desejado
+  (peso/comida); frequência, tipos e locais de treino (treino);
+  refeições por dia e onde come (comida). Cobre onboarding v1 e v2.
+- `index.ts`: o select do perfil passou a trazer `sexo, idade, altura_cm,
+  peso_meta`, e as linhas entram logo depois do nome.
+- `perfil.test.ts`: 5 testes.
+
+**Validado:** `deno test --check` de `ai-proxy` + `life-push` numa cópia
+fora do repo: 168 passam. `deno check ai-proxy/index.ts` acusa 1 erro
+(`a.receita` unknown, linha ~3580) que **já existia antes** desta mudança.
+`npm run typecheck` e `npm run build` ok (o app não mudou).
+
+**Pendências:**
+- **Precisa deploy da `ai-proxy`** (v68) + `node scripts/smoke-life.mjs` e
+  conversa de verdade. Ainda vale a pendência de 14/11: a v67 também não
+  teve conversa depois do deploy.
+- `life-push`: as frases prontas não têm gênero fixo em pt (conferido),
+  então não precisou mexer.
