@@ -6115,3 +6115,13 @@ Life; revogar o token do GitHub colado hoje.
   públicas de propósito; proteção de senha vazada desligada (é do plano
   pago do Supabase); `pg_trgm`/`pg_net` no schema public (baixo risco).
   App: 0 testes automáticos de tela.
+
+## 2026-11-15 (6) — Guia da Play Console e do RevenueCat
+- Novo `docs/GUIA_PLAY_CONSOLE_REVENUECAT.md`: passo a passo para o dono
+  (conta pessoal, perfil de pagamentos, app, 1º .aab no teste interno,
+  assinatura `athos_premium` com `mensal` R$ 26 / `anual` R$ 238,80,
+  testadores de licença, conta de serviço, teste fechado 12×14; RevenueCat:
+  app, produtos, entitlement `premium`, offering default Monthly/Annual,
+  chaves `goog_` e `RC_SECRET_KEY` V1, webhook com `RC_WEBHOOK_AUTH`).
+- Pendente: keystore + .aab quando o dono criar a conta; conferir segredos
+  do rc-webhook/rc-sync; compra de teste ponta a ponta.
