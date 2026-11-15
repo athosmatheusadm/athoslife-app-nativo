@@ -677,6 +677,12 @@ export const hi: Mensagens = {
     oi: 'नमस्ते। अभी किस बारे में बात करनी है?',
     carregando: 'बातचीत लोड हो रही है…',
     comparacao: 'दोनों एक्सरसाइज़ की तुलना',
+    treinoRapido: {
+      titulo: (parte: string) => `${parte} वर्कआउट`,
+      onde: (dia: string, local: string) => `${dia} · ${local}`,
+      dica: 'सेट और रेप्स आप अपने वर्कआउट में अपने हिसाब से बदल सकते हैं।',
+      abrir: 'वर्कआउट खोलें',
+    },
     erroHistorico: 'पिछली बातचीत लोड नहीं हो सकी — पर आप लिखिए, Life जवाब देगा।',
     digitando: 'Life लिख रहा है…',
     placeholder: 'Life को लिखें…',

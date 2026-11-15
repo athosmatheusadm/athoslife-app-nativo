@@ -1546,7 +1546,8 @@ async function handleChat(sb: Sb, userId: string, corpo: Record<string, unknown>
   const foraDoTema = /^\s*\[\s*fora\s*\]/i.test(resposta)
   resposta = resposta.replace(MARCA_FORA, '').trim()
   const chamada = g.chamadas[0]
-  const feito = chamada ? await executarFerramenta(sb, userId, loc, chamada, uuidValido(corpo.id_envio), mensagem, brutas) : null
+  const cartaoTreino = Array.isArray(corpo.recursos) && corpo.recursos.includes('cartao_treino')
+  const feito = chamada ? await executarFerramenta(sb, userId, loc, chamada, uuidValido(corpo.id_envio), mensagem, brutas, cartaoTreino) : null
   if (foraDoTema && !feito) {
     status = 'fora_tema'
     if (!resposta) resposta = RESPOSTA_FORA_DO_TEMA[loc.idioma]
@@ -2446,7 +2447,11 @@ type AcaoCliente =
     itens: ItemAchado[]
   }
   | { tipo: 'pausa'; dia: string }
-  | { tipo: 'escolha'; id: string; opcoes: { valor: Escolha; rotulo: string }[] }
+  | {
+    tipo: 'escolha'; id: string; opcoes: { valor: Escolha; rotulo: string }[]
+    /** Treino de uma parte do corpo (15/11): o app novo mostra num cartão (APK antigo ignora). */
+    treino?: { parte: string; dia: string; local: Local; itens: { id: string; nome: string }[] }
+  }
   /** Ficha mudou pelo chat (Fase 3): o app recarrega o Treino (APK antigo ignora). */
   | { tipo: 'treino_atualizado'; local: Local }
   /** Água anotada/desfeita pelo chat (Fase 4): o app recarrega o card (APK antigo ignora). */
@@ -2568,7 +2573,7 @@ async function executarRepeticao(sb: Sb, userId: string, idAcao: string, args: A
 /** Chamada de ferramenta vinda do chat. `idEnvio` = idempotência por mensagem. */
 async function executarFerramenta(
   sb: Sb, userId: string, loc: Localidade, chamada: ChamadaFerramenta, idEnvio: string | null, mensagem = '',
-  historico: MensagemSalva[] = [],
+  historico: MensagemSalva[] = [], cartaoTreino = false,
 ): Promise<ResultadoAcao | null> {
   const t = TXT[loc.idioma]
   const hoje = hojeNoFuso(loc.fuso)
@@ -2595,7 +2600,7 @@ async function executarFerramenta(
     // Lesão (agora ou nas últimas falas), dor sem detalhe ou check de saúde travado: não mexe no treino.
     const trava = await travaDoTreino(sb, userId, loc.idioma, mensagem, historico)
     if (trava) return trava
-    if (chamada.nome === 'treino_rapido') return await proporTreinoRapido(sb, userId, loc, chamada.args, hoje)
+    if (chamada.nome === 'treino_rapido') return await proporTreinoRapido(sb, userId, loc, chamada.args, hoje, cartaoTreino)
     return chamada.nome === 'adicionar_exercicio'
       ? await proporExercicio(sb, userId, loc, chamada.args, hoje)
       : await proporCopiaTreino(sb, userId, loc, chamada.args, hoje)
@@ -2923,7 +2928,9 @@ async function proporExercicio(sb: Sb, userId: string, loc: Localidade, a: Recor
  * um toque se põe na ficha do dia. Usa a pendência do adicionar_exercicio,
  * então os botões aparecem em qualquer APK e o "desfaz isso" funciona.
  */
-async function proporTreinoRapido(sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string): Promise<ResultadoAcao> {
+async function proporTreinoRapido(
+  sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string, cartao = false,
+): Promise<ResultadoAcao> {
   const tp = TXT_PARTE[loc.idioma]
   const tt = TXT_TREINO[loc.idioma]
   const parte = lerParte(a.parte)
@@ -2960,9 +2967,21 @@ async function proporTreinoRapido(sb: Sb, userId: string, loc: Localidade, a: Re
   const args: ArgsExercicio & { parte: string } = { ...primeiro, local, dias: [dia], extras, parte }
   const id = await criarPendencia(sb, userId, 'adicionar_exercicio', args)
   if (!id) return { resposta: tt.falhou, acao: null, status: 'rapido_falhou' }
+  const opcoes: { valor: Escolha; rotulo: string }[] = [{ valor: 'salvar', rotulo: tt.adicionar }, { valor: 'cancelar', rotulo: tt.deixa }]
+  // App com o cartão (recurso 'cartao_treino', 15/11): exercícios organizados no cartão, a fala só apresenta.
+  if (cartao) {
+    return {
+      resposta: tp.cartao(nomeP, nomeD, nomeLocal(local, loc.idioma), rapido),
+      acao: {
+        tipo: 'escolha', id, opcoes,
+        treino: { parte: nomeP, dia: nomeD, local, itens: itens.map((i) => ({ id: i.exercicio_id, nome: i.nome })) },
+      },
+      status: 'rapido_proposto',
+    }
+  }
   return {
     resposta: tp.confira(nomeP, listar(itens.map((i) => i.nome), loc.idioma), nomeD, nomeLocal(local, loc.idioma), rapido),
-    acao: { tipo: 'escolha', id, opcoes: [{ valor: 'salvar', rotulo: tt.adicionar }, { valor: 'cancelar', rotulo: tt.deixa }] },
+    acao: { tipo: 'escolha', id, opcoes },
     status: 'rapido_proposto',
   }
 }

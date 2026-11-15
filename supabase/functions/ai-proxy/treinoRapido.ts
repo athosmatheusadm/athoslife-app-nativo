@@ -121,6 +121,8 @@ export const listar = (nomes: string[], idioma: Idioma) =>
 /** Só nomes: nada de séries, repetições ou carga na fala (dono, 12/11). */
 export const TXT_PARTE: Record<Idioma, {
   confira: (parte: string, lista: string, dia: string, local: string, rapido: boolean) => string
+  /** Com o cartão no app (15/11): os exercícios aparecem no cartão, a fala só apresenta. */
+  cartao: (parte: string, dia: string, local: string, rapido: boolean) => string
   qualParte: string
   semExercicio: (parte: string, local: string) => string
   jaTemTudo: (parte: string, dia: string) => string
@@ -128,6 +130,7 @@ export const TXT_PARTE: Record<Idioma, {
 }> = {
   'pt-BR': {
     confira: (p, l, d, lo, r) => `Fechou, treino ${r ? 'rápido ' : ''}só de ${p}: ${l}. Coloco na sua ficha de ${d} ${lo}? A carga é você quem escolhe na hora.`,
+    cartao: (p, d, lo, r) => `Fechou, montei um treino ${r ? 'rápido ' : ''}só de ${p}. Confere aí embaixo: coloco na sua ficha de ${d} ${lo}?`,
     qualParte: 'Monto sim! De qual parte do corpo você quer o treino? (ex.: bíceps, perna, peito)',
     semExercicio: (p, lo) => `Não achei exercício de ${p} pro treino ${lo} no app ainda. Quer que eu monte de outra parte?`,
     jaTemTudo: (p, d) => `Sua ficha de ${d} já tem os exercícios de ${p} que eu colocaria. É só abrir o Treino e mandar ver.`,
@@ -135,6 +138,7 @@ export const TXT_PARTE: Record<Idioma, {
   },
   en: {
     confira: (p, l, d, lo, r) => `Got it, a ${r ? 'quick ' : ''}${p}-only workout: ${l}. Shall I put it in your ${d} ${lo} routine? You choose the weight on the spot.`,
+    cartao: (p, d, lo, r) => `Got it, here's a ${r ? 'quick ' : ''}${p}-only workout. Check it below: shall I put it in your ${d} ${lo} routine?`,
     qualParte: 'Sure! Which body part do you want the workout for? (e.g. biceps, legs, chest)',
     semExercicio: (p, lo) => `I couldn't find ${p} exercises for the ${lo} workout in the app yet. Want one for another body part?`,
     jaTemTudo: (p, d) => `Your ${d} routine already has the ${p} exercises I would add. Just open Workout and go.`,
@@ -142,6 +146,7 @@ export const TXT_PARTE: Record<Idioma, {
   },
   es: {
     confira: (p, l, d, lo, r) => `Listo, entreno ${r ? 'rápido ' : ''}solo de ${p}: ${l}. ¿Lo pongo en tu rutina del ${d} ${lo}? El peso lo eliges tú en el momento.`,
+    cartao: (p, d, lo, r) => `Listo, armé un entreno ${r ? 'rápido ' : ''}solo de ${p}. Míralo abajo: ¿lo pongo en tu rutina del ${d} ${lo}?`,
     qualParte: '¡Claro! ¿De qué parte del cuerpo quieres el entreno? (ej.: bíceps, piernas, pecho)',
     semExercicio: (p, lo) => `Todavía no encontré ejercicios de ${p} para el entreno ${lo} en la app. ¿Te armo uno de otra parte?`,
     jaTemTudo: (p, d) => `Tu rutina del ${d} ya tiene los ejercicios de ${p} que pondría. Solo abre Entreno y dale.`,
@@ -149,6 +154,7 @@ export const TXT_PARTE: Record<Idioma, {
   },
   fr: {
     confira: (p, l, d, lo, r) => `C'est parti, une séance ${r ? 'rapide ' : ''}spéciale ${p} : ${l}. Je l'ajoute à ta séance du ${d} ${lo} ? La charge, c'est toi qui la choisis sur le moment.`,
+    cartao: (p, d, lo, r) => `C'est parti, voici une séance ${r ? 'rapide ' : ''}spéciale ${p}. Regarde ci-dessous : je l'ajoute à ta séance du ${d} ${lo} ?`,
     qualParte: 'Bien sûr ! Pour quelle partie du corps veux-tu la séance ? (ex. : biceps, jambes, pectoraux)',
     semExercicio: (p, lo) => `Je n'ai pas encore trouvé d'exercices pour ${p} ${lo} dans l'appli. Je t'en prépare une pour une autre partie ?`,
     jaTemTudo: (p, d) => `Ta séance du ${d} contient déjà les exercices pour ${p} que j'ajouterais. Ouvre Entraînement et c'est parti.`,
@@ -156,6 +162,7 @@ export const TXT_PARTE: Record<Idioma, {
   },
   hi: {
     confira: (p, l, d, lo, r) => `ठीक है, सिर्फ़ ${p} का ${r ? 'छोटा ' : ''}वर्कआउट: ${l}। इसे आपके ${d} (${lo}) वाले वर्कआउट में डाल दूँ? वज़न आप वहीं चुनिए।`,
+    cartao: (p, d, lo, r) => `ठीक है, सिर्फ़ ${p} का ${r ? 'छोटा ' : ''}वर्कआउट तैयार है। नीचे देखिए: इसे आपके ${d} (${lo}) वाले वर्कआउट में डाल दूँ?`,
     qualParte: 'ज़रूर! शरीर के किस हिस्से का वर्कआउट चाहिए? (जैसे: बाइसेप्स, पैर, छाती)',
     semExercicio: (p, lo) => `ऐप में अभी ${lo} के लिए ${p} की एक्सरसाइज़ नहीं मिली। किसी और हिस्से का बना दूँ?`,
     jaTemTudo: (p, d) => `आपके ${d} वाले वर्कआउट में ${p} की वे एक्सरसाइज़ पहले से हैं जो मैं डालता। बस वर्कआउट खोलिए और शुरू कीजिए।`,

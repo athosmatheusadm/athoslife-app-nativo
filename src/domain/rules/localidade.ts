@@ -10,6 +10,14 @@
 export const IDIOMAS = ['pt-BR', 'en', 'es', 'fr', 'hi'] as const
 export type Idioma = (typeof IDIOMAS)[number]
 
+/**
+ * Idiomas que aparecem no app na beta/lançamento (decisão do dono, 15/11/2026):
+ * fr e hi nunca foram revisados por quem fala — o código e os textos ficam,
+ * mas não entram no seletor nem na detecção do aparelho (fr/hi caem em en).
+ * Para liberar de novo, é só voltar a lista para IDIOMAS.
+ */
+export const IDIOMAS_VISIVEIS: readonly Idioma[] = ['pt-BR', 'en', 'es']
+
 export type Unidades = 'metrico' | 'imperial'
 
 export interface Localidade {
@@ -50,10 +58,12 @@ export function idiomaSuportado(tag: string | null | undefined): Idioma | null {
   if (base === 'pt') return 'pt-BR'
   if (base === 'en') return 'en'
   if (base === 'es') return 'es'
-  if (base === 'fr') return 'fr'
-  if (base === 'hi') return 'hi'
+  if (base === 'fr') return visivel('fr')
+  if (base === 'hi') return visivel('hi')
   return null
 }
+
+const visivel = (i: Idioma): Idioma | null => (IDIOMAS_VISIVEIS.includes(i) ? i : null)
 
 export function escolherIdioma(preferidos: readonly string[]): Idioma {
   for (const tag of preferidos) {

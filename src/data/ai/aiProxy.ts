@@ -357,10 +357,24 @@ export type EscolhaAcao = 'adicionar' | 'substituir' | 'forcar' | 'salvar' | 'ca
  * O que o Life FEZ no app (Life MVP 08/10) — só vem depois que o servidor
  * gravou. `escolha`: precisa da pessoa (ex.: "adicionar ou substituir?").
  */
+/** Treino rápido proposto no chat: nomes já no idioma da pessoa; local é o código da ficha. */
+export interface TreinoRapidoChat {
+  parte: string
+  dia: string
+  local: 'casa' | 'academia'
+  itens: { id: string; nome: string }[]
+}
+
 export type AcaoLife =
   | { tipo: 'refeicao_atualizada'; data: string }
   | { tipo: 'pausa'; dia: string }
-  | { tipo: 'escolha'; id: string; opcoes: { valor: EscolhaAcao; rotulo: string }[] }
+  | {
+      tipo: 'escolha'
+      id: string
+      opcoes: { valor: EscolhaAcao; rotulo: string }[]
+      /** Treino de uma parte do corpo (15/11): vira cartão com os exercícios. */
+      treino?: TreinoRapidoChat
+    }
   /** Pesagem ou meta gravada pelo chat (sem IA, sem cota) — recarrega o card "Meu peso". */
   | { tipo: 'peso_atualizado' }
   /** O Life mexeu na ficha pelo chat (Fase 3): o Treino troca pro local e recarrega. */
@@ -477,7 +491,7 @@ export async function enviarMensagemChat(
     id_envio: idEnvio,
     ...(diaLeve ? { dia_leve: diaLeve } : {}),
     // O que este app sabe mostrar (02/11): o servidor só oferece a ação se o app tiver o cartão.
-    recursos: ['programar', 'comparar', 'montar'],
+    recursos: ['programar', 'comparar', 'montar', 'cartao_treino'],
   }
   const cru = aoRascunho && temStreaming()
     ? await chamarChatStream<Cru>(payload, aoRascunho)

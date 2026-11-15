@@ -684,6 +684,12 @@ export const ptBR = {
     oi: 'Oi. Sobre o que você quer conversar agora?',
     carregando: 'Carregando a conversa…',
     comparacao: 'Comparação dos dois exercícios',
+    treinoRapido: {
+      titulo: (parte: string) => `Treino de ${parte}`,
+      onde: (dia: string, local: string) => `${dia} · ${local}`,
+      dica: 'Séries e repetições você ajusta na ficha, do seu jeito.',
+      abrir: 'Abrir o Treino',
+    },
     erroHistorico: 'Não deu pra carregar a conversa anterior — mas pode escrever que o Life responde.',
     digitando: 'Life está digitando…',
     placeholder: 'Escreve pro Life…',

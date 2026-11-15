@@ -2,7 +2,7 @@ import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
 import { useId, useMemo, useState } from 'react'
 import { useSession } from '@app/SessionProvider'
 import { profileRepository } from '@data/repositories/profileRepository'
-import { IDIOMAS, NOMES_IDIOMA, PAISES, unidadesDoPais, type Idioma, type Unidades } from '@domain/rules/localidade'
+import { IDIOMAS_VISIVEIS, NOMES_IDIOMA, PAISES, unidadesDoPais, type Idioma, type Unidades } from '@domain/rules/localidade'
 import { localidadeAtualDoAparelho, useI18n } from '@/i18n/I18nProvider'
 
 /**
@@ -51,7 +51,7 @@ export function IdiomaRegiao() {
         valor={NOMES_IDIOMA[idioma]}
         aberto={aberto === 'idioma'}
         alternar={() => setAberto(aberto === 'idioma' ? null : 'idioma')}
-        opcoes={IDIOMAS.map((i) => ({ id: i, nome: NOMES_IDIOMA[i] }))}
+        opcoes={IDIOMAS_VISIVEIS.map((i) => ({ id: i, nome: NOMES_IDIOMA[i] }))}
         atual={idioma}
         escolher={(i) => {
           setAberto(null)

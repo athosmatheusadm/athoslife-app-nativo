@@ -670,6 +670,12 @@ export const en: Mensagens = {
     oi: 'Hi. What would you like to talk about right now?',
     carregando: 'Loading the conversation…',
     comparacao: 'Comparison of the two exercises',
+    treinoRapido: {
+      titulo: (parte: string) => `${parte} workout`,
+      onde: (dia: string, local: string) => `${dia} · ${local}`,
+      dica: 'You adjust sets and reps in your routine, your way.',
+      abrir: 'Open Workout',
+    },
     erroHistorico: "Couldn't load the previous conversation — but you can write and Life will answer.",
     digitando: 'Life is typing…',
     placeholder: 'Write to Life…',

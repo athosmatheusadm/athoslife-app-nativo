@@ -6015,3 +6015,40 @@ fora do repo: 168 passam. `deno check ai-proxy/index.ts` acusa 1 erro
 - **15/11, depois:** dono autorizou; `ai-proxy` **v68 publicada** (ACTIVE).
   Smoke ainda não rodou (sem senha de QA): teste = dono manda "oi" no
   celular e confere-se `ai_audit_logs` + o gênero na resposta.
+
+## 2026-11-15 (2) — Life roxo na Home, fr/hi escondidos, treino rápido em cartão
+
+**Teste do dono no celular (v68):** 8 conversas, todas `ok`, raciocínio
+ativo, e o gênero saiu certo ("preocupado e cansado"). Conta como o teste
+de conversa que faltava da v67/v68. Observação dele no próprio chat: o Life
+às vezes fala de si em 3ª pessoa ("o Life vai conseguir...") e quase toda
+resposta fecha com pergunta (item 16 da lista de 11/11). Ainda não mexido.
+
+**Feito (app, precisa APK):**
+- **Life roxo no chat:** a resposta com humor `escutando` trocava o rosto
+  para `calmo`, que é o Life roxo meditando (cor da recaída/Hábitos). Agora
+  `escutando` → `normal` (verde). `LifeChatSheet.tsx`.
+- **Idiomas na beta:** `IDIOMAS_VISIVEIS = pt-BR, en, es` em
+  `localidade.ts`. O seletor de Perfil → Idioma e a órbita do onboarding
+  (`public/onboarding/index.html`) mostram só os 3; aparelho em fr/hi cai
+  em en. Textos e código de fr/hi ficam; para voltar, é só a lista.
+  Ninguém no banco usa fr/hi (13 perfis, todos pt-BR).
+- **Treino rápido em cartão:** o dono pediu "treino de bíceps de 20 min"
+  e veio a lista no texto. Agora o app manda o recurso `cartao_treino`, e a
+  `ai-proxy` responde com uma fala curta + `acao.treino` (parte, dia,
+  local, exercícios). O chat mostra um cartão com ícone e nome de cada
+  exercício (sem séries/reps, regra de 12/11) e "Séries e repetições você
+  ajusta na ficha". Depois de "Adicionar", aparece o atalho "Abrir o
+  Treino". APK antigo segue recebendo o texto de antes (sem o recurso).
+  Textos nos 5 idiomas.
+
+**Validado:** `deno test` ai-proxy + life-push: 168 passam; `deno check`
+só com o erro antigo de `a.receita`. `npm run typecheck` e build ok.
+
+**Pendências:**
+- **Deploy da `ai-proxy`** com o cartão (não publicado: só vale com o APK
+  novo, pode ir junto do próximo deploy) + smoke.
+- 3ª pessoa e "sempre fecha com pergunta" no chat.
+- Brevo: o dono não lembra login/senha. Login SMTP no Supabase é
+  `bdc28d001@smtp-brevo.com` (usuário técnico); a conta do painel deve ser
+  o Gmail dele → "Esqueci a senha" no brevo.com.

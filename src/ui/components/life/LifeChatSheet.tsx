@@ -1,4 +1,4 @@
-import { ActivityIcon } from '@ui/components/ActivityIcon'
+import { ActivityIcon, type ActivityIconKey } from '@ui/components/ActivityIcon'
 import { fmtKcal } from '@domain/rules/formatoNumero'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -16,6 +16,7 @@ import {
   type HumorChat,
   type LembrancaPendente,
   type MensagemChat,
+  type TreinoRapidoChat,
 } from '@data/ai/aiProxy'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { lifeMemoriaRepository } from '@data/repositories/lifeMemoriaRepository'
@@ -75,9 +76,22 @@ function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros'], semRede: 
  * Treino tem "Montar treino"; Dieta tem "Montar dieta", o Life-chef e o
  * scanner. Os planos ficam no fim da conversa (PlanosNoLife).
  */
-/** Humor da resposta → expressões que já existem em /life/. */
+/** Mensagem na tela: o treino rápido (15/11) fica preso à fala do Life que o trouxe. */
+type MensagemTela = MensagemChat & { treino?: TreinoRapidoChat; abrirTreino?: 'casa' | 'academia' }
+
+/** O servidor manda o cartão só pro app novo; confere o formato antes de mostrar. */
+function treinoValido(t: unknown): TreinoRapidoChat | undefined {
+  const x = t as TreinoRapidoChat | undefined
+  return x && Array.isArray(x.itens) && x.itens.length > 0 && (x.local === 'casa' || x.local === 'academia') ? x : undefined
+}
+
+/**
+ * Humor da resposta → expressões que já existem em /life/.
+ * "escutando" fica no verde: o 'calmo' é o Life roxo (cor da recaída/Hábitos),
+ * e trocava o Life verde da Home por roxo no meio de um desabafo (15/11).
+ */
 const ROSTO_DO_HUMOR: Record<HumorChat, HumorLife> = {
-  normal: 'normal', escutando: 'calmo', feliz: 'feliz', cozinhando: 'chef', treino: 'treino',
+  normal: 'normal', escutando: 'normal', feliz: 'feliz', cozinhando: 'chef', treino: 'treino',
 }
 
 export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; humor?: HumorLife; rascunho?: string }) {
@@ -89,7 +103,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   // Voltar do Android fecha o chat (antes minimizava o app nas telas raiz).
   useFecharNoVoltar(true, props.onFechar)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [historico, setHistorico] = useState<MensagemChat[]>([])
+  const [historico, setHistorico] = useState<MensagemTela[]>([])
   const ultima = historico[historico.length - 1]
   const pedidoPlano = ultima?.autor === 'life' ? separarCartoes(ultima.texto).montar : null
   // 'carregando' evita o "Oi…" piscar antes do histórico chegar.
@@ -177,7 +191,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   // Catálogo de exercícios (já fica em cache no aparelho) só quando aparece o primeiro cartão lado a lado.
   useEffect(() => {
     if (buscouExerciciosRef.current) return
-    if (!historico.some((h) => h.autor === 'life' && separarCartoes(h.texto).comparacoes.length > 0)) return
+    if (!historico.some((h) => h.autor === 'life' && (h.treino || separarCartoes(h.texto).comparacoes.length > 0))) return
     buscouExerciciosRef.current = true
     void exercicioCatalogoRepository
       .listar()
@@ -240,11 +254,13 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     setErro(null)
     try {
       const r = await responderAcaoLife(id, valor)
-      setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
+      // Treino rápido salvo: atalho pro Treino, onde séries e repetições são ajustadas.
+      const local = r.acao?.tipo === 'treino_atualizado' && treinoValido(escolha.treino) ? r.acao.local : undefined
+      setHistorico((h) => [...h, { autor: 'life', texto: r.resposta, ...(local ? { abrirTreino: local } : {}) }])
       aplicarAcao(r.acao)
     } catch (e) {
       setHistorico((h) => h.slice(0, -1))
-      setEscolha({ tipo: 'escolha', id, opcoes: escolha.opcoes })
+      setEscolha(escolha)
       setErro(mensagemDeErro(e, tc.erros, m.offline.lifePrecisaInternet))
     } finally {
       setEnviando(false)
@@ -324,7 +340,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       const r = await enviarMensagemChat(mensagem, foco, id, setRascunho)
       setRascunho(null)
       falhaRef.current = null
-      setHistorico((h) => [...h, { autor: 'life', texto: r.resposta }])
+      const treino = r.acao?.tipo === 'escolha' ? treinoValido(r.acao.treino) : undefined
+      setHistorico((h) => [...h, { autor: 'life', texto: r.resposta, ...(treino ? { treino } : {}) }])
       if (r.contadorOculto) setRestantes(null)
       else if (r.restantes !== null) setRestantes(r.restantes)
       if (r.humor) setHumorConversa(ROSTO_DO_HUMOR[r.humor])
@@ -427,6 +444,23 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                   const eb = exercicios?.get(cmp.b)
                   return ea && eb ? <CartaoComparar key={j} rotulo={tc.comparacao} lados={[[ea, cmp.ba], [eb, cmp.bb]]} /> : null
                 })}
+                {msg.treino && (
+                  <CartaoTreinoRapido
+                    treino={msg.treino}
+                    exercicios={exercicios}
+                    titulo={tc.treinoRapido.titulo(msg.treino.parte)}
+                    onde={tc.treinoRapido.onde(
+                      msg.treino.dia,
+                      msg.treino.local === 'casa' ? m.onboarding.treino.casa : m.onboarding.treino.academia,
+                    )}
+                    dica={tc.treinoRapido.dica}
+                  />
+                )}
+                {msg.abrirTreino && (
+                  <div className="max-w-[85%]">
+                    <Atalho texto={tc.treinoRapido.abrir} icone="pre_treino" onClick={() => ir('/treinos')} />
+                  </div>
+                )}
                 {/* Receita na própria conversa (dono, 12/11): na última resposta o
                     Life-chef abre aqui; nas antigas fica só o atalho. */}
                 {c.chef && i === historico.length - 1 && (
@@ -638,17 +672,58 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   )
 }
 
-function Atalho(props: { texto: string; onClick: () => void }) {
+function Atalho(props: { texto: string; onClick: () => void; icone?: ActivityIconKey }) {
   return (
     <button
       type="button"
       onClick={props.onClick}
       className="flex min-h-12 w-full items-center gap-2 rounded-2xl border border-brand/40 bg-brand/10 px-4 text-left text-sm font-bold text-brand active:scale-[0.99]"
     >
-      <ActivityIcon icone="jantar" tile={false} className="h-6 w-6" />
+      <ActivityIcon icone={props.icone ?? 'jantar'} tile={false} className="h-6 w-6" />
       <span className="flex-1">{props.texto}</span>
       <span aria-hidden="true">›</span>
     </button>
+  )
+}
+
+/**
+ * Treino de uma parte do corpo pedido no chat (dono, 15/11): os exercícios
+ * organizados, com ícone, no lugar da lista corrida no texto. Só nomes —
+ * séries e repetições a pessoa ajusta na ficha (o Life não prescreve).
+ */
+function CartaoTreinoRapido(props: {
+  treino: TreinoRapidoChat
+  exercicios: Map<string, ExercicioCatalogo> | null
+  titulo: string
+  onde: string
+  dica: string
+}) {
+  return (
+    <div className="w-full max-w-[92%] rounded-2xl border border-surface-4 bg-surface-2 p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs font-extrabold uppercase tracking-wide text-brand">{props.titulo}</span>
+        <span className="text-micro text-content-low">{props.onde}</span>
+      </div>
+      <ol className="mt-2 space-y-2">
+        {props.treino.itens.map((it, i) => {
+          const e = props.exercicios?.get(it.id)
+          const icone = e ? iconeDoExercicio(e) : null
+          return (
+            <li key={it.id} className="flex items-center gap-3">
+              {icone ? (
+                <img src={icone} alt="" className="h-11 w-11 flex-none rounded-xl object-cover" />
+              ) : (
+                <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-surface-3 text-sm font-bold text-content-low">
+                  {i + 1}
+                </span>
+              )}
+              <span className="min-w-0 flex-1 text-sm font-semibold text-content-hi">{it.nome}</span>
+            </li>
+          )
+        })}
+      </ol>
+      <p className="mt-2 text-micro text-content-low">{props.dica}</p>
+    </div>
   )
 }
 

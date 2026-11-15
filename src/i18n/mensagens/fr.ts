@@ -676,6 +676,12 @@ export const fr: Mensagens = {
     oi: 'Salut. De quoi tu veux parler maintenant ?',
     carregando: 'Chargement de la conversation…',
     comparacao: 'Comparaison des deux exercices',
+    treinoRapido: {
+      titulo: (parte: string) => `Séance ${parte}`,
+      onde: (dia: string, local: string) => `${dia} · ${local}`,
+      dica: 'Séries et répétitions se règlent dans ta séance, à ta façon.',
+      abrir: 'Ouvrir Entraînement',
+    },
     erroHistorico: 'Je n’ai pas pu charger la conversation précédente — mais tu peux écrire, Life répond.',
     digitando: 'Life écrit…',
     placeholder: 'Écris à Life…',
