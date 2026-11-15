@@ -6069,3 +6069,9 @@ só com o erro antigo de `a.receita`. `npm run typecheck` e build ok.
 - Brevo: nenhuma tentativa de envio nas últimas 24 h nos logs; o teste de
   "Esqueci a senha" pelo servidor foi barrado pelo modo automático — o dono
   testa pelo app.
+- **Limpeza de contas (dono autorizou, 15/11):** apagadas 5 contas de teste
+  `@athoslife-teste.dev` (ficou só a `qa.life`, usada no smoke) e 2 das 3
+  contas do Gustavo (ficou a "Gustavo", a mais usada). Banco: 6 usuários.
+- **Brevo:** o "Esqueci a senha" do dono falhou com
+  `525 5.7.1 Unauthorized IP address` — o bloqueio de IP do Brevo segue
+  ligado; só o dono desliga (Segurança → IPs autorizados).
