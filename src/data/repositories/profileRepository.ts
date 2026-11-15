@@ -167,7 +167,7 @@ export const profileRepository = {
   },
 
   /**
-   * Pede os 7 dias de teste grátis. Quem decide é o servidor: uma vez por
+   * Pede os 3 dias de teste grátis. Quem decide é o servidor: uma vez por
    * conta e por aparelho, com e-mail confirmado e não descartável.
    */
   async liberarTesteGratis(aparelho: string): Promise<StatusTesteGratis> {

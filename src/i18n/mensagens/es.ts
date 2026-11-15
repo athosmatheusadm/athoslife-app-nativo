@@ -423,6 +423,9 @@ export const es: Mensagens = {
     semRevisao: 'Modelo basado en pautas públicas (ACSM), sin evaluación individual.',
     pago: 'El plan de referencia es parte del plan de pago.',
     verPlanos: 'Ver planes',
+    premiumTitulo: 'Esto es Premium',
+    premiumTexto: 'Con Premium, Life arma tu entrenamiento y tu dieta de referencia y los va ajustando contigo.',
+    serPremium: 'Quiero ser Premium',
     comecar: 'Empezar',
     dias: { seg: 'Lun', ter: 'Mar', qua: 'Mié', qui: 'Jue', sex: 'Vie', sab: 'Sáb', dom: 'Dom' },
     triagem: {
@@ -1514,7 +1517,7 @@ export const es: Mensagens = {
         aparelho_ja_usou: 'Este dispositivo ya usó la prueba gratis en otra cuenta — aquí sigues en el plan gratis.',
         conta_ja_usou: 'Esta cuenta ya usó la prueba gratis.',
         email_descartavel: 'La prueba gratis no vale para correos temporales. Con un correo personal sale al instante.',
-        email_nao_confirmado: 'Confirma tu correo con el código que te enviamos y abre la app de nuevo para liberar 7 días de Premium.',
+        email_nao_confirmado: 'Confirma tu correo con el código que te enviamos y abre la app de nuevo para liberar 3 días de Premium.',
       },
       loja: {
         mensal: 'Mensual',

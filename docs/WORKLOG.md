@@ -6125,3 +6125,16 @@ Life; revogar o token do GitHub colado hoje.
   chaves `goog_` e `RC_SECRET_KEY` V1, webhook com `RC_WEBHOOK_AUTH`).
 - Pendente: keystore + .aab quando o dono criar a conta; conferir segredos
   do rc-webhook/rc-sync; compra de teste ponta a ponta.
+
+## 2026-11-15 (7) — Travado sempre leva ao Premium + teste de 3 dias
+- Bug: no chat, "Montar treino/dieta" no grátis mostrava "faz parte do plano
+  pago" + "Ver planos", mas o botão usava navigate() com a folha do chat
+  aberta → a tela de planos abria por trás e parecia não fazer nada. Agora
+  `ConvitePremium` (novo, `src/ui/components/`) e `props.onIr` (fecha o chat).
+- Limite de 1 hábito no grátis: em vez do texto vermelho, o mesmo cartão.
+- Teste grátis 7 → 3 dias: `db/athoslife_teste_3_dias_migration.sql`
+  (**NÃO aplicada**, falta ok do dono) + textos pt/en/es/fr/hi e regras.
+- Pendente: aplicar a migração; ideia da lista de espera (cor do Life /
+  conquista "Antes do início") e Fundador ("Apoiador Anjo" + auréola):
+  `pre_registros` está vazia no banco — falta saber onde está a lista.
+- typecheck + build ok.

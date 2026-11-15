@@ -109,7 +109,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         .catch(() => {})
     }
 
-    // 3) Conta nova nasce sem dias de teste: o app pede os 7 dias com o id
+    // 3) Conta nova nasce sem dias de teste: o app pede os 3 dias com o id
     //    do aparelho e o servidor decide (db/athoslife_protecao_ia_migration.sql).
     //    Falhar aqui nunca impede de usar o app — fica no grátis.
     const semTeste = !perfil.trialExpira && (perfil.plano === 'trial' || perfil.plano === 'free')

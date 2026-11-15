@@ -436,6 +436,9 @@ export const ptBR = {
     semRevisao: 'Modelo baseado em diretrizes públicas (ACSM), sem avaliação individual.',
     pago: 'O plano de referência faz parte do plano pago.',
     verPlanos: 'Ver planos',
+    premiumTitulo: 'Isso é do Premium',
+    premiumTexto: 'Com o Premium, o Life monta seu treino e sua dieta de referência e vai ajustando com você.',
+    serPremium: 'Quero ser Premium',
     comecar: 'Começar',
     dias: { seg: 'Seg', ter: 'Ter', qua: 'Qua', qui: 'Qui', sex: 'Sex', sab: 'Sáb', dom: 'Dom' },
     triagem: {
@@ -1528,7 +1531,7 @@ export const ptBR = {
         aparelho_ja_usou: 'Este aparelho já usou o teste grátis em outra conta — aqui você segue no plano grátis.',
         conta_ja_usou: 'Esta conta já usou o teste grátis.',
         email_descartavel: 'O teste grátis não vale pra e-mail temporário. Com um e-mail pessoal ele sai na hora.',
-        email_nao_confirmado: 'Confirme seu e-mail com o código que mandamos e abra o app de novo pra liberar os 7 dias de Premium.',
+        email_nao_confirmado: 'Confirme seu e-mail com o código que mandamos e abra o app de novo pra liberar os 3 dias de Premium.',
       },
       loja: {
         mensal: 'Mensal',

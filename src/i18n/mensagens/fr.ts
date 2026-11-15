@@ -429,6 +429,9 @@ export const fr: Mensagens = {
     semRevisao: 'Modèle basé sur des recommandations publiques (ACSM), sans évaluation individuelle.',
     pago: 'Le programme de référence fait partie de l’offre payante.',
     verPlanos: 'Voir les offres',
+    premiumTitulo: 'C’est une fonction Premium',
+    premiumTexto: 'Avec Premium, Life crée ton entraînement et ton alimentation de référence et les ajuste avec toi.',
+    serPremium: 'Passer à Premium',
     comecar: 'Commencer',
     dias: { seg: 'Lun', ter: 'Mar', qua: 'Mer', qui: 'Jeu', sex: 'Ven', sab: 'Sam', dom: 'Dim' },
     triagem: {
@@ -1520,7 +1523,7 @@ export const fr: Mensagens = {
         aparelho_ja_usou: 'Cet appareil a déjà utilisé l’essai gratuit sur un autre compte — ici, tu restes sur l’offre gratuite.',
         conta_ja_usou: 'Ce compte a déjà utilisé l’essai gratuit.',
         email_descartavel: 'L’essai gratuit ne marche pas avec un e-mail temporaire. Avec un e-mail perso, il s’active tout de suite.',
-        email_nao_confirmado: 'Confirme ton e-mail avec le code qu’on t’a envoyé et rouvre l’app pour débloquer les 7 jours de Premium.',
+        email_nao_confirmado: 'Confirme ton e-mail avec le code qu’on t’a envoyé et rouvre l’app pour débloquer les 3 jours de Premium.',
       },
       loja: {
         mensal: 'Mensuel',

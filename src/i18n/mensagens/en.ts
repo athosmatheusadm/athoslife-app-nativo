@@ -423,6 +423,9 @@ export const en: Mensagens = {
     semRevisao: 'Template based on public guidelines (ACSM), without individual assessment.',
     pago: 'The reference plan is part of the paid plan.',
     verPlanos: 'See plans',
+    premiumTitulo: 'This is a Premium feature',
+    premiumTexto: 'With Premium, Life builds your reference workout and diet and keeps adjusting them with you.',
+    serPremium: 'Go Premium',
     comecar: 'Start',
     dias: { seg: 'Mon', ter: 'Tue', qua: 'Wed', qui: 'Thu', sex: 'Fri', sab: 'Sat', dom: 'Sun' },
     triagem: {
@@ -1514,7 +1517,7 @@ export const en: Mensagens = {
         aparelho_ja_usou: 'This device already used the free trial on another account — here you stay on the free plan.',
         conta_ja_usou: 'This account already used the free trial.',
         email_descartavel: "The free trial isn't available for temporary emails. With a personal email it starts right away.",
-        email_nao_confirmado: 'Confirm your email with the code we sent and open the app again to unlock 7 days of Premium.',
+        email_nao_confirmado: 'Confirm your email with the code we sent and open the app again to unlock 3 days of Premium.',
       },
       loja: {
         mensal: 'Monthly',

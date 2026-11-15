@@ -13,7 +13,7 @@
 
 | Regra | Comportamento |
 |-------|---------------|
-| Trial padrão | Todo perfil novo nasce com `plano = 'trial'` e `trial_expira = NOW() + 30 dias` |
+| Trial padrão | **3 dias** de Premium (era 7 até 15/11/2026), uma vez por conta e por aparelho, só com e-mail confirmado (`liberar_teste_gratis`) |
 | Trial expirado | Rebaixa automaticamente para `free` (`check_access_status()`) |
 | Premium expirado | Rebaixa para `free` **e** `assinatura_ativa = false` |
 | Acesso premium-like | `premium`, `vip`, **ou** `trial` ainda não expirado (`is_premium_like()`) |
@@ -22,7 +22,7 @@
 **Planos existentes:** `trial`, `free`, `premium`, `fundador`, `vitalicio`, `vip`.
 
 **Decisão tomada:** Stripe e Kiwify **aposentados**. Google Play Billing é o único provedor de venda no Android.
-O trial de 30 dias **não passa pela Play** (não é venda) — continua exatamente como está.
+O trial de 3 dias **não passa pela Play** (não é venda) — continua exatamente como está.
 
 **Regra de arquitetura:** a lógica de negócio nunca fala com o provedor de pagamento.
 Tudo atrás de um `SubscriptionService` → trocar de provedor não toca no domínio.

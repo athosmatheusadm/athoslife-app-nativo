@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { habitoNomeProibido, type IntensidadeHabito, type TipoHabito } from '@domain/entities/habito'
 import { useI18n } from '@/i18n/I18nProvider'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
+import { useNavigate } from 'react-router-dom'
+import { ConvitePremium } from '@ui/components/ConvitePremium'
 
 /**
  * De propósito SEM álcool/cigarro/drogas/apostas: o app é um acompanhador
@@ -59,6 +61,9 @@ export function AddHabitSheet(props: {
   const [intensidade, setIntensidade] = useState<IntensidadeHabito>('medio')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  // Limite do grátis: em vez de só o texto vermelho, o cartão com caminho pro Premium.
+  const [noLimite, setNoLimite] = useState(false)
+  const navigate = useNavigate()
 
   const { m } = useI18n()
   const t = m.habitos.novoSheet
@@ -80,7 +85,8 @@ export function AddHabitSheet(props: {
       // Sucesso: o pai fecha o painel (desmonta), sem precisar zerar `salvando` aqui.
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
-      setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : msg === 'limite_habitos_gratis' ? m.habitos.limiteGratis : t.erro)
+      if (msg === 'limite_habitos_gratis') setNoLimite(true)
+      else setErro(msg === 'habito_nao_permitido' ? m.habitos.naoPermitido : t.erro)
       setSalvando(false)
     }
   }
@@ -185,6 +191,11 @@ export function AddHabitSheet(props: {
         </div>
 
         {erro && <p role="alert" className="mt-2 text-sm text-accent-danger">{erro}</p>}
+        {noLimite && (
+          <div className="mt-3">
+            <ConvitePremium texto={m.habitos.limiteGratis} onIr={() => navigate('/perfil/plano')} />
+          </div>
+        )}
 
         <button
           type="button"

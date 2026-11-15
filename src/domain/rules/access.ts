@@ -33,7 +33,7 @@ export function trialAtivo(
 
 /**
  * Espelha is_premium_like(): plano pago OU trial não expirado.
- * O trial de 7 dias dá acesso completo — e não é uma venda,
+ * O trial de 3 dias (era 7 até 15/11/2026) dá acesso completo — e não é uma venda,
  * portanto não passa pelo Google Play Billing.
  */
 export function temAcessoPremium(

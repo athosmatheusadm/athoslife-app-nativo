@@ -1,6 +1,5 @@
 import { ActivityIcon } from '@ui/components/ActivityIcon'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useSession } from '@app/SessionProvider'
 import { temAcessoPremium } from '@domain/rules/access'
 import { profileRepository } from '@data/repositories/profileRepository'
@@ -18,6 +17,7 @@ import {
 } from '@domain/rules/triagemSaude'
 import { useI18n } from '@/i18n/I18nProvider'
 import { BalaoLife, BalaoPessoa, Opcao } from './baloes'
+import { ConvitePremium } from '@ui/components/ConvitePremium'
 import { MontarDietaNoLife, MontarTreinoNoLife } from './MontarPlanoNoLife'
 
 export type AreaPlano = 'treino' | 'dieta'
@@ -58,7 +58,6 @@ export function PlanosNoLife(props: {
 }) {
   const { m } = useI18n()
   const t = m.lifePlanos
-  const navigate = useNavigate()
   const { profile, refresh } = useSession()
   // Sexo vem do onboarding; se não tiver (ou "prefiro não dizer"), o check
   // pergunta — gravidez/amamentação (t4) só aparece pra mulher.
@@ -301,12 +300,9 @@ export function PlanosNoLife(props: {
       )}
 
       {passo.tipo === 'pronto' && triagem && montando && !pago && (
-        <>
-          <BalaoLife>{m.plano.pago}</BalaoLife>
-          <div className="flex justify-end">
-            <Opcao onClick={() => navigate('/perfil/plano')}>{m.plano.verPlanos}</Opcao>
-          </div>
-        </>
+        // onIr fecha o chat antes de navegar: com navigate() puro a tela de
+        // planos abria por trás da folha e o botão parecia não fazer nada.
+        <ConvitePremium texto={m.plano.premiumTexto} onIr={() => props.onIr('/perfil/plano')} />
       )}
       {passo.tipo === 'pronto' && triagem && montando === 'treino' && pago && (
         <MontarTreinoNoLife triagem={triagem} onAplicado={props.onIr} onMudou={props.onMudou} />
