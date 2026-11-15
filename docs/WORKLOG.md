@@ -6012,3 +6012,6 @@ fora do repo: 168 passam. `deno check ai-proxy/index.ts` acusa 1 erro
   teve conversa depois do deploy.
 - `life-push`: as frases prontas não têm gênero fixo em pt (conferido),
   então não precisou mexer.
+- **15/11, depois:** dono autorizou; `ai-proxy` **v68 publicada** (ACTIVE).
+  Smoke ainda não rodou (sem senha de QA): teste = dono manda "oi" no
+  celular e confere-se `ai_audit_logs` + o gênero na resposta.
