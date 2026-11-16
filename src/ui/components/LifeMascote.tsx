@@ -38,6 +38,15 @@ export type HumorLife =
   | 'conquista'
   | 'resgate'
 
+/**
+ * Visual especial do Life, só na Home (dono, 15/11/2026): amarelo clarinho
+ * pra quem estava na lista de espera; branco pérola + auréola pro Fundador.
+ * A cor é recalculada dentro do motor animado (só os pixels verdes mudam),
+ * então ele continua piscando, sorrindo e pulando.
+ */
+export type CorLife = 'amarelo' | 'perola'
+export type AcessorioLife = 'aureola'
+
 export function srcLife(humor: HumorLife): string {
   return `/life/${humor}.webp`
 }
@@ -69,6 +78,9 @@ export function LifeMascote(props: {
   nivelHabitos?: number | undefined
   /** Cada aumento toca a animação dourada da conquista uma vez. */
   celebrar?: number | undefined
+  /** Só no Life animado padrão (Home). */
+  cor?: CorLife | undefined
+  acessorio?: AcessorioLife | undefined
 }) {
   const vivo = props.estatico ? undefined : VIVO[props.humor]
   if (!vivo) {
@@ -89,6 +101,8 @@ export function LifeMascote(props: {
       expressao={vivo.ex}
       nivelHabitos={props.nivelHabitos}
       celebrar={(props.celebrar ?? 0) + (props.humor === 'conquista' ? 1 : 0)}
+      cor={props.cor}
+      acessorio={props.acessorio}
       className={props.className ?? 'h-24'}
       alt={props.alt ?? 'Life'}
     />
@@ -101,6 +115,8 @@ function LifeVivo(props: {
   expressao: string | undefined
   nivelHabitos: number | undefined
   celebrar: number
+  cor: CorLife | undefined
+  acessorio: AcessorioLife | undefined
   className: string
   alt: string
 }) {
@@ -114,6 +130,8 @@ function LifeVivo(props: {
     const q = new URLSearchParams({ v: props.versao })
     if (props.nivelHabitos !== undefined) q.set('hab', String(Math.round(props.nivelHabitos)))
     if (props.expressao) q.set('ex', props.expressao)
+    if (props.cor) q.set('cor', props.cor)
+    if (props.acessorio) q.set('ac', props.acessorio)
     return `/life/vivo/foco.html?${q}`
   })
 
@@ -143,6 +161,17 @@ function LifeVivo(props: {
   useEffect(() => {
     if (props.nivelHabitos !== undefined) enviar({ tipo: 'hab', valor: Math.round(props.nivelHabitos) })
   }, [props.nivelHabitos])
+
+  // Cor/acessório mudaram depois de abrir (ex.: virou Fundador agora).
+  const corIniciada = useRef(false)
+  useEffect(() => {
+    if (!corIniciada.current) {
+      corIniciada.current = true
+      return
+    }
+    enviar({ tipo: 'cor', id: props.cor ?? '' })
+    enviar({ tipo: 'acessorio', id: props.acessorio ?? '' })
+  }, [props.cor, props.acessorio])
 
   // Só manda depois do "pronto": antes disso o protótipo ainda não ouve.
   const celebrados = useRef(0)

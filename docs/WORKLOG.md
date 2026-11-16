@@ -6138,3 +6138,26 @@ Life; revogar o token do GitHub colado hoje.
   conquista "Antes do início") e Fundador ("Apoiador Anjo" + auréola):
   `pre_registros` está vazia no banco — falta saber onde está a lista.
 - typecheck + build ok.
+
+## 2026-11-16 — Cores do Life (prévia) + falha do fim do teste
+
+- **Sessão de 15/11 travou** tentando tirar print com Chrome headless da
+  prévia. Não usar isso; o dono abre a prévia no navegador dele.
+- **Cores do Life na Home (só prévia, nada muda no APK):** motor animado
+  ganhou `uPele` (1 = amarelo clarinho, lista de espera "Antes do início";
+  2 = branco pérola, Fundador "Apoiador Anjo") e o acessório auréola
+  (`public/life/vivo/a/aureola.png`). Gerador: `scripts/gerar_life_vivo.py`.
+  `LifeMascote` aceita `cor`/`acessorio`; `LifeSaudacao` só usa em
+  `npm run dev` com `/?corLife=perola&acessorio=aureola`.
+  Prévia lado a lado: `npx vite --port 5173` →
+  `/docs/previas/previa-cores-life.html`. **Falta o dono aprovar** e ligar
+  a quem tem direito (`pre_registros` vazia: onde está a lista de espera?).
+- **Falha achada:** treino/dieta montados no teste grátis continuam com a
+  pessoa quando o teste acaba (Treinos/Dieta não checam premium; RLS só
+  checa dono). Dono decide: (a) bloquear com o cartão do Premium ou
+  (b) mostrar apagado com o cartão por cima.
+- typecheck ok.
+
+**Pendências:** push (a65bb09, d8abe55 e este) precisa de token novo;
+aplicar `db/athoslife_teste_3_dias_migration.sql` (ok do dono); decisão do
+fim do teste; aprovação das cores.

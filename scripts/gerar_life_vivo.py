@@ -46,6 +46,8 @@ main{max-width:none!important;display:block!important;margin:0!important}
 #   {lifeVivo:'hab', valor}      0–100 (roxo dos hábitos)
 #   {lifeVivo:'expr', id}        id da expressão do protótipo (normal, feliz, sono...)
 #   {lifeVivo:'toque'} | {lifeVivo:'conquista'} | {lifeVivo:'acao', i}
+#   {lifeVivo:'cor', id}         '' | amarelo | perola (cor das conquistas, só no Life padrão)
+#   {lifeVivo:'acessorio', id}   '' | aureola (preso na cabeça)
 # Respostas pro app: {lifeVivo:'pronto'} quando o Life pedido está na tela;
 # {lifeVivo:'falhou'} sem WebGL (o app mantém a imagem parada).
 PONTE = """
@@ -64,6 +66,8 @@ PONTE = """
       case 'toque': clicar('#btnToque'); break;
       case 'conquista': var c=q('#btnConq'); if(c){c.hidden=false;c.click()} break;
       case 'acao': var a=document.querySelectorAll('#acoes button')[d.i||0]; if(a)a.click(); break;
+      case 'cor': if(window.__S) window.__S.cor=({amarelo:1,perola:2})[d.id]||0; break;
+      case 'acessorio': if(window.__S) window.__S.skin=d.id||''; break;
     }
   }
   addEventListener('message',function(ev){if(ev.source===parent)aplicar(ev.data)});
@@ -73,6 +77,8 @@ PONTE = """
     if(u.get('v')) aplicar({lifeVivo:'versao',id:u.get('v')});
     if(u.get('hab')) aplicar({lifeVivo:'hab',valor:Number(u.get('hab'))});
     if(u.get('ex')) aplicar({lifeVivo:'expr',id:u.get('ex')});
+    if(u.get('cor')) aplicar({lifeVivo:'cor',id:u.get('cor')});
+    if(u.get('ac')) aplicar({lifeVivo:'acessorio',id:u.get('ac')});
   }
   // "pronto" só quando a versão pedida já carregou e está desenhada.
   var iniciado=false;
@@ -89,6 +95,52 @@ PONTE = """
 })();
 </script>
 """
+
+
+# Cores especiais do Life (dono, 15/11/2026: lista de espera = amarelo
+# clarinho, Fundador = branco pérola + auréola). A cor é recalculada no
+# shader, igual ao roxo dos hábitos: só os pixels verdes mudam (olhos, boca
+# e brilho ficam), então a animação toda continua valendo — piscar, sorriso,
+# pálpebra. A auréola usa o encaixe de acessório do protótipo (preso ao osso
+# da cabeça).
+PELE_GLSL = """
+vec4 pele(vec4 t){
+  if(t.a<0.004) return t;
+  vec3 c0=t.rgb/t.a; vec3 h=rgb2hsv(c0); float H=h.x*360.0;
+  float w=clamp((h.y-0.04)/0.12,0.0,1.0)*step(45.0,H)*step(H,170.0);
+  if(w<=0.0) return t;
+  float v=clamp(h.z,0.0,1.0); vec3 rgb;
+  if(uPele<1.5){
+    // amarelo clarinho: amarelo-manteiga, mantendo a sombra do 3D
+    float nh=50.0+(H-96.0)*0.20;
+    rgb=hsv2rgb(vec3(nh/360.0, clamp(h.y*0.58,0.0,1.0), clamp(pow(v,0.82)*1.03,0.0,1.0)));
+  } else {
+    // pérola: branco quente na luz, sombra lilás-acinzentada (não fica chapado/pálido)
+    float l=smoothstep(0.30,0.95,v);
+    float nv=clamp(0.06+pow(v,1.0)*0.98,0.0,1.0);
+    rgb=nv*mix(vec3(0.86,0.85,0.97), vec3(1.0,0.975,0.93), l);
+    rgb+=vec3(0.035,0.0,0.05)*sin(v*9.0)*l;
+  }
+  return vec4(mix(c0, rgb, w)*t.a, t.a);
+}
+"""
+
+PELE_PATCHES = [
+    ("uniform float uHappy, uErase, uMode, uAlpha, uRecolor, uLidMode;",
+     "uniform float uHappy, uErase, uMode, uAlpha, uRecolor, uLidMode, uPele;"),
+    ("vec4 both(vec2 px, float m){", PELE_GLSL.strip() + "\nvec4 both(vec2 px, float m){"),
+    ("    gl_FragColor = c*uAlpha;\n  }\n}`", "    if(uPele>0.5) c = pele(c);\n    gl_FragColor = c*uAlpha;\n  }\n}`"),
+    ("'uWipe','uSprOn','uSpr','uSprC'].forEach(n=>U[n]=gl.getUniformLocation(prog,n));",
+     "'uWipe','uSprOn','uSpr','uSprC','uPele'].forEach(n=>U[n]=gl.getUniformLocation(prog,n));"),
+    ("gl.uniform1f(U.uRecolor,v.base||v.medal?0:1);",
+     "gl.uniform1f(U.uRecolor,v.base||v.medal?0:1);gl.uniform1f(U.uPele,(v.base||v.medal)?(S.cor||0):0);"),
+    ("  Object.values(SKINS).forEach(s=>s.mesh=quadMesh(s.rect));",
+     "  SKINS.aureola={src:'a/aureola.png',rect:[212,-196,570,210],nome:'Auréola'};\n"
+     "  Object.values(SKINS).forEach(s=>s.mesh=quadMesh(s.rect));"),
+    ("// acessórios, pele rosa, pose e as outras versões carregam depois, sem segurar o Life\n",
+     "// acessórios, pele rosa, pose e as outras versões carregam depois, sem segurar o Life\n"
+     "    loadTex(SKINS.aureola.src,5).then(x=>SKINS.aureola.tex=x).catch(()=>{});\n"),
+]
 
 
 def main(origem: str, nome: str, destino: str = DESTINO) -> None:
@@ -123,6 +175,10 @@ def main(origem: str, nome: str, destino: str = DESTINO) -> None:
 
     # Sem fontes do Google (offline e sem chamada externa): o motor só usa a fonte no "Z" do sono.
     html = re.sub(r'<link rel="(preconnect|stylesheet)"[^>]*fonts\.(googleapis|gstatic)[^>]*>\n?', '', html)
+
+    for a, b in PELE_PATCHES:
+        assert html.count(a) == 1, f'encaixe da cor/auréola não encontrado: {a[:40]}'
+        html = html.replace(a, b)
 
     html = html.replace('</style>', '</style>' + CSS, 1)
     html = html.replace('</body>', PONTE + '</body>') if '</body>' in html else html + PONTE

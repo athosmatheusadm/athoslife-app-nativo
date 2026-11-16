@@ -457,7 +457,7 @@ precision mediump float;
 #endif
 uniform sampler2D uG, uP, uHG, uHP, uER, uAcc;
 uniform vec4 uHapRect, uEraseRect, uAccRect;
-uniform float uHappy, uErase, uMode, uAlpha, uRecolor, uLidMode;
+uniform float uHappy, uErase, uMode, uAlpha, uRecolor, uLidMode, uPele;
 uniform vec2 uWipe;
 uniform vec2 uTex, uLook;
 uniform float uLevel, uTime, uWave, uFeetY, uTopY, uLidL, uLidR;
@@ -491,6 +491,25 @@ vec4 roxo(vec4 t){
   float ns=h.y*0.92*(1.0-belly*0.38);
   float nv=clamp(pow(clamp(h.z,0.0,1.0),0.62)+belly*0.10,0.0,1.0);
   return vec4(hsv2rgb(vec3(nh/360.0, mix(h.y,ns,w), mix(h.z,nv,w)))*t.a, t.a);
+}
+vec4 pele(vec4 t){
+  if(t.a<0.004) return t;
+  vec3 c0=t.rgb/t.a; vec3 h=rgb2hsv(c0); float H=h.x*360.0;
+  float w=clamp((h.y-0.04)/0.12,0.0,1.0)*step(45.0,H)*step(H,170.0);
+  if(w<=0.0) return t;
+  float v=clamp(h.z,0.0,1.0); vec3 rgb;
+  if(uPele<1.5){
+    // amarelo clarinho: amarelo-manteiga, mantendo a sombra do 3D
+    float nh=50.0+(H-96.0)*0.20;
+    rgb=hsv2rgb(vec3(nh/360.0, clamp(h.y*0.58,0.0,1.0), clamp(pow(v,0.82)*1.03,0.0,1.0)));
+  } else {
+    // pérola: branco quente na luz, sombra lilás-acinzentada (não fica chapado/pálido)
+    float l=smoothstep(0.30,0.95,v);
+    float nv=clamp(0.06+pow(v,1.0)*0.98,0.0,1.0);
+    rgb=nv*mix(vec3(0.86,0.85,0.97), vec3(1.0,0.975,0.93), l);
+    rgb+=vec3(0.035,0.0,0.05)*sin(v*9.0)*l;
+  }
+  return vec4(mix(c0, rgb, w)*t.a, t.a);
 }
 vec4 both(vec2 px, float m){
   vec2 uv=clamp(px/uTex, vec2(0.0), vec2(1.0)); vec4 g=texture2D(uG,uv);
@@ -597,6 +616,7 @@ void main(){
       vec2 eq=(px-uEraseRect.xy)/uEraseRect.zw;
       if(eq.x>0.0&&eq.y>0.0&&eq.x<1.0&&eq.y<1.0) c*=1.0-texture2D(uER,eq).r;
     }
+    if(uPele>0.5) c = pele(c);
     gl_FragColor = c*uAlpha;
   }
 }`;
@@ -688,8 +708,9 @@ void main(){
   VERS[0].mesh=buildMesh(VERS[0]);
   // malha das peças: presa 100% ao osso da cabeça
   function quadMesh(r,wv){const p=[],w=[],pl=[],ix=[],N=6;for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){p.push(r[0]+r[2]*i/N,r[1]+r[3]*j/N);w.push(...(wv||[1,0,0,0]));pl.push(0)}for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*(N+1)+i;ix.push(k,k+1,k+N+1,k+1,k+N+2,k+N+1)}return mkmesh(p,w,pl,ix)}
+  SKINS.aureola={src:'a/aureola.png',rect:[212,-196,570,210],nome:'Auréola'};
   Object.values(SKINS).forEach(s=>s.mesh=quadMesh(s.rect));
-  const U={};['uTexV','uTex','uNeck','uFeet','uTail','uPropP','uHeadOff','uScale','uWorld0','uWorldS','uHeadRot','uTailRot','uPropRot','uBreathX','uJump','uBodyRot','uXf','uG','uP','uLook','uLevel','uTime','uWave','uFeetY','uTopY','uLidL','uLidR','uEyeL','uEyeR','uIrisL','uIrisR','uIrisRad','uTh','uSkinL','uSkinR','uGlint','uTopL','uTopR','uHG','uHP','uER','uAcc','uHapRect','uEraseRect','uAccRect','uHappy','uErase','uMode','uAlpha','uRecolor','uLidMode','uWipe','uSprOn','uSpr','uSprC'].forEach(n=>U[n]=gl.getUniformLocation(prog,n));
+  const U={};['uTexV','uTex','uNeck','uFeet','uTail','uPropP','uHeadOff','uScale','uWorld0','uWorldS','uHeadRot','uTailRot','uPropRot','uBreathX','uJump','uBodyRot','uXf','uG','uP','uLook','uLevel','uTime','uWave','uFeetY','uTopY','uLidL','uLidR','uEyeL','uEyeR','uIrisL','uIrisR','uIrisRad','uTh','uSkinL','uSkinR','uGlint','uTopL','uTopR','uHG','uHP','uER','uAcc','uHapRect','uEraseRect','uAccRect','uHappy','uErase','uMode','uAlpha','uRecolor','uLidMode','uWipe','uSprOn','uSpr','uSprC','uPele'].forEach(n=>U[n]=gl.getUniformLocation(prog,n));
   gl.uniform2f(U.uWorld0,W0,H0);gl.uniform2f(U.uWorldS,WW,WH);
   gl.uniform1i(U.uG,0);gl.uniform1i(U.uP,1);gl.uniform1i(U.uHG,2);gl.uniform1i(U.uHP,3);gl.uniform1i(U.uER,4);gl.uniform1i(U.uAcc,5);
   gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
@@ -914,7 +935,7 @@ void main(){
     gl.uniform4f(U.uIrisRad,...(E?[...E.L.rr,...E.R.rr]:[1,2,1,2]));
     gl.uniform3f(U.uTopL,...(E?E.L.top:NOTOP));gl.uniform3f(U.uTopR,...(E?E.R.top:NOTOP));
     gl.uniform2f(U.uTh,E?E.L.th||24:24,E?E.R.th||24:24);gl.uniform2f(U.uSkinL,...(E?E.L.skin:[0,0]));gl.uniform2f(U.uSkinR,...(E?E.R.skin:[0,0]));
-    gl.uniform1f(U.uLidMode,v.lidMode);gl.uniform1f(U.uRecolor,v.base||v.medal?0:1);
+    gl.uniform1f(U.uLidMode,v.lidMode);gl.uniform1f(U.uRecolor,v.base||v.medal?0:1);gl.uniform1f(U.uPele,(v.base||v.medal)?(S.cor||0):0);
     gl.uniform1f(U.uTime,A.t);gl.uniform1f(U.uLevel,v.medal?S.gold:(v.thermo?S.level:0));gl.uniform1f(U.uGlint,v.medal?1:0);gl.uniform1f(U.uWave,reduce?0:5);
     const EX=S.exCur&&S.exK>0&&EXI[S.exCur]&&EXI[S.exCur].ver===(v.ver||v.id)&&EXI[S.exCur].tg?EXI[S.exCur]:null;
     const CL=v.closed?(v.closed.shared||v.closed):null; let lidA=E?A.lid:0, hap=v.base?S.happy:0;
@@ -1094,6 +1115,7 @@ void main(){
 
   Promise.all([loadTex(GREEN,0).then(x=>TX.verde=x),loadTex(PURPLE,1).then(x=>TX.roxo=x),...Object.values(SMILES).flatMap(s=>[loadTex(s.g,2).then(x=>s.tg=x),loadTex(s.p,3).then(x=>s.tp=x)])]).then(()=>{resize();window.__lifeVivoPronto=true;
     // acessórios, pele rosa, pose e as outras versões carregam depois, sem segurar o Life
+    loadTex(SKINS.aureola.src,5).then(x=>SKINS.aureola.tex=x).catch(()=>{});
     setTimeout(()=>{[VBY.medalha,...VERS.slice(1).filter(v=>!v.medal),...Object.values(POSES)].reduce((p,v)=>p.then(()=>ensure(v)),Promise.resolve())},1200);
     if(reduce){draw(performance.now());setInterval(()=>draw(performance.now()),120)} else requestAnimationFrame(loop);
   }).catch(()=>fallbackStatic());
@@ -1127,6 +1149,8 @@ void main(){
       case 'toque': clicar('#btnToque'); break;
       case 'conquista': var c=q('#btnConq'); if(c){c.hidden=false;c.click()} break;
       case 'acao': var a=document.querySelectorAll('#acoes button')[d.i||0]; if(a)a.click(); break;
+      case 'cor': if(window.__S) window.__S.cor=({amarelo:1,perola:2})[d.id]||0; break;
+      case 'acessorio': if(window.__S) window.__S.skin=d.id||''; break;
     }
   }
   addEventListener('message',function(ev){if(ev.source===parent)aplicar(ev.data)});
@@ -1136,6 +1160,8 @@ void main(){
     if(u.get('v')) aplicar({lifeVivo:'versao',id:u.get('v')});
     if(u.get('hab')) aplicar({lifeVivo:'hab',valor:Number(u.get('hab'))});
     if(u.get('ex')) aplicar({lifeVivo:'expr',id:u.get('ex')});
+    if(u.get('cor')) aplicar({lifeVivo:'cor',id:u.get('cor')});
+    if(u.get('ac')) aplicar({lifeVivo:'acessorio',id:u.get('ac')});
   }
   // "pronto" só quando a versão pedida já carregou e está desenhada.
   var iniciado=false;
