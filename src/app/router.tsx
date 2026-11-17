@@ -33,6 +33,7 @@ import { CriacaoScreen } from '@ui/screens/cozinha/CriacaoScreen'
 import { DocumentoLegal } from '@ui/screens/legal/DocumentoLegal'
 import { Licencas } from '@ui/screens/legal/Licencas'
 import { StoryScreen } from '@ui/screens/story/StoryScreen'
+import { PreviaTreinoRapido } from '@ui/screens/PreviaTreinoRapido'
 
 /** Casca do app: liga o botão Voltar dentro do contexto do roteador. */
 function Shell() {
@@ -94,6 +95,8 @@ export const router = createBrowserRouter([
           { path: '/perfil/sobre', element: <Sobre /> },
           { path: '/perfil/sobre/licencas', element: <Licencas /> },
           { path: '/story', element: <StoryScreen /> },
+          // Só no `npm run dev`: o cartão do treino rápido do chat (17/11).
+          ...(import.meta.env.DEV ? [{ path: '/previa/treino-rapido', element: <PreviaTreinoRapido /> }] : []),
           { path: '/perfil/idioma', element: <IdiomaRegiao /> },
           { path: '/dieta/cozinha', element: <CozinhaListaScreen /> },
           { path: '/dieta/cozinha/life', element: <LifeChefScreen /> },

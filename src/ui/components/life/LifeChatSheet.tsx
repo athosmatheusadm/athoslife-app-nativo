@@ -24,7 +24,7 @@ import { receitasRepository, type ReceitaCrua } from '@data/repositories/receita
 import { FotoReceita } from '@ui/screens/cozinha/CardReceita'
 import { exercicioCatalogoRepository } from '@data/repositories/exercicioCatalogoRepository'
 import { iconeDoExercicio, type ExercicioCatalogo } from '@domain/entities/treino'
-import { AQUECIMENTO_MIN, DESCANSO_PADRAO_SEG, minutosDoTreinoRapido } from '@domain/rules/treinoRapido'
+import { AQUECIMENTO_MIN, DESCANSO_PADRAO_SEG, minutosDoTreinoRapido, seriesDoTreinoRapido } from '@domain/rules/treinoRapido'
 import {
   aoMudarPausa,
   lifePausadoHoje,
@@ -693,7 +693,7 @@ function Atalho(props: { texto: string; onClick: () => void; icone?: ActivityIco
  * descanso no rodapé. Séries/reps são o padrão do catálogo — as mesmas que
  * entram na ficha —, então o Life não prescreve nada: a pessoa ajusta lá.
  */
-function CartaoTreinoRapido(props: {
+export function CartaoTreinoRapido(props: {
   treino: TreinoRapidoChat
   exercicios: Map<string, ExercicioCatalogo> | null
   textos: Mensagens['lifeChat']['treinoRapido']
@@ -702,7 +702,9 @@ function CartaoTreinoRapido(props: {
   const t = props.textos
   const doCatalogo = props.treino.itens.flatMap((it) => props.exercicios?.get(it.id) ?? [])
   // Tempo só quando o catálogo já carregou todos; senão o número sairia baixo.
-  const minutos = doCatalogo.length === props.treino.itens.length ? minutosDoTreinoRapido(doCatalogo) : null
+  const completo = doCatalogo.length === props.treino.itens.length
+  const minutos = completo ? minutosDoTreinoRapido(doCatalogo) : null
+  const nSeries = completo ? seriesDoTreinoRapido(doCatalogo) : []
   return (
     <div className="w-full max-w-[92%] rounded-2xl border border-surface-4 bg-surface-2 p-3">
       <div className="flex items-baseline justify-between gap-2">
@@ -725,10 +727,11 @@ function CartaoTreinoRapido(props: {
         {props.treino.itens.map((it, i) => {
           const e = props.exercicios?.get(it.id)
           const icone = e ? iconeDoExercicio(e) : null
-          const series = e
+          const n = nSeries[i]
+          const series = e && n
             ? e.medida === 'tempo'
-              ? t.seriesTempo(e.seriesPadrao, e.segundosPadrao ?? 30)
-              : t.series(e.seriesPadrao, e.repeticoesPadrao)
+              ? t.seriesTempo(n, e.segundosPadrao ?? 30)
+              : t.series(n, e.repeticoesPadrao)
             : null
           return (
             <li key={it.id} className="flex items-center gap-3 py-2">
