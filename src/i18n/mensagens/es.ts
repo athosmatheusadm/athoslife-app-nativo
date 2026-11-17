@@ -675,7 +675,13 @@ export const es: Mensagens = {
     comparacao: 'Comparación de los dos ejercicios',
     treinoRapido: {
       titulo: (parte: string) => `Entreno de ${parte}`,
+      tempo: (min: number) => `~${min} min`,
       onde: (dia: string, local: string) => `${dia} · ${local}`,
+      aquecimento: (min: number) => `Calentamiento · ${min} min`,
+      aquecimentoComo: 'Movilidad suave y 1 serie con poco peso del primer ejercicio.',
+      series: (series: number, reps: number) => `${series} ${series === 1 ? 'serie' : 'series'} × ${reps}`,
+      seriesTempo: (series: number, seg: number) => `${series} ${series === 1 ? 'serie' : 'series'} × ${seg} s`,
+      descanso: (seg: number) => `Descanso de ${seg} s entre series`,
       dica: 'Series y repeticiones las ajustas en tu rutina, a tu manera.',
       abrir: 'Abrir Entreno',
     },

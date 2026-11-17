@@ -689,7 +689,13 @@ export const ptBR = {
     comparacao: 'Comparação dos dois exercícios',
     treinoRapido: {
       titulo: (parte: string) => `Treino de ${parte}`,
+      tempo: (min: number) => `~${min} min`,
       onde: (dia: string, local: string) => `${dia} · ${local}`,
+      aquecimento: (min: number) => `Aquecimento · ${min} min`,
+      aquecimentoComo: 'Mobilidade leve e 1 série com pouco peso do primeiro exercício.',
+      series: (series: number, reps: number) => `${series} ${series === 1 ? 'série' : 'séries'} × ${reps}`,
+      seriesTempo: (series: number, seg: number) => `${series} ${series === 1 ? 'série' : 'séries'} × ${seg} s`,
+      descanso: (seg: number) => `Descanso de ${seg} s entre séries`,
       dica: 'Séries e repetições você ajusta na ficha, do seu jeito.',
       abrir: 'Abrir o Treino',
     },

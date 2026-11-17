@@ -6181,3 +6181,17 @@ fim do teste; aprovação das cores.
 cartão do Premium) e o novo cartão do treino rápido no chat (estilo do
 exemplo, com séries × repetições; aquecimento no topo?). Push precisa
 de token.
+
+## 2026-11-17 (2) — Cartão do treino rápido no chat (aprovado pelo dono)
+
+- `CartaoTreinoRapido` (LifeChatSheet) no formato aprovado: título com
+  tempo (~N min), **aquecimento de 5 min no topo**, cada exercício com
+  ícone e séries × repetições (ou × segundos) do padrão do catálogo,
+  divisórias e "Descanso de 90 s entre séries" (o mesmo descanso padrão
+  do cronômetro do treino). Regra do tempo: `src/domain/rules/treinoRapido.ts`.
+  Textos em pt/en/es/fr/hi. Botões continuam os da escolha (adicionar/substituir).
+- typecheck + build ok. Precisa APK para o dono ver no aparelho.
+- **Fim do teste — ponto do dono:** a ficha também é onde a pessoa monta o
+  treino livre (grátis). `treino_plano` não marca quem montou cada
+  exercício (o Life ou a pessoa), então não dá para travar só o do Life
+  sem uma coluna nova. Proposta enviada ao dono; aguardando resposta.

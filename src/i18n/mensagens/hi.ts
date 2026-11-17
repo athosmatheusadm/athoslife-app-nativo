@@ -682,7 +682,13 @@ export const hi: Mensagens = {
     comparacao: 'दोनों एक्सरसाइज़ की तुलना',
     treinoRapido: {
       titulo: (parte: string) => `${parte} वर्कआउट`,
+      tempo: (min: number) => `~${min} मिनट`,
       onde: (dia: string, local: string) => `${dia} · ${local}`,
+      aquecimento: (min: number) => `वॉर्म-अप · ${min} मिनट`,
+      aquecimentoComo: 'हल्की मोबिलिटी और पहली एक्सरसाइज़ का 1 हल्का सेट।',
+      series: (series: number, reps: number) => `${series} सेट × ${reps}`,
+      seriesTempo: (series: number, seg: number) => `${series} सेट × ${seg} सेकंड`,
+      descanso: (seg: number) => `सेट के बीच ${seg} सेकंड आराम`,
       dica: 'सेट और रेप्स आप अपने वर्कआउट में अपने हिसाब से बदल सकते हैं।',
       abrir: 'वर्कआउट खोलें',
     },

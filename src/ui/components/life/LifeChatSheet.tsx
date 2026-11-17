@@ -24,6 +24,7 @@ import { receitasRepository, type ReceitaCrua } from '@data/repositories/receita
 import { FotoReceita } from '@ui/screens/cozinha/CardReceita'
 import { exercicioCatalogoRepository } from '@data/repositories/exercicioCatalogoRepository'
 import { iconeDoExercicio, type ExercicioCatalogo } from '@domain/entities/treino'
+import { AQUECIMENTO_MIN, DESCANSO_PADRAO_SEG, minutosDoTreinoRapido } from '@domain/rules/treinoRapido'
 import {
   aoMudarPausa,
   lifePausadoHoje,
@@ -448,12 +449,11 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                   <CartaoTreinoRapido
                     treino={msg.treino}
                     exercicios={exercicios}
-                    titulo={tc.treinoRapido.titulo(msg.treino.parte)}
+                    textos={tc.treinoRapido}
                     onde={tc.treinoRapido.onde(
                       msg.treino.dia,
                       msg.treino.local === 'casa' ? m.onboarding.treino.casa : m.onboarding.treino.academia,
                     )}
-                    dica={tc.treinoRapido.dica}
                   />
                 )}
                 {msg.abrirTreino && (
@@ -687,29 +687,51 @@ function Atalho(props: { texto: string; onClick: () => void; icone?: ActivityIco
 }
 
 /**
- * Treino de uma parte do corpo pedido no chat (dono, 15/11): os exercícios
- * organizados, com ícone, no lugar da lista corrida no texto. Só nomes —
- * séries e repetições a pessoa ajusta na ficha (o Life não prescreve).
+ * Treino de uma parte do corpo pedido no chat (dono, 15/11; formato aprovado
+ * 17/11, no estilo do exemplo que o dono mandou): título com o tempo,
+ * aquecimento no topo, cada exercício com ícone e séries × repetições, e o
+ * descanso no rodapé. Séries/reps são o padrão do catálogo — as mesmas que
+ * entram na ficha —, então o Life não prescreve nada: a pessoa ajusta lá.
  */
 function CartaoTreinoRapido(props: {
   treino: TreinoRapidoChat
   exercicios: Map<string, ExercicioCatalogo> | null
-  titulo: string
+  textos: Mensagens['lifeChat']['treinoRapido']
   onde: string
-  dica: string
 }) {
+  const t = props.textos
+  const doCatalogo = props.treino.itens.flatMap((it) => props.exercicios?.get(it.id) ?? [])
+  // Tempo só quando o catálogo já carregou todos; senão o número sairia baixo.
+  const minutos = doCatalogo.length === props.treino.itens.length ? minutosDoTreinoRapido(doCatalogo) : null
   return (
     <div className="w-full max-w-[92%] rounded-2xl border border-surface-4 bg-surface-2 p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-extrabold uppercase tracking-wide text-brand">{props.titulo}</span>
-        <span className="text-micro text-content-low">{props.onde}</span>
+        <span className="min-w-0 text-xs font-extrabold uppercase tracking-wide text-brand">
+          {t.titulo(props.treino.parte)}
+          {minutos !== null && <span className="text-content-mid"> · {t.tempo(minutos)}</span>}
+        </span>
+        <span className="flex-none text-micro text-content-low">{props.onde}</span>
       </div>
-      <ol className="mt-2 space-y-2">
+      <ol className="mt-2 divide-y divide-surface-4">
+        <li className="flex items-center gap-3 py-2">
+          <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-surface-3">
+            <ActivityIcon icone="caminhar" tile={false} className="h-6 w-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-content-hi">{t.aquecimento(AQUECIMENTO_MIN)}</span>
+            <span className="block text-micro leading-snug text-content-low">{t.aquecimentoComo}</span>
+          </span>
+        </li>
         {props.treino.itens.map((it, i) => {
           const e = props.exercicios?.get(it.id)
           const icone = e ? iconeDoExercicio(e) : null
+          const series = e
+            ? e.medida === 'tempo'
+              ? t.seriesTempo(e.seriesPadrao, e.segundosPadrao ?? 30)
+              : t.series(e.seriesPadrao, e.repeticoesPadrao)
+            : null
           return (
-            <li key={it.id} className="flex items-center gap-3">
+            <li key={it.id} className="flex items-center gap-3 py-2">
               {icone ? (
                 <img src={icone} alt="" className="h-11 w-11 flex-none rounded-xl object-cover" />
               ) : (
@@ -717,12 +739,16 @@ function CartaoTreinoRapido(props: {
                   {i + 1}
                 </span>
               )}
-              <span className="min-w-0 flex-1 text-sm font-semibold text-content-hi">{it.nome}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-content-hi">{it.nome}</span>
+                {series && <span className="block text-micro font-semibold text-brand">{series}</span>}
+              </span>
             </li>
           )
         })}
       </ol>
-      <p className="mt-2 text-micro text-content-low">{props.dica}</p>
+      <p className="mt-1 border-t border-surface-4 pt-2 text-micro text-content-mid">{t.descanso(DESCANSO_PADRAO_SEG)}</p>
+      <p className="mt-1 text-micro text-content-low">{t.dica}</p>
     </div>
   )
 }
