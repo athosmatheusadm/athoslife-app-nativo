@@ -26,6 +26,15 @@ export function PreviaTreinoRapido() {
           textos={m.lifeChat.treinoRapido}
           onde={m.lifeChat.treinoRapido.onde('Hoje', m.onboarding.treino.academia)}
         />
+        {/* Os botões de verdade ficam no chat; aqui é só a aparência. */}
+        <div className="flex flex-wrap justify-end gap-2">
+          <span className="flex min-h-11 items-center rounded-full border border-brand/50 bg-brand/10 px-4 text-sm font-semibold text-brand">
+            {m.lifeChat.treinoRapido.porNaFicha('hoje')}
+          </span>
+          <span className="flex min-h-11 items-center rounded-full border border-surface-4 px-4 text-sm font-semibold text-content-mid">
+            {m.lifeChat.treinoRapido.outraOpcao}
+          </span>
+        </div>
       </div>
     </div>
   )

@@ -24,7 +24,7 @@ import { receitasRepository, type ReceitaCrua } from '@data/repositories/receita
 import { FotoReceita } from '@ui/screens/cozinha/CardReceita'
 import { exercicioCatalogoRepository } from '@data/repositories/exercicioCatalogoRepository'
 import { iconeDoExercicio, type ExercicioCatalogo } from '@domain/entities/treino'
-import { AQUECIMENTO_MIN, DESCANSO_PADRAO_SEG, minutosDoTreinoRapido, seriesDoTreinoRapido } from '@domain/rules/treinoRapido'
+import { AQUECIMENTO_MIN, DESCANSO_RAPIDO_SEG, faixaDeReps, minutosDoTreinoRapido, seriesDoTreinoRapido } from '@domain/rules/treinoRapido'
 import {
   aoMudarPausa,
   lifePausadoHoje,
@@ -308,12 +308,12 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     navigate(rota)
   }
 
-  async function enviar() {
-    const mensagem = texto.trim()
+  async function enviar(pronta?: string) {
+    const mensagem = (pronta ?? texto).trim()
     if (!mensagem || enviando) return
 
     setHistorico((h) => [...h, { autor: 'usuario', texto: mensagem }])
-    setTexto('')
+    if (pronta === undefined) setTexto('')
     setEnviando(true)
     setErro(null)
 
@@ -498,7 +498,26 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
             </div>
           )}
 
-          {escolha && !enviando && (
+          {/* Treino rápido (dono, 17/11): "Pôr na ficha de hoje" e "Outra opção". */}
+          {escolha && !enviando && treinoValido(escolha.treino) && (
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => void escolher('salvar', tc.treinoRapido.porNaFicha(escolha.treino?.dia ?? ''))}
+                className="min-h-11 rounded-full border border-brand/50 bg-brand/10 px-4 text-sm font-semibold text-brand active:scale-[0.98]"
+              >
+                {tc.treinoRapido.porNaFicha(escolha.treino?.dia ?? '')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void enviar(tc.treinoRapido.outraOpcao)}
+                className="min-h-11 rounded-full border border-surface-4 px-4 text-sm font-semibold text-content-mid active:scale-[0.98]"
+              >
+                {tc.treinoRapido.outraOpcao}
+              </button>
+            </div>
+          )}
+          {escolha && !enviando && !treinoValido(escolha.treino) && (
             <div className="flex flex-wrap justify-end gap-2">
               {escolha.opcoes.map((o) => (
                 <button
@@ -640,7 +659,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
           className="flex flex-none items-center gap-2 px-6 py-4"
           onSubmit={(e) => {
             e.preventDefault()
-            void enviar()
+            void enviar(undefined)
           }}
         >
           <input
@@ -731,7 +750,7 @@ export function CartaoTreinoRapido(props: {
           const series = e && n
             ? e.medida === 'tempo'
               ? t.seriesTempo(n, e.segundosPadrao ?? 30)
-              : t.series(n, e.repeticoesPadrao)
+              : t.series(n, faixaDeReps(e.repeticoesPadrao))
             : null
           return (
             <li key={it.id} className="flex items-center gap-3 py-2">
@@ -742,15 +761,13 @@ export function CartaoTreinoRapido(props: {
                   {i + 1}
                 </span>
               )}
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-content-hi">{it.nome}</span>
-                {series && <span className="block text-micro font-semibold text-brand">{series}</span>}
-              </span>
+              <span className="min-w-0 flex-1 text-sm font-semibold leading-tight text-content-hi">{it.nome}</span>
+              {series && <span className="flex-none text-right text-xs font-semibold text-brand">{series}</span>}
             </li>
           )
         })}
       </ol>
-      <p className="mt-1 border-t border-surface-4 pt-2 text-micro text-content-mid">{t.descanso(DESCANSO_PADRAO_SEG)}</p>
+      <p className="mt-1 border-t border-surface-4 pt-2 text-micro text-content-mid">{t.descanso(DESCANSO_RAPIDO_SEG)}</p>
       <p className="mt-1 text-micro text-content-low">{t.dica}</p>
     </div>
   )

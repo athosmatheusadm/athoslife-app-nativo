@@ -6195,3 +6195,17 @@ de token.
   treino livre (grátis). `treino_plano` não marca quem montou cada
   exercício (o Life ou a pessoa), então não dá para travar só o do Life
   sem uma coluna nova. Proposta enviada ao dono; aguardando resposta.
+
+## 2026-11-17 (3) — Cartão do treino rápido no formato do dono + regra do grátis
+
+- Cartão no modelo que o dono colou: exercício e "3 séries × 10–12" na
+  mesma linha, "Descanso 60 s entre séries", aquecimento no topo, botões
+  "Pôr na ficha de {dia}" (salva) e "Outra opção" (manda a frase no chat;
+  o Life chama `montar_treino_rapido` com outra_opcao). Faixa de reps =
+  padrão−2 a padrão (a ficha grava o padrão). Séries iguais às do servidor
+  (`seriesDoTreinoRapido`, espelha `ai-proxy/treinoRapido.ts`).
+- Prévia local: `/previa/treino-rapido` (logado, só dev). typecheck + build ok.
+- **Decisão do dono:** treino rápido no grátis = **1 por semana**. Fim do
+  teste: travar só o que o Life montou (coluna nova marcando origem); o
+  que a pessoa monta segue grátis. A fazer (precisa migração + ai-proxy).
+- Falta testar "Outra opção" conversando com o Life de verdade (APK ou dev).
