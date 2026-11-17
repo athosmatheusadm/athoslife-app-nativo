@@ -11,16 +11,29 @@ import { useI18n } from '@/i18n/I18nProvider'
  * combinado com o dono de chegar no chat (sem botão "💬 Life").
  */
 /**
- * Prévia local (só `npm run dev`): /?corLife=perola&acessorio=aureola.
+ * Prévia local (só `npm run dev`): /?corLife=perola&acessorio=aureola (ou rosa, amarelo).
  * Quando as conquistas existirem, isto vem do perfil (escolha da pessoa).
  */
 function visualDePrevia(): { cor: CorLife | undefined; acessorio: AcessorioLife | undefined } {
   if (!import.meta.env.DEV) return { cor: undefined, acessorio: undefined }
+  // O endereço passa pelo login e perde o "?corLife=": guarda na aba até
+  // abrir de novo com outro valor (ou com ?corLife=verde para voltar).
   const q = new URLSearchParams(window.location.search)
-  const cor = q.get('corLife')
+  let cor = q.get('corLife')
+  let acessorio = q.get('acessorio')
+  try {
+    if (cor !== null || acessorio !== null) {
+      sessionStorage.setItem('previaCorLife', JSON.stringify({ cor, acessorio }))
+    } else {
+      const salvo = JSON.parse(sessionStorage.getItem('previaCorLife') ?? 'null') as
+        { cor: string | null; acessorio: string | null } | null
+      cor = salvo?.cor ?? null
+      acessorio = salvo?.acessorio ?? null
+    }
+  } catch { /* sem sessionStorage: vale só o endereço */ }
   return {
-    cor: cor === 'amarelo' || cor === 'perola' ? cor : undefined,
-    acessorio: q.get('acessorio') === 'aureola' ? 'aureola' : undefined,
+    cor: cor === 'amarelo' || cor === 'perola' || cor === 'rosa' ? cor : undefined,
+    acessorio: acessorio === 'aureola' ? 'aureola' : undefined,
   }
 }
 

@@ -44,7 +44,7 @@ export type HumorLife =
  * A cor é recalculada dentro do motor animado (só os pixels verdes mudam),
  * então ele continua piscando, sorrindo e pulando.
  */
-export type CorLife = 'amarelo' | 'perola'
+export type CorLife = 'amarelo' | 'perola' | 'rosa'
 export type AcessorioLife = 'aureola'
 
 export function srcLife(humor: HumorLife): string {

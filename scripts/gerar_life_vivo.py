@@ -46,7 +46,7 @@ main{max-width:none!important;display:block!important;margin:0!important}
 #   {lifeVivo:'hab', valor}      0–100 (roxo dos hábitos)
 #   {lifeVivo:'expr', id}        id da expressão do protótipo (normal, feliz, sono...)
 #   {lifeVivo:'toque'} | {lifeVivo:'conquista'} | {lifeVivo:'acao', i}
-#   {lifeVivo:'cor', id}         '' | amarelo | perola (cor das conquistas, só no Life padrão)
+#   {lifeVivo:'cor', id}         '' | amarelo | perola | rosa (cor das conquistas, só no Life padrão)
 #   {lifeVivo:'acessorio', id}   '' | aureola (preso na cabeça)
 # Respostas pro app: {lifeVivo:'pronto'} quando o Life pedido está na tela;
 # {lifeVivo:'falhou'} sem WebGL (o app mantém a imagem parada).
@@ -66,7 +66,7 @@ PONTE = """
       case 'toque': clicar('#btnToque'); break;
       case 'conquista': var c=q('#btnConq'); if(c){c.hidden=false;c.click()} break;
       case 'acao': var a=document.querySelectorAll('#acoes button')[d.i||0]; if(a)a.click(); break;
-      case 'cor': if(window.__S) window.__S.cor=({amarelo:1,perola:2})[d.id]||0; break;
+      case 'cor': if(window.__S) window.__S.cor=({amarelo:1,perola:2,rosa:3})[d.id]||0; break;
       case 'acessorio': if(window.__S) window.__S.skin=d.id||''; break;
     }
   }
@@ -114,6 +114,10 @@ vec4 pele(vec4 t){
     // amarelo clarinho: amarelo-manteiga, mantendo a sombra do 3D
     float nh=50.0+(H-96.0)*0.20;
     rgb=hsv2rgb(vec3(nh/360.0, clamp(h.y*0.58,0.0,1.0), clamp(pow(v,0.82)*1.03,0.0,1.0)));
+  } else if(uPele>2.5){
+    // rosa clarinho: rosa-bebê, mantendo a sombra do 3D
+    float nh=338.0+(H-96.0)*0.15;
+    rgb=hsv2rgb(vec3(nh/360.0, clamp(h.y*0.50,0.0,1.0), clamp(pow(v,0.82)*1.04,0.0,1.0)));
   } else {
     // pérola: branco quente na luz, sombra lilás-acinzentada (não fica chapado/pálido)
     float l=smoothstep(0.30,0.95,v);

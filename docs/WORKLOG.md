@@ -6161,3 +6161,23 @@ Life; revogar o token do GitHub colado hoje.
 **Pendências:** push (a65bb09, d8abe55 e este) precisa de token novo;
 aplicar `db/athoslife_teste_3_dias_migration.sql` (ok do dono); decisão do
 fim do teste; aprovação das cores.
+
+## 2026-11-17 — Rosa clarinho na prévia + guia fora do GitHub
+
+- **Cor rosa clarinho** (o dono tinha pedido azul ou rosa clarinho para a
+  lista de espera): `uPele` 3 no motor (`foco.html` e o gerador
+  `scripts/gerar_life_vivo.py`), `CorLife` aceita `rosa`, 4º cartão em
+  `docs/previas/previa-cores-life.html`. Amarelo continua para comparar.
+- **Prévia na Home:** `?corLife=` se perdia ao passar pelo login. Agora
+  fica guardado na aba (`sessionStorage`, só em `npm run dev`).
+- **Guia da Play Console/RevenueCat** não vai para o GitHub (pedido do
+  dono): tirado dos commits que não tinham subido e ignorado em
+  `.git/info/exclude`. O arquivo continua no PC.
+- typecheck ok.
+
+**Pendências:** dono escolher a cor (amarelo ou rosa); 3 respostas de
+16/11 continuam abertas: migração do teste de 3 dias, fim do teste
+(plano vale 7 dias a partir de quando foi montado, depois apagado com o
+cartão do Premium) e o novo cartão do treino rápido no chat (estilo do
+exemplo, com séries × repetições; aquecimento no topo?). Push precisa
+de token.
