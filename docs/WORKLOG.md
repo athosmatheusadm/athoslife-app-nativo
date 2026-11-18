@@ -6269,7 +6269,8 @@ real com token novo do Supabase; push; APK; testar fim do teste com QA vencida).
 - **Ícone não entrava no modo sono:** o sono só valia se a pessoa tivesse
   salvo Perfil > Notificações > Lembretes do dia; quem nunca salvou ficava sem
   sono pra sempre. Agora usa o padrão da tela (23:00–07:00) quando não há nada
-  salvo (`iconeMascote.ts`). Precisa APK novo (já pedido no Actions).
+  salvo (`iconeMascote.ts`). APK novo da main (d5cc175, execução 44269477764)
+  na Área de Trabalho do dono: `ATHOSlife-teste-18-11.apk`.
 - typecheck + build ok.
 
 **Pendências:** dono instalar o APK novo e conferir o ícone de noite (lembrar:
