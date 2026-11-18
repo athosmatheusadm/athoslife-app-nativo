@@ -21,6 +21,7 @@ import { AddExercisePanel } from './AddExercisePanel'
 import { TreinoEmAndamento } from './TreinoEmAndamento'
 import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
 import { aoAplicarPlano, localDoUltimoPlano } from '@app/eventosLife'
+import { FimDoPremium } from '@ui/components/FimDoPremium'
 import { useFecharNoVoltar } from '@app/voltarAndroid'
 import { useI18n } from '@/i18n/I18nProvider'
 import { avisar, vibrar } from '@ui/feedback'
@@ -181,6 +182,7 @@ export function WorkoutScreen() {
 
   return (
     <main className="pb-28 pt-safe-t">
+      <FimDoPremium area="treino" onLimpo={() => setRecarga((n) => n + 1)} />
       <header className="flex items-center justify-between px-4 pb-1 pt-3">
         <div>
           <div className="text-micro font-bold uppercase tracking-[4px] text-brand">{t.marca}</div>

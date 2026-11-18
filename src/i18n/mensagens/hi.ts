@@ -433,6 +433,9 @@ export const hi: Mensagens = {
     premiumTitulo: 'यह Premium फ़ीचर है',
     premiumTexto: 'Premium में Life आपका रेफ़रेंस वर्कआउट और डाइट बनाता है और आपके साथ उसे ठीक करता रहता है।',
     serPremium: 'Premium लें',
+    fimTitulo: 'आपका Premium ट्रायल खत्म हो गया',
+    fimTexto: 'Life ने जो वर्कआउट और डाइट बनाई थी, वह Premium का हिस्सा थी। सब्सक्राइब करें तो वह तुरंत फिर से बना देगा। अगर फ्री में रहना चाहें, तो यह जगह आपकी है — अपने हिसाब से बनाइए।',
+    fimAgoraNao: 'अभी नहीं, मैं अपना बनाऊँगा',
     comecar: 'शुरू करें',
     dias: { seg: 'सोम', ter: 'मंगल', qua: 'बुध', qui: 'गुरु', sex: 'शुक्र', sab: 'शनि', dom: 'रवि' },
     triagem: {

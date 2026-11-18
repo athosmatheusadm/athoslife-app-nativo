@@ -28,7 +28,8 @@ import { avisar, vibrar } from '@ui/feedback'
 import { CozinhaSecao } from '@ui/screens/cozinha/CozinhaSecao'
 import { macrosRestantes } from '@domain/rules/cozinha'
 import { LifeFlutuante } from '@ui/components/life/LifeFlutuante'
-import { aoAplicarPlano } from '@app/eventosLife'
+import { aoAplicarPlano, avisarPlanoAplicado } from '@app/eventosLife'
+import { FimDoPremium } from '@ui/components/FimDoPremium'
 import { planosRepository, refeicoesDoPlanoEm, type PlanoDietaSalvo } from '@data/repositories/planosRepository'
 import { planejadasRepository, type ItemPlanejado } from '@data/repositories/planejadasRepository'
 import { aoRegistrarNoDia } from '@data/registroDoDia'
@@ -388,6 +389,7 @@ export function DietScreen(props: {
 
   return (
     <main className="space-y-4 px-4 pb-28 pt-safe-t">
+      <FimDoPremium area="dieta" onLimpo={() => avisarPlanoAplicado({ tipo: 'dieta' })} />
       <header className="flex items-center justify-between pt-3">
         <div className="flex items-center gap-2">
           <ActivityIcon icone="salada" tile={false} className="h-7 w-7" />

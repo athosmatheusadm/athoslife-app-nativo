@@ -432,6 +432,9 @@ export const fr: Mensagens = {
     premiumTitulo: 'C’est une fonction Premium',
     premiumTexto: 'Avec Premium, Life crée ton entraînement et ton alimentation de référence et les ajuste avec toi.',
     serPremium: 'Passer à Premium',
+    fimTitulo: 'Ton essai Premium est terminé',
+    fimTexto: 'La séance et le plan repas préparés par Life faisaient partie de Premium. En t\'abonnant, il les refait tout de suite. Si tu préfères rester en gratuit, l\'espace est libre pour créer les tiens à ta façon.',
+    fimAgoraNao: 'Pas maintenant, je crée le mien',
     comecar: 'Commencer',
     dias: { seg: 'Lun', ter: 'Mar', qua: 'Mer', qui: 'Jeu', sex: 'Ven', sab: 'Sam', dom: 'Dim' },
     triagem: {

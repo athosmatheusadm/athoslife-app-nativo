@@ -426,6 +426,9 @@ export const en: Mensagens = {
     premiumTitulo: 'This is a Premium feature',
     premiumTexto: 'With Premium, Life builds your reference workout and diet and keeps adjusting them with you.',
     serPremium: 'Go Premium',
+    fimTitulo: 'Your Premium trial has ended',
+    fimTexto: 'The workout and diet Life built were part of Premium. Subscribe and Life builds them again right away. If you\'d rather stay on free, the space is yours to build your own way.',
+    fimAgoraNao: 'Not now, I\'ll build my own',
     comecar: 'Start',
     dias: { seg: 'Mon', ter: 'Tue', qua: 'Wed', qui: 'Thu', sex: 'Fri', sab: 'Sat', dom: 'Sun' },
     triagem: {

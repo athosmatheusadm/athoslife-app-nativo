@@ -426,6 +426,9 @@ export const es: Mensagens = {
     premiumTitulo: 'Esto es Premium',
     premiumTexto: 'Con Premium, Life arma tu entrenamiento y tu dieta de referencia y los va ajustando contigo.',
     serPremium: 'Quiero ser Premium',
+    fimTitulo: 'Tu prueba de Premium terminó',
+    fimTexto: 'El entreno y la dieta que armó Life eran de Premium. Si te suscribes, los arma de nuevo al instante. Si prefieres seguir gratis, el espacio queda libre para que armes el tuyo a tu manera.',
+    fimAgoraNao: 'Ahora no, quiero armar el mío',
     comecar: 'Empezar',
     dias: { seg: 'Lun', ter: 'Mar', qua: 'Mié', qui: 'Jue', sex: 'Vie', sab: 'Sáb', dom: 'Dom' },
     triagem: {

@@ -289,6 +289,30 @@ export const planosRepository = {
     throw new Error(codigoErroPlano(error.message))
   },
 
+  /**
+   * Fim do Premium (18/11): quanto do que o Life montou ainda está com a
+   * pessoa depois que o Premium acabou. Zero se ela é Premium, sem rede ou se
+   * a migração não está no ar — nada aparece nesses casos.
+   */
+  async planoDoLifeVencido(): Promise<{ treino: number; dieta: number }> {
+    const zero = { treino: 0, dieta: 0 }
+    try {
+      const { data, error } = await supabase.rpc('plano_do_life_vencido')
+      if (error || !data) return zero
+      const d = data as { treino?: unknown; dieta?: unknown }
+      return { treino: Number(d.treino) || 0, dieta: Number(d.dieta) || 0 }
+    } catch {
+      return zero
+    }
+  },
+
+  /** Depois do cartão: apaga só o que o Life montou (o servidor confere que ela não é Premium). */
+  async limparPlanoDoLife(): Promise<void> {
+    exigirRede()
+    const { error } = await supabase.rpc('limpar_plano_do_life')
+    if (error) throw error
+  },
+
   /** Último plano de dieta aplicado (ou null). */
   async ultimoPlanoDieta(): Promise<PlanoDietaSalvo | null> {
     const data = await lerComCache(

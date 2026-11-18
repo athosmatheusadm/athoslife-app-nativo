@@ -439,6 +439,9 @@ export const ptBR = {
     premiumTitulo: 'Isso é do Premium',
     premiumTexto: 'Com o Premium, o Life monta seu treino e sua dieta de referência e vai ajustando com você.',
     serPremium: 'Quero ser Premium',
+    fimTitulo: 'Seu teste do Premium acabou',
+    fimTexto: 'O treino e a dieta que o Life montou eram do Premium. Assinando, ele monta de novo na hora. Se preferir seguir no grátis, a área fica livre pra você montar do seu jeito.',
+    fimAgoraNao: 'Agora não, quero montar o meu',
     comecar: 'Começar',
     dias: { seg: 'Seg', ter: 'Ter', qua: 'Qua', qui: 'Qui', sex: 'Sex', sab: 'Sáb', dom: 'Dom' },
     triagem: {
