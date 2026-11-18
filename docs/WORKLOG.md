@@ -6243,3 +6243,12 @@ conversa real (treino rápido grátis 2x, "Outra opção", ajustar séries e pô
 na ficha) — o token do Supabase em `~/.supabase/access-token` venceu;
 push (token do GitHub); APK; testar o fim do teste com uma conta de QA com
 o teste vencido. Ideia: receita 1/semana do grátis — dono ainda com receio.
+
+## 2026-11-18 (2) — Life Chef no grátis: decidido
+
+- Dono decidiu: o Life Chef (receita criada com o que a pessoa tem em casa)
+  continua **1 por semana no grátis** (zera na segunda), 10/dia no Premium.
+  Já era assim no banco e na `ai-proxy`; nenhuma mudança de código.
+
+**Pendências:** as mesmas de 18/11 (deploy da `ai-proxy` + smoke + conversa
+real com token novo do Supabase; push; APK; testar fim do teste com QA vencida).
