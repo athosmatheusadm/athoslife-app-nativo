@@ -379,6 +379,8 @@ export type AcaoLife =
   | { tipo: 'peso_atualizado' }
   /** O Life mexeu na ficha pelo chat (Fase 3): o Treino troca pro local e recarrega. */
   | { tipo: 'treino_atualizado'; local: 'casa' | 'academia' }
+  /** Recurso do Premium (18/11): o chat mostra o cartão do Premium embaixo da fala. */
+  | { tipo: 'convite_premium' }
   /** Água anotada ou desfeita pelo chat (Fase 4): recarrega o card de água. */
   | { tipo: 'agua_atualizada' }
   /** Os alôs mudaram (Fase 5): reagenda as notificações do Life. */
@@ -534,8 +536,13 @@ export async function buscarAberturaLife(avisoId?: string): Promise<string | nul
 }
 
 /** Resposta a um botão de escolha do Life. Não usa IA nem gasta mensagem. */
-export async function responderAcaoLife(id: string, escolha: EscolhaAcao): Promise<{ resposta: string; acao: AcaoLife | null }> {
-  const cru = await chamar<{ resposta: string; acao?: AcaoLife | null }>('acao', { id, escolha })
+/** Séries e reps (ou segundos) que a pessoa mudou no cartão do treino rápido, por exercício. */
+export interface AjusteTreino { series: number; reps?: number; segundos?: number }
+
+export async function responderAcaoLife(
+  id: string, escolha: EscolhaAcao, ajustes?: Record<string, AjusteTreino>,
+): Promise<{ resposta: string; acao: AcaoLife | null }> {
+  const cru = await chamar<{ resposta: string; acao?: AcaoLife | null }>('acao', { id, escolha, ...(ajustes && Object.keys(ajustes).length ? { ajustes } : {}) })
   return { resposta: cru.resposta, acao: cru.acao ?? null }
 }
 

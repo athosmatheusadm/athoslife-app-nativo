@@ -1,3 +1,4 @@
+import type { AjusteTreino } from '@data/ai/aiProxy'
 import { useEffect, useState } from 'react'
 import { exercicioCatalogoRepository } from '@data/repositories/exercicioCatalogoRepository'
 import type { ExercicioCatalogo } from '@domain/entities/treino'
@@ -11,6 +12,7 @@ import { useI18n } from '@/i18n/I18nProvider'
 export function PreviaTreinoRapido() {
   const { m } = useI18n()
   const [lista, setLista] = useState<ExercicioCatalogo[] | null>(null)
+  const [ajustes, setAjustes] = useState<Record<string, AjusteTreino>>({})
   useEffect(() => {
     void exercicioCatalogoRepository.listar({ grupoMuscular: 'bracos' }).then((l) =>
       setLista(l.filter((e) => /rosca/i.test(e.nomeBase) && e.ambientes.includes('academia')).slice(0, 3)),
@@ -25,6 +27,8 @@ export function PreviaTreinoRapido() {
           exercicios={new Map(lista.map((e) => [e.id, e]))}
           textos={m.lifeChat.treinoRapido}
           onde={m.lifeChat.treinoRapido.onde('Hoje', m.onboarding.treino.academia)}
+          ajustes={ajustes}
+          onAjustar={(id, a) => setAjustes((x) => ({ ...x, [id]: a }))}
         />
         {/* Os botões de verdade ficam no chat; aqui é só a aparência. */}
         <div className="flex flex-wrap justify-end gap-2">

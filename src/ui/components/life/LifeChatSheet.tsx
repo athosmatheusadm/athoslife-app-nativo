@@ -17,7 +17,9 @@ import {
   type LembrancaPendente,
   type MensagemChat,
   type TreinoRapidoChat,
+  type AjusteTreino,
 } from '@data/ai/aiProxy'
+import { ConvitePremium } from '@ui/components/ConvitePremium'
 import { avisarRegistroDoDia } from '@data/registroDoDia'
 import { lifeMemoriaRepository } from '@data/repositories/lifeMemoriaRepository'
 import { receitasRepository, type ReceitaCrua } from '@data/repositories/receitasRepository'
@@ -78,7 +80,7 @@ function mensagemDeErro(e: unknown, t: Mensagens['lifeChat']['erros'], semRede: 
  * scanner. Os planos ficam no fim da conversa (PlanosNoLife).
  */
 /** Mensagem na tela: o treino rápido (15/11) fica preso à fala do Life que o trouxe. */
-type MensagemTela = MensagemChat & { treino?: TreinoRapidoChat; abrirTreino?: 'casa' | 'academia' }
+type MensagemTela = MensagemChat & { treino?: TreinoRapidoChat; abrirTreino?: 'casa' | 'academia'; premium?: true }
 
 /** O servidor manda o cartão só pro app novo; confere o formato antes de mostrar. */
 function treinoValido(t: unknown): TreinoRapidoChat | undefined {
@@ -131,6 +133,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   const [erro, setErro] = useState<string | null>(null)
   const [restantes, setRestantes] = useState<number | null>(null)
   const [escolha, setEscolha] = useState<Extract<AcaoLife, { tipo: 'escolha' }> | null>(null)
+  /** Séries/reps que a pessoa mudou no cartão do treino rápido que está esperando o "Pôr na ficha". */
+  const [ajustesTreino, setAjustesTreino] = useState<Record<string, AjusteTreino>>({})
   const pendentesMemoria = useRef<LembrancaPendente[]>([])
   const [registro, setRegistro] = useState<Extract<AcaoLife, { tipo: 'registrar_itens' }> | null>(null)
   const [programar, setProgramar] = useState<Extract<AcaoLife, { tipo: 'programar_itens' }> | null>(null)
@@ -205,6 +209,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
   /** O que o Life fez no app — só chega depois que o servidor gravou. */
   function aplicarAcao(acao: AcaoLife | null) {
     setEscolha(acao?.tipo === 'escolha' ? acao : null)
+    if (acao?.tipo === 'escolha') setAjustesTreino({})
     setRegistro(acao?.tipo === 'registrar_itens' ? acao : null)
     // O cartão de "deixar no lugar" fica até a pessoa responder (vira Desfazer depois).
     if (acao?.tipo === 'programar_itens') setProgramar(acao)
@@ -254,7 +259,7 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
     setEnviando(true)
     setErro(null)
     try {
-      const r = await responderAcaoLife(id, valor)
+      const r = await responderAcaoLife(id, valor, valor === 'salvar' && treinoValido(escolha.treino) ? ajustesTreino : undefined)
       // Treino rápido salvo: atalho pro Treino, onde séries e repetições são ajustadas.
       const local = r.acao?.tipo === 'treino_atualizado' && treinoValido(escolha.treino) ? r.acao.local : undefined
       setHistorico((h) => [...h, { autor: 'life', texto: r.resposta, ...(local ? { abrirTreino: local } : {}) }])
@@ -342,7 +347,8 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
       setRascunho(null)
       falhaRef.current = null
       const treino = r.acao?.tipo === 'escolha' ? treinoValido(r.acao.treino) : undefined
-      setHistorico((h) => [...h, { autor: 'life', texto: r.resposta, ...(treino ? { treino } : {}) }])
+      const premium = r.acao?.tipo === 'convite_premium'
+      setHistorico((h) => [...h, { autor: 'life', texto: r.resposta, ...(treino ? { treino } : {}), ...(premium ? { premium: true as const } : {}) }])
       if (r.contadorOculto) setRestantes(null)
       else if (r.restantes !== null) setRestantes(r.restantes)
       if (r.humor) setHumorConversa(ROSTO_DO_HUMOR[r.humor])
@@ -454,7 +460,15 @@ export function LifeChatSheet(props: { onFechar: () => void; foco?: FocoLife; hu
                       msg.treino.dia,
                       msg.treino.local === 'casa' ? m.onboarding.treino.casa : m.onboarding.treino.academia,
                     )}
+                    {...(escolha && !enviando && escolha.treino === msg.treino
+                      ? { ajustes: ajustesTreino, onAjustar: (id: string, a: AjusteTreino) => setAjustesTreino((x) => ({ ...x, [id]: a })) }
+                      : {})}
                   />
+                )}
+                {msg.premium && (
+                  <div className="w-full max-w-[92%]">
+                    <ConvitePremium texto={m.plano.premiumTexto} onIr={() => ir('/perfil/plano')} />
+                  </div>
                 )}
                 {msg.abrirTreino && (
                   <div className="max-w-[85%]">
@@ -717,13 +731,21 @@ export function CartaoTreinoRapido(props: {
   exercicios: Map<string, ExercicioCatalogo> | null
   textos: Mensagens['lifeChat']['treinoRapido']
   onde: string
+  /** Só no cartão que está esperando o "Pôr na ficha": séries/reps mudam ali mesmo (dono, 18/11). */
+  ajustes?: Record<string, AjusteTreino>
+  onAjustar?: (id: string, a: AjusteTreino) => void
 }) {
   const t = props.textos
+  const [aberto, setAberto] = useState<string | null>(null)
+  const editavel = !!props.onAjustar
   const doCatalogo = props.treino.itens.flatMap((it) => props.exercicios?.get(it.id) ?? [])
   // Tempo só quando o catálogo já carregou todos; senão o número sairia baixo.
   const completo = doCatalogo.length === props.treino.itens.length
-  const minutos = completo ? minutosDoTreinoRapido(doCatalogo) : null
   const nSeries = completo ? seriesDoTreinoRapido(doCatalogo) : []
+  const ajustado = (id: string) => (editavel ? props.ajustes?.[id] : undefined)
+  const minutos = completo
+    ? minutosDoTreinoRapido(doCatalogo, doCatalogo.map((e) => ajustado(e.id)))
+    : null
   return (
     <div className="w-full max-w-[92%] rounded-2xl border border-surface-4 bg-surface-2 p-3">
       <div className="flex items-baseline justify-between gap-2">
@@ -736,7 +758,7 @@ export function CartaoTreinoRapido(props: {
       <ol className="mt-2 divide-y divide-surface-4">
         <li className="flex items-center gap-3 py-2">
           <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-surface-3">
-            <ActivityIcon icone="caminhar" tile={false} className="h-6 w-6" />
+            <ActivityIcon icone="aquecimento" tile={false} className="h-6 w-6" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold text-content-hi">{t.aquecimento(AQUECIMENTO_MIN)}</span>
@@ -746,30 +768,87 @@ export function CartaoTreinoRapido(props: {
         {props.treino.itens.map((it, i) => {
           const e = props.exercicios?.get(it.id)
           const icone = e ? iconeDoExercicio(e) : null
-          const n = nSeries[i]
+          const aj = ajustado(it.id)
+          const n = aj?.series ?? nSeries[i]
+          const porTempo = e?.medida === 'tempo'
           const series = e && n
-            ? e.medida === 'tempo'
-              ? t.seriesTempo(n, e.segundosPadrao ?? 30)
-              : t.series(n, faixaDeReps(e.repeticoesPadrao))
+            ? porTempo
+              ? t.seriesTempo(n, aj?.segundos ?? e.segundosPadrao ?? 30)
+              : t.series(n, aj?.reps ? String(aj.reps) : faixaDeReps(e.repeticoesPadrao))
             : null
+          const editando = editavel && aberto === it.id && e && n
           return (
-            <li key={it.id} className="flex items-center gap-3 py-2">
-              {icone ? (
-                <img src={icone} alt="" className="h-11 w-11 flex-none rounded-xl object-cover" />
-              ) : (
-                <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-surface-3 text-sm font-bold text-content-low">
-                  {i + 1}
-                </span>
+            <li key={it.id} className="py-2">
+              <div className="flex items-center gap-3">
+                {icone ? (
+                  <img src={icone} alt="" className="h-11 w-11 flex-none rounded-xl object-cover" />
+                ) : (
+                  <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-surface-3 text-sm font-bold text-content-low">
+                    {i + 1}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1 text-sm font-semibold leading-tight text-content-hi">{it.nome}</span>
+                {series && (editavel ? (
+                  <button
+                    type="button"
+                    aria-expanded={aberto === it.id}
+                    onClick={() => setAberto((x) => (x === it.id ? null : it.id))}
+                    className="flex-none rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-right text-xs font-semibold text-brand active:scale-[0.98]"
+                  >
+                    {series}
+                  </button>
+                ) : (
+                  <span className="flex-none text-right text-xs font-semibold text-brand">{series}</span>
+                ))}
+              </div>
+              {editando && (
+                <div className="mt-2 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 rounded-xl bg-surface-3 px-3 py-2">
+                  <Contador
+                    rotulo={t.rotuloSeries} valor={n} min={1} max={5} textos={t}
+                    onMudar={(v) => props.onAjustar!(it.id, { ...aj, series: v })}
+                  />
+                  {porTempo ? (
+                    <Contador
+                      rotulo={t.rotuloSegundos} valor={aj?.segundos ?? e.segundosPadrao ?? 30} min={10} max={120} passo={5} textos={t}
+                      onMudar={(v) => props.onAjustar!(it.id, { series: n, ...aj, segundos: v })}
+                    />
+                  ) : (
+                    <Contador
+                      rotulo={t.rotuloReps} valor={aj?.reps ?? e.repeticoesPadrao ?? 12} min={1} max={20} textos={t}
+                      onMudar={(v) => props.onAjustar!(it.id, { series: n, ...aj, reps: v })}
+                    />
+                  )}
+                  <button type="button" onClick={() => setAberto(null)} className="min-h-9 px-1 text-xs font-bold text-brand">
+                    {t.pronto}
+                  </button>
+                </div>
               )}
-              <span className="min-w-0 flex-1 text-sm font-semibold leading-tight text-content-hi">{it.nome}</span>
-              {series && <span className="flex-none text-right text-xs font-semibold text-brand">{series}</span>}
             </li>
           )
         })}
       </ol>
       <p className="mt-1 border-t border-surface-4 pt-2 text-micro text-content-mid">{t.descanso(DESCANSO_RAPIDO_SEG)}</p>
-      <p className="mt-1 text-micro text-content-low">{t.dica}</p>
+      <p className="mt-1 text-micro text-content-low">{editavel ? t.dica : t.dicaFicha}</p>
     </div>
+  )
+}
+
+/** − número + do cartão do treino rápido. */
+function Contador(props: {
+  rotulo: string; valor: number; min: number; max: number; passo?: number
+  textos: Mensagens['lifeChat']['treinoRapido']; onMudar: (v: number) => void
+}) {
+  const passo = props.passo ?? 1
+  const botao = 'flex h-9 w-9 items-center justify-center rounded-full border border-surface-4 text-base font-bold text-content-hi active:scale-95 disabled:opacity-30'
+  return (
+    <span className="flex items-center gap-2">
+      <span className="text-micro text-content-mid">{props.rotulo}</span>
+      <button type="button" aria-label={`${props.textos.menos} ${props.rotulo}`} disabled={props.valor <= props.min}
+        onClick={() => props.onMudar(Math.max(props.min, props.valor - passo))} className={botao}>−</button>
+      <span className="w-7 text-center text-sm font-bold tabular-nums text-content-hi" aria-live="polite">{props.valor}</span>
+      <button type="button" aria-label={`${props.textos.mais} ${props.rotulo}`} disabled={props.valor >= props.max}
+        onClick={() => props.onMudar(Math.min(props.max, props.valor + passo))} className={botao}>+</button>
+    </span>
   )
 }
 

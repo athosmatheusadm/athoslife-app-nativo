@@ -48,7 +48,7 @@ import {
   type DiaSemana, type ExercicioCatalogo, type Local, type SerieDetalhe,
 } from './treino.ts'
 import {
-  escolherTreinoRapido, lerParte, listar, nomeParte, TXT_PARTE,
+  ajustarItem, escolherTreinoRapido, lerAjustes, lerParte, listar, nomeParte, RAPIDO_GRATIS_DIAS, TXT_PARTE,
   type ExercicioDoGrupo, type ItemRapido, type Nivel,
 } from './treinoRapido.ts'
 import { lerComandoAgua, pedeDesfazer, TXT_RAPIDO } from './rapido.ts'
@@ -2454,6 +2454,8 @@ type AcaoCliente =
   }
   /** Ficha mudou pelo chat (Fase 3): o app recarrega o Treino (APK antigo ignora). */
   | { tipo: 'treino_atualizado'; local: Local }
+  /** Recurso do Premium (18/11): o app mostra o cartão do Premium embaixo da fala (APK antigo ignora). */
+  | { tipo: 'convite_premium' }
   /** Água anotada/desfeita pelo chat (Fase 4): o app recarrega o card (APK antigo ignora). */
   | { tipo: 'agua_atualizada' }
   /** Os alôs mudaram (Fase 5): o app reagenda as notificações (APK antigo ignora). */
@@ -2935,6 +2937,14 @@ async function proporTreinoRapido(
   const tt = TXT_TREINO[loc.idioma]
   const parte = lerParte(a.parte)
   if (!parte) return { resposta: tp.qualParte, acao: null, status: 'rapido_sem_parte' }
+  // Grátis: 1 treino rápido por semana (dono, 17/11) — conta os que foram pra ficha.
+  const { data: pago } = await sb.rpc('is_premium_like', { p_user_id: userId })
+  if (pago !== true) {
+    const { count: usados } = await sb.from('life_acoes').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('tipo', 'adicionar_exercicio').eq('status', 'feita').not('args->>parte', 'is', null)
+      .gte('criado_em', new Date(Date.now() - RAPIDO_GRATIS_DIAS * 86_400_000).toISOString())
+    if ((usados ?? 0) >= 1) return { resposta: tp.limiteGratis, acao: { tipo: 'convite_premium' }, status: 'rapido_limite_gratis' }
+  }
   const dia = lerDia(a.dia, hoje) ?? diaDaData(hoje)
   const local = await localDaFicha(sb, userId, a.local)
   const [{ data: cat }, { data: noDia }, { data: plano }, { count: anterior }] = await Promise.all([
@@ -3026,6 +3036,11 @@ async function proporCopiaTreino(sb: Sb, userId: string, loc: Localidade, a: Rec
 
 async function executarExercicio(sb: Sb, userId: string, idAcao: string, args: ArgsExercicio, idioma: Idioma): Promise<ResultadoAcao> {
   const tt = TXT_TREINO[idioma]
+  // Treino rápido montado pelo Life pra quem é Premium: some quando o Premium
+  // acaba (limpar_plano_do_life). O do grátis (1/semana) e o exercício que ela
+  // pediu pelo nome ficam com ela.
+  const doLife = typeof (args as { parte?: unknown }).parte === 'string'
+    && (await sb.rpc('is_premium_like', { p_user_id: userId })).data === true
   const { data: ordens } = await sb.from('treino_plano').select('dia_semana, ordem').eq('user_id', userId).eq('local', args.local).in('dia_semana', args.dias)
   const maxPorDia = new Map<string, number>()
   for (const o of (ordens ?? []) as { dia_semana: string; ordem: number }[]) maxPorDia.set(o.dia_semana, Math.max(maxPorDia.get(o.dia_semana) ?? -1, o.ordem))
@@ -3035,6 +3050,7 @@ async function executarExercicio(sb: Sb, userId: string, idAcao: string, args: A
   const linhas = args.dias.filter((d) => !jaTem.has(d)).map((d) => ({
     user_id: userId, local: args.local, dia_semana: d, exercicio_id: args.exercicio_id,
     series: args.series.length, repeticoes: args.series[0]?.reps ?? 12, series_detalhe: args.series, ordem: (maxPorDia.get(d) ?? -1) + 1,
+    do_life: doLife,
   }))
   // Treino de uma parte do corpo: os outros exercícios entram em seguida, no mesmo dia.
   const extras = Array.isArray(args.extras) ? args.extras.slice(0, 5) : []
@@ -3048,6 +3064,7 @@ async function executarExercicio(sb: Sb, userId: string, idAcao: string, args: A
       linhas.push({
         user_id: userId, local: args.local, dia_semana: dia, exercicio_id: x.exercicio_id,
         series: x.series.length, repeticoes: x.series[0]?.reps ?? 12, series_detalhe: x.series, ordem: ordem++,
+        do_life: doLife,
       })
     }
   }
@@ -3068,7 +3085,7 @@ async function executarCopiaTreino(
 ): Promise<ResultadoAcao> {
   const tt = TXT_TREINO[idioma]
   const { data: fotoDestino } = await sb.from('treino_plano')
-    .select('local, dia_semana, exercicio_id, series, repeticoes, series_detalhe, ordem, concluido_em')
+    .select('local, dia_semana, exercicio_id, series, repeticoes, series_detalhe, ordem, concluido_em, do_life')
     .eq('user_id', userId).eq('local', args.local).eq('dia_semana', args.destino)
   const { data, error } = await sb.rpc('life_copiar_treino', {
     p_user_id: userId, p_local: args.local, p_destino_dia: args.destino,
@@ -3303,8 +3320,18 @@ async function handleAcao(sb: Sb, userId: string, corpo: Record<string, unknown>
     const { data: travou } = await sb.from('life_acoes').update({ status: 'executando' })
       .eq('id', id).eq('status', 'pendente').select('id')
     if (!travou?.length) return json({ resposta: t.andamento, acao: null })
+    // Cartão do treino rápido (18/11): séries/reps que a pessoa mudou antes de pôr na ficha.
+    const ajustes = lerAjustes(corpo.ajustes)
+    const argsEx = pend.args as ArgsExercicio
+    const argsFinal: ArgsExercicio = Object.keys(ajustes).length && (pend.args as { parte?: unknown }).parte
+      ? {
+        ...argsEx,
+        ...ajustarItem({ exercicio_id: argsEx.exercicio_id, nome: argsEx.nome, series: argsEx.series }, ajustes[argsEx.exercicio_id]),
+        extras: (argsEx.extras ?? []).map((x) => ajustarItem(x, ajustes[x.exercicio_id])),
+      }
+      : argsEx
     r = pend.tipo === 'adicionar_exercicio'
-      ? await executarExercicio(sb, userId, id, pend.args as ArgsExercicio, loc.idioma)
+      ? await executarExercicio(sb, userId, id, argsFinal, loc.idioma)
       : await executarCopiaTreino(sb, userId, id, pend.args as ArgsCopiaTreino, escolha === 'substituir' ? 'substituir' : 'adicionar', loc.idioma)
   } else if (pend.tipo === 'licenca_aviso') {
     if (escolha !== 'salvar') return json({ error: 'invalid_action' }, 400)

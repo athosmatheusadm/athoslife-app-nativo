@@ -32,12 +32,17 @@ export function seriesDoTreinoRapido(exercicios: readonly ExercicioCatalogo[]): 
  * Tempo aproximado do treino rápido: aquecimento + cada série (execução +
  * descanso do cartão). Arredonda de 5 em 5 min, mínimo 10.
  */
-export function minutosDoTreinoRapido(exercicios: readonly ExercicioCatalogo[]): number {
+export function minutosDoTreinoRapido(
+  exercicios: readonly ExercicioCatalogo[],
+  /** O que a pessoa mudou no cartão, na mesma ordem (18/11). */
+  ajustes: readonly ({ series?: number; reps?: number; segundos?: number } | undefined)[] = [],
+): number {
   const series = seriesDoTreinoRapido(exercicios)
   let seg = AQUECIMENTO_MIN * 60
   exercicios.forEach((e, i) => {
-    const execucao = e.medida === 'tempo' ? (e.segundosPadrao ?? 30) : e.repeticoesPadrao * SEG_POR_REP
-    seg += (series[i] ?? 0) * (execucao + DESCANSO_RAPIDO_SEG)
+    const a = ajustes[i]
+    const execucao = e.medida === 'tempo' ? (a?.segundos ?? e.segundosPadrao ?? 30) : (a?.reps ?? e.repeticoesPadrao) * SEG_POR_REP
+    seg += (a?.series ?? series[i] ?? 0) * (execucao + DESCANSO_RAPIDO_SEG)
   })
   return Math.max(10, Math.round(seg / 300) * 5)
 }

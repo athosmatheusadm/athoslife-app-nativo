@@ -61,6 +61,38 @@ export const TETO_SERIES = 10
 
 export interface ItemRapido { exercicio_id: string; nome: string; series: SerieDetalhe[] }
 
+/** Treino rápido no grátis: 1 por semana (dono, 17/11). Janela de 7 dias corridos. */
+export const RAPIDO_GRATIS_DIAS = 7
+
+/** O que a pessoa mudou no cartão antes de pôr na ficha: séries e reps (ou segundos) por exercício. */
+export type AjusteRapido = { series?: unknown; reps?: unknown; segundos?: unknown }
+
+const inteiro = (v: unknown, min: number, max: number): number | null => {
+  const n = Math.round(Number(v))
+  return Number.isFinite(n) && n >= min && n <= max ? n : null
+}
+
+/**
+ * Aplica no item o que a pessoa ajustou no cartão (18/11). Valor fora da
+ * faixa é ignorado (fica o do app). Séries 1–5, reps 1–20, segundos 10–120 —
+ * as mesmas faixas do aplicar_plano_treino. Carga nunca vem daqui.
+ */
+export function ajustarItem(item: ItemRapido, ajuste: AjusteRapido | undefined): ItemRapido {
+  if (!ajuste || typeof ajuste !== 'object' || !item.series.length) return item
+  const base = item.series[0]
+  const porTempo = base.segundos != null
+  const n = inteiro(ajuste.series, 1, 5) ?? item.series.length
+  const reps = porTempo ? null : inteiro(ajuste.reps, 1, 20) ?? base.reps
+  const segundos = porTempo ? inteiro(ajuste.segundos, 10, 120) ?? base.segundos : null
+  return { ...item, series: Array.from({ length: n }, () => ({ reps, segundos, carga_kg: null })) }
+}
+
+export function lerAjustes(v: unknown): Record<string, AjusteRapido> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return {}
+  return Object.fromEntries(Object.entries(v as Record<string, unknown>).slice(0, 10)
+    .filter(([, a]) => a && typeof a === 'object') as [string, AjusteRapido][])
+}
+
 /**
  * Escolhe os exercícios da parte pedida: só os que dão pra fazer no local e
  * no nível dela, na ordem do catálogo, pulando os que já estão na ficha do
@@ -127,6 +159,8 @@ export const TXT_PARTE: Record<Idioma, {
   semExercicio: (parte: string, local: string) => string
   jaTemTudo: (parte: string, dia: string) => string
   pronto: (n: number, dia: string) => string
+  /** Grátis já usou o treino rápido da semana (dono, 17/11: 1 por semana). */
+  limiteGratis: string
 }> = {
   'pt-BR': {
     confira: (p, l, d, lo, r) => `Fechou, treino ${r ? 'rápido ' : ''}só de ${p}: ${l}. Coloco na sua ficha de ${d} ${lo}? A carga é você quem escolhe na hora.`,
@@ -135,6 +169,7 @@ export const TXT_PARTE: Record<Idioma, {
     semExercicio: (p, lo) => `Não achei exercício de ${p} pro treino ${lo} no app ainda. Quer que eu monte de outra parte?`,
     jaTemTudo: (p, d) => `Sua ficha de ${d} já tem os exercícios de ${p} que eu colocaria. É só abrir o Treino e mandar ver.`,
     pronto: (n, d) => `Pronto, ${n} exercício${n === 1 ? '' : 's'} na sua ficha de ${d}. Abre o Treino quando for começar — a carga você anota na hora.`,
+    limiteGratis: 'Seu treino rápido desta semana já foi. No Premium eu monto quantos você quiser — e a ficha da semana inteira também. Enquanto isso, você monta o seu à vontade no Treino.',
   },
   en: {
     confira: (p, l, d, lo, r) => `Got it, a ${r ? 'quick ' : ''}${p}-only workout: ${l}. Shall I put it in your ${d} ${lo} routine? You choose the weight on the spot.`,
@@ -143,6 +178,7 @@ export const TXT_PARTE: Record<Idioma, {
     semExercicio: (p, lo) => `I couldn't find ${p} exercises for the ${lo} workout in the app yet. Want one for another body part?`,
     jaTemTudo: (p, d) => `Your ${d} routine already has the ${p} exercises I would add. Just open Workout and go.`,
     pronto: (n, d) => `Done, ${n} exercise${n === 1 ? '' : 's'} in your ${d} routine. Open Workout when you start — you log the weight on the spot.`,
+    limiteGratis: "You've used this week's quick workout. With Premium I build as many as you want — and the whole week's routine too. Meanwhile, you can build your own in Workout.",
   },
   es: {
     confira: (p, l, d, lo, r) => `Listo, entreno ${r ? 'rápido ' : ''}solo de ${p}: ${l}. ¿Lo pongo en tu rutina del ${d} ${lo}? El peso lo eliges tú en el momento.`,
@@ -151,6 +187,7 @@ export const TXT_PARTE: Record<Idioma, {
     semExercicio: (p, lo) => `Todavía no encontré ejercicios de ${p} para el entreno ${lo} en la app. ¿Te armo uno de otra parte?`,
     jaTemTudo: (p, d) => `Tu rutina del ${d} ya tiene los ejercicios de ${p} que pondría. Solo abre Entreno y dale.`,
     pronto: (n, d) => `Listo, ${n} ejercicio${n === 1 ? '' : 's'} en tu rutina del ${d}. Abre Entreno cuando empieces — el peso lo anotas en el momento.`,
+    limiteGratis: 'Ya usaste tu entreno rápido de esta semana. Con Premium armo los que quieras — y la rutina de toda la semana también. Mientras tanto, puedes armar el tuyo en Entreno.',
   },
   fr: {
     confira: (p, l, d, lo, r) => `C'est parti, une séance ${r ? 'rapide ' : ''}spéciale ${p} : ${l}. Je l'ajoute à ta séance du ${d} ${lo} ? La charge, c'est toi qui la choisis sur le moment.`,
@@ -159,6 +196,7 @@ export const TXT_PARTE: Record<Idioma, {
     semExercicio: (p, lo) => `Je n'ai pas encore trouvé d'exercices pour ${p} ${lo} dans l'appli. Je t'en prépare une pour une autre partie ?`,
     jaTemTudo: (p, d) => `Ta séance du ${d} contient déjà les exercices pour ${p} que j'ajouterais. Ouvre Entraînement et c'est parti.`,
     pronto: (n, d) => `C'est fait, ${n} exercice${n === 1 ? '' : 's'} dans ta séance du ${d}. Ouvre Entraînement quand tu commences — tu notes la charge sur le moment.`,
+    limiteGratis: "Tu as déjà utilisé ta séance rapide de la semaine. Avec Premium, je t'en prépare autant que tu veux — et le programme de toute la semaine aussi. En attendant, tu peux créer la tienne dans Entraînement.",
   },
   hi: {
     confira: (p, l, d, lo, r) => `ठीक है, सिर्फ़ ${p} का ${r ? 'छोटा ' : ''}वर्कआउट: ${l}। इसे आपके ${d} (${lo}) वाले वर्कआउट में डाल दूँ? वज़न आप वहीं चुनिए।`,
@@ -167,5 +205,6 @@ export const TXT_PARTE: Record<Idioma, {
     semExercicio: (p, lo) => `ऐप में अभी ${lo} के लिए ${p} की एक्सरसाइज़ नहीं मिली। किसी और हिस्से का बना दूँ?`,
     jaTemTudo: (p, d) => `आपके ${d} वाले वर्कआउट में ${p} की वे एक्सरसाइज़ पहले से हैं जो मैं डालता। बस वर्कआउट खोलिए और शुरू कीजिए।`,
     pronto: (n, d) => `हो गया, ${n} एक्सरसाइज़ आपके ${d} वाले वर्कआउट में आ गईं। शुरू करते समय वर्कआउट खोलिए — वज़न वहीं लिखिए।`,
+    limiteGratis: 'इस हफ़्ते का छोटा वर्कआउट आप ले चुके हैं। Premium में मैं जितने चाहें उतने बना दूँगा — और पूरे हफ़्ते का प्लान भी। तब तक आप वर्कआउट में अपना खुद बना सकते हैं।',
   },
 }

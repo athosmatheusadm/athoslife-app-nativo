@@ -86,3 +86,23 @@ Deno.test('a fala só tem nomes: nada de séries, repetições ou carga em núme
     ok(fala.includes('Rosca Martelo'))
   }
 })
+
+// Ajustes do cartão (18/11): a pessoa muda séries e reps antes de pôr na ficha.
+{
+  const { ajustarItem, lerAjustes } = await import('./treinoRapido.ts')
+  const item = { exercicio_id: 'a', nome: 'Rosca', series: [1, 2, 3].map(() => ({ reps: 12, segundos: null, carga_kg: null })) }
+  const r = ajustarItem(item, { series: 4, reps: 8 })
+  igual(r.series.length, 4)
+  ok(r.series.every((s) => s.reps === 8 && s.segundos === null && s.carga_kg === null))
+  // fora da faixa: fica o do app
+  const f = ajustarItem(item, { series: 9, reps: 0 })
+  igual(f.series.length, 3)
+  ok(f.series.every((s) => s.reps === 12))
+  // por tempo: mexe nos segundos, reps continua nulo
+  const prancha = { exercicio_id: 'p', nome: 'Prancha', series: [{ reps: null, segundos: 30, carga_kg: null }] }
+  const p = ajustarItem(prancha, { series: 2, segundos: 45, reps: 10 })
+  igual(p.series, [{ reps: null, segundos: 45, carga_kg: null }, { reps: null, segundos: 45, carga_kg: null }])
+  igual(ajustarItem(item, undefined), item)
+  igual(Object.keys(lerAjustes({ a: { series: 2 }, b: 'x' })), ['a'])
+  igual(lerAjustes(null), {})
+}
