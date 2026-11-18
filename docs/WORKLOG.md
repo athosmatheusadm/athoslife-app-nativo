@@ -6209,3 +6209,37 @@ de token.
   teste: travar só o que o Life montou (coluna nova marcando origem); o
   que a pessoa monta segue grátis. A fazer (precisa migração + ai-proxy).
 - Falta testar "Outra opção" conversando com o Life de verdade (APK ou dev).
+
+## 2026-11-18 — Pranchas novas, fim do teste, cartão editável, personalizar o Life
+
+- **Pranchas do Treino:** 44 das 45 do `treinos_athos_final.zip` trocadas
+  em `public/exercicios/pranchas/` (jpg, 800 px de altura). `puxada_unilateral`
+  ficou de fora: é o mesmo exercício do "Pulldown Unilateral".
+- **Migrações APLICADAS (ok do dono 18/11):**
+  `athoslife_teste_3_dias` (teste grátis 3 dias),
+  `athoslife_fim_do_teste` (+ ajuste `_dieta`) e `athoslife_life_visual`.
+  - `treino_plano.do_life` (interno, não aparece): o que o Life montou pra
+    quem é Premium (plano inteiro + treino rápido do Premium). O app não
+    consegue mudar a marca (gatilho). Treino rápido do grátis fica sem marca.
+  - `plano_do_life_vencido()` / `limpar_plano_do_life()`: com o Premium
+    acabado, apagam só a ficha marcada e o plano de dieta (`planos_gerados`
+    tipo dieta). Refeições programadas, metas e o que a pessoa montou ficam.
+  - `profiles.life_cor` / `life_acessorio`: pérola e auréola só Fundador.
+- **App:** `FimDoPremium` no Treino e na Dieta (cartão sobe; "Quero ser
+  Premium" não apaga nada; "Agora não"/voltar limpa e a área fica livre).
+  Cartão do treino rápido: toque em "séries × reps" abre − / + (séries 1–5,
+  reps 1–20, segundos 10–120) e vai junto no "Pôr na ficha"; chama (fogo)
+  no aquecimento no lugar do tênis; cartão do Premium embaixo da fala quando
+  o grátis passa do limite. Perfil → **Personalizar o Life** (`/perfil/life`):
+  cor na Home e no Life flutuante. Textos pt/en/es/fr/hi.
+- **ai-proxy (PRECISA DEPLOY):** grátis = 1 treino rápido por 7 dias (o 2º
+  responde com `convite_premium`), `do_life` no treino rápido do Premium,
+  aceita `ajustes` no `acao`. Teste `treinoRapido.test.ts` ok; `deno check`
+  só acusa o erro antigo de `a.receita` (linha ~3626, receitas).
+- typecheck + build ok.
+
+**Pendências:** deploy da `ai-proxy` + `node scripts/smoke-life.mjs` +
+conversa real (treino rápido grátis 2x, "Outra opção", ajustar séries e pôr
+na ficha) — o token do Supabase em `~/.supabase/access-token` venceu;
+push (token do GitHub); APK; testar o fim do teste com uma conta de QA com
+o teste vencido. Ideia: receita 1/semana do grátis — dono ainda com receio.
