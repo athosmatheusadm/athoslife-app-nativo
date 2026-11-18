@@ -2,7 +2,7 @@ import { supabase } from '@data/supabase/client'
 import { exigirRede, lerComCache, lerDoCache, mexerNoCache } from '@data/offline/cache'
 import { escrever } from '@data/offline/fila'
 import { emailDaSessao, usuarioId } from '@data/offline/usuario'
-import type { MascoteModo, Metas, Objetivo, Plano, Profile, Sexo } from '@domain/entities/profile'
+import type { AcessorioLife, CorLife, MascoteModo, Metas, Objetivo, Plano, Profile, Sexo } from '@domain/entities/profile'
 import { normalizarIdioma, type Localidade, type Unidades } from '@domain/rules/localidade'
 
 /** Linha crua da tabela profiles. snake_case morre nesta fronteira. */
@@ -43,6 +43,8 @@ interface ProfileRow {
   life_chat_momentos?: string[] | null
   telefone?: string | null
   consentimento_memoria?: boolean | null
+  life_cor?: string | null
+  life_acessorio?: string | null
 }
 
 /** Resposta de liberar_teste_gratis (db/athoslife_protecao_ia_migration.sql). */
@@ -98,6 +100,8 @@ function paraDominio(row: ProfileRow): Profile {
     maiorStreak: row.maior_streak ?? 0,
     lastAppOpen: row.last_app_open ? new Date(row.last_app_open) : null,
     mascoteModoAtual: (row.mascote_modo_atual ?? 'active') as MascoteModo,
+    lifeCor: row.life_cor === 'amarelo' || row.life_cor === 'rosa' || row.life_cor === 'perola' ? row.life_cor : null,
+    lifeAcessorio: row.life_acessorio === 'aureola' ? 'aureola' : null,
     metas: {
       kcal: row.kcal_meta ?? 0,
       proteina: row.prot_meta ?? 0,
@@ -272,6 +276,11 @@ export const profileRepository = {
   },
 
   /** Atualiza a meta diária de água (litros escolhidos no painel do disco). */
+  /** Personalizar o Life (18/11). Pérola/auréola o servidor só aceita de Fundador. */
+  async atualizarVisualLife(cor: CorLife | null, acessorio: AcessorioLife | null): Promise<void> {
+    await atualizarPerfil({ life_cor: cor, life_acessorio: acessorio })
+  },
+
   async atualizarMetaAgua(metaMl: number): Promise<void> {
     await atualizarPerfil({ agua_meta_ml: metaMl })
   },

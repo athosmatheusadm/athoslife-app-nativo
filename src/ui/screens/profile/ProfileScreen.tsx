@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { SettingsRow } from '@ui/components/SettingsRow'
 import { useI18n } from '@/i18n/I18nProvider'
 import { Chevron } from '@ui/components/Chevron'
+import { LifeMascote } from '@ui/components/LifeMascote'
 import { CabecalhoSubpagina } from '@ui/components/CabecalhoSubpagina'
 import { useSession } from '@app/SessionProvider'
 import { diasRestantesTrial, temAcessoPremium } from '@domain/rules/access'
@@ -75,6 +76,13 @@ export function ProfileScreen({
           onClick={() => onNavigate('/perfil/conquistas')}
         />
         <div className="mx-5 my-2 h-px bg-surface-4/50" />
+        <SettingsRow
+          icon={<LifeMascote humor="normal" estatico alt="" className="h-7" />}
+          title={l.life}
+          subtitle={l.lifeSub}
+          trailing={<Chevron />}
+          onClick={() => onNavigate('/perfil/life')}
+        />
         <SettingsRow icon={<IconConta />} title={l.conta} subtitle={l.contaSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/conta')} />
         <SettingsRow icon={<IconMetas />} title={l.metas} subtitle={l.metasSub} trailing={<Chevron />} onClick={() => onNavigate('/perfil/metas')} />
         <SettingsRow icon={<IconPlano />} title={l.plano} subtitle={l.planoSub} trailing={<><span className="mr-2 text-micro font-semibold text-accent-gold">{premium ? t.premium : t.gratis}</span><Chevron /></>} onClick={() => onNavigate('/perfil/plano')} />

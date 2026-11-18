@@ -3,6 +3,7 @@ import { aoPedirAbrirLife } from '@app/eventosLife'
 import type { FocoLife } from '@data/ai/aiProxy'
 import { LifeMascote, type HumorLife } from '@ui/components/LifeMascote'
 import { useI18n } from '@/i18n/I18nProvider'
+import { useSession } from '@app/SessionProvider'
 import { LifeChatSheet } from './LifeChatSheet'
 
 /**
@@ -35,6 +36,7 @@ export function LifeFlutuante(props: {
   celebrar?: number
 }) {
   const { m } = useI18n()
+  const { profile } = useSession()
   const [aberto, setAberto] = useState(false)
   const [rascunho, setRascunho] = useState<string | undefined>(undefined)
   const visivel = useRolouAlem(props.aparecerDepoisDe ?? 0)
@@ -65,7 +67,15 @@ export function LifeFlutuante(props: {
           />
         )}
         {/* Em celular estreito (360 px) o Life menor não cobre "Jantar" e "+ Nova refeição". */}
-        <LifeMascote humor={props.humor} alt="" className="relative h-24 min-[380px]:h-32" nivelHabitos={props.nivelHabitos} celebrar={props.celebrar} />
+        <LifeMascote
+          humor={props.humor}
+          alt=""
+          className="relative h-24 min-[380px]:h-32"
+          nivelHabitos={props.nivelHabitos}
+          celebrar={props.celebrar}
+          cor={profile?.lifeCor ?? undefined}
+          acessorio={profile?.lifeAcessorio ?? undefined}
+        />
         {/* Área de toque: o corpo do Life, não a imagem inteira. */}
         <button
           type="button"

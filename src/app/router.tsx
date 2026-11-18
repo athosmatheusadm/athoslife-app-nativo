@@ -24,6 +24,7 @@ import { Privacidade } from '@ui/screens/Privacidade'
 import { MemoriaLife } from '@ui/screens/MemoriaLife'
 import { Notificacoes } from '@ui/screens/Notificacoes'
 import { Acessibilidade } from '@ui/screens/Acessibilidade'
+import { PersonalizarLife } from '@ui/screens/PersonalizarLife'
 import { Sobre } from '@ui/screens/Sobre'
 import { IdiomaRegiao } from '@ui/screens/IdiomaRegiao'
 import { Cozinha } from '@ui/screens/Cozinha'
@@ -92,6 +93,7 @@ export const router = createBrowserRouter([
           { path: '/perfil/privacidade/life', element: <MemoriaLife /> },
           { path: '/perfil/notificacoes', element: <Notificacoes /> },
           { path: '/perfil/acessibilidade', element: <Acessibilidade /> },
+          { path: '/perfil/life', element: <PersonalizarLife /> },
           { path: '/perfil/sobre', element: <Sobre /> },
           { path: '/perfil/sobre/licencas', element: <Licencas /> },
           { path: '/story', element: <StoryScreen /> },

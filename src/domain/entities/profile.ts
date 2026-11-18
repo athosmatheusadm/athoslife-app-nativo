@@ -47,6 +47,10 @@ export interface Metas {
   readonly passos: number
 }
 
+/** Cor do Life escolhida pela pessoa (18/11). Verde = null. Pérola e auréola: Fundador. */
+export type CorLife = 'amarelo' | 'perola' | 'rosa'
+export type AcessorioLife = 'aureola'
+
 export interface Profile {
   readonly id: string
   readonly nome: string | null
@@ -71,6 +75,8 @@ export interface Profile {
   readonly lastAppOpen: Date | null
 
   readonly mascoteModoAtual: MascoteModo
+  readonly lifeCor: CorLife | null
+  readonly lifeAcessorio: AcessorioLife | null
   readonly metas: Metas
   /** Idioma, país, fuso e unidades (globalização, 2026-09-28). */
   readonly localidade: Localidade
