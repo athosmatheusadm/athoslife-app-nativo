@@ -6252,3 +6252,26 @@ o teste vencido. Ideia: receita 1/semana do grátis — dono ainda com receio.
 
 **Pendências:** as mesmas de 18/11 (deploy da `ai-proxy` + smoke + conversa
 real com token novo do Supabase; push; APK; testar fim do teste com QA vencida).
+
+## 2026-11-18 (3) — ai-proxy publicada e testada, main em dia, ícone de sono
+
+- **main = planos-v2** (4f01732, avanço em linha reta, ok do dono).
+- **ai-proxy publicada** (token novo do Supabase). `smoke-life.mjs` passou
+  (2/2, 4,7 s e 6,7 s). Conversa real (conta grátis nova): treino rápido de
+  peito ok; "Outra opção" troca os exercícios; "salvar" com `ajustes` grava
+  4×8 na ficha, `do_life` falso (grátis, certo); 2º treino rápido depois de um
+  salvo na semana → `convite_premium`. O limite conta só os que foram pra
+  ficha (os só mostrados não contam). Obs.: no grátis, "Outra opção" e a
+  resposta do limite gastam mensagem do dia.
+- **Contas de teste novas** (criadas com ok do dono, e-mail confirmado no
+  banco porque o Confirm email está ligado): `qa.claude.4a3f37@…` (Claude) e
+  `qa.dono.78db1e@…` (dono). Senhas só em `~/.athoslife-qa` (600), fora do repo.
+- **Ícone não entrava no modo sono:** o sono só valia se a pessoa tivesse
+  salvo Perfil > Notificações > Lembretes do dia; quem nunca salvou ficava sem
+  sono pra sempre. Agora usa o padrão da tela (23:00–07:00) quando não há nada
+  salvo (`iconeMascote.ts`). Precisa APK novo (já pedido no Actions).
+- typecheck + build ok.
+
+**Pendências:** dono instalar o APK novo e conferir o ícone de noite (lembrar:
+a troca acontece com o app fora da tela; alguns launchers demoram a redesenhar);
+testar o fim do teste com conta vencida.

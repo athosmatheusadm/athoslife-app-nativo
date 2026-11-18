@@ -1,12 +1,13 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { Preferences } from '@capacitor/preferences'
 import { dataLocalISO } from '@domain/rules/datas'
+import { normalizarConfig } from '@domain/rules/lembretesDiarios'
 
 /**
  * Ícone do app que acompanha o dia (pacote "mascote-icone" do dono, 25/10):
  *
- *   1. Sono      → só se a pessoa cadastrou o horário de dormir/acordar
- *                  (Perfil > Notificações) E agora está dentro dele;
+ *   1. Sono      → dentro do horário de dormir/acordar (Perfil > Notificações;
+ *                  sem nada salvo, o padrão 23:00–07:00 da mesma tela);
  *   2. Conquista → bateu a meta de calorias hoje OU desbloqueou uma
  *                  conquista hoje (vale até a meia-noite). No app, o Life
  *                  da Home toca a animação dourada uma vez (celebração
@@ -41,7 +42,7 @@ interface MascoteIconePlugin {
 
 const MascoteIcone = registerPlugin<MascoteIconePlugin>('MascoteIcone')
 
-/** Mesma chave de lembretesDiarios.ts: só existe depois que a pessoa salvou os horários. */
+/** Mesma chave de lembretesDiarios.ts (só existe depois que a pessoa salvou a tela). */
 const CHAVE_LEMBRETES = 'athoslife:lembretes-diarios'
 const CHAVE_CONQUISTA = 'athos.icone.conquista'
 /** Data (YYYY-MM-DD) em que a última conquista da galeria foi desbloqueada. */
@@ -82,17 +83,22 @@ function proximaMeiaNoite(agora: Date): number {
   return d.getTime()
 }
 
-async function horarioSonoCadastrado(): Promise<HorarioSono | null> {
+/**
+ * Horário de sono da pessoa: o que ela salvou em Perfil > Notificações ou,
+ * se nunca salvou, o padrão que essa tela mostra (dormir 23:00, acordar 07:00).
+ * Antes (até 18/11) só valia o salvo — quem nunca abriu a tela ficava sem o
+ * ícone de sono pra sempre.
+ */
+async function horarioSono(): Promise<HorarioSono> {
+  let bruto: unknown = null
   try {
     const { value } = await Preferences.get({ key: CHAVE_LEMBRETES })
-    if (!value) return null
-    const c = JSON.parse(value) as { acordar?: unknown; dormir?: unknown }
-    if (typeof c.dormir !== 'string' || typeof c.acordar !== 'string') return null
-    if (paraMinutos(c.dormir) === null || paraMinutos(c.acordar) === null) return null
-    return { inicio: c.dormir, fim: c.acordar }
+    bruto = value ? JSON.parse(value) : null
   } catch {
-    return null
+    bruto = null
   }
+  const c = normalizarConfig(bruto)
+  return { inicio: c.dormir, fim: c.acordar }
 }
 
 function metaHoje(): boolean {
@@ -143,7 +149,7 @@ let fila: Promise<unknown> = Promise.resolve()
 
 async function aplicar(): Promise<void> {
   if (Capacitor.getPlatform() !== 'android') return
-  const sono = await horarioSonoCadastrado()
+  const sono = await horarioSono()
   const conquista = diaDeConquista()
   const ini = sono ? paraMinutos(sono.inicio) : null
   const fim = sono ? paraMinutos(sono.fim) : null
