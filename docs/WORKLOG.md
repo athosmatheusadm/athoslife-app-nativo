@@ -6276,3 +6276,36 @@ real com token novo do Supabase; push; APK; testar fim do teste com QA vencida).
 **Pendências:** dono instalar o APK novo e conferir o ícone de noite (lembrar:
 a troca acontece com o app fora da tela; alguns launchers demoram a redesenhar);
 testar o fim do teste com conta vencida.
+
+## 2026-11-22 — Life: estimativa no chat, várias refeições, "dieta da semana"
+
+Pela conversa do dono com o Life em 18 e 21/11 (conta matheusbarretonunes).
+Branch `life-registro-estimativa` (não está na main).
+
+- **Item fora da base virava nada** (geleia de goiaba, capuccino gelado,
+  empadão, iogurte sem lactose): `registrar_alimentos` e `programar_refeicao`
+  agora estimam numa chamada só (até 6 itens, sem cota à parte, auditado como
+  `estimar_chat`) pela TACO/rótulo típico. Entra no cartão com "estimado" e a
+  fala "Não tinha X na minha base, então estimei…". Sem busca na internet: a
+  estimativa vem do conhecimento do modelo (o dono perguntou; não precisa).
+  Life não diz mais "não consigo buscar na internet" nem manda pra Dieta.
+- **"De manhã X, no almoço Y" perdia o almoço:** novo `outras_refeicoes` na
+  ferramenta → ação `registrar_itens` ganha `outras` (opcional). App
+  (`RegistroNoChat`) mostra uma seção por refeição e grava cada uma no lugar
+  certo. **APK antigo mostra só a 1ª refeição** (compatível, não quebra).
+- **"Programar a dieta da semana que vem" abria o Montar dieta:** regra do
+  plano diz que isso é `programar_refeicao`; na dúvida, pergunta.
+- Cartão de programar: começo varia e o "fica apagadinho… ✓" só sai se o Life
+  não disse nas últimas 12 falas.
+- Memória: texto sem marcar gênero (uma lembrança do dono dizia "preocupada").
+- **Jeito de falar NÃO mudou:** o "cara" é o dono que fala, ele quer que o
+  Life aprenda com ele (tentativa de tirar foi desfeita a pedido).
+- Testes: 125 do ai-proxy ok (novos em `refeicaoDigitada.test.ts`,
+  `programar.test.ts`); typecheck + build ok; `deno check` só o erro antigo
+  de `a.receita`.
+
+**Pendências:** dono vai subir depois — **ai-proxy PRECISA DEPLOY** (com
+autorização dele) + `node scripts/smoke-life.mjs` + conversa real: a mensagem
+do café+almoço de 21/11 e "programar a dieta da semana que vem"; push da
+branch (token do GitHub) e PR; APK/AAB novo pra ver o cartão com várias
+refeições; corrigir a lembrança "preocupada" do dono se ele quiser.
