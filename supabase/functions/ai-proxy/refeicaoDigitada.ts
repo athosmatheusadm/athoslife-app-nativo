@@ -345,3 +345,17 @@ export const TXT_REGISTRO: Record<Idioma, {
     restricao: (itens, r) => `ध्यान दें: ${itens} में ${r} हो सकता है, जो आपके परहेज़ में है।`,
   },
 }
+
+/**
+ * Estimativa que pode virar alimento da base pra todo mundo (22/11). Só nome
+ * genérico de comida: nada pessoal ("bolo da minha vó"), sem número, sem
+ * link e sem texto comprido. O resto vale só pro cartão de agora.
+ */
+export function podeGuardar(nome: string): boolean {
+  const t = normalizar(nome)
+  if (t.length < 3 || t.length > 40) return false
+  if (t.split(/\s+/).length > 5) return false
+  if (/[0-9@#/\\<>{}[\]|_=+*"`$%]|https?|www|\.com/.test(t)) return false
+  if (/\b(meu|minha|meus|minhas|vo|vovo|mae|pai|tia|tio|amig[oa]|namorad[oa]|esposa|marido|my|mom|grandma|mi|abuela|mama|ma|mon|mes|teste|test|asdf)\b/.test(t)) return false
+  return /\p{L}{2,}/u.test(t)
+}

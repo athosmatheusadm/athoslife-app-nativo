@@ -1,5 +1,5 @@
 import { assert, assertEquals } from 'jsr:@std/assert@1'
-import { gramasDoItem, lerEstimativas, lerItens, pedeIdeia, prometeuRegistro, refeicaoPelaHora, singularDe, TXT_REGISTRO } from './refeicaoDigitada.ts'
+import { gramasDoItem, lerEstimativas, podeGuardar, lerItens, pedeIdeia, prometeuRegistro, refeicaoPelaHora, singularDe, TXT_REGISTRO } from './refeicaoDigitada.ts'
 
 const ok = (v: unknown, msg?: string) => assert(v, msg)
 const igual = assertEquals
@@ -128,4 +128,9 @@ Deno.test('lerEstimativas: resposta quebrada não derruba nada', () => {
 
 Deno.test('texto de estimativa nos 5 idiomas', () => {
   for (const i of ['pt-BR', 'en', 'es', 'fr', 'hi'] as const) ok(TXT_REGISTRO[i].estimei('geleia').includes('geleia'))
+})
+
+Deno.test('podeGuardar: só nome genérico de comida vai pra base', () => {
+  for (const n of ['Geleia de goiaba', 'Cappuccino gelado', 'Empadão de frango', 'Pão de queijo mineiro']) ok(podeGuardar(n), n)
+  for (const n of ['bolo da minha vó', 'lasanha da mãe', 'x', 'pão 2', 'http://site.com', 'teste', 'uma comida com nome comprido demais pra base']) ok(!podeGuardar(n), n)
 })

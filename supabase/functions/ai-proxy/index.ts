@@ -35,7 +35,7 @@
 import { linhasPerfil } from './perfil.ts'
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
 import { blocoConversaAnterior, dividirHistorico, extrairResumo, JANELA_TOTAL, REGRA_RESUMO, type MensagemSalva } from './historico.ts'
-import { acharNaBase, falaRegistro, lerEstimativas, lerItens, limparComentario, MAX_ESTIMAR, MAX_ITENS, mensagemEstimarVarios, pedeIdeia, prometeuRegistro, refeicaoPelaHora, sistemaEstimarVarios, TXT_REGISTRO, type ItemAchado, type ItemPedido } from './refeicaoDigitada.ts'
+import { acharNaBase, falaRegistro, lerEstimativas, lerItens, limparComentario, MAX_ESTIMAR, MAX_ITENS, mensagemEstimarVarios, pedeIdeia, podeGuardar, prometeuRegistro, refeicaoPelaHora, sistemaEstimarVarios, TXT_REGISTRO, type ItemAchado, type ItemPedido } from './refeicaoDigitada.ts'
 import { handleScan } from './scanner/analisar.ts'
 import { detectarAssuntos, fatoDoAssunto, type Assunto } from './assuntos.ts'
 import {
@@ -3300,7 +3300,51 @@ async function estimarVarios(sb: Sb, userId: string, loc: Localidade, itens: Ite
   const cru = g.ok ? extrairJSON(g.texto) : null
   const lidos = cru ? lerEstimativas(cru, itens) : itens.map(() => null)
   await auditar(sb, userId, 'estimar_chat', !g.ok ? 'error' : !cru ? 'parse_error' : 'ok', g)
+  await guardarNaBase(sb, loc, itens, lidos)
   return lidos
+}
+
+/**
+ * O que o Life estimou vira alimento da base (dono, 22/11): na próxima vez,
+ * pra qualquer pessoa do país, "geleia de goiaba" já existe. Silencioso: se
+ * a migração faltar ou der erro, só não guarda.
+ */
+async function guardarNaBase(sb: Sb, loc: Localidade, pedidos: ItemPedido[], lidos: (ItemAchado | null)[]) {
+  try {
+    const coluna = loc.idioma === 'pt-BR' ? null : loc.idioma === 'en' ? 'nome_en' : loc.idioma === 'es' ? 'nome_es' : loc.idioma === 'fr' ? 'nome_fr' : 'nome_hi'
+    const vistos = new Set<string>()
+    for (let i = 0; i < lidos.length; i++) {
+      const e = lidos[i]
+      if (!e || !podeGuardar(e.nome)) continue
+      const chave = e.nome.toLowerCase()
+      if (vistos.has(chave)) continue
+      vistos.add(chave)
+      // Já existe com esse nome (outra pessoa guardou antes)? Não duplica.
+      const { data: ja } = await sb.from('alimentos').select('id').ilike(coluna ?? 'nome', e.nome.replace(/[%_\\]/g, '')).limit(1)
+      if (ja?.length) continue
+      const digitado = pedidos[i]?.nome.trim()
+      const { error } = await sb.from('alimentos').insert({
+        nome: e.nome,
+        ...(coluna ? { [coluna]: e.nome } : {}),
+        porcao_g: e.porcaoG,
+        calorias: Math.round(e.calorias),
+        proteina: e.proteina,
+        carboidrato: e.carboidrato,
+        gordura: e.gordura,
+        porcao_tipica_g: e.porcaoG,
+        aliases: digitado && digitado.toLowerCase() !== chave && podeGuardar(digitado) ? [digitado.toLowerCase()] : [],
+        regioes: [loc.pais ?? 'BR'],
+        scanner: false,
+        origem: 'life',
+      })
+      if (error) {
+        console.error('[estimar_chat] não guardou na base', error.message)
+        return
+      }
+    }
+  } catch (e) {
+    console.error('[estimar_chat] guardar falhou', e instanceof Error ? e.message : e)
+  }
 }
 
 /**

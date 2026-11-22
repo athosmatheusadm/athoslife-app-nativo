@@ -6300,11 +6300,21 @@ Branch `life-registro-estimativa` (não está na main).
 - Memória: texto sem marcar gênero (uma lembrança do dono dizia "preocupada").
 - **Jeito de falar NÃO mudou:** o "cara" é o dono que fala, ele quer que o
   Life aprenda com ele (tentativa de tirar foi desfeita a pedido).
-- Testes: 125 do ai-proxy ok (novos em `refeicaoDigitada.test.ts`,
+- Testes: 126 do ai-proxy ok (novos em `refeicaoDigitada.test.ts`,
   `programar.test.ts`); typecheck + build ok; `deno check` só o erro antigo
   de `a.receita`.
 
-**Pendências:** dono vai subir depois — **ai-proxy PRECISA DEPLOY** (com
+- **Estimativa vira alimento da base** (dono adorou: "da próxima já existe a
+  geleia", sem a pessoa saber): `guardarNaBase` grava em `alimentos` com
+  `origem = 'life'`, `scanner = false`, `regioes = [país]`, o nome digitado em
+  `aliases` (pega "capuccino" escrito errado) e sem duplicar nome. Só nome
+  genérico passa (`podeGuardar`: nada de "da minha vó", número, link, texto
+  comprido). Pra revisar: `select … from alimentos where origem = 'life'`.
+  **Migração nova `db/athoslife_alimentos_do_life_migration.sql` — aplicar
+  ANTES do deploy** (sem ela a ai-proxy só não guarda; o resto funciona).
+
+**Pendências:** dono vai subir depois — **aplicar a migração
+`athoslife_alimentos_do_life`**, depois **ai-proxy PRECISA DEPLOY** (com
 autorização dele) + `node scripts/smoke-life.mjs` + conversa real: a mensagem
 do café+almoço de 21/11 e "programar a dieta da semana que vem"; push da
 branch (token do GitHub) e PR; APK/AAB novo pra ver o cartão com várias
