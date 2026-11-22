@@ -6319,3 +6319,21 @@ autorização dele) + `node scripts/smoke-life.mjs` + conversa real: a mensagem
 do café+almoço de 21/11 e "programar a dieta da semana que vem"; push da
 branch (token do GitHub) e PR; APK/AAB novo pra ver o cartão com várias
 refeições; corrigir a lembrança "preocupada" do dono se ele quiser.
+
+## 2026-11-22 (2) — Notificação do Life com o Life (não o halter)
+
+- Dono: as notificações chegavam com "desenho de peso". O push do Life
+  (`life-push/fcm.ts`) usava `ic_stat_athos`, o halter feito pra Live
+  Activity do treino.
+- Novo `drawable/ic_stat_life.xml`: cabeça do camaleão em branco (crista,
+  olhões vazados, sorriso), conferido em prévia 192/48/24 px. O halter
+  segue só no treino em andamento.
+- `life-push` → `icon: 'ic_stat_life'`; `capacitor.config.ts` →
+  `LocalNotifications.smallIcon: 'ic_stat_life'`; manifest com o ícone e a
+  cor padrão do Firebase (`@color/life_notificacao` #64C27B).
+- typecheck ok. Não compilei o Android aqui (PC com 4 GB); o vetor usa só
+  comandos aceitos pelo Android (M, C, A, L, Z).
+
+**Pendências:** **deploy da `life-push`** (junto da ai-proxy, mesma
+autorização) e APK novo (ícone da notificação local e do push com o app
+fechado só mudam no APK novo).

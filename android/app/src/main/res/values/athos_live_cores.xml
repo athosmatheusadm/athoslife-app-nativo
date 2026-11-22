@@ -7,4 +7,6 @@
     <color name="athos_la_lima">#FFC6FF3D</color>
     <color name="athos_la_descanso">#FFFF9159</color>
     <color name="athos_la_escuro">#FF0B0F0D</color>
+    <!-- Cor do ícone das notificações do Life (mesma do push e do capacitor.config). -->
+    <color name="life_notificacao">#FF64C27B</color>
 </resources>

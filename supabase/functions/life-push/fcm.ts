@@ -79,7 +79,7 @@ export async function enviarPush(conta: ContaServico, p: {
         data: p.dados,
         android: {
           priority: 'high',
-          notification: { channel_id: 'life', icon: 'ic_stat_athos', color: '#64c27b', tag: 'life' },
+          notification: { channel_id: 'life', icon: 'ic_stat_life', color: '#64c27b', tag: 'life' },
         },
         apns: { payload: { aps: { sound: 'default' } } },
       },

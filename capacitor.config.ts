@@ -32,9 +32,9 @@ const config: CapacitorConfig = {
       facebookAppId: '',
     },
     LocalNotifications: {
-      // Sem `smallIcon` de propósito: não existe um ícone de status bar
-      // dedicado em android/res ainda (só os ic_launcher coloridos, que não
-      // servem pra isso). Sem essa chave, o Capacitor usa o ícone do app.
+      // Ícone da barra de status: o Life em branco (22/11; antes caía no
+      // halter). Fica em android/res/drawable/ic_stat_life.xml.
+      smallIcon: 'ic_stat_life',
       iconColor: '#64c27b',
     },
   },
