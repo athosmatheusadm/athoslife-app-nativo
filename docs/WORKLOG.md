@@ -6337,3 +6337,8 @@ refeições; corrigir a lembrança "preocupada" do dono se ele quiser.
 **Pendências:** **deploy da `life-push`** (junto da ai-proxy, mesma
 autorização) e APK novo (ícone da notificação local e do push com o app
 fechado só mudam no APK novo).
+
+**22/11 (fim):** dono vai mandar a própria imagem do Life pro ícone da
+notificação (substitui o `ic_stat_life` desenhado). Também tem um site com
+lista de espera pronto e vai criar as imagens dos títulos pra entregar.
+Tudo desta sessão está só na branch local `life-registro-estimativa`.
