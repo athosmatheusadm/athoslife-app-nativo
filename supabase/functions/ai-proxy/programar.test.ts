@@ -34,7 +34,15 @@ Deno.test('texto do cartão diz refeições e datas', () => {
   igual(rotuloDiaFuturo('2026-11-03', HOJE, 'pt-BR'), 'amanhã (03/11)')
   igual(rotuloDiaFuturo('2026-11-04', HOJE, 'pt-BR'), 'quarta (04/11)')
   igual(rotuloDiaFuturo('2026-11-03', HOJE, 'en'), 'tomorrow (11/03)')
-  const t = TXT_PROGRAMAR['pt-BR'].confira(nomesRefeicoes(['cafe', 'jantar'], 'pt-BR'), nomesDias(['2026-11-04', '2026-11-06'], HOJE, 'pt-BR'))
-  ok(t.includes('café da manhã e jantar de quarta (04/11) e sexta (06/11)'), t)
-  ok(t.includes('✓'))
+  const r = nomesRefeicoes(['cafe', 'jantar'], 'pt-BR')
+  const d = nomesDias(['2026-11-04', '2026-11-06'], HOJE, 'pt-BR')
+  for (const x of [0, 0.5, 0.99]) {
+    const t = TXT_PROGRAMAR['pt-BR'].confira(r, d, true, x)
+    ok(t.includes('café da manhã e jantar de quarta (04/11) e sexta (06/11)'), t)
+    ok(t.includes('✓'))
+  }
+  // 22/11: depois da 1ª vez não repete a explicação do apagadinho.
+  ok(!TXT_PROGRAMAR['pt-BR'].confira(r, d, false, 0).includes('✓'))
+  // as variações mudam o começo
+  ok(TXT_PROGRAMAR['pt-BR'].confira(r, d, false, 0) !== TXT_PROGRAMAR['pt-BR'].confira(r, d, false, 0.99))
 })

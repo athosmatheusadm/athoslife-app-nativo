@@ -35,7 +35,7 @@
 import { linhasPerfil } from './perfil.ts'
 import { executarComandoPeso, lerComandoPeso } from './peso.ts'
 import { blocoConversaAnterior, dividirHistorico, extrairResumo, JANELA_TOTAL, REGRA_RESUMO, type MensagemSalva } from './historico.ts'
-import { acharNaBase, falaRegistro, lerItens, limparComentario, pedeIdeia, prometeuRegistro, refeicaoPelaHora, TXT_REGISTRO, type ItemAchado } from './refeicaoDigitada.ts'
+import { acharNaBase, falaRegistro, lerEstimativas, lerItens, limparComentario, MAX_ESTIMAR, MAX_ITENS, mensagemEstimarVarios, pedeIdeia, prometeuRegistro, refeicaoPelaHora, sistemaEstimarVarios, TXT_REGISTRO, type ItemAchado, type ItemPedido } from './refeicaoDigitada.ts'
 import { handleScan } from './scanner/analisar.ts'
 import { detectarAssuntos, fatoDoAssunto, type Assunto } from './assuntos.ts'
 import {
@@ -702,8 +702,8 @@ async function rotear(req: Request): Promise<Response> {
 // Pedido de plano inteiro (treino/dieta). APK antigo: o Life aponta o botão do
 // chat do Treino/Dieta. APK novo (recurso 'montar', 12/11): o Life monta na
 // própria conversa, em qualquer tela — a marca abre as perguntas no app.
-const REGRA_PLANO_BOTAO = `- Só quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta uma dieta pra mim", "quero uma ficha de treino") — treino de uma parte do corpo ou treino rápido NÃO é plano inteiro, é com treino_rapido: não monte você; diga UMA vez, numa frase, que o plano completo sai pelo botão "Montar treino" (chat do Life no Treino) ou "Montar dieta" (chat do Life na Dieta), com um check de saúde rápido na primeira vez. NUNCA indique esses botões quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor, nem repita a indicação na conversa (dono, 02/11): aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
-const REGRA_PLANO_AQUI = `- Quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta um treino pra mim", "quero uma ficha de treino", "monta uma dieta pra mim") — treino de uma parte do corpo ou treino rápido NÃO é plano inteiro, é com treino_rapido: você monta AQUI, nesta conversa, em qualquer tela. Responda com UMA frase curta dizendo que vai montar agora e que são só umas perguntas rápidas, e coloque [[MONTAR_TREINO]] (treino) ou [[MONTAR_DIETA]] (dieta) no FIM — o app abre as perguntas aqui mesmo (na primeira vez, com um check de saúde rápido). NUNCA mande a pessoa pra outra tela, pra outro Life ou procurar um botão (dono, 12/11: é um Life só e ele faz). Não escreva você os exercícios, as séries nem o cardápio: quem monta é o app, depois das perguntas. Não use a marca quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor: aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não use a marca: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
+const REGRA_PLANO_BOTAO = `- Só quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta uma dieta pra mim", "quero uma ficha de treino") — treino de uma parte do corpo ou treino rápido NÃO é plano inteiro, é com treino_rapido: não monte você; diga UMA vez, numa frase, que o plano completo sai pelo botão "Montar treino" (chat do Life no Treino) ou "Montar dieta" (chat do Life na Dieta), com um check de saúde rápido na primeira vez. NUNCA indique esses botões quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor ("programar a dieta da semana que vem" é programar_refeicao, não plano — dono, 22/11), nem repita a indicação na conversa (dono, 02/11): aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não indique botão nenhum: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
+const REGRA_PLANO_AQUI = `- Quando a pessoa pedir com todas as letras um PLANO inteiro de treino ou de dieta ("monta um treino pra mim", "quero uma ficha de treino", "monta uma dieta pra mim") — treino de uma parte do corpo ou treino rápido NÃO é plano inteiro, é com treino_rapido: você monta AQUI, nesta conversa, em qualquer tela. Responda com UMA frase curta dizendo que vai montar agora e que são só umas perguntas rápidas, e coloque [[MONTAR_TREINO]] (treino) ou [[MONTAR_DIETA]] (dieta) no FIM — o app abre as perguntas aqui mesmo (na primeira vez, com um check de saúde rápido). NUNCA mande a pessoa pra outra tela, pra outro Life ou procurar um botão (dono, 12/11: é um Life só e ele faz). Não escreva você os exercícios, as séries nem o cardápio: quem monta é o app, depois das perguntas. Não use a marca quando ela quer organizar o dia, as refeições, a semana ou uma rotina melhor — "programar/deixar pronta a dieta da semana (que vem)", "organizar as refeições da semana" NÃO é pedido de plano (dono, 22/11): é deixar comida no lugar com programar_refeicao, e se ela não disse quais comidas, pergunte numa frase o que quer em cada refeição ou ofereça repetir o que ela já come. Na dúvida entre plano e programar, pergunte antes, numa frase. Nesses casos: aí ajude você mesmo, dentro do que pode — ideias, trocas, o que funciona em cada refeição, e as ações que você tem. Se o contexto disser "Check de saúde: BLOQUEADO", não use a marca: siga o que a linha do contexto diz. Trocas dentro do plano: você só informa (ex.: kcal e proteína de cada opção), sem recomendar nem prescrever.`
 // Cansaço dito no chat (dono, 12/11): entender antes de sugerir.
 const REGRA_CANSACO = `- Cansaço, desânimo ou "tô sem energia" dito na conversa: primeiro se interesse pelo motivo, com UMA pergunta simples e de amigo (dormiu mal? o dia puxou? foi o treino? a cabeça?). NÃO sugira descanso, pausa, dia leve, treino leve nem pular o treino antes de ela contar o que houve, e não dramatize ("sinto muito") cansaço comum. Depois que ela contar, aí sim ajude com o que fizer sentido. Exceção: se ela mesma perguntar o que pode fazer pra melhorar, responda já com ideias simples (ver COMO CONVERSAR) e pergunte o motivo na mesma resposta.`
 
@@ -753,7 +753,7 @@ ${REGRA_CANSACO}
 - Antes de dizer "não sei", veja se dá pra deduzir com o que você sabe. Se der, diga a estimativa, deixe claro que é estimativa e pergunte se acertou.
 - Quando ela disser que só quer conversar ou desabafar: não organize nada, não sugira pausa e não puxe comida nem treino. Use as palavras dela pra mostrar que entendeu; se ajudar, use um fato da rotina dela pra dar perspectiva (sem tentar consertar).
 - Se chegaram várias mensagens seguidas, responda tudo numa resposta só, sem repetir o mesmo acolhimento.
-- Fale do jeito da pessoa: use as palavras dela (se ela diz "curso", não diga "faculdade") e o mesmo nível de informalidade. Espelhar não é copiar: não repita erro de digitação.
+- Acompanhe o nível de informalidade dela e use as palavras dela pras coisas (se ela diz "curso", não diga "faculdade"), mas com a SUA voz (dono, 22/11: o Life não pode soar como a pessoa). Não copie gíria nem vocativo dela: nada de chamar de "cara", "mano", "véi", "pow" e similares, e nunca comece a resposta com vocativo. Espelhar não é copiar: não repita erro de digitação.
 - Não comece nem termine do mesmo jeito que nas SUAS ÚLTIMAS RESPOSTAS. Evite: "Tô aqui só te ouvindo", "Quer desabafar mais?", "super", "com certeza", "que tal focarmos".
 - Nunca exagere o risco ("colapso", "perigo") e nunca dê diagnóstico. Em sinal de crise, QUANDO É GRAVE vale acima de todas estas regras.
 
@@ -830,7 +830,7 @@ const MOD_HABITOS = `HÁBITOS (a conversa é sobre hábitos):
 - Ela contou que escorregou num hábito de EVITAR do contexto ("comi um doce agora", "não aguentei e tomei refri"): acolha sem drama nem sermão e chame registrar_tropeco — o app pergunta com um toque se anota. Se foi ontem e ela não disse a hora, pergunte antes. Quando ela só contou o tropeço, não use registrar_alimentos (só se ela pedir pra registrar a comida). Se ela disser "não precisa anotar", não anote.
 - Ela contou que FEZ um hábito de CONSTRUIR do contexto ("li 20 páginas hoje", "meditei agora"): celebre de leve e chame marcar_habito — o app pergunta com um toque antes de marcar.`
 const MOD_PESO = `PESO: você NÃO grava pesagem nem meta de peso nesta conversa — quem grava é o app, quando a pessoa escreve do jeito certo. Nunca diga "anotei", "registrei" ou "salvei" um peso. Se ela contar o peso de um jeito que não foi gravado, peça numa frase pra mandar assim: "pesei 80 kg" (no idioma dela: "I weigh 80 kg" / "hoy peso 80 kg").`
-const ACAO_COMIDA = `- registrar_alimentos: quando a pessoa contar o que comeu pra registrar ("almocei arroz, feijão e um bife", "comi 2 ovos no café", "registra uma banana", "jantei 200 g de frango e salada"). Separe cada alimento com a quantidade e a unidade que ela disse (g, ml, unidade, colher de sopa, concha, fatia, xícara, copo); se ela não disse quantidade, deixe vazio. Refeição: a que ela disse (cafe, almoco, lanche, jantar ou o nome de uma extra dela); se não disse, deixe vazio. O app mostra um cartão pra ela conferir e confirmar — não escreva kcal nem diga que registrou. Se ela está desabafando sobre o que comeu (culpa, "comi demais"), acolha primeiro e só ofereça registrar; não chame a ferramenta sem ela querer.
+const ACAO_COMIDA = `- registrar_alimentos: quando a pessoa contar o que comeu pra registrar ("almocei arroz, feijão e um bife", "comi 2 ovos no café", "registra uma banana", "jantei 200 g de frango e salada"). Separe cada alimento com a quantidade e a unidade que ela disse (g, ml, unidade, colher de sopa, concha, fatia, xícara, copo); se ela não disse quantidade, deixe vazio. Refeição: a que ela disse (cafe, almoco, lanche, jantar ou o nome de uma extra dela); se não disse, deixe vazio. Contou mais de uma refeição na mesma mensagem ("de manhã comi X, no almoço Y")? A primeira vai nos campos de cima e as outras em outras_refeicoes — nenhuma fica de fora. Se ela foi contando aos poucos em várias mensagens ("o dia foi corrido, vou te falando"), junte numa chamada só tudo o que ela contou e ainda não virou cartão. Mande todo alimento, mesmo comida caseira ou de marca: o que não estiver na base o servidor estima sozinho e o cartão avisa. Nunca diga que não consegue achar, pesquisar ou buscar na internet, nem mande buscar na Dieta. O app mostra um cartão pra ela conferir e confirmar — não escreva kcal nem diga que registrou. Se ela está desabafando sobre o que comeu (culpa, "comi demais"), acolha primeiro e só ofereça registrar; não chame a ferramenta sem ela querer.
 - repetir_refeicao: quando a pessoa pedir pra repetir/copiar uma refeição já registrada ("coloca na janta o mesmo de ontem", "repete o café de hoje no lanche"). Origem e destino vêm da lista REFEIÇÕES do contexto — as 4 fixas ou as extras dela, pelo nome. Se não der pra saber qual é a origem ou o destino, pergunte antes ("Você quer repetir o jantar de ontem?"). Se ela já disse se quer somar ao que tem ou trocar, mande o modo.`
 const ACAO_PROGRAMAR = `- programar_refeicao: quando ela pedir pra deixar comida no lugar hoje ou num dia que vem ("põe pão com ovo no café de amanhã", "deixa os jantares de quarta e sexta prontos", "deixa amanhã igual a hoje"), inclusive uma ideia que você deu e ela aceitou. Se a conversa já diz o dia e a refeição, use e diga as datas; se não der pra saber, pergunte uma vez, curto ("Em quais dias, e no jantar?"). Pra repetir o que ela já comeu, use copiar_de. Fica apagadinho na Dieta e ela toca no ✓ da refeição quando comer — explique isso uma vez. O app mostra um cartão pra conferir; não diga que colocou.
 - Se o contexto tem "Plano de referência de dieta", cada dia da Dieta JÁ mostra esse plano apagadinho em cada refeição, com o ✓ pra registrar. Quando ela quiser "o dia de amanhã no lugar" e tiver plano, diga isso (não precisa programar nada); use programar_refeicao só pra trocar ou acrescentar algo.`
@@ -2051,7 +2051,7 @@ const FERRAMENTAS_LIFE: Ferramenta[] = [
           items: {
             type: 'object',
             properties: {
-              nome: { type: 'string', description: 'Nome simples do alimento, no idioma da pessoa (ex.: "arroz branco", "bife", "ovo")' },
+              nome: { type: 'string', description: 'Nome do alimento como ela disse, no idioma dela, com o tipo ou preparo quando ela disse (ex.: "arroz branco", "pão de forma", "geleia de goiaba", "coxa de frango assada", "empadão de frango"). Um alimento por item: "pão com geleia" são dois itens.' },
               quantidade: { type: 'number', description: 'Número que ela disse (200, 2, 1.5). Vazio se não disse.' },
               unidade: {
                 type: 'string',
@@ -2059,6 +2059,34 @@ const FERRAMENTAS_LIFE: Ferramenta[] = [
               },
             },
             required: ['nome'],
+          },
+        },
+        outras_refeicoes: {
+          type: 'array',
+          description: 'Só quando ela contou MAIS DE UMA refeição na mesma mensagem ("de manhã comi X, no almoço Y"): os campos de cima são a primeira refeição e aqui vão as outras, cada uma com os seus alimentos. Nunca deixe de fora uma refeição que ela contou.',
+          items: {
+            type: 'object',
+            properties: {
+              refeicao: { type: 'string', description: 'cafe, almoco, lanche, jantar, ou o nome de uma refeição extra dela' },
+              dia: { type: 'string', description: "'hoje' (padrão), 'ontem' ou 'anteontem'" },
+              itens: {
+                type: 'array',
+                description: 'Um por alimento, no máximo 12',
+                items: {
+                  type: 'object',
+                  properties: {
+                    nome: { type: 'string', description: 'Nome do alimento como ela disse, no idioma dela, com o tipo ou preparo quando ela disse (ex.: "arroz branco", "pão de forma", "geleia de goiaba", "coxa de frango assada", "empadão de frango"). Um alimento por item: "pão com geleia" são dois itens.' },
+                    quantidade: { type: 'number', description: 'Número que ela disse (200, 2, 1.5). Vazio se não disse.' },
+                    unidade: {
+                      type: 'string',
+                      description: 'g, ml, unidade, colher de sopa, colher de chá, concha, fatia, xícara, copo, prato. Vazio se não disse.',
+                    },
+                  },
+                  required: ['nome'],
+                },
+              },
+            },
+            required: ['refeicao', 'itens'],
           },
         },
       },
@@ -3209,18 +3237,25 @@ async function proporProgramacao(
     if (!tipo) return { resposta: tp.qualRefeicao, acao: null, status: 'programar_sem_refeicao' }
     const itens = lerItens(a.itens)
     if (!itens.length) return { resposta: tr.nada, acao: null, status: 'programar_vazio' }
-    const [{ achados, faltando }, perfil] = await Promise.all([
-      acharNaBase(sb, itens, loc.idioma, loc.pais),
+    const [res, perfil] = await Promise.all([
+      acharOuEstimar(sb, userId, loc, itens),
       sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle(),
     ])
+    const achados = res.porItem.filter((x): x is ItemAchado => !!x)
     if (!achados.length) return { resposta: tp.nada, acao: null, status: 'programar_nada' }
-    if (faltando.length) avisos.push(tr.faltando(lista(faltando, loc.idioma)))
+    if (res.estimados.length) avisos.push(tr.estimei(lista(res.estimados, loc.idioma)))
+    if (res.faltando.length) avisos.push(tr.faltando(lista(res.faltando, loc.idioma)))
     const c = conflitosRestricao(achados.map((x) => x.nome), (perfil.data?.restricoes ?? []) as string[], loc.idioma)
     if (c.itens.length) avisos.push(tr.restricao(lista(c.itens, loc.idioma), lista(c.rotulos, loc.idioma)))
     refeicoes = [{ tipo, itens: achados }]
   }
 
-  const resposta = [tp.confira(nomesRefeicoes(refeicoes.map((r) => r.tipo), loc.idioma), nomesDias(dias, hoje, loc.idioma)), ...avisos].join(' ')
+  // 22/11: "fica apagadinho na Dieta…" saía igual em toda resposta. Explica só
+  // se ainda não explicou nas últimas falas do Life; e o começo varia.
+  const { data: ultimas } = await sb.from('life_chat_mensagens').select('texto')
+    .eq('user_id', userId).eq('autor', 'life').order('criado_em', { ascending: false }).limit(12)
+  const jaExplicou = ((ultimas ?? []) as { texto: string | null }[]).some((m) => (m.texto ?? '').includes('✓'))
+  const resposta = [tp.confira(nomesRefeicoes(refeicoes.map((r) => r.tipo), loc.idioma), nomesDias(dias, hoje, loc.idioma), !jaExplicou, Math.random()), ...avisos].join(' ')
   return {
     resposta,
     acao: { tipo: 'programar_itens', dias, refeicoes, origem: copiarDe ? 'dia' : 'life' },
@@ -3229,49 +3264,121 @@ async function proporProgramacao(
 }
 
 /**
+ * Busca na base e, o que não achar, estima numa chamada só (22/11). Devolve
+ * os itens na ordem pedida (sem os que nem a estimativa reconheceu), os nomes
+ * estimados e os que ficaram de fora mesmo assim.
+ */
+async function acharOuEstimar(
+  sb: Sb, userId: string, loc: Localidade, itens: ItemPedido[],
+): Promise<{ porItem: (ItemAchado | null)[]; estimados: string[]; faltando: string[] }> {
+  const base = await acharNaBase(sb, itens, loc.idioma, loc.pais)
+  const porItem: (ItemAchado | null)[] = base.posicao.map((p) => (p === null ? null : base.achados[p]))
+  const vazios = porItem.map((x, i) => (x ? -1 : i)).filter((i) => i >= 0)
+  const pedir = vazios.slice(0, MAX_ESTIMAR)
+  const est = await estimarVarios(sb, userId, loc, pedir.map((i) => itens[i]))
+  const estimados: string[] = []
+  pedir.forEach((i, k) => {
+    const e = est[k]
+    if (!e) return
+    porItem[i] = { ...e, alimentoId: `${e.alimentoId}-${i}` }
+    estimados.push(itens[i].nome)
+  })
+  const faltando = itens.filter((_, i) => !porItem[i]).map((x) => x.nome)
+  return { porItem, estimados, faltando }
+}
+
+/** Estimativa em lote do que não está na base (vai junto da mensagem do chat, sem cota à parte). */
+async function estimarVarios(sb: Sb, userId: string, loc: Localidade, itens: ItemPedido[]): Promise<(ItemAchado | null)[]> {
+  if (!itens.length) return []
+  const tabela = loc.pais === 'BR' || !loc.pais ? 'tabela TACO' : loc.pais === 'US' ? 'USDA FoodData Central' : 'tabela nacional do país (ou USDA)'
+  const g = await chamarIA({
+    sistema: sistemaEstimarVarios(tabela, nomePais(loc.pais, 'pt-BR'), NOME_IDIOMA[loc.idioma]),
+    mensagens: [{ papel: 'usuario', texto: mensagemEstimarVarios(itens) }],
+    maxSaida: 120 + 90 * itens.length,
+    json: true,
+  }, { timeoutMs: 15_000 })
+  const cru = g.ok ? extrairJSON(g.texto) : null
+  const lidos = cru ? lerEstimativas(cru, itens) : itens.map(() => null)
+  await auditar(sb, userId, 'estimar_chat', !g.ok ? 'error' : !cru ? 'parse_error' : 'ok', g)
+  return lidos
+}
+
+/**
  * Refeição digitada (v4.5): acha os alimentos na base e devolve o cartão de
  * conferência. Não grava nada — o app grava quando a pessoa confirma (e
  * funciona sem internet a partir daí, pelo mesmo caminho da Dieta).
+ * 22/11: o que não está na base é estimado; e "de manhã X, no almoço Y" numa
+ * mensagem só vira um cartão com as duas refeições (antes o almoço sumia).
  */
 async function proporRegistro(
   sb: Sb, userId: string, loc: Localidade, a: Record<string, unknown>, hoje: string,
 ): Promise<ResultadoAcao> {
   const t = TXT[loc.idioma]
   const tr = TXT_REGISTRO[loc.idioma]
-  const dia = a.dia ? resolverDia(a.dia, hoje) : hoje
-  if (!dia) return { resposta: tr.nada, acao: null, status: 'registro_invalido' }
-  if (dia > hoje) return { resposta: t.futuro, acao: null, status: 'registro_futuro' }
-  if (dia < somarDias(hoje, -7)) return { resposta: t.futuro, acao: null, status: 'registro_antigo' }
 
-  const itens = lerItens(a.itens)
-  if (!itens.length) return { resposta: tr.nada, acao: null, status: 'registro_vazio' }
-
-  let ref: RefResolvida | null = null
-  if (typeof a.refeicao === 'string' && a.refeicao.trim()) {
-    const r = await resolverRefeicao(sb, userId, dia, a.refeicao, false)
-    if (r.ok) ref = r.ref
+  const pedidos: { refeicao: unknown; dia: unknown; itens: ItemPedido[] }[] = [
+    { refeicao: a.refeicao, dia: a.dia, itens: lerItens(a.itens) },
+  ]
+  if (Array.isArray(a.outras_refeicoes)) {
+    for (const o of a.outras_refeicoes.slice(0, 4)) {
+      if (!o || typeof o !== 'object') continue
+      const r = o as Record<string, unknown>
+      pedidos.push({ refeicao: r.refeicao, dia: r.dia ?? a.dia, itens: lerItens(r.itens) })
+    }
   }
-  if (!ref) {
-    const hora = Number(new Intl.DateTimeFormat('en-US', { timeZone: loc.fuso, hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
-    ref = { tipo: refeicaoPelaHora(hora), extraId: null, nome: '', dia }
+  const validos = pedidos.filter((p) => p.itens.length)
+  if (!validos.length) return { resposta: tr.nada, acao: null, status: 'registro_vazio' }
+
+  const hora = Number(new Intl.DateTimeFormat('en-US', { timeZone: loc.fuso, hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
+  const grupos: { dia: string; ref: RefResolvida; itens: ItemPedido[] }[] = []
+  for (const p of validos) {
+    const dia = p.dia ? resolverDia(p.dia, hoje) : hoje
+    if (!dia) return { resposta: tr.nada, acao: null, status: 'registro_invalido' }
+    if (dia > hoje) return { resposta: t.futuro, acao: null, status: 'registro_futuro' }
+    if (dia < somarDias(hoje, -7)) return { resposta: t.futuro, acao: null, status: 'registro_antigo' }
+    let ref: RefResolvida | null = null
+    if (typeof p.refeicao === 'string' && p.refeicao.trim()) {
+      const r = await resolverRefeicao(sb, userId, dia, p.refeicao, false)
+      if (r.ok) ref = r.ref
+    }
+    ref ??= { tipo: refeicaoPelaHora(hora), extraId: null, nome: '', dia }
+    // Mesma refeição contada duas vezes: junta no mesmo grupo.
+    const igual = grupos.find((g) => g.dia === dia && g.ref.tipo === ref!.tipo && g.ref.extraId === ref!.extraId && g.ref.nome === ref!.nome)
+    if (igual) igual.itens.push(...p.itens)
+    else grupos.push({ dia, ref, itens: p.itens })
   }
 
-  const [{ achados, faltando }, perfil] = await Promise.all([
-    acharNaBase(sb, itens, loc.idioma, loc.pais),
+  // Tudo numa busca e numa estimativa só, depois separa por grupo.
+  const todos = grupos.flatMap((g) => g.itens).slice(0, MAX_ITENS * 2)
+  const [res, perfil] = await Promise.all([
+    acharOuEstimar(sb, userId, loc, todos),
     sb.from('profiles').select('restricoes').eq('id', userId).maybeSingle(),
   ])
-  if (!achados.length) return { resposta: tr.nada, acao: null, status: 'registro_nada' }
+  let k = 0
+  const prontos = grupos.map((g) => {
+    const achados: ItemAchado[] = []
+    for (let n = 0; n < g.itens.length && k < todos.length; n++) {
+      const x = res.porItem[k++]
+      if (x) achados.push(x)
+    }
+    return { ...g, achados }
+  }).filter((g) => g.achados.length)
+  if (!prontos.length) return { resposta: tr.nada, acao: null, status: 'registro_nada' }
 
-  const partes = [falaRegistro(loc.idioma, frase(ref, hoje, loc.idioma), limparComentario(a.comentario))]
-  if (faltando.length) partes.push(tr.faltando(lista(faltando, loc.idioma)))
+  const onde = lista(prontos.map((g) => frase(g.ref, hoje, loc.idioma)), loc.idioma)
+  const partes = [falaRegistro(loc.idioma, onde, limparComentario(a.comentario))]
+  if (res.estimados.length) partes.push(tr.estimei(lista(res.estimados, loc.idioma)))
+  if (res.faltando.length) partes.push(tr.faltando(lista(res.faltando, loc.idioma)))
   const restricoes = (perfil.data?.restricoes ?? []) as string[]
-  const c = conflitosRestricao(achados.map((x) => x.nome), restricoes, loc.idioma)
+  const c = conflitosRestricao(prontos.flatMap((g) => g.achados.map((x) => x.nome)), restricoes, loc.idioma)
   if (c.itens.length) partes.push(tr.restricao(lista(c.itens, loc.idioma), lista(c.rotulos, loc.idioma)))
 
+  const [primeiro, ...outras] = prontos
+  const cartao = (g: typeof primeiro) => ({ dia: g.dia, refeicao: { tipo: g.ref.tipo, extraId: g.ref.extraId, nome: g.ref.nome }, itens: g.achados })
   return {
     resposta: partes.join(' '),
-    acao: { tipo: 'registrar_itens', dia, refeicao: { tipo: ref.tipo, extraId: ref.extraId, nome: ref.nome }, itens: achados },
-    status: 'registro_proposto',
+    acao: { tipo: 'registrar_itens', ...cartao(primeiro), ...(outras.length ? { outras: outras.map(cartao) } : {}) },
+    status: outras.length ? 'registro_proposto_varias' : 'registro_proposto',
   }
 }
 

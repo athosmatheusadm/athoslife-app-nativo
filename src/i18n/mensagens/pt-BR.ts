@@ -633,6 +633,8 @@ export const ptBR = {
   lifeChat: {
       registro: {
         titulo: (refeicao: string) => `Registrar em ${refeicao}`,
+        estimado: 'estimado',
+        juntar: ' e ',
         total: (kcal: string) => `Total: ${kcal} kcal`,
         menos: (nome: string) => `Menos 10 g de ${nome}`,
         mais: (nome: string) => `Mais 10 g de ${nome}`,

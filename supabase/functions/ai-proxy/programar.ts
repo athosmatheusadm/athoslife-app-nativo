@@ -119,43 +119,48 @@ export function nomesDias(dias: string[], hoje: string, idioma: Idioma): string 
   return juntar(dias.map((d) => rotuloDiaFuturo(d, hoje, idioma)), idioma)
 }
 
+function escolher(opcoes: string[], x: number): string {
+  return opcoes[Math.min(Math.floor(x * opcoes.length), opcoes.length - 1)]
+}
+
 export const TXT_PROGRAMAR: Record<Idioma, {
-  confira: (refeicoes: string, dias: string) => string
+  /** `explicar`: diz como funciona (apagadinho + ✓) — só quando ainda não disse. */
+  confira: (refeicoes: string, dias: string, explicar: boolean, sorteio?: number) => string
   qualDia: string
   qualRefeicao: string
   nadaNoDia: (dia: string) => string
   nada: string
 }> = {
   'pt-BR': {
-    confira: (r, d) => `Confere aí: ${r} de ${d}. Depois de confirmar, fica apagadinho na Dieta e é só tocar no ✓ da refeição quando comer.`,
+    confira: (r, d, explicar, x = Math.random()) => `${escolher([`Deixei ${r} de ${d} aqui embaixo pra você conferir.`, `Tá montado: ${r} de ${d}. Dá uma olhada no cartão.`, `Pronto, ${r} de ${d} — confere o cartão aqui embaixo.`], x)}${explicar ? ' Depois de confirmar, fica apagadinho na Dieta e é só tocar no ✓ da refeição quando comer.' : ''}`,
     qualDia: 'Pra qual dia? Consigo deixar no lugar de hoje até daqui a 2 semanas.',
     qualRefeicao: 'Em qual refeição: café, almoço, lanche ou jantar?',
     nadaNoDia: (d) => `Não achei nada registrado ${d} pra copiar.`,
     nada: 'Não achei esses alimentos na base. Me diz com outro nome que eu tento de novo.',
   },
   en: {
-    confira: (r, d) => `Take a look: ${r} for ${d}. Once you confirm, it shows faded in Diet — just tap the meal's ✓ when you eat.`,
+    confira: (r, d, explicar, x = Math.random()) => `${escolher([`I left ${r} for ${d} below for you to check.`, `All set: ${r} for ${d}. Have a look at the card.`, `Done, ${r} for ${d} — check the card below.`], x)}${explicar ? " Once you confirm, it shows faded in Diet — just tap the meal's ✓ when you eat." : ''}`,
     qualDia: 'For which day? I can set it up from today up to 2 weeks ahead.',
     qualRefeicao: 'Which meal: breakfast, lunch, snack or dinner?',
     nadaNoDia: (d) => `I didn't find anything logged ${d} to copy.`,
     nada: "I couldn't find these foods. Tell me another name and I'll try again.",
   },
   es: {
-    confira: (r, d) => `Revisa: ${r} de ${d}. Al confirmar, queda tenue en Dieta y solo tocas el ✓ de la comida cuando comas.`,
+    confira: (r, d, explicar, x = Math.random()) => `${escolher([`Dejé ${r} de ${d} aquí abajo para que lo revises.`, `Listo: ${r} de ${d}. Échale un ojo a la tarjeta.`, `Hecho, ${r} de ${d} — revisa la tarjeta aquí abajo.`], x)}${explicar ? ' Al confirmar, queda tenue en Dieta y solo tocas el ✓ de la comida cuando comas.' : ''}`,
     qualDia: '¿Para qué día? Puedo dejarlo listo desde hoy hasta dentro de 2 semanas.',
     qualRefeicao: '¿En qué comida: desayuno, almuerzo, merienda o cena?',
     nadaNoDia: (d) => `No encontré nada registrado ${d} para copiar.`,
     nada: 'No encontré esos alimentos. Dime otro nombre y lo intento de nuevo.',
   },
   fr: {
-    confira: (r, d) => `Regarde : ${r} pour ${d}. Une fois confirmé, ça apparaît en clair dans Repas — touche juste le ✓ du repas quand tu manges.`,
+    confira: (r, d, explicar, x = Math.random()) => `${escolher([`J'ai laissé ${r} pour ${d} juste en dessous, à vérifier.`, `C'est prêt : ${r} pour ${d}. Jette un œil à la carte.`, `Voilà, ${r} pour ${d} — vérifie la carte en dessous.`], x)}${explicar ? ' Une fois confirmé, ça apparaît en clair dans Repas — touche juste le ✓ du repas quand tu manges.' : ''}`,
     qualDia: "Pour quel jour ? Je peux préparer d'aujourd'hui jusqu'à dans 2 semaines.",
     qualRefeicao: 'Quel repas : petit-déjeuner, déjeuner, goûter ou dîner ?',
     nadaNoDia: (d) => `Je n'ai rien trouvé d'enregistré ${d} à copier.`,
     nada: 'Je ne trouve pas ces aliments. Donne-moi un autre nom et je réessaie.',
   },
   hi: {
-    confira: (r, d) => `देख लीजिए: ${d} का ${r}। कन्फ़र्म करने के बाद यह डाइट में हल्का दिखेगा — खाने पर बस उस खाने का ✓ दबाइए।`,
+    confira: (r, d, explicar, x = Math.random()) => `${escolher([`देख लीजिए: ${d} का ${r} नीचे तैयार है।`, `${d} का ${r} तैयार है — कार्ड देख लीजिए।`, `हो गया, ${d} का ${r} — नीचे कार्ड जाँच लीजिए।`], x)}${explicar ? ' कन्फ़र्म करने के बाद यह डाइट में हल्का दिखेगा — खाने पर बस उस खाने का ✓ दबाइए।' : ''}`,
     qualDia: 'किस दिन के लिए? आज से 2 हफ़्ते आगे तक तैयार कर सकता हूँ।',
     qualRefeicao: 'कौन सा खाना: नाश्ता, दोपहर का खाना, स्नैक या रात का खाना?',
     nadaNoDia: (d) => `${d} का कुछ दर्ज नहीं मिला जिसे कॉपी करूँ।`,

@@ -1,5 +1,8 @@
-import { assertEquals } from 'jsr:@std/assert@1'
-import { gramasDoItem, lerItens, pedeIdeia, prometeuRegistro, refeicaoPelaHora, singularDe } from './refeicaoDigitada.ts'
+import { assert, assertEquals } from 'jsr:@std/assert@1'
+import { gramasDoItem, lerEstimativas, lerItens, pedeIdeia, prometeuRegistro, refeicaoPelaHora, singularDe, TXT_REGISTRO } from './refeicaoDigitada.ts'
+
+const ok = (v: unknown, msg?: string) => assert(v, msg)
+const igual = assertEquals
 
 const arroz = { porcaoG: 100, unidadeG: null }
 const ovo = { porcaoG: 100, unidadeG: 50 }
@@ -90,4 +93,39 @@ Deno.test('fala do registro: comentário de amigo entra, o que parece robô ou n
   }
   const f = falaRegistro('pt-BR', 'o café da manhã de hoje', 'Café reforçado, hein!', 0)
   assertEquals(true, f.startsWith('Café reforçado, hein! ') && f.includes('o café da manhã de hoje') && !f.includes('Achei isso'))
+})
+
+// 22/11: o que a base não tem vira estimativa (geleia de goiaba, capuccino gelado, empadão).
+Deno.test('lerEstimativas: valida, corrige kcal pela conta e descarta o que não é comida', () => {
+  const pedidos = [
+    { nome: 'geleia de goiaba', quantidade: 1, unidade: 'colher de sopa' },
+    { nome: 'empadão de frango', quantidade: 150, unidade: 'g' },
+    { nome: 'pedra', quantidade: null, unidade: null },
+    { nome: 'capuccino gelado', quantidade: null, unidade: null },
+  ]
+  const r = lerEstimativas({
+    itens: [
+      { reconhecido: true, nome: 'Geleia de goiaba', porcao_g: 20, calorias: 52, proteina: 0, carboidrato: 13, gordura: 0 },
+      { reconhecido: true, nome: 'Empadão de frango', porcao_g: 150, calorias: 999, proteina: 15, carboidrato: 40, gordura: 18 },
+      { reconhecido: false },
+      { reconhecido: true, nome: 'Cappuccino gelado', porcao_g: 300, calorias: 5000, proteina: 1, carboidrato: 1, gordura: 1 },
+    ],
+  }, pedidos)
+  ok(r[0] && r[0].estimado === true && r[0].gramas === 15 && r[0].calorias === 52)
+  ok(r[1] && r[1].calorias === Math.round(15 * 4 + 40 * 4 + 18 * 9) && r[1].gramas === 150)
+  ok(r[2] === null)
+  // kcal absurda é trocada pela conta dos macros (17 kcal), que é plausível
+  ok(r[3] && r[3].calorias === 17)
+  ok(new Set(r.filter(Boolean).map((x) => x!.alimentoId)).size === 3)
+})
+
+Deno.test('lerEstimativas: resposta quebrada não derruba nada', () => {
+  const p = [{ nome: 'x', quantidade: null, unidade: null }]
+  igual(lerEstimativas(null, p), [null])
+  igual(lerEstimativas({ itens: 'oi' }, p), [null])
+  igual(lerEstimativas({ itens: [] }, p), [null])
+})
+
+Deno.test('texto de estimativa nos 5 idiomas', () => {
+  for (const i of ['pt-BR', 'en', 'es', 'fr', 'hi'] as const) ok(TXT_REGISTRO[i].estimei('geleia').includes('geleia'))
 })

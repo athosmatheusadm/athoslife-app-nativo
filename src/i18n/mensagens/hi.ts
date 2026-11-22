@@ -627,6 +627,8 @@ export const hi: Mensagens = {
   lifeChat: {
       registro: {
         titulo: (refeicao: string) => `${refeicao} में दर्ज करें`,
+        estimado: 'अनुमानित',
+        juntar: ' और ',
         total: (kcal: string) => `कुल: ${kcal} kcal`,
         menos: (nome: string) => `${nome} 10 g कम`,
         mais: (nome: string) => `${nome} 10 g ज़्यादा`,

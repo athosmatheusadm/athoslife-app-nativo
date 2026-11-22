@@ -626,6 +626,8 @@ export const fr: Mensagens = {
   lifeChat: {
       registro: {
         titulo: (refeicao: string) => `Noter dans ${refeicao}`,
+        estimado: 'estimé',
+        juntar: ' et ',
         total: (kcal: string) => `Total : ${kcal} kcal`,
         menos: (nome: string) => `10 g de moins de ${nome}`,
         mais: (nome: string) => `10 g de plus de ${nome}`,

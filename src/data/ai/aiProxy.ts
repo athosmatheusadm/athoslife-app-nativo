@@ -393,8 +393,10 @@ export type AcaoLife =
   | {
       tipo: 'registrar_itens'
       dia: string
-      refeicao: { tipo: 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'; extraId: string | null; nome: string }
+      refeicao: RefeicaoRegistroLife
       itens: ItemRegistroLife[]
+      /** 22/11: mais refeições contadas na mesma mensagem ("de manhã X, no almoço Y"). */
+      outras?: { dia: string; refeicao: RefeicaoRegistroLife; itens: ItemRegistroLife[] }[]
     }
   /**
    * Refeições planejadas (02/11): o Life deixa comida no lugar em hoje ou nos
@@ -408,6 +410,12 @@ export type AcaoLife =
       origem: 'life' | 'dia'
     }
 
+export interface RefeicaoRegistroLife {
+  tipo: 'cafe' | 'almoco' | 'lanche' | 'jantar' | 'extra'
+  extraId: string | null
+  nome: string
+}
+
 /** Um alimento do cartão de conferência (macros da base valem pra `porcaoG`). */
 export interface ItemRegistroLife {
   alimentoId: string
@@ -419,6 +427,8 @@ export interface ItemRegistroLife {
   carboidrato: number
   gordura: number
   unidadeG: number | null
+  /** Não estava na base: o Life estimou (22/11). */
+  estimado?: boolean
 }
 
 export interface RespostaChat {

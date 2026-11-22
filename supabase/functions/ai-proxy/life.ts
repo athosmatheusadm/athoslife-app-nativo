@@ -155,7 +155,7 @@ export function estiloDaPessoa(mensagens: string[]): string | null {
   if (media < 45) dicas.push('curto: 1 ou 2 frases')
   else if (media > 180) dicas.push('detalhado: pode ir até 3 frases quando o assunto pedir')
   if (formal >= 0.3 && informal < 0.2) dicas.push('mais formal: frases completas, sem gíria')
-  else if (informal >= 0.3 || (n <= 2 && informal > 0)) dicas.push('informal: pode usar o jeito dela de falar (sem copiar erro de digitação nem virar caricatura)')
+  else if (informal >= 0.3 || (n <= 2 && informal > 0)) dicas.push('informal: responda solto e sem formalidade, mas com a sua voz — sem copiar gíria, vocativo ("cara", "mano") nem erro de digitação dela')
   if (comEmoji === 0 && n >= 3) dicas.push('sem emoji')
   else if (comEmoji > 0.5) dicas.push('1 emoji combina')
   if (risadas >= 0.2) dicas.push('aceita brincadeira curta, sem forçar')
