@@ -3261,6 +3261,7 @@
       </footer>
     </main>
     <script src="textos.js"></script>
+    <script src="textos-pt-pt.js"></script>
     <script src="i18n.js"></script>
     <script>
 const LifeVivo=(function(){
@@ -4181,6 +4182,7 @@ window.LifeVivo = LifeVivo;
 (() => {
   const DEFAULT_LANGUAGES = [
     { locale: 'pt-BR', name: 'Português', accessibleName: 'Português (Brasil)' },
+    { locale: 'pt-PT', name: 'Português (PT)', accessibleName: 'Português (Portugal)' },
     { locale: 'en', name: 'English' },
     { locale: 'es', name: 'Español' }
     // fr e hi escondidos na beta (15/11/2026: ainda sem revisão de quem fala).
@@ -5322,7 +5324,7 @@ window.LifeVivo = LifeVivo;
 
         /* ---------- idioma: seletor orbital aprovado ---------- */
         const idioma = document.getElementById("ob-idioma");
-        const IDIOMAS = { "pt-BR": "Português", en: "English", es: "Español", fr: "Français", hi: "हिन्दी" };
+        const IDIOMAS = { "pt-BR": "Português", "pt-PT": "Português (PT)", en: "English", es: "Español", fr: "Français", hi: "हिन्दी" };
         // ao abrir, a órbita inteira fica à vista (o botão fixo não cobre as etiquetas de baixo)
         idioma.addEventListener("click", () =>
           requestAnimationFrame(() => {

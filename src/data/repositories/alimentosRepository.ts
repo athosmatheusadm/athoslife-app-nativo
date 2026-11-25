@@ -4,6 +4,8 @@ import { ehFalhaDeRede, valeTentarRede } from '@data/offline/conexao'
 import type { AlimentoBase, CategoriaAlimento } from '@domain/entities/food'
 import { localidadeAtual } from '@data/localidadeAtual'
 import type { AlimentoPlano } from '@domain/rules/geradorDieta'
+import { ehPortugues } from '@domain/rules/localidade'
+import { nomeAlimentoPtPt } from '@domain/rules/nomesPtPt'
 
 /** Linha crua da tabela `alimentos`. snake_case morre aqui. */
 interface AlimentoRow {
@@ -29,7 +31,7 @@ interface AlimentoRow {
 /** Nome no idioma em uso. Sem tradução (marca regional), vai o inglês; sem ele, o pt-BR. */
 function nomeLocal(row: AlimentoRow): string {
   const { idioma } = localidadeAtual()
-  if (idioma === 'pt-BR') return row.nome
+  if (ehPortugues(idioma)) return idioma === 'pt-PT' ? nomeAlimentoPtPt(row.nome) : row.nome
   if (idioma === 'es') return row.nome_es || row.nome
   if (idioma === 'fr') return row.nome_fr || row.nome_en || row.nome
   if (idioma === 'hi') return row.nome_hi || row.nome_en || row.nome

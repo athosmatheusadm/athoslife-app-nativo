@@ -10,6 +10,8 @@ import {
   type TipoRefeicaoPlano,
 } from '@domain/rules/geradorDieta'
 import { localidadeAtual } from '@data/localidadeAtual'
+import { ehPortugues } from '@domain/rules/localidade'
+import { nomeAlimentoPtPt } from '@domain/rules/nomesPtPt'
 import {
   CIENTE_VERSAO,
   DECLARACAO_VERSAO,
@@ -113,7 +115,7 @@ function refeicoesDoBanco(dia: RefeicaoRow[]): RefeicaoPlanoSalva[] {
 
 function nomeNoIdioma(i: ItemSalvoRow): string {
   const { idioma } = localidadeAtual()
-  if (idioma === 'pt-BR') return i.nome
+  if (ehPortugues(idioma)) return idioma === 'pt-PT' ? nomeAlimentoPtPt(i.nome) : i.nome
   if (idioma === 'es') return i.nome_es || i.nome
   // Sem coluna própria (fr): inglês.
   return i.nome_en || i.nome

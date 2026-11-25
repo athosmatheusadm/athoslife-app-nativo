@@ -1,6 +1,7 @@
 import { supabase } from '@data/supabase/client'
 import { lerComCache } from '@data/offline/cache'
 import { localidadeAtual } from '@data/localidadeAtual'
+import { ehPortugues } from '@domain/rules/localidade'
 
 /**
  * Traduções do conteúdo curado (conquistas, exercícios, receitas), coluna
@@ -36,7 +37,7 @@ async function buscar(tabela: Tabela): Promise<Map<string, PorIdioma>> {
  */
 export async function traducoesDe(tabela: Tabela): Promise<(id: string) => Record<string, unknown>> {
   const { idioma } = localidadeAtual()
-  if (idioma === 'pt-BR') return () => ({})
+  if (ehPortugues(idioma)) return () => ({})
   let p = cache.get(tabela)
   if (!p) {
     p = buscar(tabela)

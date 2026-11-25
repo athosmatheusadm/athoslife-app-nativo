@@ -187,6 +187,8 @@ const EMOJI = [
 
 export function pedidoIA(dec: Decisao, p: {
   idioma: Idioma
+  /** pt-PT (24/11): mesmo texto-base do pt-BR, mas a IA escreve como em Portugal. */
+  ptPT?: boolean
   nome: string | null
   memorias: readonly string[]
   periodo: string
@@ -197,7 +199,7 @@ export function pedidoIA(dec: Decisao, p: {
 Você tem personalidade: quando o motivo é leve (treino, marco, evento bom, saudade), pode fazer UMA brincadeira curta, inclusive com ser camaleão. Quando o motivo é delicado (dias pesados, evento delicado, dia difícil, horário ou dia de risco), só carinho, sem piada.
 
 Regras (todas obrigatórias):
-- Em ${IDIOMA_NOME[p.idioma]}, até 110 caracteres, 1 ou 2 frases.
+- Em ${p.ptPT ? 'português de Portugal (norma europeia, tratamento por "tu", "olá", "pequeno-almoço", nada de gíria brasileira)' : IDIOMA_NOME[p.idioma]}, até 110 caracteres, 1 ou 2 frases.
 - Soe como um amigo mandando mensagem, não como app. Nada de "Lembrete", "Não esqueça", "Você precisa".
 - A notificação aparece na tela bloqueada: NUNCA cite hábito, vício, cigarro, bebida, doce, tropeço, recaída, peso, dieta, calorias, meta, remédio ou saúde.
 - Sem números, exceto a quantidade de dias de um marco.

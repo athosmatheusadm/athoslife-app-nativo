@@ -7,7 +7,7 @@
  * ver db/athoslife_globalizacao_onboarding_migration.sql).
  */
 
-export const IDIOMAS = ['pt-BR', 'en', 'es', 'fr', 'hi'] as const
+export const IDIOMAS = ['pt-BR', 'pt-PT', 'en', 'es', 'fr', 'hi'] as const
 export type Idioma = (typeof IDIOMAS)[number]
 
 /**
@@ -16,7 +16,7 @@ export type Idioma = (typeof IDIOMAS)[number]
  * mas não entram no seletor nem na detecção do aparelho (fr/hi caem em en).
  * Para liberar de novo, é só voltar a lista para IDIOMAS.
  */
-export const IDIOMAS_VISIVEIS: readonly Idioma[] = ['pt-BR', 'en', 'es']
+export const IDIOMAS_VISIVEIS: readonly Idioma[] = ['pt-BR', 'pt-PT', 'en', 'es']
 
 export type Unidades = 'metrico' | 'imperial'
 
@@ -45,17 +45,30 @@ const PAISES_IMPERIAIS = new Set(['US', 'LR', 'MM'])
 
 export const NOMES_IDIOMA: Record<Idioma, string> = {
   'pt-BR': 'Português',
+  'pt-PT': 'Português (Portugal)',
   en: 'English',
   es: 'Español',
   fr: 'Français',
   hi: 'हिन्दी',
 }
 
-/** "pt-PT", "pt" -> pt-BR; "en-GB" -> en; "es-MX" -> es; "fr-CA" -> fr; resto -> en. */
+/**
+ * Países que escrevem o português de Portugal (norma europeia): Portugal e os
+ * PALOP + Timor e Macau. O resto (e "pt" sem região) fica no pt-BR.
+ */
+const PORTUGUES_EUROPEU = new Set(['PT', 'AO', 'MZ', 'CV', 'GW', 'ST', 'TL', 'MO'])
+
+/** pt-BR e pt-PT: o conteúdo do banco (alimentos, receitas, treinos) é o mesmo, em português. */
+export function ehPortugues(idioma: Idioma): boolean {
+  return idioma === 'pt-BR' || idioma === 'pt-PT'
+}
+
+/** "pt-PT", "pt-AO" -> pt-PT; "pt", "pt-BR" -> pt-BR; "en-GB" -> en; "es-MX" -> es; "fr-CA" -> fr; resto -> en. */
 export function idiomaSuportado(tag: string | null | undefined): Idioma | null {
   if (!tag) return null
-  const base = tag.toLowerCase().split(/[-_]/)[0]
-  if (base === 'pt') return 'pt-BR'
+  const [b, r] = tag.split(/[-_]/)
+  const base = (b ?? '').toLowerCase()
+  if (base === 'pt') return r && PORTUGUES_EUROPEU.has(r.toUpperCase()) ? visivel('pt-PT') ?? 'pt-BR' : 'pt-BR'
   if (base === 'en') return 'en'
   if (base === 'es') return 'es'
   if (base === 'fr') return visivel('fr')

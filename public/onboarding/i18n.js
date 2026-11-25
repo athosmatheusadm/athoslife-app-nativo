@@ -13,8 +13,8 @@
 ;(function () {
   'use strict'
 
-  const IDIOMAS = ['pt-BR', 'en', 'es', 'fr', 'hi']
-  const LOCALE_NUMEROS = { 'pt-BR': 'pt-BR', en: 'en-US', es: 'es', fr: 'fr-FR', hi: 'en-IN' }
+  const IDIOMAS = ['pt-BR', 'pt-PT', 'en', 'es', 'fr', 'hi']
+  const LOCALE_NUMEROS = { 'pt-BR': 'pt-BR', 'pt-PT': 'pt-PT', en: 'en-US', es: 'es', fr: 'fr-FR', hi: 'en-IN' }
   let idioma = 'pt-BR'
 
   /** pt → [en, es, fr, hi] */
@@ -22,6 +22,22 @@
   /** [regex sobre o texto em pt, { en, es, fr, hi } com $1, $2... (as partes também são traduzidas)] */
   const PADROES = window.ATHOS_PADROES || []
   const POS = { en: 0, es: 1, fr: 2, hi: 3 }
+  /** pt-PT: só o que muda (textos-pt-pt.js); o resto fica no pt da página. */
+  const PT_PT = window.ATHOS_PT_PT || {}
+  const PT_PT_PADROES = window.ATHOS_PT_PT_PADROES || []
+
+  function traduzirPtPt(pt) {
+    const ini = pt.match(/^\s*/)[0]
+    const fim = pt.match(/\s*$/)[0]
+    const miolo = pt.trim().replace(/\s+/g, ' ')
+    if (!miolo) return pt
+    if (PT_PT[miolo] !== undefined) return ini + PT_PT[miolo] + fim
+    for (const [re, modelo] of PT_PT_PADROES) {
+      const m = miolo.match(re)
+      if (m) return ini + modelo.replace(/\$(\d)/g, (_, n) => m[Number(n)] ?? '') + fim
+    }
+    return pt
+  }
 
   function exato(pt) {
     const linha = TEXTOS[pt]
@@ -31,6 +47,7 @@
   /** Texto em pt → idioma atual (o que não tem tradução volta igual). */
   function traduzir(pt) {
     if (idioma === 'pt-BR' || !pt) return pt
+    if (idioma === 'pt-PT') return traduzirPtPt(pt)
     const ini = pt.match(/^\s*/)[0]
     const fim = pt.match(/\s*$/)[0]
     const miolo = pt.trim().replace(/\s+/g, ' ')

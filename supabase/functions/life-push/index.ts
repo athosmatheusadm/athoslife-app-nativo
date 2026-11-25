@@ -14,6 +14,7 @@ import { dadosAbertura, memoriasParaContexto, type Idioma } from '../ai-proxy/li
 import { chamarIA } from '../ai-proxy/ia.ts'
 import { decidirPush, lerAntecipar, minutosDe, type DadosPush, type Decisao, type Momento } from './regras.ts'
 import { fraseValida, lerJsonTexto, pedidoIA, termosEscondidos, textoFixo, TITULO } from './textos.ts'
+import { paraPtPt } from '../_shared/ptPt.ts'
 import { enviarPush, lerConta } from './fcm.ts'
 
 type Sb = SupabaseClient
@@ -115,7 +116,9 @@ async function escreverFrase(sb: Sb, p: Perfil, dec: Decisao, dados: DadosPush, 
     return n ? n.charAt(0).toLocaleUpperCase() + n.slice(1) : null
   })()
   const hora = Math.floor(dados.minutoLocal / 60)
-  const fixo = textoFixo(dec, idioma, primeiroNome, dados.hoje, hora)
+  const ptPT = p.idioma === 'pt-PT'
+  const fixoBr = textoFixo(dec, idioma, primeiroNome, dados.hoje, hora)
+  const fixo = ptPT ? paraPtPt(fixoBr) : fixoBr
   if (!pago) return { texto: fixo, ia: false }
 
   const memorias = p.consentimento_memoria === true
@@ -123,7 +126,7 @@ async function escreverFrase(sb: Sb, p: Perfil, dec: Decisao, dados: DadosPush, 
         .filter((m) => m.categoria !== 'saude' && m.categoria !== 'evento').map((m) => m.texto)
     : []
   const periodo = PERIODO[dados.minutoLocal < 720 ? 'manha' : dados.minutoLocal < 1020 ? 'meio_dia' : 'noite']!
-  const { sistema, mensagem } = pedidoIA(dec, { idioma, nome: primeiroNome, memorias, periodo })
+  const { sistema, mensagem } = pedidoIA(dec, { idioma, ptPT, nome: primeiroNome, memorias, periodo })
   const g = await chamarIA({ sistema, mensagens: [{ papel: 'usuario', texto: mensagem }], maxSaida: 120, json: true }, { timeoutMs: 12_000 })
   await sb.from('ai_audit_logs').insert({
     user_id: p.id, tipo_chamada: 'push', status: g.ok ? 'ok' : 'erro',
