@@ -6342,3 +6342,35 @@ fechado só mudam no APK novo).
 notificação (substitui o `ic_stat_life` desenhado). Também tem um site com
 lista de espera pronto e vai criar as imagens dos títulos pra entregar.
 Tudo desta sessão está só na branch local `life-registro-estimativa`.
+
+## 2026-11-24 — Servidor em dia com a branch da estimativa + tabela oficial por país
+
+- **Migração `athoslife_alimentos_do_life` aplicada** (colunas `origem` e
+  `criado_em` em `alimentos`; os 1843 itens ficaram `origem = 'base'`).
+- **Deploy da `ai-proxy` e da `life-push`** (autorizado pelo dono: "subir no
+  supabase"). Smoke ok. Conversa real com a conta de QA: "de manhã pão com
+  geleia de goiaba e capuccino gelado, no almoço arroz, feijão e frango" →
+  um cartão com café + almoço (`outras`), geleia e capuccino marcados como
+  estimados e guardados na base (`origem = 'life'`, BR, scanner false).
+- **Tabela oficial por país** (pedido do dono: "Brasil TACO, inglês USDA e
+  assim por diante"): novo `ai-proxy/tabelaNutricional.ts` (`tabelaDoPais`)
+  com TACO/TBCA, INSA (PT), USDA, CNF (CA), CoFID (GB/IE), BEDCA (ES),
+  INCMNSZ/SMAE (MX), ARGENFOODS, INTA (CL), ICBF (CO), CENAN (PE), Ciqual
+  (FR), BLS (DE/AT), CREA (IT), NEVO (NL), IFCT (IN), MEXT (JP), FSANZ (AU),
+  NZ, SAFOODS (ZA); o resto cai na tabela nacional/FAO-INFOODS/USDA. Troca as
+  4 escolhas fixas "TACO ou USDA" da cultura, estimativa no chat, foto e
+  receitas. Sem país e idioma não-pt-BR não presume mais Brasil.
+  É referência pro modelo, não consulta ao vivo nessas bases.
+  ai-proxy publicada de novo + smoke ok.
+- Testes: 174 (ai-proxy + life-push) ok (`npx deno test -A --no-check
+  --node-modules-dir=none` — sem a flag o `ia.test.ts` não acha o SDK da
+  Anthropic no node_modules local). typecheck ok.
+- **Já está no ar e ainda não no GitHub**: tudo da branch
+  `life-registro-estimativa`.
+
+**Pendências:** push da branch + PR (dono vai passar o token do GitHub);
+APK novo (cartão com várias refeições e o ícone `ic_stat_life`). Pedidos
+novos do dono a planejar: atualização de Natal e novas modalidades de esporte
+prontas no código atrás de interruptor; português de Portugal (idioma +
+cultura). Sobras no servidor a confirmar: `send-welome-whatsapp` e
+`relogio-athos` (05/05).
