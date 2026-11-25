@@ -6374,3 +6374,51 @@ novos do dono a planejar: atualização de Natal e novas modalidades de esporte
 prontas no código atrás de interruptor; português de Portugal (idioma +
 cultura). Sobras no servidor a confirmar: `send-welome-whatsapp` e
 `relogio-athos` (05/05).
+
+## 2026-11-24 (2) — Português de Portugal (pt-PT), idioma e cultura
+
+Pedido do dono: "a língua português de Portugal e a sua cultura". Branch
+`idioma-pt-pt` (sai da `life-registro-estimativa`, PR #10).
+
+- **App:** idioma novo `pt-PT` (`localidade.ts`: `IDIOMAS`, visível no
+  seletor como "Português (Portugal)"). Aparelho em pt-PT/pt-AO/pt-MZ/CV/GW/
+  ST/TL/MO entra em pt-PT; "pt" e pt-BR seguem no pt-BR. Dicionário novo
+  `src/i18n/mensagens/pt-PT.ts`, revisto linha a linha: tratamento por "tu",
+  ênclise ("diz-me"), "estar a + infinitivo", pequeno-almoço, ecrã,
+  telemóvel, registar, guardar, eliminar, ginásio, subscrição, palavra-passe,
+  hidratos de carbono, stress, SNS 24 no lugar do CAPS/SUS.
+- `ehPortugues()`: alimentos, receitas, planos e traduções do banco tratavam
+  só `'pt-BR'` como português — pt-PT cairia no inglês. Agora os dois usam o
+  conteúdo em português. Nomes de alimento da base passam por
+  `nomeAlimentoPtPt` (suco→sumo, abacaxi→ananás, presunto→fiambre, pão
+  francês→carcaça, creme de leite→natas…; requeijão não troca).
+- Termos/política: pt-PT usa o texto em português do Brasil por enquanto.
+- **Onboarding:** "Português (PT)" na órbita (mais uma bolinha, visual igual);
+  `public/onboarding/textos-pt-pt.js` com os textos que mudam, ligado no
+  `i18n.js`.
+- **Life (ai-proxy):** `Localidade.variante = 'pt-PT'` (o servidor segue com
+  os textos de pt-BR por baixo); pt-PT sem país salvo = Portugal (tabela INSA,
+  SNS 24/SOS Voz Amiga). Prompt com `CULTURA_PT_PT` (jeito de falar, rotina
+  de refeições, pratos, datas: consoada, Santos Populares, São Martinho) e
+  ordem de não imitar gíria brasileira. Receita/foto/estimativa escrevem em
+  pt-PT (`nomeIdioma`). Frases prontas do servidor passam pelo conversor
+  `_shared/ptPt.ts` (`paraPtPt`) só no texto da resposta.
+- **life-push:** IA escreve em pt-PT e a frase pronta passa pelo conversor.
+- **Testado de verdade** (conta QA do dono posta em pt-PT e devolvida a
+  pt-BR): "torrada com manteiga e um galão, ao almoço bacalhau à brás" →
+  "Pequeno-almoço bem à portuguesa…", cartão com as 2 refeições, galão e
+  bacalhau à Brás estimados e guardados com `regioes = [PT]`; cansaço →
+  "foi um dia puxado ou dormiste mal?".
+- Deploy da `ai-proxy` e da `life-push` (2x). Smoke: 1ª mensagem ok; a 2ª
+  bateu no limite diário da conta grátis de QA (403 `limit_reached`, não é
+  defeito) — as duas contas QA gastaram as 5 msgs de hoje.
+- Testes: 183 das funções ok; typecheck + build ok; `deno check` só o erro
+  antigo de `a.receita`.
+
+**Pendências:** dono testar no APK novo (Perfil > Idioma e região > Português
+(Portugal), e o onboarding); histórico do chat recarregado mostra as frases
+prontas antigas como foram gravadas (em pt-BR; a fala da IA já é pt-PT);
+termos e política em pt-PT (RGPD) quando o texto de pessoa física sair;
+botões das escolhas do Life ("Pode", "Não precisa") não passam pelo
+conversor; Santos Populares no expositor da Cozinha (hoje Festa Junina é só
+BR) junto com o Natal. Merge do PR #10 antes deste.

@@ -6,6 +6,7 @@ import type { CategoriaReceita, Receita } from '@domain/entities/receita'
 import type { TemaSazonal } from '@domain/rules/temasSazonais'
 import type { Macros } from '@domain/entities/food'
 import { localidadeAtual } from '@data/localidadeAtual'
+import { ehPortugues } from '@domain/rules/localidade'
 import { texto, traducoesDe } from '@data/traducoesConteudo'
 import { slugReceita } from '@domain/rules/cozinha'
 import { suavizarCor } from '@domain/rules/cores'
@@ -72,7 +73,7 @@ export type ReceitaCrua = Omit<Receita, 'bloqueada' | 'favoritada' | 'contemRest
  */
 async function conteudoLiberado() {
   const { idioma } = localidadeAtual()
-  if (idioma !== 'pt-BR') {
+  if (!ehPortugues(idioma)) {
     // en/es/fr/hi no banco (db/athoslife_idiomas_fr_hi_conteudo_migration.sql).
     const r = await supabase.rpc('receitas_conteudo_liberado', { p_idioma: idioma })
     if (!r.error) return r

@@ -901,5 +901,5 @@ const privacyHi: Documento = {
   ],
 }
 
-export const TERMOS: Record<Idioma, Documento> = { 'pt-BR': termosPt, en: termsEn, es: terminosEs, fr: conditionsFr, hi: termsHi }
-export const POLITICA: Record<Idioma, Documento> = { 'pt-BR': politicaPt, en: privacyEn, es: politicaEs, fr: confidentialiteFr, hi: privacyHi }
+export const TERMOS: Record<Idioma, Documento> = { 'pt-BR': termosPt, 'pt-PT': termosPt, en: termsEn, es: terminosEs, fr: conditionsFr, hi: termsHi }
+export const POLITICA: Record<Idioma, Documento> = { 'pt-BR': politicaPt, 'pt-PT': politicaPt, en: privacyEn, es: politicaEs, fr: confidentialiteFr, hi: privacyHi }
